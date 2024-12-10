@@ -17,13 +17,28 @@ const Footer = () => {
               Inovação em regeneração óssea para procedimentos odontológicos.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-neutral-400 hover:text-white transition-colors">
+              <a 
+                href="https://www.facebook.com/story.php/?story_fbid=1188929606081755&id=100048941811372&_rdr" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-neutral-400 hover:text-white transition-colors"
+              >
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="text-neutral-400 hover:text-white transition-colors">
+              <a 
+                href="https://www.instagram.com/boneheal/?hl=en" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-neutral-400 hover:text-white transition-colors"
+              >
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="text-neutral-400 hover:text-white transition-colors">
+              <a 
+                href="https://br.linkedin.com/company/bone-heal" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-neutral-400 hover:text-white transition-colors"
+              >
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>
