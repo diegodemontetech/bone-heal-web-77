@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { Flask, Microscope, Award, Building } from 'lucide-react';
+import { TestTube2, Microscope, Award, Building } from 'lucide-react';
 
 const Infrastructure = () => {
   const features = [
     {
-      icon: Flask,
+      icon: TestTube2,
       title: "Laboratório de P&D",
       description: "Centro de pesquisa equipado com tecnologia de ponta para desenvolvimento contínuo."
     },
