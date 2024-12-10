@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Menu, X, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === '/';
 
   const navItems = [
     { name: 'Produtos', href: '/products' },
@@ -15,24 +18,24 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full bg-white/80 backdrop-blur-md z-50">
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-12">
+    <nav className="fixed w-full bg-white/80 backdrop-blur-lg z-50 border-b border-neutral-200/50">
+      <div className="max-w-[1440px] mx-auto px-8 lg:px-16">
         <div className="flex justify-between items-center h-24">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
               <img src="https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/dados_processo_seletivo/logo_empresa/167858/bone-heal-logo-01.png" 
                    alt="Bone Heal" 
-                   className="h-14" />
+                   className="h-12" />
             </Link>
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden lg:flex space-x-10">
+          <div className="hidden lg:flex space-x-12">
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
-                className="text-neutral-600 hover:text-primary transition-colors duration-200 font-medium tracking-wide"
+                className="text-neutral-600 hover:text-primary transition-colors duration-200 font-medium tracking-wide text-sm"
               >
                 {item.name}
               </Link>
@@ -43,10 +46,10 @@ const Navbar = () => {
           <div className="hidden lg:flex items-center">
             <Link 
               to="/login" 
-              className="flex items-center space-x-2 bg-primary/10 hover:bg-primary/20 text-primary px-6 py-2.5 rounded-full transition-colors duration-200"
+              className="flex items-center space-x-2 bg-primary text-white px-6 py-2.5 rounded-full transition-all duration-200 hover:bg-primary-dark"
             >
               <User className="h-5 w-5" />
-              <span className="font-medium">Área do Dentista</span>
+              <span className="font-medium text-sm">Área do Dentista</span>
             </Link>
           </div>
 

@@ -42,7 +42,7 @@
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, #8B1F41 0%, #4A0404 100%);
+  @apply bg-gradient-to-br from-primary to-primary-dark;
 }
 
 .feature-card {
@@ -54,7 +54,7 @@
 }
 
 .container-padding {
-  @apply px-6 lg:px-12;
+  @apply px-8 lg:px-16;
 }
 
 /* Smooth scrolling */
@@ -64,10 +64,31 @@ html {
 
 /* Better button hover states */
 .button-hover {
-  @apply transition-all duration-200 hover:scale-[1.02];
+  @apply transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
 }
 
 /* Improved focus states */
 *:focus-visible {
   @apply outline-none ring-2 ring-primary ring-offset-2;
+}
+
+/* Typography improvements */
+.heading-xl {
+  @apply text-5xl lg:text-7xl font-bold tracking-tight font-heading;
+}
+
+.heading-lg {
+  @apply text-4xl lg:text-5xl font-bold tracking-tight font-heading;
+}
+
+.heading-md {
+  @apply text-3xl lg:text-4xl font-bold tracking-tight font-heading;
+}
+
+.body-lg {
+  @apply text-xl leading-relaxed text-neutral-600;
+}
+
+.body-base {
+  @apply text-base leading-relaxed text-neutral-600;
 }
