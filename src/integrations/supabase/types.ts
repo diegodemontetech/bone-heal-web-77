@@ -135,6 +135,102 @@ export type Database = {
           },
         ]
       }
+      order_items: {
+        Row: {
+          created_at: string | null
+          id: number
+          order_id: number
+          product_id: number
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          order_id: number
+          product_id: number
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          order_id?: number
+          product_id?: number
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          billing_address: Json
+          created_at: string | null
+          estimated_delivery_date: string | null
+          id: number
+          notes: string | null
+          payment_method: string
+          payment_status: string
+          shipping_address: Json
+          shipping_fee: number
+          status: string
+          total_amount: number
+          tracking_code: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          billing_address: Json
+          created_at?: string | null
+          estimated_delivery_date?: string | null
+          id?: number
+          notes?: string | null
+          payment_method: string
+          payment_status?: string
+          shipping_address: Json
+          shipping_fee: number
+          status?: string
+          total_amount: number
+          tracking_code?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          billing_address?: Json
+          created_at?: string | null
+          estimated_delivery_date?: string | null
+          id?: number
+          notes?: string | null
+          payment_method?: string
+          payment_status?: string
+          shipping_address?: Json
+          shipping_fee?: number
+          status?: string
+          total_amount?: number
+          tracking_code?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           certifications: string[] | null
@@ -145,8 +241,10 @@ export type Database = {
           id: number
           main_image: string | null
           name: string
+          price: number | null
           short_description: string | null
           slug: string
+          stock: number | null
           technical_details: Json | null
           updated_at: string | null
           video_url: string | null
@@ -160,8 +258,10 @@ export type Database = {
           id?: number
           main_image?: string | null
           name: string
+          price?: number | null
           short_description?: string | null
           slug: string
+          stock?: number | null
           technical_details?: Json | null
           updated_at?: string | null
           video_url?: string | null
@@ -175,11 +275,52 @@ export type Database = {
           id?: number
           main_image?: string | null
           name?: string
+          price?: number | null
           short_description?: string | null
           slug?: string
+          stock?: number | null
           technical_details?: Json | null
           updated_at?: string | null
           video_url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          billing_address: Json | null
+          clinic_name: string | null
+          created_at: string | null
+          cro: string
+          full_name: string
+          id: string
+          phone: string | null
+          shipping_address: Json | null
+          tax_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          billing_address?: Json | null
+          clinic_name?: string | null
+          created_at?: string | null
+          cro: string
+          full_name: string
+          id: string
+          phone?: string | null
+          shipping_address?: Json | null
+          tax_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          billing_address?: Json | null
+          clinic_name?: string | null
+          created_at?: string | null
+          cro?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          shipping_address?: Json | null
+          tax_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -213,6 +354,39 @@ export type Database = {
           published_date?: string | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shipping_rates: {
+        Row: {
+          created_at: string | null
+          delivery_time_max: number
+          delivery_time_min: number
+          id: number
+          price: number
+          updated_at: string | null
+          zip_code_end: string
+          zip_code_start: string
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_time_max: number
+          delivery_time_min: number
+          id?: number
+          price: number
+          updated_at?: string | null
+          zip_code_end: string
+          zip_code_start: string
+        }
+        Update: {
+          created_at?: string | null
+          delivery_time_max?: number
+          delivery_time_min?: number
+          id?: number
+          price?: number
+          updated_at?: string | null
+          zip_code_end?: string
+          zip_code_start?: string
         }
         Relationships: []
       }
