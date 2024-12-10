@@ -21,10 +21,10 @@ const Navbar = () => {
   ];
 
   const handleDentistAreaClick = () => {
-    if (!session) {
-      navigate('/login');
-    } else {
+    if (session) {
       navigate('/products');
+    } else {
+      navigate('/login');
     }
     setIsOpen(false);
   };
