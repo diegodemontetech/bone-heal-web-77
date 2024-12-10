@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/product";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play } from "lucide-react"; // Added Play icon import
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import ProductTabs from "@/components/product/ProductTabs";
