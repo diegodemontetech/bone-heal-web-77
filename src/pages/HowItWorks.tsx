@@ -39,32 +39,32 @@ const HowItWorks = () => {
     {
       title: "Preparação Inicial",
       description: "O processo começa com uma avaliação detalhada e preparação do local para o procedimento.",
-      image: "step1.jpg"
+      image: "1.webp"
     },
     {
       title: "Aplicação da Barreira",
       description: "A barreira Bone Heal® é cuidadosamente posicionada para proteger a área de regeneração.",
-      image: "step2.jpg"
+      image: "2.webp"
     },
     {
       title: "Proteção do Coágulo",
       description: "A membrana mantém o coágulo protegido, fundamental para o processo de regeneração.",
-      image: "step3.jpg"
+      image: "3.webp"
     },
     {
       title: "Regeneração Guiada",
       description: "O processo de regeneração óssea ocorre naturalmente sob a proteção da barreira.",
-      image: "step4.jpg"
+      image: "4.webp"
     },
     {
       title: "Formação Óssea",
       description: "Novo tecido ósseo se forma progressivamente na área protegida.",
-      image: "step5.jpg"
+      image: "5.webp"
     },
     {
       title: "Resultado Final",
       description: "Após o período de cicatrização, obtém-se um excelente resultado de regeneração.",
-      image: "step6.jpg"
+      image: "6.webp"
     }
   ];
 
@@ -82,7 +82,7 @@ const HowItWorks = () => {
           playsInline
           preload="auto"
         />
-        <div className="absolute inset-0 bg-black/50" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary-dark/90" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
