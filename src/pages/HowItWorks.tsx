@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown, Brain, Microscope, Flask, Activity } from "lucide-react";
+import { ArrowDown, Brain, Microscope, Beaker, Activity } from "lucide-react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
@@ -85,7 +85,6 @@ const HowItWorks = () => {
                     <OrbitControls enableZoom={false} />
                     <ambientLight intensity={0.5} />
                     <directionalLight position={[10, 10, 5]} intensity={1} />
-                    {/* Add your 3D model here */}
                     <mesh>
                       <boxGeometry args={[1, 1, 1]} />
                       <meshStandardMaterial color="#8B1F41" />
@@ -107,7 +106,7 @@ const HowItWorks = () => {
                 </div>
                 <div>
                   <div className="bg-primary/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-6">
-                    <Flask className="w-8 h-8 text-primary" />
+                    <Beaker className="w-8 h-8 text-primary" />
                   </div>
                   <h2 className="text-3xl font-bold mb-6">Nível Microscópico</h2>
                   <p className="text-lg text-neutral-600 leading-relaxed mb-8">
