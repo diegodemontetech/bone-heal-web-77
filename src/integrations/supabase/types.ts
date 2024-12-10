@@ -135,6 +135,54 @@ export type Database = {
           },
         ]
       }
+      products: {
+        Row: {
+          certifications: string[] | null
+          created_at: string | null
+          documents: Json | null
+          full_description: string | null
+          gallery: string[] | null
+          id: number
+          main_image: string | null
+          name: string
+          short_description: string | null
+          slug: string
+          technical_details: Json | null
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          certifications?: string[] | null
+          created_at?: string | null
+          documents?: Json | null
+          full_description?: string | null
+          gallery?: string[] | null
+          id?: number
+          main_image?: string | null
+          name: string
+          short_description?: string | null
+          slug: string
+          technical_details?: Json | null
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          certifications?: string[] | null
+          created_at?: string | null
+          documents?: Json | null
+          full_description?: string | null
+          gallery?: string[] | null
+          id?: number
+          main_image?: string | null
+          name?: string
+          short_description?: string | null
+          slug?: string
+          technical_details?: Json | null
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       scientific_studies: {
         Row: {
           authors: string[] | null
