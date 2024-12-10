@@ -4,26 +4,18 @@ import { motion } from 'framer-motion';
 const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background Video/GIF Layer */}
+      {/* Background Video/GIF Layer - Optimized */}
       <div className="absolute inset-0">
-        <video
+        <img 
+          src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/home.gif" 
+          alt="Regeneração óssea em movimento"
           className="w-full h-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-          poster="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/home.gif"
-        >
-          <source
-            src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/home.gif"
-            type="video/mp4"
-          />
-          <img 
-            src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/home.gif" 
-            alt="Regeneração óssea em movimento"
-            className="w-full h-full object-cover"
-          />
-        </video>
+          loading="lazy"
+          style={{ 
+            imageRendering: 'auto',
+            objectFit: 'cover'
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-primary-dark/95" />
       </div>
 
@@ -36,7 +28,7 @@ const Hero = () => {
             transition={{ duration: 0.6 }}
             className="max-w-2xl"
           >
-            <h1 className="text-6xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight text-white font-heading">
+            <h1 className="text-5xl lg:text-7xl font-bold mb-8 leading-[1.1] tracking-tight text-white font-heading">
               A Revolução na Regeneração Óssea Guiada
             </h1>
             <p className="text-xl lg:text-2xl mb-12 text-neutral-100 leading-relaxed font-light">
@@ -63,25 +55,25 @@ const Hero = () => {
               </motion.a>
             </div>
           </motion.div>
-
-          {/* Scroll Indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.4, 1, 0.4],
-              y: [0, 10, 0]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center text-white"
-          >
-            <span className="text-sm mb-2">Role para descobrir mais</span>
-            <ChevronDown size={32} className="animate-bounce" />
-          </motion.div>
         </div>
+
+        {/* Scroll Indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: [0.4, 1, 0.4],
+            y: [0, 10, 0]
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center text-white"
+        >
+          <span className="text-sm mb-2">Role para descobrir mais</span>
+          <ChevronDown size={32} className="animate-bounce" />
+        </motion.div>
       </div>
     </div>
   );
