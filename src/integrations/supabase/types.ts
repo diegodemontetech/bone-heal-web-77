@@ -135,6 +135,39 @@ export type Database = {
           },
         ]
       }
+      scientific_studies: {
+        Row: {
+          authors: string[] | null
+          created_at: string | null
+          description: string | null
+          file_url: string
+          id: number
+          published_date: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          authors?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          file_url: string
+          id?: number
+          published_date?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          authors?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          file_url?: string
+          id?: number
+          published_date?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
