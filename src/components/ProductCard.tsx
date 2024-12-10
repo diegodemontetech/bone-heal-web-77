@@ -20,13 +20,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-      <div className="aspect-[4/3] relative overflow-hidden">
-        <img
-          src={`/products/${product.main_image}`}
-          alt={product.name}
-          className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-        />
-      </div>
+      <Link to={`/products/${product.slug}`}>
+        <div className="aspect-[4/3] relative overflow-hidden">
+          <img
+            src={`/products/${product.main_image}`}
+            alt={product.name}
+            className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+          />
+        </div>
+      </Link>
       <div className="p-6 bg-primary text-white">
         <h3 className="text-xl font-bold mb-2">{product.name}</h3>
         <p className="text-white/90 mb-4 line-clamp-2">

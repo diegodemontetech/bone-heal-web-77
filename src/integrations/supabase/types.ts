@@ -36,6 +36,24 @@ export type Database = {
         }
         Relationships: []
       }
+      dental_specialties: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           author: string | null
@@ -322,6 +340,7 @@ export type Database = {
           id: string
           phone: string | null
           shipping_address: Json | null
+          specialty: string
           tax_id: string | null
           updated_at: string | null
         }
@@ -334,6 +353,7 @@ export type Database = {
           id: string
           phone?: string | null
           shipping_address?: Json | null
+          specialty?: string
           tax_id?: string | null
           updated_at?: string | null
         }
@@ -346,10 +366,19 @@ export type Database = {
           id?: string
           phone?: string | null
           shipping_address?: Json | null
+          specialty?: string
           tax_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_specialty_fkey"
+            columns: ["specialty"]
+            isOneToOne: false
+            referencedRelation: "dental_specialties"
+            referencedColumns: ["name"]
+          },
+        ]
       }
       scientific_studies: {
         Row: {

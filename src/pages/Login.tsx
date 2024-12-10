@@ -5,13 +5,26 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import { useToast } from "@/components/ui/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { data: specialties } = useQuery({
+    queryKey: ["dental-specialties"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dental_specialties")
+        .select("*")
+        .order("name");
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
-    // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -19,7 +32,6 @@ const Login = () => {
       }
     };
 
-    // Monitor authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
         toast({
@@ -40,7 +52,7 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-32">
         <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
           <h1 className="text-2xl font-bold text-center mb-8">Área do Dentista</h1>
           <Auth
@@ -50,10 +62,16 @@ const Login = () => {
               variables: {
                 default: {
                   colors: {
-                    brand: '#0891b2',
-                    brandAccent: '#0e7490',
+                    brand: '#8B1F41',
+                    brandAccent: '#4A0404',
                   },
                 },
+              },
+              className: {
+                container: 'auth-container',
+                button: 'auth-button',
+                input: 'auth-input',
+                label: 'auth-label',
               },
             }}
             localization={{
