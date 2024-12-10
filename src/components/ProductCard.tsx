@@ -23,13 +23,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
           className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
         />
       </div>
-      <div className="p-6">
-        <h3 className="text-xl font-bold text-primary mb-2">{product.name}</h3>
-        <p className="text-neutral-600 mb-4 line-clamp-2">
+      <div className="p-6 bg-primary text-white">
+        <h3 className="text-xl font-bold mb-2">{product.name}</h3>
+        <p className="text-white/90 mb-4 line-clamp-2">
           {product.short_description}
         </p>
         <Link to={`/products/${product.slug}`}>
-          <Button className="w-full group">
+          <Button variant="secondary" className="w-full group">
             Ver Detalhes
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
