@@ -9,7 +9,132 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      news: {
+        Row: {
+          author: string | null
+          category: string | null
+          content: string
+          created_at: string | null
+          featured_home: boolean | null
+          featured_image: string | null
+          id: number
+          published_at: string | null
+          slug: string
+          summary: string | null
+          tags: string | null
+          title: string
+          updated_at: string | null
+          views: number | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          content: string
+          created_at?: string | null
+          featured_home?: boolean | null
+          featured_image?: string | null
+          id?: number
+          published_at?: string | null
+          slug: string
+          summary?: string | null
+          tags?: string | null
+          title: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          featured_home?: boolean | null
+          featured_image?: string | null
+          id?: number
+          published_at?: string | null
+          slug?: string
+          summary?: string | null
+          tags?: string | null
+          title?: string
+          updated_at?: string | null
+          views?: number | null
+        }
+        Relationships: []
+      }
+      news_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      news_tags: {
+        Row: {
+          created_at: string | null
+          id: number
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      news_tags_junction: {
+        Row: {
+          news_id: number
+          tag_id: number
+        }
+        Insert: {
+          news_id: number
+          tag_id: number
+        }
+        Update: {
+          news_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_tags_junction_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "news_tags_junction_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "news_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

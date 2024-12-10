@@ -1,17 +1,23 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import NewsHero from "@/components/NewsHero";
+import NewsList from "@/components/NewsList";
+import NewsCategories from "@/components/NewsCategories";
 
 const News = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-24">
-        <div className="container mx-auto px-8">
-          <h1 className="text-4xl font-bold mb-8">Notícias</h1>
-          <div className="grid gap-8">
-            {/* News items will be added here */}
+      <main className="flex-grow">
+        <NewsHero />
+        <section className="container mx-auto px-4 py-12">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <NewsCategories />
+            <div className="flex-grow">
+              <NewsList />
+            </div>
           </div>
-        </div>
+        </section>
       </main>
       <Footer />
     </div>
