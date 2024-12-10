@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Award, ShoppingCart, Minus, Plus, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import CartWidget from "@/components/cart/CartWidget";
-import { useAuth } from "@supabase/auth-helpers-react";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface ProductInfoProps {
   product: Product;
@@ -24,7 +24,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
     image: string;
   }>>([]);
   const navigate = useNavigate();
-  const session = useAuth();
+  const session = useSession();
 
   const handleAddToCart = () => {
     if (!session) {
