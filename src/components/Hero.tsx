@@ -69,7 +69,7 @@ const Hero = () => {
             repeat: Infinity,
             ease: "easeInOut"
           }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center text-white"
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center w-full text-white"
         >
           <span className="text-sm mb-2">Role para descobrir mais</span>
           <ChevronDown size={32} className="animate-bounce" />

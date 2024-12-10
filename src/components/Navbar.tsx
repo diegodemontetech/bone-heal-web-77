@@ -31,7 +31,7 @@ const Navbar = () => {
             <Link to="/" className="flex items-center">
               <img src="https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/dados_processo_seletivo/logo_empresa/167858/bone-heal-logo-01.png" 
                    alt="Bone Heal" 
-                   className="h-12" />
+                   className="h-[calc(100%-4px)] md:h-[calc(100%-10px)] max-h-20" />
             </Link>
           </div>
 
