@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 const ProductHero = () => {
   return (
-    <section className="relative bg-gradient-to-br from-primary/5 to-white pt-24 pb-16">
+    <section className="relative bg-gradient-to-br from-primary/5 to-white pt-32 pb-16"> {/* Changed pt-24 to pt-32 */}
       <div className="container mx-auto px-8">
         <div className="max-w-3xl">
           <motion.h1
