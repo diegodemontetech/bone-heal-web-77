@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Menu, X, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +19,12 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full bg-white/80 backdrop-blur-lg z-50 border-b border-neutral-200/50">
+    <motion.nav 
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="fixed w-full bg-white/80 backdrop-blur-lg z-50 border-b border-neutral-200/50"
+    >
       <div className="max-w-[1440px] mx-auto px-8 lg:px-16">
         <div className="flex justify-between items-center h-24">
           <div className="flex-shrink-0">
@@ -29,7 +35,6 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop Menu */}
           <div className="hidden lg:flex space-x-12">
             {navItems.map((item) => (
               <Link
@@ -42,18 +47,16 @@ const Navbar = () => {
             ))}
           </div>
 
-          {/* Login Button */}
           <div className="hidden lg:flex items-center">
             <Link 
               to="/login" 
-              className="flex items-center space-x-2 bg-primary text-white px-6 py-2.5 rounded-full transition-all duration-200 hover:bg-primary-dark"
+              className="flex items-center space-x-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <User className="h-5 w-5" />
-              <span className="font-medium text-sm">Área do Dentista</span>
+              <span className="font-medium">Área do Dentista</span>
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
           <div className="lg:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -64,9 +67,13 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
-          <div className="lg:hidden absolute left-0 right-0 bg-white border-b">
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden absolute left-0 right-0 bg-white border-b shadow-lg"
+          >
             <div className="px-4 pt-2 pb-3 space-y-2">
               {navItems.map((item) => (
                 <Link
@@ -87,10 +94,10 @@ const Navbar = () => {
                 <span className="font-medium">Área do Dentista</span>
               </Link>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
-    </nav>
+    </motion.nav>
   );
 };
 
