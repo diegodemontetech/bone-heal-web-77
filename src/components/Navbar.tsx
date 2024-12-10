@@ -20,6 +20,15 @@ const Navbar = () => {
     { name: 'Contato', href: '/contact' },
   ];
 
+  const handleDentistAreaClick = () => {
+    if (!session) {
+      navigate('/login');
+    } else {
+      navigate('/products');
+    }
+    setIsOpen(false);
+  };
+
   return (
     <motion.nav 
       initial={{ opacity: 0, y: -20 }}
@@ -50,13 +59,13 @@ const Navbar = () => {
           </div>
 
           <div className="hidden lg:flex items-center">
-            <Link 
-              to="/login" 
+            <button 
+              onClick={handleDentistAreaClick}
               className="flex items-center space-x-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <User className="h-5 w-5" />
               <span className="font-medium">Área do Dentista</span>
-            </Link>
+            </button>
           </div>
 
           <div className="lg:hidden">
@@ -87,14 +96,13 @@ const Navbar = () => {
                   {item.name}
                 </Link>
               ))}
-              <Link 
-                to="/login" 
-                className="flex items-center space-x-2 px-3 py-2.5 text-primary"
-                onClick={() => setIsOpen(false)}
+              <button 
+                onClick={handleDentistAreaClick}
+                className="flex items-center space-x-2 px-3 py-2.5 text-primary w-full text-left"
               >
                 <User className="h-5 w-5" />
                 <span className="font-medium">Área do Dentista</span>
-              </Link>
+              </button>
             </div>
           </motion.div>
         )}
