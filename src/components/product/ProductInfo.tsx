@@ -81,9 +81,14 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
       )}
 
-      <div className="flex items-center gap-4">
-        {session ? (
-          <>
+      {session ? (
+        <>
+          {product.price && (
+            <div className="text-2xl font-bold text-primary">
+              R$ {product.price.toFixed(2)}
+            </div>
+          )}
+          <div className="flex items-center gap-4">
             <div className="flex items-center border rounded-lg">
               <Button
                 variant="ghost"
@@ -110,18 +115,18 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               <ShoppingCart className="w-5 h-5 mr-2" />
               Adicionar ao Carrinho
             </Button>
-          </>
-        ) : (
-          <Button
-            size="lg"
-            className="flex-1 text-white"
-            onClick={() => navigate("/login")}
-          >
-            <LogIn className="w-5 h-5 mr-2" />
-            Entrar para Comprar
-          </Button>
-        )}
-      </div>
+          </div>
+        </>
+      ) : (
+        <Button
+          size="lg"
+          className="w-full text-white"
+          onClick={() => navigate("/login")}
+        >
+          <LogIn className="w-5 h-5 mr-2" />
+          Faça login para ver preço
+        </Button>
+      )}
 
       <CartWidget
         isOpen={isCartOpen}

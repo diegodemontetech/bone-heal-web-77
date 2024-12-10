@@ -11,7 +11,7 @@ const Login = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar se o usuário já está logado
+    // Check if user is already logged in
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -19,7 +19,7 @@ const Login = () => {
       }
     };
 
-    // Monitorar mudanças no estado de autenticação
+    // Monitor authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
         toast({

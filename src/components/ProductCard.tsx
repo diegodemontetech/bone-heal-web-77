@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface ProductCardProps {
   product: {
@@ -10,10 +11,13 @@ interface ProductCardProps {
     slug: string;
     short_description: string;
     main_image: string;
+    price?: number;
   };
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  const session = useSession();
+
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
       <div className="aspect-[4/3] relative overflow-hidden">
@@ -28,12 +32,28 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <p className="text-white/90 mb-4 line-clamp-2">
           {product.short_description}
         </p>
-        <Link to={`/products/${product.slug}`}>
-          <Button variant="secondary" className="w-full group">
-            Ver Detalhes
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
+        {session ? (
+          <>
+            {product.price && (
+              <p className="text-lg font-bold mb-4">
+                R$ {product.price.toFixed(2)}
+              </p>
+            )}
+            <Link to={`/products/${product.slug}`}>
+              <Button variant="secondary" className="w-full group">
+                Ver Detalhes
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </>
+        ) : (
+          <Link to="/login">
+            <Button variant="secondary" className="w-full group">
+              Faça login para ver preço
+              <LogIn className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

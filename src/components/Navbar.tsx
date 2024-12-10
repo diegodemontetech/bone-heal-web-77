@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Menu, X, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useSession } from '@supabase/auth-helpers-react';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const isHomePage = location.pathname === '/';
+  const session = useSession();
+  const navigate = useNavigate();
 
   const navItems = [
     { name: 'Produtos', href: '/products' },
