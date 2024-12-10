@@ -12,20 +12,29 @@ import { Loader2, ShoppingCart, FileText, Award, Play } from "lucide-react";
 import { toast } from "sonner";
 
 const ProductDetail = () => {
-  const { slug } = useParams();
+  const { slug } = useParams<{ slug: string }>();
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, isError } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
+      if (!slug) throw new Error("No slug provided");
+      
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq("slug", slug)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === "PGRST116") {
+          return null; // Product not found
+        }
+        throw error;
+      }
+      
       return data as Product;
     },
+    enabled: !!slug, // Only run query if slug exists
   });
 
   const handleAddToCart = () => {
@@ -41,10 +50,18 @@ const ProductDetail = () => {
     );
   }
 
-  if (!product) {
+  if (isError || !product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-xl text-neutral-600">Produto não encontrado</p>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-neutral-900 mb-4">Produto não encontrado</h1>
+            <p className="text-neutral-600 mb-8">O produto que você está procurando não existe ou foi removido.</p>
+            <Button onClick={() => window.history.back()}>Voltar</Button>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -65,7 +82,7 @@ const ProductDetail = () => {
             >
               <div className="aspect-square rounded-2xl overflow-hidden bg-white shadow-lg">
                 <img
-                  src={`/products/${product.main_image}`}
+                  src={product.main_image ? `/products/${product.main_image}` : "/placeholder.svg"}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
