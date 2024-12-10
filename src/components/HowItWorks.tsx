@@ -4,19 +4,23 @@ const HowItWorks = () => {
   const steps = [
     {
       title: "Preparação do sítio cirúrgico",
-      description: "Limpeza e preparação adequada da área para o procedimento."
+      description: "Limpeza e preparação adequada da área para o procedimento.",
+      image: "1"
     },
     {
       title: "Colocação da película",
-      description: "Aplicação simples da película de polipropileno Bone Heal."
+      description: "Aplicação simples da película de polipropileno Bone Heal.",
+      image: "2"
     },
     {
       title: "Regeneração natural",
-      description: "Processo de regeneração óssea e tecidual guiada."
+      description: "Processo de regeneração óssea e tecidual guiada.",
+      image: "3"
     },
     {
       title: "Remoção em 7 dias",
-      description: "Remoção simples e indolor da película após o período."
+      description: "Remoção simples e indolor da película após o período.",
+      image: "4"
     }
   ];
 
@@ -29,8 +33,12 @@ const HowItWorks = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step, index) => (
             <div key={index} className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-white" />
+              <div className="w-full aspect-square mb-4 rounded-xl overflow-hidden">
+                <img
+                  src={`https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/fotos/${step.image}`}
+                  alt={step.title}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h3 className="text-xl font-bold mb-2">{step.title}</h3>
               <p className="text-neutral-600">{step.description}</p>

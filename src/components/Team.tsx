@@ -33,7 +33,7 @@ const Team = () => {
             <div>
               <h3 className="text-3xl font-bold mb-4 text-primary">Dr. Munir Salomão</h3>
               <p className="text-lg text-neutral-600 mb-6">
-                Idealizador do Bone Heal Day, O Dr. Munir Salomão é diretor da empresa Bone Heal Ind e Com Ltda, 
+                Dr. Munir Salomão é fundador da empresa Bone Heal Ind e Com Ltda, 
                 renomado idealizador da barreira de polipropileno Bone Heal®.
               </p>
               <ul className="space-y-3 text-neutral-600">
@@ -42,7 +42,6 @@ const Team = () => {
                 <li>• Professor de cirurgia de implantes</li>
                 <li>• Pesquisador em regeneração óssea guiada na Faculdade de Medicina da USP</li>
                 <li>• Criador e consultor da Barreira Regenerativa @boneheal</li>
-                <li>• Início das operações em 2013</li>
               </ul>
             </div>
           </div>
