@@ -16,12 +16,18 @@ const HowItWorks = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (videoRef.current) {
-        const scrollPercent = window.scrollY / (window.innerHeight * 0.5);
-        videoRef.current.currentTime = Math.min(
-          videoRef.current.duration * scrollPercent,
-          videoRef.current.duration
+      if (videoRef.current && !isNaN(videoRef.current.duration)) {
+        const scrollPosition = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const scrollPercentage = Math.min(
+          Math.max(scrollPosition / windowHeight, 0),
+          1
         );
+        
+        const targetTime = videoRef.current.duration * scrollPercentage;
+        if (isFinite(targetTime) && targetTime >= 0) {
+          videoRef.current.currentTime = targetTime;
+        }
       }
     };
 
@@ -74,6 +80,7 @@ const HowItWorks = () => {
           src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/bone-heal-video.mp4"
           muted
           playsInline
+          preload="auto"
         />
         <div className="absolute inset-0 bg-black/50" />
         <div className="absolute inset-0 flex items-center justify-center text-white">
