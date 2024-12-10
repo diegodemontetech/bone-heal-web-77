@@ -3,8 +3,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowDown, Brain, Microscope, Beaker, Activity } from "lucide-react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import { Button } from "@/components/ui/button";
 
 const HowItWorks = () => {
@@ -81,15 +79,9 @@ const HowItWorks = () => {
                   </Button>
                 </div>
                 <div className="bg-neutral-100 rounded-2xl p-8 aspect-square flex items-center justify-center">
-                  <Canvas>
-                    <OrbitControls enableZoom={false} />
-                    <ambientLight intensity={0.5} />
-                    <directionalLight position={[10, 10, 5]} intensity={1} />
-                    <mesh>
-                      <boxGeometry args={[1, 1, 1]} />
-                      <meshStandardMaterial color="#8B1F41" />
-                    </mesh>
-                  </Canvas>
+                  <div className="w-32 h-32 bg-primary/20 rounded-full flex items-center justify-center">
+                    <Brain className="w-16 h-16 text-primary" />
+                  </div>
                 </div>
               </motion.div>
 
