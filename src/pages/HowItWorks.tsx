@@ -16,7 +16,7 @@ const HowItWorks = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (videoRef.current && !isNaN(videoRef.current.duration)) {
+      if (videoRef.current && !isFinite(videoRef.current.duration)) {
         const scrollPosition = window.scrollY;
         const windowHeight = window.innerHeight;
         const scrollPercentage = Math.min(
@@ -60,13 +60,14 @@ const HowItWorks = () => {
       title: "Formação Óssea",
       description: "Novo tecido ósseo se forma progressivamente na área protegida.",
       image: "5.webp"
-    },
-    {
-      title: "Resultado Final",
-      description: "Após o período de cicatrização, obtém-se um excelente resultado de regeneração.",
-      image: "6.webp"
     }
   ];
+
+  const finalStep = {
+    title: "Resultado Final",
+    description: "Após o período de cicatrização, obtém-se um excelente resultado de regeneração.",
+    image: "6.webp"
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -118,17 +119,17 @@ const HowItWorks = () => {
         {steps.map((step, index) => {
           const progress = useTransform(
             scrollYProgress,
-            [index / steps.length, (index + 0.8) / steps.length],
+            [index / (steps.length + 1), (index + 0.8) / (steps.length + 1)],
             [0, 1]
           );
 
           const opacity = useTransform(
             scrollYProgress,
             [
-              (index - 0.5) / steps.length,
-              index / steps.length,
-              (index + 0.8) / steps.length,
-              (index + 1) / steps.length
+              (index - 0.5) / (steps.length + 1),
+              index / (steps.length + 1),
+              (index + 0.8) / (steps.length + 1),
+              (index + 1) / (steps.length + 1)
             ],
             [0, 1, 1, 0]
           );
@@ -168,6 +169,39 @@ const HowItWorks = () => {
             </motion.section>
           );
         })}
+
+        {/* Final Step - Sticky at the end */}
+        <motion.section
+          style={{
+            opacity: useTransform(
+              scrollYProgress,
+              [0.8, 0.9],
+              [0, 1]
+            )
+          }}
+          className="h-screen sticky top-0 flex items-center justify-center overflow-hidden bg-white"
+        >
+          <div className="container mx-auto px-8 grid md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <span className="text-primary font-semibold">
+                Resultado Final
+              </span>
+              <h2 className="text-4xl font-bold text-primary">
+                {finalStep.title}
+              </h2>
+              <p className="text-lg text-neutral-600">
+                {finalStep.description}
+              </p>
+            </div>
+            <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={`https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/fotos/${finalStep.image}`}
+                alt={finalStep.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </motion.section>
       </div>
 
       <Footer />
