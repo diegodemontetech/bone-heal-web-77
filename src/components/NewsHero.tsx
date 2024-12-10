@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 
 const NewsHero = () => {
   return (
-    <section className="bg-gradient-to-b from-primary/10 to-white py-24">
+    <section className="bg-gradient-to-b from-primary/10 to-white pt-36 pb-24">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

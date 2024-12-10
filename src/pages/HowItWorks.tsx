@@ -1,9 +1,88 @@
 import { useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowDown, Brain, Microscope, Beaker, Activity } from "lucide-react";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
+import { ArrowDown, Brain, Microscope, Shield, Clock, Target, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const Step = ({ title, description, icon: Icon, imageUrl, index }: {
+  title: string;
+  description: string;
+  icon: any;
+  imageUrl?: string;
+  index: number;
+}) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+      transition={{ duration: 0.8, delay: index * 0.2 }}
+      className="min-h-screen flex items-center justify-center py-24 px-4"
+    >
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        <div className="order-2 md:order-1">
+          <div className="bg-primary/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-6">
+            <Icon className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">{title}</h2>
+          <p className="text-lg text-neutral-600 leading-relaxed mb-8">
+            {description}
+          </p>
+          <div className="flex items-center text-sm text-primary">
+            <span className="font-medium">Passo {index + 1}</span>
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </div>
+        </div>
+        <div className="order-1 md:order-2 bg-neutral-100 rounded-2xl p-8 aspect-square flex items-center justify-center">
+          {imageUrl ? (
+            <img src={imageUrl} alt={title} className="w-full h-full object-cover rounded-xl" />
+          ) : (
+            <div className="w-32 h-32 bg-primary/20 rounded-full flex items-center justify-center">
+              <Icon className="w-16 h-16 text-primary" />
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const steps = [
+  {
+    title: "Preparação do Sítio Cirúrgico",
+    description: "Após a remoção do dente, o alvéolo fica pronto para receber o processo de regeneração. É aqui que tudo começa.",
+    icon: Brain
+  },
+  {
+    title: "Formação do Coágulo Sanguíneo",
+    description: "O coágulo rico em células é o alicerce da cicatrização. Ele fornece fatores de crescimento essenciais para a formação óssea.",
+    icon: Microscope
+  },
+  {
+    title: "Aplicação da Barreira Bone Heal®",
+    description: "A membrana Bone Heal®, biocompatível e impermeável, é ajustada sobre o alvéolo, mantendo o coágulo protegido e impedindo a invasão de células não osteogênicas.",
+    icon: Shield
+  },
+  {
+    title: "Diferenciação Celular e Formação Óssea",
+    description: "Sob a proteção da membrana, células mesenquimais se transformam em osteoblastos e formam a matriz óssea, garantindo estabilidade e volume.",
+    icon: Microscope
+  },
+  {
+    title: "Remoção Simples da Barreira",
+    description: "Após alguns dias, a Bone Heal® é retirada sem cirurgia adicional. A área agora apresenta tecido de granulação e evolução favorável para formação óssea.",
+    icon: Clock
+  },
+  {
+    title: "Osso Regenerado e Reabilitação Segura",
+    description: "Em poucas semanas, a regeneração óssea guiada com Bone Heal® restaura volume e qualidade do tecido, facilitando a futura instalação de implantes e reabilitação protética.",
+    icon: Target
+  }
+];
 
 const HowItWorks = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -12,17 +91,17 @@ const HowItWorks = () => {
     offset: ["start start", "end end"],
   });
 
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.8]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [1, 0.8, 0.8, 0]);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-24" ref={containerRef}>
+      <main className="flex-grow" ref={containerRef}>
         {/* Hero Section */}
         <motion.section 
-          style={{ scale, opacity }}
-          className="relative h-[90vh] flex items-center justify-center bg-gradient-to-b from-primary/10 to-white"
+          style={{ opacity, scale }}
+          className="relative h-screen flex items-center justify-center bg-gradient-to-b from-primary/10 to-white"
         >
           <div className="container mx-auto px-8 text-center">
             <motion.h1 
@@ -52,70 +131,10 @@ const HowItWorks = () => {
           </div>
         </motion.section>
 
-        {/* Process Timeline */}
-        <section className="py-24 bg-white">
-          <div className="container mx-auto px-8">
-            <div className="max-w-5xl mx-auto space-y-32">
-              {/* Step 1: Overview */}
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="grid md:grid-cols-2 gap-12 items-center"
-              >
-                <div>
-                  <div className="bg-primary/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-6">
-                    <Brain className="w-8 h-8 text-primary" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-6">Visão Geral do Processo</h2>
-                  <p className="text-lg text-neutral-600 leading-relaxed mb-8">
-                    A técnica consiste em isolar a área com a película de polipropileno Bone Heal, 
-                    criando o ambiente ideal para o crescimento natural do tecido ósseo.
-                  </p>
-                  <Button variant="outline" size="lg" className="group">
-                    Saiba mais sobre o processo
-                    <ArrowDown className="ml-2 w-4 h-4 group-hover:translate-y-1 transition-transform" />
-                  </Button>
-                </div>
-                <div className="bg-neutral-100 rounded-2xl p-8 aspect-square flex items-center justify-center">
-                  <div className="w-32 h-32 bg-primary/20 rounded-full flex items-center justify-center">
-                    <Brain className="w-16 h-16 text-primary" />
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Step 2: Microscopic View */}
-              <motion.div 
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.8 }}
-                className="grid md:grid-cols-2 gap-12 items-center md:grid-flow-row-dense"
-              >
-                <div className="bg-neutral-100 rounded-2xl p-8 aspect-square flex items-center justify-center md:order-1">
-                  <Microscope className="w-32 h-32 text-primary" />
-                </div>
-                <div>
-                  <div className="bg-primary/10 p-4 rounded-full w-16 h-16 flex items-center justify-center mb-6">
-                    <Beaker className="w-8 h-8 text-primary" />
-                  </div>
-                  <h2 className="text-3xl font-bold mb-6">Nível Microscópico</h2>
-                  <p className="text-lg text-neutral-600 leading-relaxed mb-8">
-                    Em nível microscópico, a película cria um isolamento perfeito, 
-                    mantendo o espaço necessário para o crescimento ósseo natural.
-                  </p>
-                  <Button variant="outline" size="lg" className="group">
-                    Explorar mais
-                    <Activity className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Button>
-                </div>
-              </motion.div>
-
-              {/* Additional steps will be added here */}
-            </div>
-          </div>
-        </section>
+        {/* Steps */}
+        {steps.map((step, index) => (
+          <Step key={index} {...step} index={index} />
+        ))}
 
         {/* Call to Action */}
         <section className="py-24 bg-primary text-white">
