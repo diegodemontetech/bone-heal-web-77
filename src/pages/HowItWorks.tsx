@@ -2,7 +2,7 @@ import { useRef, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, useScroll, useTransform, useAnimation } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { ChevronDown } from "lucide-react";
 
 const HowItWorks = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,32 +39,32 @@ const HowItWorks = () => {
     {
       title: "Preparação Inicial",
       description: "O processo começa com uma avaliação detalhada e preparação do local para o procedimento.",
-      image: "1"
+      image: "step1.jpg"
     },
     {
       title: "Aplicação da Barreira",
       description: "A barreira Bone Heal® é cuidadosamente posicionada para proteger a área de regeneração.",
-      image: "2"
+      image: "step2.jpg"
     },
     {
       title: "Proteção do Coágulo",
       description: "A membrana mantém o coágulo protegido, fundamental para o processo de regeneração.",
-      image: "3"
+      image: "step3.jpg"
     },
     {
       title: "Regeneração Guiada",
       description: "O processo de regeneração óssea ocorre naturalmente sob a proteção da barreira.",
-      image: "4"
+      image: "step4.jpg"
     },
     {
       title: "Formação Óssea",
       description: "Novo tecido ósseo se forma progressivamente na área protegida.",
-      image: "5"
+      image: "step5.jpg"
     },
     {
       title: "Resultado Final",
       description: "Após o período de cicatrização, obtém-se um excelente resultado de regeneração.",
-      image: "6"
+      image: "step6.jpg"
     }
   ];
 
@@ -72,7 +72,7 @@ const HowItWorks = () => {
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      {/* Video Hero Section */}
+      {/* Video Hero Section with Scroll Indicator */}
       <div className="h-screen relative overflow-hidden">
         <video
           ref={videoRef}
@@ -83,15 +83,33 @@ const HowItWorks = () => {
           preload="auto"
         />
         <div className="absolute inset-0 bg-black/50" />
-        <div className="absolute inset-0 flex items-center justify-center text-white">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-5xl md:text-7xl font-bold text-center"
+            className="text-5xl md:text-7xl font-bold text-center mb-8"
           >
             Como Funciona o Bone Heal
           </motion.h1>
+          
+          {/* Animated Scroll Indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0.4, 1, 0.4],
+              y: [0, 10, 0]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="absolute bottom-12 flex flex-col items-center"
+          >
+            <span className="text-sm mb-2">Role para baixo</span>
+            <ChevronDown size={32} className="animate-bounce" />
+          </motion.div>
         </div>
       </div>
 
