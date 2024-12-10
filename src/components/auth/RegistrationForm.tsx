@@ -30,7 +30,6 @@ const formSchema = z.object({
   password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
   confirmPassword: z.string(),
   fullName: z.string().min(2, "Nome muito curto"),
-  cpf: z.string().min(11, "CPF inválido"),
   cnpj: z.string().optional(),
   cro: z.string().min(4, "CRO inválido"),
   address: z.string().min(5, "Endereço muito curto"),
@@ -74,7 +73,7 @@ const RegistrationForm = () => {
     try {
       setIsLoading(true);
       
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError, data: { user } } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -86,11 +85,13 @@ const RegistrationForm = () => {
 
       if (signUpError) throw signUpError;
 
+      if (!user?.id) throw new Error("Erro ao criar usuário");
+
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
+          id: user.id,
           full_name: values.fullName,
-          cpf: values.cpf,
           cnpj: values.cnpj || null,
           cro: values.cro,
           address: values.address,
