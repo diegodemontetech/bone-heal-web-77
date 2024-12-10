@@ -332,43 +332,64 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           billing_address: Json | null
+          city: string | null
           clinic_name: string | null
+          cnpj: string | null
           created_at: string | null
           cro: string
           full_name: string
           id: string
-          phone: string | null
+          neighborhood: string | null
+          phone: string
+          receive_news: boolean | null
           shipping_address: Json | null
           specialty: string
+          state: string | null
           tax_id: string | null
           updated_at: string | null
+          zip_code: string | null
         }
         Insert: {
+          address?: string | null
           billing_address?: Json | null
+          city?: string | null
           clinic_name?: string | null
+          cnpj?: string | null
           created_at?: string | null
           cro: string
           full_name: string
           id: string
-          phone?: string | null
+          neighborhood?: string | null
+          phone: string
+          receive_news?: boolean | null
           shipping_address?: Json | null
           specialty?: string
+          state?: string | null
           tax_id?: string | null
           updated_at?: string | null
+          zip_code?: string | null
         }
         Update: {
+          address?: string | null
           billing_address?: Json | null
+          city?: string | null
           clinic_name?: string | null
+          cnpj?: string | null
           created_at?: string | null
           cro?: string
           full_name?: string
           id?: string
-          phone?: string | null
+          neighborhood?: string | null
+          phone?: string
+          receive_news?: boolean | null
           shipping_address?: Json | null
           specialty?: string
+          state?: string | null
           tax_id?: string | null
           updated_at?: string | null
+          zip_code?: string | null
         }
         Relationships: [
           {

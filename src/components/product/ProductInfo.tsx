@@ -81,42 +81,41 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
       )}
 
-      {session ? (
-        <>
-          {product.price && (
-            <div className="text-2xl font-bold text-primary">
-              R$ {product.price.toFixed(2)}
-            </div>
-          )}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center border rounded-lg">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              >
-                <Minus className="w-4 h-4" />
-              </Button>
-              <span className="w-12 text-center">{quantity}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setQuantity(quantity + 1)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
+      {product.price && (
+        <div className="text-2xl font-bold text-primary">
+          R$ {product.price.toFixed(2)}
+        </div>
+      )}
 
+      {session ? (
+        <div className="flex items-center gap-4">
+          <div className="flex items-center border rounded-lg">
             <Button
-              size="lg"
-              className="flex-1 text-white"
-              onClick={handleAddToCart}
+              variant="ghost"
+              size="icon"
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
             >
-              <ShoppingCart className="w-5 h-5 mr-2" />
-              Adicionar ao Carrinho
+              <Minus className="w-4 h-4" />
+            </Button>
+            <span className="w-12 text-center">{quantity}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setQuantity(quantity + 1)}
+            >
+              <Plus className="w-4 h-4" />
             </Button>
           </div>
-        </>
+
+          <Button
+            size="lg"
+            className="flex-1 text-white"
+            onClick={handleAddToCart}
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            Adicionar ao Carrinho
+          </Button>
+        </div>
       ) : (
         <Button
           size="lg"
@@ -124,7 +123,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           onClick={() => navigate("/login")}
         >
           <LogIn className="w-5 h-5 mr-2" />
-          Faça login para ver preço
+          Faça login para comprar
         </Button>
       )}
 
