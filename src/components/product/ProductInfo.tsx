@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Award, ShoppingCart, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
+import CartWidget from "@/components/cart/CartWidget";
 
 interface ProductInfoProps {
   product: Product;
@@ -12,9 +13,37 @@ interface ProductInfoProps {
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const [quantity, setQuantity] = useState(1);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [cartItems, setCartItems] = useState<Array<{
+    id: number;
+    name: string;
+    quantity: number;
+    price: number;
+    image: string;
+  }>>([]);
 
   const handleAddToCart = () => {
-    // Cart functionality will be implemented later
+    const newItem = {
+      id: product.id,
+      name: product.name,
+      quantity: quantity,
+      price: product.price || 0,
+      image: product.main_image || "",
+    };
+
+    setCartItems((prev) => {
+      const existingItem = prev.find((item) => item.id === product.id);
+      if (existingItem) {
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...prev, newItem];
+    });
+
+    setIsCartOpen(true);
     toast.success("Produto adicionado ao carrinho!");
   };
 
@@ -70,6 +99,12 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
           Adicionar ao Carrinho
         </Button>
       </div>
+
+      <CartWidget
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+      />
     </motion.div>
   );
 };
