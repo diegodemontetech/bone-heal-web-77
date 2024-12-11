@@ -37,7 +37,7 @@ const Contact = () => {
     },
   });
 
-  const position: [number, number] = [-23.550520, -46.633308]; // São Paulo coordinates
+  const position = [-23.550520, -46.633308] as [number, number]; // São Paulo coordinates
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,14 +75,14 @@ const Contact = () => {
             <div className="bg-white rounded-xl overflow-hidden shadow-lg h-[400px] relative z-0">
               <MapContainer 
                 className="h-full w-full"
-                center={position}
-                zoom={13} 
+                center={position as L.LatLngExpression}
+                zoom={13}
               >
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 />
-                <Marker position={position}>
+                <Marker position={position as L.LatLngExpression}>
                   <Popup>
                     Bone Heal <br /> São Paulo, SP
                   </Popup>
