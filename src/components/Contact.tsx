@@ -1,7 +1,7 @@
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import {
   Select,
   SelectContent,
@@ -9,6 +9,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix Leaflet default marker icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const Contact = () => {
   const { data: departments } = useQuery({
@@ -24,15 +34,7 @@ const Contact = () => {
     },
   });
 
-  const mapContainerStyle = {
-    width: '100%',
-    height: '400px',
-  };
-
-  const center = {
-    lat: -23.550520,  // São Paulo coordinates
-    lng: -46.633308,
-  };
+  const position = [-23.550520, -46.633308]; // São Paulo coordinates
 
   return (
     <section className="section-padding bg-primary" id="contact">
@@ -60,16 +62,22 @@ const Contact = () => {
               </div>
             </div>
             
-            <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-              <LoadScript googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY">
-                <GoogleMap
-                  mapContainerStyle={mapContainerStyle}
-                  center={center}
-                  zoom={15}
-                >
-                  <Marker position={center} />
-                </GoogleMap>
-              </LoadScript>
+            <div className="bg-white rounded-xl overflow-hidden shadow-lg h-[400px]">
+              <MapContainer 
+                center={position} 
+                zoom={13} 
+                style={{ height: '100%', width: '100%' }}
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                />
+                <Marker position={position}>
+                  <Popup>
+                    Bone Heal <br /> São Paulo, SP
+                  </Popup>
+                </Marker>
+              </MapContainer>
             </div>
           </div>
 
@@ -77,10 +85,10 @@ const Contact = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Departamento</label>
               <Select>
-                <SelectTrigger>
+                <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Selecione um departamento" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   {departments?.map((dept) => (
                     <SelectItem key={dept.id} value={dept.department}>
                       {dept.department}

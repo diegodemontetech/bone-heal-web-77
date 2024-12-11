@@ -108,7 +108,7 @@ const Hero = () => {
             ease: "easeInOut",
             times: [0, 0.5, 1]
           }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center w-full text-white"
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center text-white"
         >
           <motion.span 
             className="text-sm mb-2"
