@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const NewsPreview = () => {
+  const navigate = useNavigate();
   const { data: news } = useQuery({
     queryKey: ["news-preview"],
     queryFn: async () => {
@@ -20,6 +21,10 @@ const NewsPreview = () => {
       return data;
     },
   });
+
+  const handleNewsClick = (slug: string) => {
+    navigate(`/news/${slug}`);
+  };
 
   return (
     <section className="py-24 bg-neutral-50">
@@ -47,46 +52,46 @@ const NewsPreview = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
+              onClick={() => handleNewsClick(item.slug)}
+              className="cursor-pointer"
             >
-              <Link to={`/news/${item.slug}`} className="block">
-                <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-                  <div className="aspect-video relative overflow-hidden">
-                    <img
-                      src={item.featured_image || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80"}
-                      alt={item.title}
-                      className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center text-sm text-neutral-500 mb-3">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
-                    </div>
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                      {item.title}
-                    </h3>
-                    <p className="text-neutral-600 mb-4 line-clamp-2">
-                      {item.summary}
-                    </p>
-                    <span className="inline-flex items-center text-primary hover:text-primary-dark transition-colors">
-                      Ler Mais
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </span>
-                  </div>
+              <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                <div className="aspect-video relative overflow-hidden">
+                  <img
+                    src={item.featured_image || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80"}
+                    alt={item.title}
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-              </Link>
+                <div className="p-6">
+                  <div className="flex items-center text-sm text-neutral-500 mb-3">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-neutral-600 mb-4 line-clamp-2">
+                    {item.summary}
+                  </p>
+                  <span className="inline-flex items-center text-primary hover:text-primary-dark transition-colors">
+                    Ler Mais
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </span>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
 
         <div className="text-center">
-          <Link
-            to="/news"
+          <button
+            onClick={() => navigate('/news')}
             className="inline-flex items-center justify-center px-8 py-3 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors"
           >
             Ver Todas as Notícias
             <ArrowRight className="ml-2 h-5 w-5" />
-          </Link>
+          </button>
         </div>
       </div>
     </section>
