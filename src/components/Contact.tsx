@@ -76,13 +76,17 @@ const Contact = () => {
             <div className="bg-white rounded-xl overflow-hidden shadow-lg h-[400px] relative z-0">
               <MapContainer 
                 className="h-full w-full"
-                center={position}
-                zoom={13}
-                scrollWheelZoom={false}
+                {...{
+                  center: position,
+                  zoom: 13,
+                  scrollWheelZoom: false
+                } as MapContainerProps}
               >
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  {...{
+                    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  }}
                 />
                 <Marker position={position}>
                   <Popup>
