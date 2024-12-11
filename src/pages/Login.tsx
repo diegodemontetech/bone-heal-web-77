@@ -46,8 +46,8 @@ const Login = () => {
           
           <Tabs defaultValue="login" className="space-y-6">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Cadastro</TabsTrigger>
+              <TabsTrigger value="login">Entrar</TabsTrigger>
+              <TabsTrigger value="register">Cadastrar</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
@@ -78,6 +78,23 @@ const Login = () => {
                       button_label: 'Entrar',
                       loading_button_label: 'Entrando...',
                       link_text: 'Já tem uma conta? Entre',
+                      password_input_placeholder: 'Sua senha',
+                      email_input_placeholder: 'Seu email',
+                    },
+                    forgotten_password: {
+                      link_text: 'Esqueceu sua senha?',
+                      button_label: 'Recuperar senha',
+                      email_label: 'Email',
+                      password_label: 'Nova senha',
+                    },
+                    sign_up: {
+                      link_text: 'Não tem uma conta? Cadastre-se',
+                      button_label: 'Cadastrar',
+                      email_label: 'Email',
+                      password_label: 'Senha',
+                      loading_button_label: 'Cadastrando...',
+                      password_input_placeholder: 'Sua senha',
+                      email_input_placeholder: 'Seu email',
                     },
                   },
                 }}
