@@ -34,7 +34,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <p className="text-white/90 mb-4 line-clamp-2">
           {product.short_description}
         </p>
-        {product.price && (
+        {session && product.price && (
           <p className="text-lg font-bold mb-4">
             R$ {product.price.toFixed(2)}
           </p>

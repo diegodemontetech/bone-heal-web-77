@@ -81,7 +81,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
       )}
 
-      {product.price && (
+      {session && product.price && (
         <div className="text-2xl font-bold text-primary">
           R$ {product.price.toFixed(2)}
         </div>

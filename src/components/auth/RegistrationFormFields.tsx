@@ -206,7 +206,7 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
                   <SelectValue placeholder="Selecione uma especialidade" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 {specialties?.map((specialty) => (
                   <SelectItem key={specialty.id} value={specialty.name}>
                     {specialty.name}
