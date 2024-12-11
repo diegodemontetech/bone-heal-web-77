@@ -108,10 +108,10 @@ const Hero = () => {
             ease: "easeInOut",
             times: [0, 0.5, 1]
           }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center text-white"
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center text-white w-auto"
         >
           <motion.span 
-            className="text-sm mb-2"
+            className="text-sm mb-2 whitespace-nowrap"
             animate={{ opacity: [0.4, 1, 0.4] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
