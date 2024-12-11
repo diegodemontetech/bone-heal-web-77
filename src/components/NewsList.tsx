@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CalendarDays, Tag, Eye } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { CalendarDays, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Link } from "react-router-dom";
 
 interface NewsItem {
   id: number;
@@ -59,36 +60,38 @@ const NewsList = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
           >
-            <Card className="group hover:shadow-lg transition-shadow duration-300">
-              <div className="relative h-48 overflow-hidden rounded-t-lg">
-                <img
-                  src={item.featured_image || "/placeholder.svg"}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                {item.category && (
-                  <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
-                    {item.category}
-                  </div>
-                )}
-              </div>
-              <CardContent className="p-6">
-                <CardTitle className="text-xl mb-4 group-hover:text-primary transition-colors">
-                  {item.title}
-                </CardTitle>
-                <p className="text-neutral-600 mb-4 line-clamp-2">{item.summary}</p>
-                <div className="flex items-center justify-between text-sm text-neutral-500">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4" />
-                    {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4" />
-                    {item.views}
-                  </div>
+            <Link to={`/news/${item.slug}`}>
+              <Card className="group hover:shadow-lg transition-shadow duration-300">
+                <div className="relative h-48 overflow-hidden rounded-t-lg">
+                  <img
+                    src={item.featured_image || "/placeholder.svg"}
+                    alt={item.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {item.category && (
+                    <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
+                      {item.category}
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-semibold mb-4 group-hover:text-primary transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-neutral-600 mb-4 line-clamp-2">{item.summary}</p>
+                  <div className="flex items-center justify-between text-sm text-neutral-500">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4" />
+                      {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4" />
+                      {item.views}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </motion.div>
         ))}
       </div>

@@ -47,32 +47,34 @@ const NewsPreview = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
             >
-              <div className="aspect-video relative overflow-hidden">
-                <img
-                  src={item.featured_image || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80"}
-                  alt={item.title}
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="p-6">
-                <div className="flex items-center text-sm text-neutral-500 mb-3">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
+              <Link to={`/news/${item.slug}`} className="block">
+                <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  <div className="aspect-video relative overflow-hidden">
+                    <img
+                      src={item.featured_image || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80"}
+                      alt={item.title}
+                      className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-center text-sm text-neutral-500 mb-3">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-neutral-600 mb-4 line-clamp-2">
+                      {item.summary}
+                    </p>
+                    <span className="inline-flex items-center text-primary hover:text-primary-dark transition-colors">
+                      Ler Mais
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-neutral-600 mb-4 line-clamp-2">
-                  {item.summary}
-                </p>
-                <Link
-                  to={`/news/${item.slug}`}
-                  className="inline-flex items-center text-primary hover:text-primary-dark transition-colors"
-                >
-                  Ler Mais
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>
