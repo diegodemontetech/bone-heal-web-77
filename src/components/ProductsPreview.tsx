@@ -62,7 +62,7 @@ const ProductsPreview = () => {
             >
               <div className="aspect-video relative overflow-hidden">
                 <img
-                  src={product.main_image || "https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?auto=format&fit=crop&q=80"}
+                  src={product.main_image ? `/products/${product.main_image}` : "/placeholder.svg"}
                   alt={product.name}
                   className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
                 />
