@@ -258,6 +258,7 @@ export type Database = {
           address: string | null
           city: string | null
           cnpj: string | null
+          cpf: string | null
           created_at: string
           cro: string | null
           full_name: string | null
@@ -274,6 +275,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           cnpj?: string | null
+          cpf?: string | null
           created_at?: string
           cro?: string | null
           full_name?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           cnpj?: string | null
+          cpf?: string | null
           created_at?: string
           cro?: string | null
           full_name?: string | null
