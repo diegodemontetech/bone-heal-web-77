@@ -11,6 +11,7 @@ import {
   LogOut,
   Menu,
   X,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -32,6 +33,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: FileText, label: "Estudos", href: "/admin/studies" },
     { icon: Newspaper, label: "Notícias", href: "/admin/news" },
     { icon: Users, label: "Usuários", href: "/admin/users" },
+    { icon: Truck, label: "Taxas de Frete", href: "/admin/shipping-rates" },
   ];
 
   const handleSignOut = async () => {

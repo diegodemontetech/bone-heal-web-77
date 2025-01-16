@@ -17,6 +17,7 @@ import AdminProducts from "./pages/admin/Products";
 import AdminStudies from "./pages/admin/Studies";
 import AdminNews from "./pages/admin/News";
 import AdminUsers from "./pages/admin/Users";
+import AdminShippingRates from "./pages/admin/ShippingRates";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./integrations/supabase/client";
@@ -120,6 +121,14 @@ const Routes = () => {
         element={
           <AdminRoute>
             <AdminUsers />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/shipping-rates"
+        element={
+          <AdminRoute>
+            <AdminShippingRates />
           </AdminRoute>
         }
       />
