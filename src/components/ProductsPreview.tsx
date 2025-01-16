@@ -11,28 +11,9 @@ const ProductsPreview = () => {
     queryFn: async () => {
       console.log('Iniciando busca de produtos...');
       
-      // Get active products with stock from Omie
-      const { data: omieProducts, error: omieError } = await supabase
-        .functions
-        .invoke('omie-products');
-
-      if (omieError) {
-        console.error('Erro ao buscar produtos do Omie:', omieError);
-        throw omieError;
-      }
-
-      console.log('Produtos do Omie:', omieProducts);
-
-      if (!omieProducts.products || omieProducts.products.length === 0) {
-        console.log('Nenhum produto encontrado no Omie');
-        return [];
-      }
-
-      // Get products from database that match Omie products
-      const { data, error } = await supabase
+      const { data: products, error } = await supabase
         .from("products")
         .select("*")
-        .in('id', omieProducts.products.map((p: any) => p.codigo))
         .limit(3);
       
       if (error) {
@@ -40,13 +21,8 @@ const ProductsPreview = () => {
         throw error;
       }
 
-      console.log('Produtos do banco:', data);
-
-      // Merge Omie stock data with database products
-      return data.map(product => ({
-        ...product,
-        stock: omieProducts.products.find((p: any) => p.codigo === product.id)?.estoque || 0
-      }));
+      console.log('Produtos do banco:', products);
+      return products;
     },
   });
 
