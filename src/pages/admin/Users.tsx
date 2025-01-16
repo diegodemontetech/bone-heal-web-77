@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -94,12 +94,21 @@ const AdminUsers = () => {
 
       if (profileError) throw profileError;
 
-      toast.success("Usuário criado com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Usuário criado com sucesso!",
+        variant: "default",
+      });
+      
       setIsOpen(false);
       form.reset();
       refetch();
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar usuário");
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar usuário",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
