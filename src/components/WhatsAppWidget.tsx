@@ -3,6 +3,7 @@ import { MessageSquare, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
 
 const WhatsAppWidget = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -14,6 +15,26 @@ const WhatsAppWidget = () => {
   const [currentInput, setCurrentInput] = useState<'name' | 'phone' | null>(null);
   const [hasInterest, setHasInterest] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean; isUser?: boolean }>>([]);
+
+  // Fetch configurable messages
+  const { data: configMessages } = useQuery({
+    queryKey: ["whatsapp-messages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("whatsapp_messages_config")
+        .select("*");
+      
+      if (error) {
+        console.error("Error fetching messages:", error);
+        throw error;
+      }
+      
+      return data.reduce((acc, curr) => ({
+        ...acc,
+        [curr.message_key]: curr.message_text
+      }), {} as Record<string, string>);
+    },
+  });
 
   useEffect(() => {
     // Show widget after 5 seconds
@@ -27,11 +48,13 @@ const WhatsAppWidget = () => {
   }, []);
 
   const startConversation = async () => {
+    if (!configMessages) return;
+
     setIsTyping(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
     setMessages([
       {
-        text: "Olá! 👋 Sou a Maria, consultora da Bone Heal.",
+        text: configMessages.greeting,
         delay: 0
       }
     ]);
@@ -39,7 +62,7 @@ const WhatsAppWidget = () => {
     
     await new Promise(resolve => setTimeout(resolve, 2000));
     setMessages(prev => [...prev, {
-      text: "Gostaria de saber mais sobre como se tornar um Dentista parceiro da Bone Heal?",
+      text: configMessages.partnership_question,
       delay: 0,
       showInterestButtons: true
     }]);
@@ -114,6 +137,8 @@ const WhatsAppWidget = () => {
   };
 
   const handleSubmit = async (phoneValue?: string) => {
+    if (!configMessages) return;
+
     try {
       const { error } = await supabase
         .from('contact_leads')
@@ -131,7 +156,7 @@ const WhatsAppWidget = () => {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessages(prev => [...prev, {
-        text: `Obrigada pelo contato ${name.toLowerCase()}! Em breve, nossa equipe entrará em contato com você.`,
+        text: configMessages.thank_you.replace('{name}', name.toLowerCase()),
         delay: 0
       }]);
       setIsTyping(false);
