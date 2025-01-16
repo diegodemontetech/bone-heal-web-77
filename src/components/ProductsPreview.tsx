@@ -3,15 +3,18 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import ProductCard from "@/components/ProductCard";
 
 const ProductsPreview = () => {
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading, error } = useQuery({
     queryKey: ["products-preview"],
     queryFn: async () => {
+      console.log('Iniciando busca de produtos...');
+      
       // Get active products with stock from Omie
       const { data: omieProducts, error: omieError } = await supabase
         .functions
-        .invoke('omie-products')
+        .invoke('omie-products');
 
       if (omieError) {
         console.error('Erro ao buscar produtos do Omie:', omieError);
@@ -19,6 +22,11 @@ const ProductsPreview = () => {
       }
 
       console.log('Produtos do Omie:', omieProducts);
+
+      if (!omieProducts.products || omieProducts.products.length === 0) {
+        console.log('Nenhum produto encontrado no Omie');
+        return [];
+      }
 
       // Get products from database that match Omie products
       const { data, error } = await supabase
@@ -48,6 +56,19 @@ const ProductsPreview = () => {
         <div className="container mx-auto px-8">
           <div className="text-center">
             <p>Carregando produtos...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.error('Erro ao carregar produtos:', error);
+    return (
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <p className="text-red-500">Erro ao carregar produtos. Por favor, tente novamente mais tarde.</p>
           </div>
         </div>
       </section>
@@ -92,33 +113,8 @@ const ProductsPreview = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
             >
-              <div className="aspect-video relative overflow-hidden">
-                <img
-                  src={product.main_image ? `/products/${product.main_image}` : "/placeholder.svg"}
-                  alt={product.name}
-                  className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">{product.name}</h3>
-                <p className="text-neutral-600 mb-4 line-clamp-2">
-                  {product.short_description}
-                </p>
-                <div className="flex justify-between items-center">
-                  <Link
-                    to={`/products/${product.slug}`}
-                    className="inline-flex items-center text-primary hover:text-primary-dark transition-colors"
-                  >
-                    Ver Detalhes
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                  <span className="text-sm text-neutral-500">
-                    {product.stock > 0 ? `${product.stock} em estoque` : 'Indisponível'}
-                  </span>
-                </div>
-              </div>
+              <ProductCard product={product} />
             </motion.div>
           ))}
         </div>

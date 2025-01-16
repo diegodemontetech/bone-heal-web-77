@@ -1,4 +1,3 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const corsHeaders = {
@@ -21,8 +20,9 @@ serve(async (req) => {
 
   try {
     console.log('Iniciando busca de produtos no Omie');
+    console.log('Usando APP_KEY:', OMIE_APP_KEY.substring(0, 5) + '...');
 
-    const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+    const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -35,19 +35,24 @@ serve(async (req) => {
           pagina: 1,
           registros_por_pagina: 50,
           apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N"
+          filtrar_apenas_omiepdv: "N",
+          filtrar_apenas_ativos: "S"
         }]
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!omieResponse.ok) {
+      console.error('Erro na resposta do Omie:', omieResponse.status, omieResponse.statusText);
+      const errorText = await omieResponse.text();
+      console.error('Detalhes do erro:', errorText);
+      throw new Error(`HTTP error! status: ${omieResponse.status}`);
     }
 
-    const data = await response.json();
-    console.log('Produtos encontrados:', data);
+    const data = await omieResponse.json();
+    console.log('Resposta completa do Omie:', JSON.stringify(data, null, 2));
 
     if (data.faultstring) {
+      console.error('Erro retornado pelo Omie:', data.faultstring);
       throw new Error(data.faultstring);
     }
 
@@ -58,6 +63,9 @@ serve(async (req) => {
       valor_unitario: product.valor_unitario,
       estoque: product.estoque_atual || 0
     })) || [];
+
+    console.log('Produtos processados:', products.length);
+    console.log('Primeiro produto (se houver):', products[0]);
 
     return new Response(
       JSON.stringify({ 
