@@ -6,8 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY') || '';
-const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET') || '';
+const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY');
+const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET');
+
+if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
+  throw new Error('Missing Omie credentials');
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -36,6 +40,10 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
     console.log('Produtos encontrados:', data);
 
@@ -44,12 +52,12 @@ serve(async (req) => {
     }
 
     // Map Omie products to our format
-    const products = data.produto_servico_lista.map((product: any) => ({
+    const products = data.produto_servico_lista?.map((product: any) => ({
       codigo: product.codigo,
       descricao: product.descricao,
       valor_unitario: product.valor_unitario,
       estoque: product.estoque_atual || 0
-    }));
+    })) || [];
 
     return new Response(
       JSON.stringify({ 
@@ -67,9 +75,12 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message 
+      }),
       { 
-        status: 400,
+        status: 500,
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json'
