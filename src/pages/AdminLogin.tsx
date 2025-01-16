@@ -18,32 +18,55 @@ const AdminLogin = () => {
     },
   });
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
-      const { data } = await supabase
+      
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+      
       return data;
     },
     enabled: !!session?.user?.id,
+    retry: 1,
+    onError: (error) => {
+      console.error("Query error:", error);
+      toast({
+        title: "Erro ao carregar perfil",
+        description: "Houve um erro ao verificar suas permissões. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    },
   });
 
   useEffect(() => {
-    if (session && profile?.is_admin) {
-      navigate("/admin");
-    } else if (session && !isLoading && !profile?.is_admin) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para acessar a área administrativa.",
-        variant: "destructive",
-      });
+    if (error) {
       supabase.auth.signOut();
+      return;
     }
-  }, [session, profile, isLoading, navigate, toast]);
+
+    if (session && !isLoading) {
+      if (profile?.is_admin) {
+        navigate("/admin");
+      } else if (profile !== null) {
+        toast({
+          title: "Acesso negado",
+          description: "Você não tem permissão para acessar a área administrativa.",
+          variant: "destructive",
+        });
+        supabase.auth.signOut();
+      }
+    }
+  }, [session, profile, isLoading, error, navigate, toast]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
