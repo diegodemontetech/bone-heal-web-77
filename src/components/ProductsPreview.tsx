@@ -8,13 +8,27 @@ const ProductsPreview = () => {
   const { data: products } = useQuery({
     queryKey: ["products-preview"],
     queryFn: async () => {
+      // Get active products with stock from Omie
+      const { data: omieProducts, error: omieError } = await supabase
+        .functions
+        .invoke('omie-products')
+
+      if (omieError) throw omieError
+
+      // Get products from database that match Omie products
       const { data, error } = await supabase
         .from("products")
         .select("*")
+        .in('id', omieProducts.products.map((p: any) => p.codigo))
         .limit(3);
       
       if (error) throw error;
-      return data;
+
+      // Merge Omie stock data with database products
+      return data.map(product => ({
+        ...product,
+        stock: omieProducts.products.find((p: any) => p.codigo === product.id)?.estoque || 0
+      }));
     },
   });
 
