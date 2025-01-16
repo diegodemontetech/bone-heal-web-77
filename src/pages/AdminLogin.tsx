@@ -18,7 +18,7 @@ const AdminLogin = () => {
     },
   });
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
@@ -35,23 +35,15 @@ const AdminLogin = () => {
   useEffect(() => {
     if (session && profile?.is_admin) {
       navigate("/admin");
+    } else if (session && !isLoading && !profile?.is_admin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para acessar a área administrativa.",
+        variant: "destructive",
+      });
+      supabase.auth.signOut();
     }
-  }, [session, profile, navigate]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN") {
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Verificando permissões de administrador...",
-        });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [toast]);
+  }, [session, profile, isLoading, navigate, toast]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
