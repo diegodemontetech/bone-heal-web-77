@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, LogOut } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import CartWidget from "@/components/cart/CartWidget";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Navbar = () => {
   const session = useSession();
   const { cartItems } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data: profile } = useQuery({
     queryKey: ["profile", session?.user?.id],
@@ -26,6 +28,16 @@ const Navbar = () => {
     },
     enabled: !!session?.user?.id,
   });
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Erro ao sair", { duration: 1500 });
+      return;
+    }
+    toast.success("Sessão encerrada", { duration: 1500 });
+    navigate("/login");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
@@ -77,6 +89,14 @@ const Navbar = () => {
                     <Button variant="ghost">Admin</Button>
                   </Link>
                 )}
+                <Button 
+                  variant="ghost" 
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sair
+                </Button>
               </>
             ) : (
               <Link to="/login">

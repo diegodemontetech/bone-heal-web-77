@@ -1,126 +1,67 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ProductCard from "@/components/ProductCard";
-import ProductHero from "@/components/ProductHero";
+import { useCart } from "@/hooks/use-cart";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 const Products = () => {
-  const { data: products, isLoading, error } = useQuery({
+  const { cartItems, addToCart } = useCart();
+  const [products, setProducts] = useState([]);
+
+  const { data, isLoading, error } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      console.log('Iniciando busca de produtos...');
-      
-      // Get products from database first
-      const { data: dbProducts, error: dbError } = await supabase
-        .from("products")
-        .select("*");
-      
-      if (dbError) {
-        console.error('Erro ao buscar produtos do banco:', dbError);
-        throw dbError;
-      }
-
-      console.log('Produtos encontrados no banco:', dbProducts?.length || 0);
-      console.log('Detalhes dos produtos:', JSON.stringify(dbProducts, null, 2));
-
-      if (!dbProducts || dbProducts.length === 0) {
-        console.log('Nenhum produto encontrado no banco');
-        return [];
-      }
-
-      // Get active products with stock from Omie
-      const { data: omieProducts, error: omieError } = await supabase
-        .functions
-        .invoke('omie-products');
-
-      if (omieError) {
-        console.error('Erro ao buscar produtos do Omie:', omieError);
-        // Don't throw error here, just log it and continue with database products
-        console.log('Continuando apenas com produtos do banco devido a erro do Omie');
-        return dbProducts.map(product => ({
-          ...product,
-          stock: product.stock || 0
-        }));
-      }
-
-      console.log('Produtos do Omie:', omieProducts);
-
-      // Merge Omie stock data with database products
-      return dbProducts.map(product => ({
-        ...product,
-        stock: omieProducts?.products?.find((p: any) => p.codigo === product.id)?.estoque || product.stock || 0
-      }));
+      const { data, error } = await supabase.from("products").select("*");
+      if (error) throw error;
+      return data;
     },
   });
 
-  if (error) {
-    console.error('Erro ao carregar produtos:', error);
+  useEffect(() => {
+    if (data) {
+      setProducts(data);
+    }
+  }, [data]);
+
+  const handleAddToCart = (product) => {
+    addToCart(product);
+    toast.success("Produto adicionado ao carrinho", {
+      duration: 1500 // Reduced from default to 1.5 seconds
+    });
+  };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-grow">
-          <ProductHero />
-          <section className="py-16 px-8">
-            <div className="container mx-auto">
-              <div className="text-center py-20">
-                <h2 className="text-2xl font-bold text-red-600 mb-2">
-                  Erro ao carregar produtos
-                </h2>
-                <p className="text-gray-600">
-                  Ocorreu um erro ao carregar os produtos. Por favor, tente novamente mais tarde.
-                </p>
-              </div>
-            </div>
-          </section>
-        </main>
-        <Footer />
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
+  if (error) {
+    return <div>Error loading products: {error.message}</div>;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow">
-        <ProductHero />
-        
-        <section className="py-16 px-8">
-          <div className="container mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {isLoading ? (
-                <div className="col-span-full flex justify-center items-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              ) : !products || products.length === 0 ? (
-                <div className="col-span-full text-center py-20">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Nenhum produto disponível
-                  </h2>
-                  <p className="text-gray-600">
-                    No momento não há produtos cadastrados em nosso catálogo.
-                  </p>
-                </div>
-              ) : (
-                products.map((product) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.5 }}
-                  >
-                    <ProductCard product={product} />
-                  </motion.div>
-                ))
-              )}
-            </div>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-4">Produtos</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {products.map((product) => (
+          <div key={product.id} className="border rounded-lg p-4">
+            <img src={product.image} alt={product.name} className="w-full h-48 object-cover mb-4" />
+            <h2 className="text-lg font-semibold">{product.name}</h2>
+            <p className="text-gray-600">R$ {product.price.toFixed(2)}</p>
+            <button
+              onClick={() => handleAddToCart(product)}
+              className="mt-4 bg-primary text-white py-2 px-4 rounded"
+            >
+              Adicionar ao Carrinho
+            </button>
           </div>
-        </section>
-      </main>
-      <Footer />
+        ))}
+      </div>
     </div>
   );
 };
