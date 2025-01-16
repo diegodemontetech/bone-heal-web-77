@@ -5,11 +5,27 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import CartWidget from "@/components/cart/CartWidget";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Navbar = () => {
   const session = useSession();
   const { cartItems } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile", session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+      return data;
+    },
+    enabled: !!session?.user?.id,
+  });
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
@@ -56,6 +72,11 @@ const Navbar = () => {
                 <Link to="/orders">
                   <Button variant="ghost">Meus Pedidos</Button>
                 </Link>
+                {profile?.is_admin && (
+                  <Link to="/admin">
+                    <Button variant="ghost">Admin</Button>
+                  </Link>
+                )}
               </>
             ) : (
               <Link to="/login">
