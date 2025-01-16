@@ -38,18 +38,19 @@ const AdminLogin = () => {
     },
     enabled: !!session?.user?.id,
     retry: 1,
-    onError: (error) => {
+    meta: {
+      errorMessage: "Houve um erro ao verificar suas permissões. Por favor, tente novamente."
+    }
+  });
+
+  useEffect(() => {
+    if (error) {
       console.error("Query error:", error);
       toast({
         title: "Erro ao carregar perfil",
         description: "Houve um erro ao verificar suas permissões. Por favor, tente novamente.",
         variant: "destructive",
       });
-    },
-  });
-
-  useEffect(() => {
-    if (error) {
       supabase.auth.signOut();
       return;
     }
