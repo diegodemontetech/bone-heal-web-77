@@ -7,7 +7,7 @@ interface CartWidgetProps {
   isOpen: boolean;
   onClose: () => void;
   items: Array<{
-    id: number;
+    id: string;  // Changed from number to string
     name: string;
     quantity: number;
     price: number;

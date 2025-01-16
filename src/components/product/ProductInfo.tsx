@@ -17,7 +17,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const [quantity, setQuantity] = useState(1);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [cartItems, setCartItems] = useState<Array<{
-    id: number;
+    id: string;  // Changed from number to string
     name: string;
     quantity: number;
     price: number;
