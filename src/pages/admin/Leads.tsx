@@ -56,18 +56,18 @@ const LeadsPage = () => {
 
       if (error) {
         console.error("Error updating lead status:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro",
-          description: "Erro ao atualizar status do lead",
+        toast("Erro ao atualizar status do lead", {
+          description: error.message,
+          duration: 3000,
+          important: true,
         });
       }
     } catch (error) {
       console.error("Error:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao atualizar status do lead",
+      toast("Erro ao atualizar status do lead", {
+        description: "Ocorreu um erro ao tentar atualizar o status",
+        duration: 3000,
+        important: true,
       });
     }
   };
