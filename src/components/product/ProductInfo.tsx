@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Product, CartItem } from "@/types/product";
 import { useCart } from "@/hooks/use-cart";
+import { ShoppingCart } from "lucide-react";
 
 interface ProductInfoProps {
   product: Product;
@@ -91,7 +92,11 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               +
             </Button>
           </div>
-          <Button onClick={handleAddToCart} className="flex-1">
+          <Button 
+            onClick={handleAddToCart} 
+            className="flex-1 font-bold text-white hover:bg-primary-dark"
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
             Adicionar ao Carrinho
           </Button>
         </div>
