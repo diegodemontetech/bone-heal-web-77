@@ -1,72 +1,62 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useCart } from "@/hooks/use-cart";
-import { toast } from "sonner";
+import ProductCard from "@/components/ProductCard";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import ProductHero from "@/components/ProductHero";
 import { Loader2 } from "lucide-react";
 
 const Products = () => {
-  const { cartItems, addToCart } = useCart();
-  const [products, setProducts] = useState([]);
-
-  const { data, isLoading, error } = useQuery({
+  const { data: products, isLoading, error } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("products").select("*");
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching products:", error);
+        throw error;
+      }
+
       return data;
     },
   });
 
-  useEffect(() => {
-    if (data) {
-      setProducts(data);
-    }
-  }, [data]);
-
-  const handleAddToCart = (product) => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image
-    });
-    toast.success("Produto adicionado ao carrinho", {
-      duration: 1500 // 1.5 seconds
-    });
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div>Error loading products: {error.message}</div>;
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-4">Produtos</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {products.map((product) => (
-          <div key={product.id} className="border rounded-lg p-4">
-            <img src={product.image} alt={product.name} className="w-full h-48 object-cover mb-4" />
-            <h2 className="text-lg font-semibold">{product.name}</h2>
-            <p className="text-gray-600">R$ {product.price.toFixed(2)}</p>
-            <button
-              onClick={() => handleAddToCart(product)}
-              className="mt-4 bg-primary text-white py-2 px-4 rounded"
-            >
-              Adicionar ao Carrinho
-            </button>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      
+      <ProductHero />
+
+      <main className="flex-grow">
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-8">
+            {isLoading ? (
+              <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-red-600">Erro ao carregar produtos</p>
+              </div>
+            ) : !products || products.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-neutral-600">Nenhum produto encontrado</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {products.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 };
