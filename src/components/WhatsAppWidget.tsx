@@ -13,7 +13,7 @@ const WhatsAppWidget = () => {
   const [showInput, setShowInput] = useState(false);
   const [currentInput, setCurrentInput] = useState<'name' | 'phone' | null>(null);
   const [hasInterest, setHasInterest] = useState<boolean | null>(null);
-  const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean }>>([]);
+  const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean; isUser?: boolean }>>([]);
 
   useEffect(() => {
     // Show widget after 5 seconds
@@ -49,6 +49,12 @@ const WhatsAppWidget = () => {
 
   const handleInterest = async (interested: boolean) => {
     setHasInterest(interested);
+    setMessages(prev => [...prev, {
+      text: interested ? "Sim" : "Não",
+      delay: 0,
+      isUser: true
+    }]);
+    
     if (interested) {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -67,14 +73,30 @@ const WhatsAppWidget = () => {
     if (currentInput === 'name') {
       setName(value);
       setShowInput(false);
+      setMessages(prev => [...prev, {
+        text: value,
+        delay: 0,
+        isUser: true
+      }]);
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
       setIsTyping(false);
       setCurrentInput('phone');
       setShowInput(true);
     } else if (currentInput === 'phone') {
+      // Validate phone number format
+      const phoneNumber = value.replace(/\D/g, '');
+      if (phoneNumber.length < 10 || phoneNumber.length > 11) {
+        toast.error('Por favor, insira um número de telefone válido com DDD');
+        return;
+      }
       setPhone(value);
       setShowInput(false);
+      setMessages(prev => [...prev, {
+        text: value,
+        delay: 0,
+        isUser: true
+      }]);
       handleSubmit();
     }
   };
@@ -167,18 +189,24 @@ const WhatsAppWidget = () => {
                   {messages.map((message, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: message.isUser ? 20 : -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: message.delay / 1000 }}
-                      className="bg-neutral-100 p-3 rounded-lg max-w-[80%] flex items-start space-x-2"
+                      className={`${
+                        message.isUser 
+                          ? 'bg-primary/10 ml-auto' 
+                          : 'bg-neutral-100'
+                      } p-3 rounded-lg max-w-[80%] flex items-start space-x-2`}
                     >
-                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                        <img 
-                          src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&h=80&q=80" 
-                          alt="Maria" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                      {!message.isUser && (
+                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                          <img 
+                            src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&h=80&q=80" 
+                            alt="Maria" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
                       <div className="flex-1">
                         {message.text}
                         {message.showInterestButtons && hasInterest === null && (
@@ -215,7 +243,7 @@ const WhatsAppWidget = () => {
                         />
                       </div>
                       <div className="flex-1">
-                        {currentInput === 'name' ? "Qual é o seu nome?" : "Qual é o seu telefone?"}
+                        {currentInput === 'name' ? "Qual é o seu nome?" : "Qual é o seu telefone com DDD? (ex: 11999999999)"}
                       </div>
                     </motion.div>
                   )}
