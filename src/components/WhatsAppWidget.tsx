@@ -258,7 +258,7 @@ const WhatsAppWidget = () => {
                           setName(e.target.value);
                         }
                       }}
-                      placeholder={currentInput === 'phone' ? "Seu telefone" : "Seu nome"}
+                      placeholder={currentInput === 'phone' ? "Seu telefone com DDD (ex: 11999999999)" : "Seu nome"}
                       className="flex-1 px-3 py-2 border rounded-md"
                     />
                     <button
