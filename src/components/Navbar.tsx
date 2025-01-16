@@ -1,149 +1,77 @@
-import { useState } from 'react';
-import { Menu, X, User, LogOut, ShoppingBag } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { useSession } from '@supabase/auth-helpers-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useSession } from "@supabase/auth-helpers-react";
+import { Button } from "@/components/ui/button";
+import { ShoppingBag } from "lucide-react";
+import { useCart } from "@/hooks/use-cart";
+import CartWidget from "@/components/cart/CartWidget";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
   const session = useSession();
-  const navigate = useNavigate();
-
-  const navItems = [
-    { name: 'Produtos', href: '/products' },
-    { name: 'Como Funciona', href: '/how-it-works' },
-    { name: 'Estudos Científicos', href: '/studies' },
-    { name: 'Notícias', href: '/news' },
-    { name: 'Sobre', href: '/about' },
-    { name: 'Contato', href: '/contact' },
-  ];
-
-  const handleDentistAreaClick = () => {
-    if (session) {
-      navigate('/orders');
-    } else {
-      navigate('/login');
-    }
-    setIsOpen(false);
-  };
-
-  const handleLogout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast.success('Logout realizado com sucesso');
-      navigate('/');
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast.error('Erro ao fazer logout');
-    }
-    setIsOpen(false);
-  };
+  const { cartItems } = useCart();
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   return (
-    <motion.nav 
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed w-full bg-white shadow-md z-50"
-    >
-      <div className="max-w-[1440px] mx-auto px-8 lg:px-16">
-        <div className="flex justify-between items-center h-24">
-          <div className="flex-shrink-0">
-            <Link to="/" className="flex items-center">
-              <img src="https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/dados_processo_seletivo/logo_empresa/167858/bone-heal-logo-01.png" 
-                   alt="Bone Heal" 
-                   className="h-[calc(100%-4px)] md:h-[calc(100%-10px)] max-h-20" />
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-20">
+          <Link to="/" className="text-2xl font-bold text-primary">
+            BoneHeal
+          </Link>
+
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/products" className="text-neutral-600 hover:text-primary">
+              Produtos
+            </Link>
+            <Link to="/studies" className="text-neutral-600 hover:text-primary">
+              Estudos
+            </Link>
+            <Link to="/news" className="text-neutral-600 hover:text-primary">
+              Notícias
+            </Link>
+            <Link to="/about" className="text-neutral-600 hover:text-primary">
+              Sobre
+            </Link>
+            <Link to="/contact" className="text-neutral-600 hover:text-primary">
+              Contato
             </Link>
           </div>
 
-          <div className="hidden lg:flex space-x-12">
-            {navItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="text-neutral-600 hover:text-primary transition-colors duration-200 font-medium tracking-wide text-sm"
-              >
-                {item.name}
+          <div className="flex items-center space-x-4">
+            {session ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                  onClick={() => setIsCartOpen(true)}
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                      {cartItems.length}
+                    </span>
+                  )}
+                </Button>
+                <Link to="/orders">
+                  <Button variant="ghost">Meus Pedidos</Button>
+                </Link>
+              </>
+            ) : (
+              <Link to="/login">
+                <Button>Entrar</Button>
               </Link>
-            ))}
-          </div>
-
-          <div className="hidden lg:flex items-center space-x-4">
-            <button 
-              onClick={handleDentistAreaClick}
-              className="flex items-center space-x-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              {session ? <ShoppingBag className="h-5 w-5" /> : <User className="h-5 w-5" />}
-              <span className="font-medium">{session ? 'Meus Pedidos' : 'Área do Dentista'}</span>
-            </button>
-            
-            {session && (
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 text-neutral-600 hover:text-primary transition-colors duration-200"
-              >
-                <LogOut className="h-5 w-5" />
-                <span className="font-medium">Sair</span>
-              </button>
             )}
           </div>
-
-          <div className="lg:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-neutral-600 hover:text-primary"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
         </div>
-
-        {isOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden absolute left-0 right-0 bg-white border-b shadow-lg"
-          >
-            <div className="px-4 pt-2 pb-3 space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="block px-3 py-2.5 text-neutral-600 hover:text-primary transition-colors duration-200 font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-              <button 
-                onClick={handleDentistAreaClick}
-                className="flex items-center space-x-2 px-3 py-2.5 text-primary w-full text-left"
-              >
-                {session ? <ShoppingBag className="h-5 w-5" /> : <User className="h-5 w-5" />}
-                <span className="font-medium">{session ? 'Meus Pedidos' : 'Área do Dentista'}</span>
-              </button>
-              
-              {session && (
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 px-3 py-2.5 text-neutral-600 hover:text-primary transition-colors duration-200 w-full text-left"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="font-medium">Sair</span>
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
       </div>
-    </motion.nav>
+
+      <CartWidget
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
+      />
+    </nav>
   );
 };
 
