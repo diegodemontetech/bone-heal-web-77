@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, useScroll, useTransform, useAnimation } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const HowItWorks = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -69,6 +70,14 @@ const HowItWorks = () => {
     image: "6.webp"
   };
 
+  const getPublicUrl = (imageName: string) => {
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('how_it_works_images')
+      .getPublicUrl(imageName);
+    return publicUrl;
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
@@ -94,7 +103,6 @@ const HowItWorks = () => {
             Como Funciona o Bone Heal
           </motion.h1>
           
-          {/* Animated Scroll Indicator */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ 
@@ -160,7 +168,7 @@ const HowItWorks = () => {
                   className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl"
                 >
                   <img
-                    src={`https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/fotos/${step.image}`}
+                    src={getPublicUrl(step.image)}
                     alt={step.title}
                     className="w-full h-full object-cover"
                   />
@@ -195,7 +203,7 @@ const HowItWorks = () => {
             </div>
             <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src={`https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/fotos/${finalStep.image}`}
+                src={getPublicUrl(finalStep.image)}
                 alt={finalStep.title}
                 className="w-full h-full object-cover"
               />
