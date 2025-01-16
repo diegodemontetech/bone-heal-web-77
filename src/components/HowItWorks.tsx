@@ -5,22 +5,22 @@ const HowItWorks = () => {
     {
       title: "Preparação do sítio cirúrgico",
       description: "Limpeza e preparação adequada da área para o procedimento.",
-      image: "1"
+      image: "1.webp"
     },
     {
       title: "Colocação da película",
       description: "Aplicação simples da película de polipropileno Bone Heal.",
-      image: "2"
+      image: "2.webp"
     },
     {
       title: "Regeneração natural",
       description: "Processo de regeneração óssea e tecidual guiada.",
-      image: "3"
+      image: "3.webp"
     },
     {
       title: "Remoção em 7 dias",
       description: "Remoção simples e indolor da película após o período.",
-      image: "4"
+      image: "4.webp"
     }
   ];
 
@@ -35,7 +35,7 @@ const HowItWorks = () => {
             <div key={index} className="text-center">
               <div className="w-full aspect-square mb-4 rounded-xl overflow-hidden">
                 <img
-                  src={`https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/fotos/${step.image}`}
+                  src={`https://kurpshcdafxbyqnzxvxu.supabase.co/storage/v1/object/public/how_it_works_images/${step.image}`}
                   alt={step.title}
                   className="w-full h-full object-cover"
                 />
