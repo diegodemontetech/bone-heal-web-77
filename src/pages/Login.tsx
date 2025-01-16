@@ -21,15 +21,21 @@ const Login = () => {
     },
   });
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
         .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
       return data;
     },
     enabled: !!session?.user?.id,
@@ -51,14 +57,22 @@ const Login = () => {
   }, [toast]);
 
   useEffect(() => {
-    if (session && profile) {
+    if (session && !isLoading && profile) {
       if (profile.is_admin) {
         navigate("/admin");
+        toast({
+          title: "Bem-vindo, Administrador!",
+          description: "Você foi redirecionado para a área administrativa.",
+        });
       } else {
         navigate("/products");
+        toast({
+          title: "Bem-vindo!",
+          description: "Você foi redirecionado para a área de produtos.",
+        });
       }
     }
-  }, [session, profile, navigate]);
+  }, [session, profile, isLoading, navigate, toast]);
 
   return (
     <div className="min-h-screen bg-gray-50">
