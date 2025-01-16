@@ -11,8 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -26,12 +26,15 @@ import { Label } from "@/components/ui/label";
 const AdminNews = () => {
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
     summary: "",
     content: "",
+    featured_image: "",
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const { data: news, refetch } = useQuery({
     queryKey: ["admin-news"],
@@ -67,14 +70,58 @@ const AdminNews = () => {
     refetch();
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file) return null;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('news_images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('news_images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Erro ao fazer upload da imagem",
+        description: error.message,
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    let featured_image = formData.featured_image;
+
+    if (selectedImage) {
+      const uploadedUrl = await handleImageUpload(selectedImage);
+      if (uploadedUrl) {
+        featured_image = uploadedUrl;
+      }
+    }
+
     const { error } = await supabase
       .from("news")
       .insert([
         {
           ...formData,
+          featured_image,
           slug: formData.title.toLowerCase().replace(/ /g, "-"),
         },
       ]);
@@ -92,7 +139,8 @@ const AdminNews = () => {
       title: "Notícia criada com sucesso",
     });
     setIsFormOpen(false);
-    setFormData({ title: "", slug: "", summary: "", content: "" });
+    setFormData({ title: "", slug: "", summary: "", content: "", featured_image: "" });
+    setSelectedImage(null);
     refetch();
   };
 
@@ -111,6 +159,7 @@ const AdminNews = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Imagem</TableHead>
                 <TableHead>Título</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Data de Publicação</TableHead>
@@ -120,6 +169,15 @@ const AdminNews = () => {
             <TableBody>
               {news?.map((item) => (
                 <TableRow key={item.id}>
+                  <TableCell>
+                    {item.featured_image && (
+                      <img
+                        src={item.featured_image}
+                        alt={item.title}
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                    )}
+                  </TableCell>
                   <TableCell>{item.title}</TableCell>
                   <TableCell>{item.category}</TableCell>
                   <TableCell>
@@ -159,6 +217,28 @@ const AdminNews = () => {
                 />
               </div>
               <div>
+                <Label htmlFor="image">Imagem Destacada</Label>
+                <div className="flex items-center gap-4">
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setSelectedImage(file);
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  {isUploading && (
+                    <div className="text-sm text-neutral-500">
+                      Enviando...
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div>
                 <Label htmlFor="summary">Resumo</Label>
                 <Textarea
                   id="summary"
@@ -176,8 +256,8 @@ const AdminNews = () => {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Criar Notícia
+              <Button type="submit" className="w-full" disabled={isUploading}>
+                {isUploading ? "Enviando..." : "Criar Notícia"}
               </Button>
             </form>
           </DialogContent>
