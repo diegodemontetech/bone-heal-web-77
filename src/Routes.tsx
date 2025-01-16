@@ -10,6 +10,7 @@ import NewsDetail from "./pages/NewsDetail";
 import Studies from "./pages/Studies";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
+import Orders from "./pages/Orders";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import AdminProducts from "./pages/admin/Products";
@@ -47,6 +48,16 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
+  const session = useSession();
+
+  if (!session) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const Routes = () => {
   return (
     <RouterRoutes>
@@ -61,6 +72,14 @@ const Routes = () => {
       <Route path="/studies" element={<Studies />} />
       <Route path="/login" element={<Login />} />
       <Route path="/cart" element={<Cart />} />
+      <Route
+        path="/orders"
+        element={
+          <PrivateRoute>
+            <Orders />
+          </PrivateRoute>
+        }
+      />
       
       {/* Admin Routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
