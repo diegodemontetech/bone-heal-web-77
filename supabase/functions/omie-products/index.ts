@@ -15,6 +15,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Fetching products from Omie...');
+    
     const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
@@ -34,28 +36,31 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('Received response from Omie:', data);
     
-    // Filtrar apenas produtos ativos com estoque disponível
+    // Filter only active products with available stock
     const availableProducts = data.produto_servico_cadastro
       .filter((product: any) => 
         product.inativo === "N" && 
         product.quantidade_estoque > 0
       )
       .map((product: any) => ({
-        id: product.codigo_produto,
-        name: product.descricao,
-        price: product.valor_unitario,
-        stock: product.quantidade_estoque,
+        codigo: product.codigo_produto,
+        nome: product.descricao,
+        preco: product.valor_unitario,
+        estoque: product.quantidade_estoque,
       }));
 
+    console.log('Filtered available products:', availableProducts);
+
     return new Response(
-      JSON.stringify(availableProducts),
+      JSON.stringify({ products: availableProducts }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
   } catch (error) {
-    console.error('Erro na função omie-products:', error);
+    console.error('Error in omie-products function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
