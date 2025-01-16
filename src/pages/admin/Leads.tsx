@@ -36,19 +36,30 @@ const LeadsPage = () => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching leads:", error);
+        throw error;
+      }
+      
       return data;
     },
   });
 
   const updateLeadStatus = async (leadId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from("contact_leads")
-      .update({ status: newStatus })
-      .eq("id", leadId);
+    try {
+      const { error } = await supabase
+        .from("contact_leads")
+        .update({ status: newStatus })
+        .eq("id", leadId);
 
-    if (error) {
-      console.error("Error updating lead status:", error);
+      if (error) {
+        console.error("Error updating lead status:", error);
+        toast.error("Erro ao atualizar status do lead");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Erro ao atualizar status do lead");
     }
   };
 

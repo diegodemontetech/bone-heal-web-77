@@ -80,6 +80,10 @@ const WhatsAppWidget = () => {
       }]);
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
+      setMessages(prev => [...prev, {
+        text: `Qual é o seu telefone ${value}? (ex: 11999999999)`,
+        delay: 0
+      }]);
       setIsTyping(false);
       setCurrentInput('phone');
       setShowInput(true);
@@ -126,14 +130,14 @@ const WhatsAppWidget = () => {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessages(prev => [...prev, {
-        text: "Obrigada pelo contato! Em breve, nossa equipe entrará em contato com você.",
+        text: `Obrigada pelo contato ${name}! Em breve, nossa equipe entrará em contato com você.`,
         delay: 0
       }]);
       setIsTyping(false);
       
       toast.success('Obrigado pelo contato!');
       
-      // Increased wait time to 10 seconds before minimizing
+      // Wait 10 seconds before minimizing
       setTimeout(() => {
         setIsVisible(false);
       }, 10000);
