@@ -4,11 +4,40 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+const statusColors: Record<string, string> = {
+  novo: "bg-blue-100 text-blue-800",
+  aguardando_pagamento: "bg-yellow-100 text-yellow-800",
+  pago: "bg-green-100 text-green-800",
+  faturando: "bg-purple-100 text-purple-800",
+  faturado: "bg-indigo-100 text-indigo-800",
+  separacao: "bg-orange-100 text-orange-800",
+  aguardando_envio: "bg-cyan-100 text-cyan-800",
+  enviado: "bg-teal-100 text-teal-800",
+  entregue: "bg-emerald-100 text-emerald-800",
+  cancelado: "bg-red-100 text-red-800",
+};
+
+const statusLabels: Record<string, string> = {
+  novo: "Novo",
+  aguardando_pagamento: "Aguardando Pagamento",
+  pago: "Pago",
+  faturando: "Faturando",
+  faturado: "Faturado",
+  separacao: "Em Separação",
+  aguardando_envio: "Aguardando Envio",
+  enviado: "Enviado",
+  entregue: "Entregue",
+  cancelado: "Cancelado",
+};
 
 const Orders = () => {
   const session = useSession();
 
-  const { data: orders, isLoading } = useQuery({
+  const { data: orders, isLoading, refetch } = useQuery({
     queryKey: ["orders", session?.user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -22,13 +51,31 @@ const Orders = () => {
     enabled: !!session?.user?.id,
   });
 
+  const checkOrderStatus = async (orderId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("omie-integration", {
+        body: { action: "check_status", order_id: orderId },
+      });
+
+      if (error) throw error;
+      
+      await refetch();
+      toast.success("Status do pedido atualizado com sucesso!");
+    } catch (error) {
+      console.error("Error checking order status:", error);
+      toast.error("Erro ao verificar status do pedido");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-4xl font-bold mb-8">Meus Pedidos</h1>
-          <div>Carregando...</div>
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
         </div>
       </div>
     );
@@ -46,8 +93,10 @@ const Orders = () => {
                 <TableHead>Número do Pedido</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Status OMIE</TableHead>
                 <TableHead>Valor Total</TableHead>
                 <TableHead>Status do Pagamento</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -59,7 +108,14 @@ const Orders = () => {
                   <TableCell>
                     {format(new Date(order.created_at), "dd/MM/yyyy")}
                   </TableCell>
-                  <TableCell>{order.status}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{order.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={statusColors[order.omie_status || "novo"]}>
+                      {statusLabels[order.omie_status || "novo"]}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
@@ -67,7 +123,17 @@ const Orders = () => {
                     }).format(order.total_amount)}
                   </TableCell>
                   <TableCell>
-                    {order.payments?.[0]?.status || "Pendente"}
+                    <Badge variant="outline">
+                      {order.payments?.[0]?.status || "Pendente"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      onClick={() => checkOrderStatus(order.id)}
+                      className="text-primary hover:text-primary-dark transition-colors"
+                    >
+                      Atualizar Status
+                    </button>
                   </TableCell>
                 </TableRow>
               ))}
