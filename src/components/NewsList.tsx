@@ -5,7 +5,7 @@ import { CalendarDays, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
 interface NewsItem {
@@ -27,24 +27,30 @@ const NewsList = () => {
     queryKey: ["news"],
     queryFn: async () => {
       console.log("Fetching news...");
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .order("published_at", { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching news:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar notícias",
-          description: error.message,
-        });
-        throw error;
+      try {
+        const { data, error: supabaseError } = await supabase
+          .from("news")
+          .select("*")
+          .order("published_at", { ascending: false });
+        
+        if (supabaseError) {
+          console.error("Error fetching news:", supabaseError);
+          toast({
+            variant: "destructive",
+            title: "Erro ao carregar notícias",
+            description: supabaseError.message,
+          });
+          throw supabaseError;
+        }
+        
+        console.log("News data:", data);
+        return data as NewsItem[];
+      } catch (err) {
+        console.error("Error in news query:", err);
+        throw err;
       }
-      
-      console.log("News data:", data);
-      return data as NewsItem[];
     },
+    retry: 1,
   });
 
   const handleNewsClick = (slug: string) => {
