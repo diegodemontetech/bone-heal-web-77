@@ -8,17 +8,6 @@ import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
-interface NewsItem {
-  id: string;
-  title: string;
-  slug: string;
-  summary: string;
-  featured_image: string;
-  published_at: string;
-  category: string;
-  views: number;
-}
-
 const NewsList = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -26,32 +15,43 @@ const NewsList = () => {
   const { data: news, isLoading, error } = useQuery({
     queryKey: ["news"],
     queryFn: async () => {
+      console.log("Fetching news...");
       const { data, error } = await supabase
         .from("news")
         .select("*")
         .order("published_at", { ascending: false });
       
       if (error) {
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar notícias",
-          description: error.message,
-        });
+        console.error("Error fetching news:", error);
         throw error;
       }
-      
-      return data as NewsItem[];
+
+      console.log("News data:", data);
+      return data;
+    },
+    retry: 1,
+    onError: (error) => {
+      console.error("Query error:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar notícias",
+        description: "Por favor, tente novamente mais tarde.",
+      });
     },
   });
 
-  const handleNewsClick = (slug: string) => {
-    navigate(`/news/${slug}`);
-  };
-
   if (error) {
     return (
-      <div className="text-center text-red-600">
-        Erro ao carregar notícias. Por favor, tente novamente mais tarde.
+      <div className="text-center p-8">
+        <div className="text-red-600 font-semibold mb-4">
+          Erro ao carregar notícias
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          Tentar Novamente
+        </button>
       </div>
     );
   }
@@ -74,8 +74,10 @@ const NewsList = () => {
 
   if (!news || news.length === 0) {
     return (
-      <div className="text-center text-neutral-600">
-        Nenhuma notícia encontrada.
+      <div className="text-center p-8">
+        <div className="text-neutral-600 mb-4">
+          Nenhuma notícia encontrada
+        </div>
       </div>
     );
   }
@@ -88,7 +90,7 @@ const NewsList = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: index * 0.1 }}
-          onClick={() => handleNewsClick(item.slug)}
+          onClick={() => navigate(`/news/${item.slug}`)}
           className="cursor-pointer"
         >
           <Card className="group hover:shadow-lg transition-shadow duration-300">
@@ -97,6 +99,9 @@ const NewsList = () => {
                 src={item.featured_image || "/placeholder.svg"}
                 alt={item.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder.svg";
+                }}
               />
               {item.category && (
                 <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
@@ -108,7 +113,9 @@ const NewsList = () => {
               <h3 className="text-xl font-semibold mb-4 group-hover:text-primary transition-colors">
                 {item.title}
               </h3>
-              <p className="text-neutral-600 mb-4 line-clamp-2">{item.summary}</p>
+              <p className="text-neutral-600 mb-4 line-clamp-2">
+                {item.summary}
+              </p>
               <div className="flex items-center justify-between text-sm text-neutral-500">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
@@ -116,7 +123,7 @@ const NewsList = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Eye className="w-4 h-4" />
-                  {item.views}
+                  {item.views || 0}
                 </div>
               </div>
             </CardContent>
