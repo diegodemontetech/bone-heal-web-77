@@ -3,16 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/Layout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, TrendingUp, Package, ShoppingCart } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Check if user is authenticated and is admin
   const { data: session } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
@@ -37,18 +52,59 @@ const Admin = () => {
     enabled: !!session?.user?.id,
   });
 
-  // Fetch basic stats
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["adminStats"],
+  // Fetch orders data for charts
+  const { data: orderStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["orderStats"],
     queryFn: async () => {
-      const [products, orders] = await Promise.all([
-        supabase.from("products").select("id", { count: "exact" }),
-        supabase.from("orders").select("id", { count: "exact" }),
-      ]);
-      
+      const { data: orders } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          total_amount,
+          shipping_address,
+          items,
+          created_at
+        `);
+
+      // Process orders data for charts
+      const stateData = {};
+      const productData = {};
+      const monthlyData = [];
+
+      orders?.forEach(order => {
+        // State data
+        const state = order.shipping_address?.state || 'N/A';
+        stateData[state] = (stateData[state] || 0) + order.total_amount;
+
+        // Product data
+        const items = order.items || [];
+        items.forEach(item => {
+          productData[item.name] = (productData[item.name] || 0) + item.quantity;
+        });
+
+        // Monthly data
+        const date = new Date(order.created_at);
+        const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const monthIndex = monthlyData.findIndex(d => d.month === monthYear);
+        if (monthIndex === -1) {
+          monthlyData.push({ month: monthYear, amount: order.total_amount });
+        } else {
+          monthlyData[monthIndex].amount += order.total_amount;
+        }
+      });
+
       return {
-        products: products.count || 0,
-        orders: orders.count || 0,
+        stateData: Object.entries(stateData).map(([state, value]) => ({
+          state,
+          value: Number(value.toFixed(2)),
+        })),
+        productData: Object.entries(productData).map(([name, quantity]) => ({
+          name,
+          quantity,
+        })),
+        monthlyData: monthlyData.sort((a, b) => 
+          new Date(a.month) - new Date(b.month)
+        ),
       };
     },
     enabled: !!profile?.is_admin,
@@ -89,73 +145,82 @@ const Admin = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
-            <CardHeader>
-              <CardTitle>Produtos</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Vendas por Estado</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{stats?.products}</p>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={orderStats?.stateData || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="state" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="value" fill="#8884d8" name="Valor Total (R$)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
-            <CardHeader>
-              <CardTitle>Pedidos</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Vendas por Produto</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">{stats?.orders}</p>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={orderStats?.productData || []}
+                      dataKey="quantity"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label
+                    >
+                      {orderStats?.productData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
-            <CardHeader>
-              <CardTitle>Faturamento</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Vendas Mensais</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold">R$ 0,00</p>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={orderStats?.monthlyData || []}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#8884d8"
+                      name="Valor Total (R$)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
-
-        <Tabs defaultValue="products">
-          <TabsList>
-            <TabsTrigger value="products">Produtos</TabsTrigger>
-            <TabsTrigger value="orders">Pedidos</TabsTrigger>
-            <TabsTrigger value="shipping">Fretes</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="products">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciamento de Produtos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Conteúdo em desenvolvimento...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="orders">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciamento de Pedidos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Conteúdo em desenvolvimento...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="shipping">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gerenciamento de Fretes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Conteúdo em desenvolvimento...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </main>
     </AdminLayout>
   );
