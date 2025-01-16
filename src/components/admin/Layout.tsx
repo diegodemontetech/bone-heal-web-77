@@ -37,7 +37,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: Users, label: "Usuários", href: "/admin/users" },
     { icon: Truck, label: "Taxas de Frete", href: "/admin/shipping-rates" },
     { icon: MessageSquare, label: "Leads", href: "/admin/leads" },
-    { icon: MessageCircle, label: "Mensagens WhatsApp", href: "/admin/whatsapp-messages" },
+    { icon: MessageCircle, label: "Mensagens WhatsApp", href: "/admin/whatsapp-messages", className: "text-left" },
   ];
 
   const handleSignOut = async () => {
@@ -106,7 +106,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     location.pathname === item.href
                       ? "bg-primary text-white"
                       : "text-gray-600 hover:bg-gray-100"
-                  }`}
+                  } ${item.className || ''}`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>

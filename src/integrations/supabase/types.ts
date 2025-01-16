@@ -430,6 +430,8 @@ export type Database = {
       whatsapp_messages_config: {
         Row: {
           active: boolean | null
+          agent_name: string | null
+          agent_photo: string | null
           created_at: string
           id: string
           message_key: string
@@ -438,6 +440,8 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          agent_name?: string | null
+          agent_photo?: string | null
           created_at?: string
           id?: string
           message_key: string
@@ -446,6 +450,8 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          agent_name?: string | null
+          agent_photo?: string | null
           created_at?: string
           id?: string
           message_key?: string
