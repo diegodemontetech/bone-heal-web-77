@@ -17,7 +17,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
 
       <TabsContent value="description" className="mt-4">
         <div className="prose prose-neutral max-w-none">
-          {product.full_description}
+          {product.full_description || product.description}
         </div>
       </TabsContent>
 
@@ -40,7 +40,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
             {Object.entries(product.documents).map(([name, url]) => (
               <a
                 key={name}
-                href={url as string}
+                href={url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-primary hover:underline"
