@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Product, CartItem } from "@/types/product";
-import { useCart } from "@/hooks/use-cart";
+import { Product } from "@/types/product";
+import { useCart, CartItem } from "@/hooks/use-cart";
 import { ShoppingCart } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
 
