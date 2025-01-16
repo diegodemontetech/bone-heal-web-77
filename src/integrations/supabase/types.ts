@@ -33,6 +33,36 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_leads: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          reason: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          reason?: string | null
+          source?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          reason?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: []
+      }
       dental_specialties: {
         Row: {
           created_at: string

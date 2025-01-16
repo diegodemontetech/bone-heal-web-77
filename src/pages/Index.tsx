@@ -6,6 +6,7 @@ import NewsPreview from "@/components/NewsPreview";
 import StudiesPreview from "@/components/StudiesPreview";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 const Index = () => {
   return (
@@ -20,6 +21,7 @@ const Index = () => {
         <Contact />
       </main>
       <Footer />
+      <WhatsAppWidget />
     </div>
   );
 };
