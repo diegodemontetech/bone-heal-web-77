@@ -32,7 +32,7 @@ const LeadsPage = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (selectedStatus) {
+      if (selectedStatus && selectedStatus !== "all") {
         query = query.eq("status", selectedStatus);
       }
 
@@ -95,14 +95,14 @@ const LeadsPage = () => {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Leads</h1>
           <Select
-            value={selectedStatus || ""}
-            onValueChange={(value) => setSelectedStatus(value || null)}
+            value={selectedStatus || "all"}
+            onValueChange={(value) => setSelectedStatus(value)}
           >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="new">Novo</SelectItem>
               <SelectItem value="contacted">Contatado</SelectItem>
               <SelectItem value="closed">Fechado</SelectItem>
