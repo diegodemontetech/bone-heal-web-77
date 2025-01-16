@@ -65,6 +65,7 @@ const AdminLogin = () => {
           variant: "destructive",
         });
         supabase.auth.signOut();
+        navigate("/login");
       }
     }
   }, [session, profile, isLoading, error, navigate, toast]);

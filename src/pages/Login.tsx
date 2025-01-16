@@ -7,35 +7,58 @@ import Navbar from "@/components/Navbar";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RegistrationForm from "@/components/auth/RegistrationForm";
+import { useQuery } from "@tanstack/react-query";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const checkUser = async () => {
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/products");
-      }
-    };
+      return session;
+    },
+  });
 
+  const { data: profile } = useQuery({
+    queryKey: ["profile", session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!session?.user?.id,
+  });
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
         toast({
           title: "Login realizado com sucesso!",
           description: "Bem-vindo à área do dentista.",
         });
-        navigate("/products");
       }
     });
-
-    checkUser();
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [toast]);
+
+  useEffect(() => {
+    if (session && profile) {
+      if (profile.is_admin) {
+        navigate("/admin");
+      } else {
+        navigate("/products");
+      }
+    }
+  }, [session, profile, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,12 +86,6 @@ const Login = () => {
                       },
                     },
                   },
-                  className: {
-                    container: 'auth-container',
-                    button: 'auth-button',
-                    input: 'auth-input',
-                    label: 'auth-label',
-                  },
                 }}
                 localization={{
                   variables: {
@@ -77,24 +94,8 @@ const Login = () => {
                       password_label: 'Senha',
                       button_label: 'Entrar',
                       loading_button_label: 'Entrando...',
-                      link_text: 'Já tem uma conta? Entre',
-                      password_input_placeholder: 'Sua senha',
                       email_input_placeholder: 'Seu email',
-                    },
-                    forgotten_password: {
-                      link_text: 'Esqueceu sua senha?',
-                      button_label: 'Recuperar senha',
-                      email_label: 'Email',
-                      password_label: 'Nova senha',
-                    },
-                    sign_up: {
-                      link_text: 'Não tem uma conta? Cadastre-se',
-                      button_label: 'Cadastrar',
-                      email_label: 'Email',
-                      password_label: 'Senha',
-                      loading_button_label: 'Cadastrando...',
                       password_input_placeholder: 'Sua senha',
-                      email_input_placeholder: 'Seu email',
                     },
                   },
                 }}
