@@ -13,18 +13,39 @@ const WhatsAppWidget = () => {
   const [showInput, setShowInput] = useState(false);
   const [currentInput, setCurrentInput] = useState<'name' | 'phone' | null>(null);
   const [hasInterest, setHasInterest] = useState<boolean | null>(null);
+  const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean }>>([]);
 
-  const messages = [
-    {
-      text: "Olá! 👋 Sou a Maria, consultora da Bone Heal.",
-      delay: 1000
-    },
-    {
+  useEffect(() => {
+    // Show widget after 5 seconds
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+      // Start conversation immediately
+      startConversation();
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const startConversation = async () => {
+    setIsTyping(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setMessages([
+      {
+        text: "Olá! 👋 Sou a Maria, consultora da Bone Heal.",
+        delay: 0
+      }
+    ]);
+    setStep(1);
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setMessages(prev => [...prev, {
       text: "Gostaria de saber mais sobre como se tornar um Dentista parceiro da Bone Heal?",
-      delay: 3000,
+      delay: 0,
       showInterestButtons: true
-    }
-  ];
+    }]);
+    setStep(2);
+    setIsTyping(false);
+  };
 
   const handleInterest = async (interested: boolean) => {
     setHasInterest(interested);
@@ -65,14 +86,6 @@ const WhatsAppWidget = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 5000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   const handleSubmit = async () => {
     try {
       const { error } = await supabase
@@ -90,6 +103,10 @@ const WhatsAppWidget = () => {
 
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
+      setMessages(prev => [...prev, {
+        text: "Obrigada pelo contato! Em breve, nossa equipe entrará em contato com você.",
+        delay: 0
+      }]);
       setIsTyping(false);
       
       toast.success('Obrigado pelo contato!');
@@ -151,7 +168,7 @@ const WhatsAppWidget = () => {
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: step > index ? 1 : 0, x: step > index ? 0 : -20 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: message.delay / 1000 }}
                       className="bg-neutral-100 p-3 rounded-lg max-w-[80%] flex items-start space-x-2"
                     >
@@ -184,25 +201,23 @@ const WhatsAppWidget = () => {
                     </motion.div>
                   ))}
 
-                  {hasInterest === true && (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="bg-neutral-100 p-3 rounded-lg max-w-[80%] flex items-start space-x-2"
-                      >
-                        <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                          <img 
-                            src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&h=80&q=80" 
-                            alt="Maria" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          {currentInput === 'name' ? "Qual é o seu nome?" : "Qual é o seu telefone?"}
-                        </div>
-                      </motion.div>
-                    </>
+                  {hasInterest === true && currentInput && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="bg-neutral-100 p-3 rounded-lg max-w-[80%] flex items-start space-x-2"
+                    >
+                      <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                        <img 
+                          src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&h=80&q=80" 
+                          alt="Maria" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        {currentInput === 'name' ? "Qual é o seu nome?" : "Qual é o seu telefone?"}
+                      </div>
+                    </motion.div>
                   )}
                   
                   {isTyping && (
