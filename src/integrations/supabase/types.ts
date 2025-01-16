@@ -360,23 +360,38 @@ export type Database = {
       }
       shipping_rates: {
         Row: {
+          additional_kg_price: number
           created_at: string
+          delivery_days: number
           id: string
+          insurance_percentage: number
+          price_per_kg: number
           rate: number
+          service_type: string
           state: string
           updated_at: string
         }
         Insert: {
+          additional_kg_price?: number
           created_at?: string
+          delivery_days?: number
           id?: string
+          insurance_percentage?: number
+          price_per_kg?: number
           rate: number
+          service_type?: string
           state: string
           updated_at?: string
         }
         Update: {
+          additional_kg_price?: number
           created_at?: string
+          delivery_days?: number
           id?: string
+          insurance_percentage?: number
+          price_per_kg?: number
           rate?: number
+          service_type?: string
           state?: string
           updated_at?: string
         }

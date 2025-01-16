@@ -11,6 +11,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Pencil, Save, X } from "lucide-react";
 
@@ -18,6 +25,11 @@ interface ShippingRate {
   id: string;
   state: string;
   rate: number;
+  price_per_kg: number;
+  additional_kg_price: number;
+  insurance_percentage: number;
+  delivery_days: number;
+  service_type: "PAC" | "SEDEX";
 }
 
 const STATES = [
@@ -28,6 +40,11 @@ const STATES = [
 const ShippingRatesTable = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRate, setEditingRate] = useState<string>("");
+  const [editingPricePerKg, setEditingPricePerKg] = useState<string>("");
+  const [editingAdditionalKgPrice, setEditingAdditionalKgPrice] = useState<string>("");
+  const [editingInsurancePercentage, setEditingInsurancePercentage] = useState<string>("");
+  const [editingDeliveryDays, setEditingDeliveryDays] = useState<string>("");
+  const [editingServiceType, setEditingServiceType] = useState<"PAC" | "SEDEX">("PAC");
   const { toast } = useToast();
 
   const { data: rates, refetch, isLoading } = useQuery({
@@ -46,13 +63,25 @@ const ShippingRatesTable = () => {
   const handleEdit = (rate: ShippingRate) => {
     setEditingId(rate.id);
     setEditingRate(rate.rate.toString());
+    setEditingPricePerKg(rate.price_per_kg.toString());
+    setEditingAdditionalKgPrice(rate.additional_kg_price.toString());
+    setEditingInsurancePercentage(rate.insurance_percentage.toString());
+    setEditingDeliveryDays(rate.delivery_days.toString());
+    setEditingServiceType(rate.service_type);
   };
 
   const handleSave = async (id: string, state: string) => {
     try {
       const numericRate = parseFloat(editingRate);
-      if (isNaN(numericRate)) {
-        throw new Error("Taxa inválida");
+      const numericPricePerKg = parseFloat(editingPricePerKg);
+      const numericAdditionalKgPrice = parseFloat(editingAdditionalKgPrice);
+      const numericInsurancePercentage = parseFloat(editingInsurancePercentage);
+      const numericDeliveryDays = parseInt(editingDeliveryDays);
+
+      if (isNaN(numericRate) || isNaN(numericPricePerKg) || 
+          isNaN(numericAdditionalKgPrice) || isNaN(numericInsurancePercentage) || 
+          isNaN(numericDeliveryDays)) {
+        throw new Error("Valores inválidos");
       }
 
       const { error } = await supabase
@@ -61,6 +90,11 @@ const ShippingRatesTable = () => {
           id: id || undefined,
           state,
           rate: numericRate,
+          price_per_kg: numericPricePerKg,
+          additional_kg_price: numericAdditionalKgPrice,
+          insurance_percentage: numericInsurancePercentage,
+          delivery_days: numericDeliveryDays,
+          service_type: editingServiceType,
         });
 
       if (error) throw error;
@@ -69,8 +103,7 @@ const ShippingRatesTable = () => {
         title: "Taxa atualizada com sucesso",
       });
 
-      setEditingId(null);
-      setEditingRate("");
+      handleCancel();
       refetch();
     } catch (error: any) {
       toast({
@@ -84,6 +117,11 @@ const ShippingRatesTable = () => {
   const handleCancel = () => {
     setEditingId(null);
     setEditingRate("");
+    setEditingPricePerKg("");
+    setEditingAdditionalKgPrice("");
+    setEditingInsurancePercentage("");
+    setEditingDeliveryDays("");
+    setEditingServiceType("PAC");
   };
 
   if (isLoading) {
@@ -103,7 +141,12 @@ const ShippingRatesTable = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Estado</TableHead>
-            <TableHead>Taxa (R$)</TableHead>
+            <TableHead>Taxa Base (R$)</TableHead>
+            <TableHead>Preço/Kg (R$)</TableHead>
+            <TableHead>Kg Adicional (R$)</TableHead>
+            <TableHead>Seguro (%)</TableHead>
+            <TableHead>Dias Entrega</TableHead>
+            <TableHead>Serviço</TableHead>
             <TableHead className="w-[100px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -126,6 +169,75 @@ const ShippingRatesTable = () => {
                     />
                   ) : (
                     rate ? `R$ ${rate.rate.toFixed(2)}` : "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editingPricePerKg}
+                      onChange={(e) => setEditingPricePerKg(e.target.value)}
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    rate ? `R$ ${rate.price_per_kg.toFixed(2)}` : "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editingAdditionalKgPrice}
+                      onChange={(e) => setEditingAdditionalKgPrice(e.target.value)}
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    rate ? `R$ ${rate.additional_kg_price.toFixed(2)}` : "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editingInsurancePercentage}
+                      onChange={(e) => setEditingInsurancePercentage(e.target.value)}
+                      step="0.01"
+                      min="0"
+                    />
+                  ) : (
+                    rate ? `${rate.insurance_percentage.toFixed(2)}%` : "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      value={editingDeliveryDays}
+                      onChange={(e) => setEditingDeliveryDays(e.target.value)}
+                      min="0"
+                    />
+                  ) : (
+                    rate ? rate.delivery_days : "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Select
+                      value={editingServiceType}
+                      onValueChange={(value: "PAC" | "SEDEX") => setEditingServiceType(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PAC">PAC</SelectItem>
+                        <SelectItem value="SEDEX">SEDEX</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    rate ? rate.service_type : "-"
                   )}
                 </TableCell>
                 <TableCell>
@@ -156,6 +268,11 @@ const ShippingRatesTable = () => {
                         } else {
                           setEditingId("new");
                           setEditingRate("");
+                          setEditingPricePerKg("");
+                          setEditingAdditionalKgPrice("");
+                          setEditingInsurancePercentage("");
+                          setEditingDeliveryDays("");
+                          setEditingServiceType("PAC");
                           handleSave("new", state);
                         }
                       }}
