@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useSession } from '@supabase/auth-helpers-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +27,20 @@ const Navbar = () => {
       navigate('/products');
     } else {
       navigate('/login');
+    }
+    setIsOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      toast.success('Logout realizado com sucesso');
+      navigate('/');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Erro ao fazer logout');
     }
     setIsOpen(false);
   };
@@ -58,7 +74,7 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="hidden lg:flex items-center">
+          <div className="hidden lg:flex items-center space-x-4">
             <button 
               onClick={handleDentistAreaClick}
               className="flex items-center space-x-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl"
@@ -66,6 +82,16 @@ const Navbar = () => {
               <User className="h-5 w-5" />
               <span className="font-medium">Área do Dentista</span>
             </button>
+            
+            {session && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 text-neutral-600 hover:text-primary transition-colors duration-200"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="font-medium">Sair</span>
+              </button>
+            )}
           </div>
 
           <div className="lg:hidden">
@@ -103,6 +129,16 @@ const Navbar = () => {
                 <User className="h-5 w-5" />
                 <span className="font-medium">Área do Dentista</span>
               </button>
+              
+              {session && (
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center space-x-2 px-3 py-2.5 text-neutral-600 hover:text-primary transition-colors duration-200 w-full text-left"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-medium">Sair</span>
+                </button>
+              )}
             </div>
           </motion.div>
         )}
