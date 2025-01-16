@@ -8,13 +8,32 @@ import ProductHero from "@/components/ProductHero";
 import { Loader2 } from "lucide-react";
 
 const Products = () => {
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading, error } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
+      console.log('Iniciando busca de produtos...');
+      
+      // Get products from database first
+      const { data: dbProducts, error: dbError } = await supabase
+        .from("products")
+        .select("*");
+      
+      if (dbError) {
+        console.error('Erro ao buscar produtos do banco:', dbError);
+        throw dbError;
+      }
+
+      console.log('Produtos do banco:', dbProducts);
+
+      if (!dbProducts || dbProducts.length === 0) {
+        console.log('Nenhum produto encontrado no banco');
+        return [];
+      }
+
       // Get active products with stock from Omie
       const { data: omieProducts, error: omieError } = await supabase
         .functions
-        .invoke('omie-products')
+        .invoke('omie-products');
 
       if (omieError) {
         console.error('Erro ao buscar produtos do Omie:', omieError);
@@ -23,26 +42,38 @@ const Products = () => {
 
       console.log('Produtos do Omie:', omieProducts);
 
-      // Get products from database that match Omie products
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .in('id', omieProducts.products.map((p: any) => p.codigo));
-      
-      if (error) {
-        console.error('Erro ao buscar produtos do banco:', error);
-        throw error;
-      }
-
-      console.log('Produtos do banco:', data);
-
       // Merge Omie stock data with database products
-      return data.map(product => ({
+      return dbProducts.map(product => ({
         ...product,
-        stock: omieProducts.products.find((p: any) => p.codigo === product.id)?.estoque || 0
+        stock: omieProducts?.products?.find((p: any) => p.codigo === product.id)?.estoque || 0
       }));
     },
   });
+
+  if (error) {
+    console.error('Erro ao carregar produtos:', error);
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow">
+          <ProductHero />
+          <section className="py-16 px-8">
+            <div className="container mx-auto">
+              <div className="text-center py-20">
+                <h2 className="text-2xl font-bold text-red-600 mb-2">
+                  Erro ao carregar produtos
+                </h2>
+                <p className="text-gray-600">
+                  Ocorreu um erro ao carregar os produtos. Por favor, tente novamente mais tarde.
+                </p>
+              </div>
+            </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -63,7 +94,7 @@ const Products = () => {
                     Nenhum produto disponível
                   </h2>
                   <p className="text-gray-600">
-                    No momento não há produtos cadastrados.
+                    No momento não há produtos cadastrados em nosso catálogo.
                   </p>
                 </div>
               ) : (
