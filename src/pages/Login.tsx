@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { useQuery } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -42,37 +43,57 @@ const Login = () => {
   });
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN") {
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo à área do dentista.",
-        });
+        if (!session?.user?.id) return;
+
+        try {
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          if (profile?.is_admin) {
+            toast({
+              title: "Bem-vindo, Administrador!",
+              description: "Você foi redirecionado para a área administrativa.",
+            });
+            navigate("/admin");
+          } else {
+            toast({
+              title: "Login realizado com sucesso!",
+              description: "Bem-vindo à área do dentista.",
+            });
+            navigate("/products");
+          }
+        } catch (error: any) {
+          console.error("Error after sign in:", error);
+          toast({
+            title: "Erro ao carregar perfil",
+            description: error.message || "Ocorreu um erro ao carregar seu perfil.",
+            variant: "destructive",
+          });
+        }
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [toast]);
+  }, [navigate, toast]);
 
   useEffect(() => {
     if (session && !isLoading && profile) {
       if (profile.is_admin) {
         navigate("/admin");
-        toast({
-          title: "Bem-vindo, Administrador!",
-          description: "Você foi redirecionado para a área administrativa.",
-        });
       } else {
         navigate("/products");
-        toast({
-          title: "Bem-vindo!",
-          description: "Você foi redirecionado para a área de produtos.",
-        });
       }
     }
-  }, [session, profile, isLoading, navigate, toast]);
+  }, [session, profile, isLoading, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,6 +131,8 @@ const Login = () => {
                       loading_button_label: 'Entrando...',
                       email_input_placeholder: 'Seu email',
                       password_input_placeholder: 'Sua senha',
+                      email_input_error: 'Email inválido',
+                      password_input_error: 'Senha inválida',
                     },
                   },
                 }}
