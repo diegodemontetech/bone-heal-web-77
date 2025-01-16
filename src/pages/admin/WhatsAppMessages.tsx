@@ -15,10 +15,19 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Plus, MessageCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const WhatsAppMessagesPage = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [editingType, setEditingType] = useState<"question" | "final_greeting">("question");
   const [agentName, setAgentName] = useState("");
   const [agentPhoto, setAgentPhoto] = useState("");
 
@@ -46,16 +55,20 @@ const WhatsAppMessagesPage = () => {
     },
   });
 
-  const handleEdit = (id: string, text: string) => {
+  const handleEdit = (id: string, text: string, type: "question" | "final_greeting") => {
     setEditingId(id);
     setEditingText(text);
+    setEditingType(type);
   };
 
   const handleSave = async (id: string) => {
     try {
       const { error } = await supabase
         .from("whatsapp_messages_config")
-        .update({ message_text: editingText })
+        .update({ 
+          message_text: editingText,
+          message_type: editingType
+        })
         .eq("id", id);
 
       if (error) {
@@ -76,6 +89,31 @@ const WhatsAppMessagesPage = () => {
   const handleCancel = () => {
     setEditingId(null);
     setEditingText("");
+  };
+
+  const handleAddMessage = async () => {
+    try {
+      const messageKey = `question_${Date.now()}`;
+      const { error } = await supabase
+        .from("whatsapp_messages_config")
+        .insert([{
+          message_key: messageKey,
+          message_text: "Nova pergunta",
+          message_type: "question"
+        }]);
+
+      if (error) {
+        console.error("Error adding message:", error);
+        toast.error("Erro ao adicionar mensagem");
+        return;
+      }
+
+      toast.success("Mensagem adicionada com sucesso");
+      refetch();
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Erro ao adicionar mensagem");
+    }
   };
 
   const handleSaveAgentConfig = async () => {
@@ -142,7 +180,13 @@ const WhatsAppMessagesPage = () => {
   return (
     <AdminLayout>
       <div className="p-8">
-        <h1 className="text-3xl font-bold mb-8">Mensagens do WhatsApp</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Mensagens do WhatsApp</h1>
+          <Button onClick={handleAddMessage}>
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar Pergunta
+          </Button>
+        </div>
 
         <div className="space-y-8">
           <Card>
@@ -185,6 +229,7 @@ const WhatsAppMessagesPage = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Chave</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Mensagem</TableHead>
                   <TableHead className="w-[100px]">Ações</TableHead>
                 </TableRow>
@@ -193,6 +238,27 @@ const WhatsAppMessagesPage = () => {
                 {messages?.map((message) => (
                   <TableRow key={message.id}>
                     <TableCell>{message.message_key}</TableCell>
+                    <TableCell>
+                      {editingId === message.id ? (
+                        <Select
+                          value={editingType}
+                          onValueChange={(value: "question" | "final_greeting") => setEditingType(value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="question">Pergunta</SelectItem>
+                            <SelectItem value="final_greeting">Saudação Final</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="inline-flex items-center">
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          {message.message_type === "question" ? "Pergunta" : "Saudação Final"}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {editingId === message.id ? (
                         <Input
@@ -224,7 +290,7 @@ const WhatsAppMessagesPage = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEdit(message.id, message.message_text)}
+                          onClick={() => handleEdit(message.id, message.message_text, message.message_type)}
                         >
                           Editar
                         </Button>

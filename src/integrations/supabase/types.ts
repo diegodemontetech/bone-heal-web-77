@@ -436,6 +436,7 @@ export type Database = {
           id: string
           message_key: string
           message_text: string
+          message_type: string | null
           updated_at: string
         }
         Insert: {
@@ -446,6 +447,7 @@ export type Database = {
           id?: string
           message_key: string
           message_text: string
+          message_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -456,6 +458,7 @@ export type Database = {
           id?: string
           message_key?: string
           message_text?: string
+          message_type?: string | null
           updated_at?: string
         }
         Relationships: []
