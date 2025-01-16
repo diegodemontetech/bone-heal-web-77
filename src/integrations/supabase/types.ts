@@ -161,6 +161,53 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          boleto_url: string | null
+          created_at: string
+          id: string
+          order_id: string
+          paid_at: string | null
+          payment_method: string
+          pix_code: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          boleto_url?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          paid_at?: string | null
+          payment_method: string
+          pix_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          boleto_url?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          paid_at?: string | null
+          payment_method?: string
+          pix_code?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           created_at: string

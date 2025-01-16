@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut, ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -24,7 +24,7 @@ const Navbar = () => {
 
   const handleDentistAreaClick = () => {
     if (session) {
-      navigate('/products');
+      navigate('/orders');
     } else {
       navigate('/login');
     }
@@ -79,8 +79,8 @@ const Navbar = () => {
               onClick={handleDentistAreaClick}
               className="flex items-center space-x-2 bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-full transition-all duration-200 shadow-lg hover:shadow-xl"
             >
-              <User className="h-5 w-5" />
-              <span className="font-medium">Área do Dentista</span>
+              {session ? <ShoppingBag className="h-5 w-5" /> : <User className="h-5 w-5" />}
+              <span className="font-medium">{session ? 'Meus Pedidos' : 'Área do Dentista'}</span>
             </button>
             
             {session && (
@@ -126,8 +126,8 @@ const Navbar = () => {
                 onClick={handleDentistAreaClick}
                 className="flex items-center space-x-2 px-3 py-2.5 text-primary w-full text-left"
               >
-                <User className="h-5 w-5" />
-                <span className="font-medium">Área do Dentista</span>
+                {session ? <ShoppingBag className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                <span className="font-medium">{session ? 'Meus Pedidos' : 'Área do Dentista'}</span>
               </button>
               
               {session && (
