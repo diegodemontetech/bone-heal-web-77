@@ -2,34 +2,44 @@ import { motion } from "framer-motion";
 
 const timelineEvents = [
   {
-    year: "2018",
-    title: "Fundação da Bone Heal",
-    description: "Início da jornada com foco em inovação em regeneração óssea."
-  },
-  {
-    year: "2019",
-    title: "Primeiros Testes Clínicos",
+    year: "1997-2009",
+    title: "Período de Pesquisas",
     description: "Desenvolvimento e validação do protocolo inicial."
   },
   {
-    year: "2020",
-    title: "Aprovação ANVISA",
-    description: "Certificação e autorização para comercialização."
+    year: "2010",
+    title: "Mudança de Paradigma na Odontologia",
+    description: "Fabricação dos primeiros lotes e lançamento da barreira de polipropileno Bone Heal® no mercado nacional."
+  },
+  {
+    year: "2013",
+    title: "Abertura de Distribuidora Própria",
+    description: "Expansão das operações com distribuição própria."
+  },
+  {
+    year: "2019",
+    title: "Tornou-se Fabricante",
+    description: "Certificação de Boas Práticas de Fabricação."
   },
   {
     year: "2021",
-    title: "Lançamento Oficial",
-    description: "Introdução da barreira de polipropileno no mercado."
+    title: "Lançamento de Novos Tamanhos",
+    description: "Introdução de novos tamanhos da membrana Bone Heal®."
   },
   {
     year: "2022",
-    title: "Expansão Nacional",
-    description: "Crescimento da presença em todo território brasileiro."
+    title: "Lançamento do Produto Heal Bone®",
+    description: "Disponibilização do produto em três tamanhos."
   },
   {
     year: "2023",
+    title: "Expansão Nacional",
+    description: "Mais de 200 mil barreiras vendidas em todo território nacional."
+  },
+  {
+    year: "2024",
     title: "Reconhecimento Internacional",
-    description: "Início das exportações e parcerias globais."
+    description: "Início das certificações para exportações e parcerias globais."
   }
 ];
 
@@ -47,10 +57,8 @@ const Timeline = () => {
           Nossa Trajetória
         </motion.h2>
         <div className="relative">
-          {/* Line */}
           <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-primary/20" />
           
-          {/* Events */}
           <div className="space-y-24">
             {timelineEvents.map((event, index) => (
               <motion.div

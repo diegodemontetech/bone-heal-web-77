@@ -3,12 +3,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AboutHero from "@/components/AboutHero";
 import Timeline from "@/components/Timeline";
-import MissionValues from "@/components/MissionValues";
+import MissionVision from "@/components/MissionVision";
 import Team from "@/components/Team";
-import Infrastructure from "@/components/Infrastructure";
-import Commitment from "@/components/Commitment";
 import Recognition from "@/components/Recognition";
-import CallToAction from "@/components/CallToAction";
 
 const About = () => {
   return (
@@ -16,13 +13,10 @@ const About = () => {
       <Navbar />
       <main className="flex-grow">
         <AboutHero />
+        <MissionVision />
         <Timeline />
-        <MissionValues />
         <Team />
-        <Infrastructure />
-        <Commitment />
         <Recognition />
-        <CallToAction />
       </main>
       <Footer />
     </div>

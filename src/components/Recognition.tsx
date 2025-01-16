@@ -4,24 +4,28 @@ import { Award, FileText, Star, Shield } from 'lucide-react';
 const Recognition = () => {
   const achievements = [
     {
-      icon: Award,
-      title: "Certificação ANVISA",
-      description: "Produto registrado e aprovado para uso em território nacional"
+      icon: Shield,
+      title: "Certificação",
+      description: "Produtos registrados e aprovados para uso em território nacional. Certificado de Boas Práticas de Fabricação.",
+      image: "https://www.consulog.com.br/wp-content/uploads/2022/03/selo-anvisa.webp"
     },
     {
       icon: FileText,
       title: "Patentes",
-      description: "Tecnologia protegida e reconhecida internacionalmente"
+      description: "Tecnologia protegida e reconhecida internacionalmente. Mais de 10 patentes nacionais e internacionais.",
+      image: "https://robotx.com.br/wp-content/uploads/2022/02/Selo-produto-INPI.png"
     },
     {
       icon: Star,
-      title: "Prêmios",
-      description: "Reconhecimento da comunidade científica e odontológica"
+      title: "Direitos Autorais",
+      description: "Método ROG-M de Munir Salomão.",
+      image: "https://www.gov.br/cdtn/pt-br/imagens/CertificadoBPF.png"
     },
     {
-      icon: Shield,
-      title: "ISO 13485",
-      description: "Sistema de gestão da qualidade para dispositivos médicos"
+      icon: Award,
+      title: "Prêmios",
+      description: "Reconhecimento da comunidade científica e odontológica.",
+      image: "https://www.abo.org.br/images/seloFull.jpg"
     }
   ];
 
@@ -45,13 +49,18 @@ const Recognition = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center"
+              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
             >
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-6 mx-auto">
                 <achievement.icon className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-4 text-primary">{achievement.title}</h3>
-              <p className="text-neutral-600">{achievement.description}</p>
+              <img 
+                src={achievement.image} 
+                alt={achievement.title}
+                className="w-24 h-24 object-contain mx-auto mb-6"
+              />
+              <h3 className="text-xl font-bold mb-4 text-primary text-center">{achievement.title}</h3>
+              <p className="text-neutral-600 text-center">{achievement.description}</p>
             </motion.div>
           ))}
         </div>
