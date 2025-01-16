@@ -13,4 +13,5 @@ export interface Product {
   documents?: Record<string, string>;
   created_at?: string;
   updated_at?: string;
+  stock?: number;
 }
