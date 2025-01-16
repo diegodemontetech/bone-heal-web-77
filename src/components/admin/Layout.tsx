@@ -13,6 +13,7 @@ import {
   X,
   Truck,
   MessageSquare,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
@@ -36,6 +37,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { icon: Users, label: "Usuários", href: "/admin/users" },
     { icon: Truck, label: "Taxas de Frete", href: "/admin/shipping-rates" },
     { icon: MessageSquare, label: "Leads", href: "/admin/leads" },
+    { icon: MessageCircle, label: "Mensagens WhatsApp", href: "/admin/whatsapp-messages" },
   ];
 
   const handleSignOut = async () => {
