@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface ProductCardProps {
   product: {
@@ -15,6 +16,8 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  const session = useSession();
+
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
       <Link to={`/products/${product.slug}`}>
@@ -31,7 +34,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <p className="text-white/90 mb-4 line-clamp-2">
           {product.short_description}
         </p>
-        {product.price && (
+        {session && product.price && (
           <p className="text-lg font-bold mb-4">
             R$ {product.price.toFixed(2)}
           </p>
