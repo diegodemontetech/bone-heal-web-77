@@ -6,7 +6,7 @@ import { useSession } from "@supabase/auth-helpers-react";
 
 interface ProductCardProps {
   product: {
-    id: number;
+    id: string;  // Changed from number to string
     name: string;
     slug: string;
     short_description: string;

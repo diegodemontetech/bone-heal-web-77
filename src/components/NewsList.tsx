@@ -8,7 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
 
 interface NewsItem {
-  id: number;
+  id: string;  // Changed from number to string
   title: string;
   slug: string;
   summary: string;

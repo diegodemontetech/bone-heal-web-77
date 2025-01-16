@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Category {
-  id: number;
+  id: string;  // Changed from number to string
   name: string;
   slug: string;
   description: string;
