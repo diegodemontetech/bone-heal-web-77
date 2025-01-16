@@ -7,16 +7,13 @@ const Hero = () => {
       {/* Background Video/GIF Layer - Optimized */}
       <div className="absolute inset-0">
         <img 
-          src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/home.gif" 
+          src="https://s7.gifyu.com/images/SesbK.gif" 
           alt="Regeneração óssea em movimento"
           className="w-full h-full object-cover"
           loading="lazy"
-          style={{ 
-            imageRendering: 'auto',
-            objectFit: 'cover'
-          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-primary-dark/95" />
+        {/* Red gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-primary-dark/90" />
       </div>
 
       {/* Content Layer */}
