@@ -3,7 +3,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion, useScroll, useTransform, useAnimation } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 const HowItWorks = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,49 +39,40 @@ const HowItWorks = () => {
     {
       title: "Preparação Inicial",
       description: "O processo começa com uma avaliação detalhada e preparação do local para o procedimento.",
-      image: "1.webp"
+      image: "https://i.ibb.co/wMSDFzw/1.webp"
     },
     {
       title: "Aplicação da Barreira",
       description: "A barreira Bone Heal® é cuidadosamente posicionada para proteger a área de regeneração.",
-      image: "2.webp"
+      image: "https://i.ibb.co/n08JPr6/2.webp"
     },
     {
       title: "Proteção do Coágulo",
       description: "A membrana mantém o coágulo protegido, fundamental para o processo de regeneração.",
-      image: "3.webp"
+      image: "https://i.ibb.co/9981rfF/3.webp"
     },
     {
       title: "Regeneração Guiada",
       description: "O processo de regeneração óssea ocorre naturalmente sob a proteção da barreira.",
-      image: "4.webp"
+      image: "https://i.ibb.co/X277PPz/4.webp"
     },
     {
       title: "Formação Óssea",
       description: "Novo tecido ósseo se forma progressivamente na área protegida.",
-      image: "5.webp"
+      image: "https://i.ibb.co/Jq6bMHz/5.webp"
     }
   ];
 
   const finalStep = {
     title: "Resultado Final",
     description: "Após o período de cicatrização, obtém-se um excelente resultado de regeneração.",
-    image: "6.webp"
-  };
-
-  const getPublicUrl = (imageName: string) => {
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('how_it_works_images')
-      .getPublicUrl(imageName);
-    return publicUrl;
+    image: "https://i.ibb.co/5rhwywJ/6.webp"
   };
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       
-      {/* Video Hero Section with Scroll Indicator */}
       <div className="h-screen relative overflow-hidden">
         <video
           ref={videoRef}
@@ -122,7 +112,6 @@ const HowItWorks = () => {
         </div>
       </div>
 
-      {/* Scrolling Steps Section */}
       <div ref={containerRef} className="relative">
         {steps.map((step, index) => {
           const progress = useTransform(
@@ -168,7 +157,7 @@ const HowItWorks = () => {
                   className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl"
                 >
                   <img
-                    src={getPublicUrl(step.image)}
+                    src={step.image}
                     alt={step.title}
                     className="w-full h-full object-cover"
                   />
@@ -178,7 +167,6 @@ const HowItWorks = () => {
           );
         })}
 
-        {/* Final Step - Sticky at the end */}
         <motion.section
           style={{
             opacity: useTransform(
@@ -203,7 +191,7 @@ const HowItWorks = () => {
             </div>
             <div className="relative aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <img
-                src={getPublicUrl(finalStep.image)}
+                src={finalStep.image}
                 alt={finalStep.title}
                 className="w-full h-full object-cover"
               />
