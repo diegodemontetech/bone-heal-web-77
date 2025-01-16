@@ -21,7 +21,7 @@ const Team = () => {
             transition={{ duration: 0.6 }}
           >
             <img
-              src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/fotos/munir"
+              src="https://cloud-1de12d.b-cdn.net/media/original/4372c63cef0efffefda27509bc44164e/DrMuniremAZULAA.png"
               alt="Dr. Munir Salomão"
               className="rounded-2xl w-full aspect-[4/3] object-cover"
             />
