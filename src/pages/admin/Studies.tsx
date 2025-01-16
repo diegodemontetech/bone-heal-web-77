@@ -11,13 +11,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,12 +27,14 @@ import { Label } from "@/components/ui/label";
 const AdminStudies = () => {
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     published_date: "",
     file_url: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { data: studies, refetch } = useQuery({
     queryKey: ["admin-studies"],
@@ -67,28 +70,72 @@ const AdminStudies = () => {
     refetch();
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `studies/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('studies_files')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('studies_files')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      toast({
+        title: "Erro ao fazer upload do arquivo",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const { error } = await supabase
-      .from("scientific_studies")
-      .insert([formData]);
+    try {
+      let fileUrl = formData.file_url;
+      
+      if (selectedFile) {
+        fileUrl = await uploadFile(selectedFile);
+      }
 
-    if (error) {
+      const { error } = await supabase
+        .from("scientific_studies")
+        .insert([{ ...formData, file_url: fileUrl }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Estudo criado com sucesso",
+      });
+      setIsFormOpen(false);
+      setFormData({ title: "", description: "", published_date: "", file_url: "" });
+      setSelectedFile(null);
+      refetch();
+    } catch (error: any) {
       toast({
         title: "Erro ao criar estudo",
         description: error.message,
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Estudo criado com sucesso",
-    });
-    setIsFormOpen(false);
-    setFormData({ title: "", description: "", published_date: "", file_url: "" });
-    refetch();
   };
 
   return (
@@ -108,6 +155,7 @@ const AdminStudies = () => {
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>Data de Publicação</TableHead>
+                <TableHead>Arquivo</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -117,6 +165,18 @@ const AdminStudies = () => {
                   <TableCell>{study.title}</TableCell>
                   <TableCell>
                     {new Date(study.published_date).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {study.file_url && (
+                      <a
+                        href={study.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary-dark"
+                      >
+                        Ver PDF
+                      </a>
+                    )}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Button variant="outline" size="icon">
@@ -140,6 +200,9 @@ const AdminStudies = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Novo Estudo Científico</DialogTitle>
+              <DialogDescription>
+                Preencha os dados do estudo científico e faça upload do arquivo PDF.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -171,17 +234,29 @@ const AdminStudies = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="file_url">URL do Arquivo</Label>
-                <Input
-                  id="file_url"
-                  type="url"
-                  value={formData.file_url}
-                  onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
-                  required
-                />
+                <Label htmlFor="file">Arquivo PDF</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="file"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    required
+                  />
+                  {isUploading && (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  )}
+                </div>
               </div>
-              <Button type="submit" className="w-full">
-                Criar Estudo
+              <Button type="submit" className="w-full" disabled={isUploading}>
+                {isUploading ? (
+                  <>
+                    <Upload className="w-4 h-4 mr-2 animate-bounce" />
+                    Enviando...
+                  </>
+                ) : (
+                  "Criar Estudo"
+                )}
               </Button>
             </form>
           </DialogContent>
