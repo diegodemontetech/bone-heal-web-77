@@ -2,28 +2,43 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import AdminLayout from "@/components/admin/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const Admin = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  // Check if user is authenticated
-  useEffect(() => {
-    const checkAuth = async () => {
+  // Check if user is authenticated and is admin
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+      return session;
+    },
+  });
+
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ["profile", session?.user?.id],
+    queryFn: async () => {
+      if (!session?.user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", session.user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!session?.user?.id,
+  });
 
   // Fetch basic stats
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["adminStats"],
     queryFn: async () => {
       const [products, orders] = await Promise.all([
@@ -36,9 +51,26 @@ const Admin = () => {
         orders: orders.count || 0,
       };
     },
+    enabled: !!profile?.is_admin,
   });
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!session) {
+      navigate("/login");
+      return;
+    }
+
+    if (!profileLoading && profile && !profile.is_admin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para acessar a área administrativa.",
+        variant: "destructive",
+      });
+      navigate("/products");
+    }
+  }, [session, profile, profileLoading, navigate, toast]);
+
+  if (profileLoading || statsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -46,10 +78,13 @@ const Admin = () => {
     );
   }
 
+  if (!profile?.is_admin) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-8">
+    <AdminLayout>
+      <main className="p-8">
         <h1 className="text-4xl font-bold mb-8">Painel Administrativo</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -89,7 +124,6 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="products">
-            {/* Product management content */}
             <Card>
               <CardHeader>
                 <CardTitle>Gerenciamento de Produtos</CardTitle>
@@ -101,7 +135,6 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="orders">
-            {/* Order management content */}
             <Card>
               <CardHeader>
                 <CardTitle>Gerenciamento de Pedidos</CardTitle>
@@ -113,7 +146,6 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="shipping">
-            {/* Shipping rates management content */}
             <Card>
               <CardHeader>
                 <CardTitle>Gerenciamento de Fretes</CardTitle>
@@ -125,8 +157,7 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </main>
-      <Footer />
-    </div>
+    </AdminLayout>
   );
 };
 
