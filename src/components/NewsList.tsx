@@ -6,9 +6,10 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
 interface NewsItem {
-  id: string;  // Changed from number to string
+  id: string;
   title: string;
   slug: string;
   summary: string;
@@ -20,15 +21,28 @@ interface NewsItem {
 
 const NewsList = () => {
   const navigate = useNavigate();
-  const { data: news, isLoading } = useQuery({
+  const { toast } = useToast();
+  
+  const { data: news, isLoading, error } = useQuery({
     queryKey: ["news"],
     queryFn: async () => {
+      console.log("Fetching news...");
       const { data, error } = await supabase
         .from("news")
         .select("*")
         .order("published_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching news:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar notícias",
+          description: error.message,
+        });
+        throw error;
+      }
+      
+      console.log("News data:", data);
       return data as NewsItem[];
     },
   });
@@ -36,6 +50,16 @@ const NewsList = () => {
   const handleNewsClick = (slug: string) => {
     navigate(`/news/${slug}`);
   };
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center text-red-600">
+          Erro ao carregar notícias. Por favor, tente novamente mais tarde.
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -55,10 +79,20 @@ const NewsList = () => {
     );
   }
 
+  if (!news || news.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="text-center text-neutral-600">
+          Nenhuma notícia encontrada.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {news?.map((item, index) => (
+        {news.map((item, index) => (
           <motion.div
             key={item.id}
             initial={{ opacity: 0, y: 20 }}
