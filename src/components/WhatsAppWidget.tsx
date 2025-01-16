@@ -195,8 +195,6 @@ const WhatsAppWidget = () => {
     return null; // Don't render anything while loading
   }
 
-  // ... keep existing code (return JSX)
-
   return (
     <AnimatePresence>
       {isVisible && configMessages && (
