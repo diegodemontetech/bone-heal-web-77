@@ -13,6 +13,7 @@ export interface CartItem {
 interface CartStore {
   cartItems: CartItem[];
   setCartItems: (items: CartItem[] | ((prev: CartItem[]) => CartItem[])) => void;
+  addToCart: (product: { id: string; name: string; price: number; image: string }) => void;
 }
 
 export const useCart = create<CartStore>((set) => ({
@@ -20,4 +21,19 @@ export const useCart = create<CartStore>((set) => ({
   setCartItems: (items) => set((state) => ({
     cartItems: typeof items === "function" ? items(state.cartItems) : items,
   })),
+  addToCart: (product) => set((state) => {
+    const existingItem = state.cartItems.find(item => item.id === product.id);
+    if (existingItem) {
+      return {
+        cartItems: state.cartItems.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      };
+    }
+    return {
+      cartItems: [...state.cartItems, { ...product, quantity: 1 }]
+    };
+  }),
 }));

@@ -26,9 +26,14 @@ const Products = () => {
   }, [data]);
 
   const handleAddToCart = (product) => {
-    addToCart(product);
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image
+    });
     toast.success("Produto adicionado ao carrinho", {
-      duration: 1500 // Reduced from default to 1.5 seconds
+      duration: 1500 // 1.5 seconds
     });
   };
 
