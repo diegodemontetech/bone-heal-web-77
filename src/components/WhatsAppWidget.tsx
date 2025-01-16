@@ -17,7 +17,7 @@ const WhatsAppWidget = () => {
   const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean; isUser?: boolean }>>([]);
 
   // Fetch configurable messages
-  const { data: configMessages } = useQuery({
+  const { data: configMessages, isLoading } = useQuery({
     queryKey: ["whatsapp-messages"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,6 +26,11 @@ const WhatsAppWidget = () => {
       
       if (error) {
         console.error("Error fetching messages:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as mensagens. Por favor, tente novamente.",
+          variant: "destructive"
+        });
         throw error;
       }
       
@@ -37,24 +42,29 @@ const WhatsAppWidget = () => {
   });
 
   useEffect(() => {
-    // Show widget after 5 seconds
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-      // Start conversation immediately
-      startConversation();
-    }, 5000);
+    // Show widget after 5 seconds only if messages are loaded
+    if (!isLoading && configMessages) {
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+        // Start conversation immediately
+        startConversation();
+      }, 5000);
 
-    return () => clearTimeout(timer);
-  }, []);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, configMessages]);
 
   const startConversation = async () => {
-    if (!configMessages) return;
+    if (!configMessages) {
+      console.error("No config messages available");
+      return;
+    }
 
     setIsTyping(true);
     await new Promise(resolve => setTimeout(resolve, 1000));
     setMessages([
       {
-        text: configMessages.greeting,
+        text: configMessages.greeting || "Olá! Como posso ajudar?",
         delay: 0
       }
     ]);
@@ -62,7 +72,7 @@ const WhatsAppWidget = () => {
     
     await new Promise(resolve => setTimeout(resolve, 2000));
     setMessages(prev => [...prev, {
-      text: configMessages.partnership_question,
+      text: configMessages.partnership_question || "Você tem interesse em ser um parceiro Bone Heal?",
       delay: 0,
       showInterestButtons: true
     }]);
@@ -173,9 +183,13 @@ const WhatsAppWidget = () => {
     }
   };
 
+  if (isLoading) {
+    return null; // Don't render anything while loading
+  }
+
   return (
     <AnimatePresence>
-      {isVisible && (
+      {isVisible && configMessages && (
         <div className="fixed bottom-4 right-4 z-50">
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
@@ -259,7 +273,7 @@ const WhatsAppWidget = () => {
                     </motion.div>
                   ))}
 
-                  {hasInterest === true && currentInput && (
+                  {hasInterest === true && currentInput && showInput && (
                     <motion.div
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
