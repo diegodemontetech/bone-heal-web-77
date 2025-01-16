@@ -55,10 +55,12 @@ const WhatsAppMessagesPage = () => {
     },
   });
 
-  const handleEdit = (id: string, text: string, type: "question" | "final_greeting") => {
+  const handleEdit = (id: string, text: string, type: string) => {
+    // Ensure type is one of our allowed values, default to "question" if not
+    const validType = type === "final_greeting" ? "final_greeting" : "question";
     setEditingId(id);
     setEditingText(text);
-    setEditingType(type);
+    setEditingType(validType);
   };
 
   const handleSave = async (id: string) => {
@@ -290,7 +292,7 @@ const WhatsAppMessagesPage = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleEdit(message.id, message.message_text, message.message_type)}
+                          onClick={() => handleEdit(message.id, message.message_text, message.message_type || 'question')}
                         >
                           Editar
                         </Button>
