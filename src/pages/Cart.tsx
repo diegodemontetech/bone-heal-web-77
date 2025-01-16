@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 const Cart = () => {
   const session = useSession();
@@ -69,11 +70,11 @@ const Cart = () => {
         .insert({
           user_id: session.user.id,
           total_amount: total,
-          items: cartItems,
+          items: cartItems as unknown as Json, // Type assertion to satisfy TypeScript
           shipping_address: {
             zip_code: zipCode,
             shipping_cost: shippingCost,
-          },
+          } as Json,
         })
         .select()
         .single();

@@ -1,6 +1,8 @@
 import { create } from "zustand";
+import { Json } from "@/integrations/supabase/types";
 
-interface CartItem {
+export interface CartItem {
+  [key: string]: string | number; // This makes CartItem compatible with Json type
   id: string;
   name: string;
   quantity: number;
