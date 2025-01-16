@@ -1,13 +1,8 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Product } from "@/types/product";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Award, ShoppingCart, Minus, Plus, LogIn } from "lucide-react";
-import { toast } from "sonner";
-import CartWidget from "@/components/cart/CartWidget";
-import { useSession } from "@supabase/auth-helpers-react";
+import { useToast } from "@/components/ui/use-toast";
+import { Product, CartItem } from "@/types/product";
+import { useCart } from "@/hooks/use-cart";
 
 interface ProductInfoProps {
   product: Product;
@@ -15,28 +10,14 @@ interface ProductInfoProps {
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const [quantity, setQuantity] = useState(1);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<Array<{
-    id: string;  // Changed from number to string
-    name: string;
-    quantity: number;
-    price: number;
-    image: string;
-  }>>([]);
-  const navigate = useNavigate();
-  const session = useSession();
+  const { cartItems, setCartItems } = useCart();
+  const { toast } = useToast();
 
   const handleAddToCart = () => {
-    if (!session) {
-      toast.error("Faça login para adicionar produtos ao carrinho");
-      navigate("/login");
-      return;
-    }
-
-    const newItem = {
+    const newItem: CartItem = {
       id: product.id,
       name: product.name,
-      quantity: quantity,
+      quantity,
       price: product.price || 0,
       image: product.main_image || "",
     };
@@ -53,86 +34,69 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       return [...prev, newItem];
     });
 
-    setIsCartOpen(true);
-    toast.success("Produto adicionado ao carrinho!");
+    toast({
+      title: "Produto adicionado ao carrinho",
+      description: `${quantity}x ${product.name}`,
+    });
   };
 
+  const handleQuantityChange = (value: number) => {
+    if (value >= 1) {
+      setQuantity(value);
+    }
+  };
+
+  if (!product) return null;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <h1 className="text-4xl font-bold text-neutral-900">{product.name}</h1>
-      
-      <div className="prose prose-neutral max-w-none">
-        <p className="text-lg text-neutral-600">{product.short_description}</p>
-      </div>
+    <div className="lg:col-span-5 mt-10 lg:mt-0">
+      <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+        {product.name}
+      </h1>
 
-      {product.certifications && product.certifications.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {product.certifications.map((cert, index) => (
-            <Badge key={index} variant="secondary" className="flex items-center gap-1">
-              <Award className="w-4 h-4" />
-              {cert}
-            </Badge>
-          ))}
+      {product.price && (
+        <div className="mt-4">
+          <p className="text-3xl tracking-tight text-gray-900">
+            R$ {product.price.toFixed(2)}
+          </p>
         </div>
       )}
 
-      {session && product.price && (
-        <div className="text-2xl font-bold text-primary">
-          R$ {product.price.toFixed(2)}
+      {product.description && (
+        <div className="mt-6">
+          <h3 className="sr-only">Descrição</h3>
+          <div className="space-y-6 text-base text-gray-700">
+            {product.description}
+          </div>
         </div>
       )}
 
-      {session ? (
+      <div className="mt-10">
         <div className="flex items-center gap-4">
-          <div className="flex items-center border rounded-lg">
+          <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              onClick={() => handleQuantityChange(quantity - 1)}
+              disabled={quantity <= 1}
             >
-              <Minus className="w-4 h-4" />
+              -
             </Button>
             <span className="w-12 text-center">{quantity}</span>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              onClick={() => setQuantity(quantity + 1)}
+              onClick={() => handleQuantityChange(quantity + 1)}
             >
-              <Plus className="w-4 h-4" />
+              +
             </Button>
           </div>
-
-          <Button
-            size="lg"
-            className="flex-1 text-white"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="w-5 h-5 mr-2" />
+          <Button onClick={handleAddToCart} className="flex-1">
             Adicionar ao Carrinho
           </Button>
         </div>
-      ) : (
-        <Button
-          size="lg"
-          className="w-full text-white"
-          onClick={() => navigate("/login")}
-        >
-          <LogIn className="w-5 h-5 mr-2" />
-          Faça login para comprar
-        </Button>
-      )}
-
-      <CartWidget
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-      />
-    </motion.div>
+      </div>
+    </div>
   );
 };
 
