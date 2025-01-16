@@ -81,7 +81,7 @@ const WhatsAppWidget = () => {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessages(prev => [...prev, {
-        text: `Qual é o seu telefone ${value}? (ex: 11999999999)`,
+        text: `Qual é o seu telefone ${value.toLowerCase()}? (ex: 11999999999)`,
         delay: 0
       }]);
       setIsTyping(false);
@@ -101,7 +101,8 @@ const WhatsAppWidget = () => {
         delay: 0,
         isUser: true
       }]);
-      handleSubmit();
+      setCurrentInput(null); // Important: Set to null to prevent further input
+      handleSubmit(value);
     }
   };
 
@@ -112,14 +113,14 @@ const WhatsAppWidget = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (phoneValue?: string) => {
     try {
       const { error } = await supabase
         .from('contact_leads')
         .insert([
           {
             name,
-            phone,
+            phone: phoneValue || phone,
             reason: hasInterest ? 'Interessado em parceria' : 'Não interessado',
             source: 'whatsapp_widget'
           }
@@ -130,7 +131,7 @@ const WhatsAppWidget = () => {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessages(prev => [...prev, {
-        text: `Obrigada pelo contato ${name}! Em breve, nossa equipe entrará em contato com você.`,
+        text: `Obrigada pelo contato ${name.toLowerCase()}! Em breve, nossa equipe entrará em contato com você.`,
         delay: 0
       }]);
       setIsTyping(false);
