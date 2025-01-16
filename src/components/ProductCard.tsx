@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ interface ProductCardProps {
     slug: string;
     short_description: string;
     main_image: string;
+    gallery?: string[];
     price?: number;
     stock?: number;
   };
@@ -19,19 +21,65 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const session = useSession();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Combine main_image and gallery for the carousel
+  const images = product.main_image 
+    ? [product.main_image, ...(product.gallery || [])]
+    : [];
   
   // Placeholder image from Unsplash
   const placeholderImage = "https://images.unsplash.com/photo-1649972904349-6e44c42644a7";
 
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const previousImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
       <Link to={`/products/${product.slug}`}>
-        <div className="aspect-[4/3] relative overflow-hidden">
+        <div className="aspect-[4/3] relative overflow-hidden group">
           <img
-            src={product.main_image ? `/products/${product.main_image}` : placeholderImage}
+            src={images.length > 0 ? `/products/${images[currentImageIndex]}` : placeholderImage}
             alt={product.name}
-            className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
           />
+          {images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  previousImage();
+                }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  nextImage();
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                {images.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      index === currentImageIndex ? "bg-white" : "bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
           {product.stock !== undefined && product.stock <= 0 && (
             <div className="absolute top-2 right-2">
               <Badge variant="destructive">

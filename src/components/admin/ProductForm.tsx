@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import ProductImageUpload from "./ProductImageUpload";
 
 const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -29,7 +30,6 @@ const formSchema = z.object({
   short_description: z.string().optional(),
   description: z.string().optional(),
   price: z.string().optional(),
-  main_image: z.string().optional(),
   video_url: z.string().optional(),
 });
 
@@ -41,6 +41,9 @@ interface ProductFormProps {
 
 const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [images, setImages] = useState<string[]>(
+    product?.gallery ? [product.main_image, ...product.gallery] : []
+  );
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -51,7 +54,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       short_description: product?.short_description || "",
       description: product?.description || "",
       price: product?.price?.toString() || "",
-      main_image: product?.main_image || "",
       video_url: product?.video_url || "",
     },
   });
@@ -65,8 +67,9 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
         short_description: values.short_description,
         description: values.description,
         price: values.price ? parseFloat(values.price) : null,
-        main_image: values.main_image,
         video_url: values.video_url,
+        main_image: images[0] || null,
+        gallery: images.slice(1),
       };
 
       if (product) {
@@ -143,6 +146,15 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
               )}
             />
 
+            <FormItem>
+              <FormLabel>Imagens do Produto</FormLabel>
+              <ProductImageUpload
+                images={images}
+                onChange={setImages}
+                maxImages={3}
+              />
+            </FormItem>
+
             <FormField
               control={form.control}
               name="short_description"
@@ -179,20 +191,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
                   <FormLabel>Preço</FormLabel>
                   <FormControl>
                     <Input {...field} type="number" step="0.01" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="main_image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL da Imagem Principal</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
