@@ -18,7 +18,7 @@ const AdminLogin = () => {
     },
   });
 
-  const { data: profile, isLoading, error } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
@@ -38,23 +38,42 @@ const AdminLogin = () => {
     },
     enabled: !!session?.user?.id,
     retry: 1,
-    meta: {
-      errorMessage: "Houve um erro ao verificar suas permissões. Por favor, tente novamente."
-    }
   });
 
   useEffect(() => {
-    if (error) {
-      console.error("Query error:", error);
-      toast({
-        title: "Erro ao carregar perfil",
-        description: "Houve um erro ao verificar suas permissões. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-      supabase.auth.signOut();
-      return;
-    }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        if (event === "SIGNED_IN") {
+          // Aguarda um momento para garantir que o perfil seja carregado
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", currentSession?.user?.id)
+              .single();
 
+            if (profile?.is_admin) {
+              navigate("/admin");
+            } else {
+              toast({
+                title: "Acesso negado",
+                description: "Você não tem permissão para acessar a área administrativa.",
+                variant: "destructive",
+              });
+              await supabase.auth.signOut();
+              navigate("/login");
+            }
+          }, 500);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
+
+  useEffect(() => {
     if (session && !isLoading) {
       if (profile?.is_admin) {
         navigate("/admin");
@@ -68,7 +87,7 @@ const AdminLogin = () => {
         navigate("/login");
       }
     }
-  }, [session, profile, isLoading, error, navigate, toast]);
+  }, [session, profile, isLoading, navigate, toast]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
