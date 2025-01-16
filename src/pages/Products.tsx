@@ -16,15 +16,25 @@ const Products = () => {
         .functions
         .invoke('omie-products')
 
-      if (omieError) throw omieError
+      if (omieError) {
+        console.error('Erro ao buscar produtos do Omie:', omieError);
+        throw omieError;
+      }
+
+      console.log('Produtos do Omie:', omieProducts);
 
       // Get products from database that match Omie products
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .in('id', omieProducts.products.map((p: any) => p.codigo))
+        .in('id', omieProducts.products.map((p: any) => p.codigo));
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar produtos do banco:', error);
+        throw error;
+      }
+
+      console.log('Produtos do banco:', data);
 
       // Merge Omie stock data with database products
       return data.map(product => ({
@@ -47,7 +57,7 @@ const Products = () => {
                 <div className="col-span-full flex justify-center items-center py-20">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              ) : products?.length === 0 ? (
+              ) : !products || products.length === 0 ? (
                 <div className="col-span-full text-center py-20">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">
                     Nenhum produto disponível
@@ -56,17 +66,19 @@ const Products = () => {
                     No momento não há produtos cadastrados.
                   </p>
                 </div>
-              ) : products?.map((product) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
+              ) : (
+                products.map((product) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </section>

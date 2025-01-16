@@ -5,7 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const ProductsPreview = () => {
-  const { data: products } = useQuery({
+  const { data: products, isLoading } = useQuery({
     queryKey: ["products-preview"],
     queryFn: async () => {
       // Get active products with stock from Omie
@@ -13,7 +13,12 @@ const ProductsPreview = () => {
         .functions
         .invoke('omie-products')
 
-      if (omieError) throw omieError
+      if (omieError) {
+        console.error('Erro ao buscar produtos do Omie:', omieError);
+        throw omieError;
+      }
+
+      console.log('Produtos do Omie:', omieProducts);
 
       // Get products from database that match Omie products
       const { data, error } = await supabase
@@ -22,7 +27,12 @@ const ProductsPreview = () => {
         .in('id', omieProducts.products.map((p: any) => p.codigo))
         .limit(3);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar produtos do banco:', error);
+        throw error;
+      }
+
+      console.log('Produtos do banco:', data);
 
       // Merge Omie stock data with database products
       return data.map(product => ({
@@ -31,6 +41,30 @@ const ProductsPreview = () => {
       }));
     },
   });
+
+  if (isLoading) {
+    return (
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <p>Carregando produtos...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!products || products.length === 0) {
+    return (
+      <section className="py-24 bg-white">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <p>Nenhum produto encontrado.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-24 bg-white">
@@ -72,13 +106,18 @@ const ProductsPreview = () => {
                 <p className="text-neutral-600 mb-4 line-clamp-2">
                   {product.short_description}
                 </p>
-                <Link
-                  to={`/products/${product.slug}`}
-                  className="inline-flex items-center text-primary hover:text-primary-dark transition-colors"
-                >
-                  Ver Detalhes
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                <div className="flex justify-between items-center">
+                  <Link
+                    to={`/products/${product.slug}`}
+                    className="inline-flex items-center text-primary hover:text-primary-dark transition-colors"
+                  >
+                    Ver Detalhes
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                  <span className="text-sm text-neutral-500">
+                    {product.stock > 0 ? `${product.stock} em estoque` : 'Indisponível'}
+                  </span>
+                </div>
               </div>
             </motion.div>
           ))}
