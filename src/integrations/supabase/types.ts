@@ -125,6 +125,9 @@ export type Database = {
           created_at: string
           id: string
           items: Json | null
+          omie_last_update: string | null
+          omie_order_id: string | null
+          omie_status: string | null
           shipping_address: Json | null
           status: string
           total_amount: number
@@ -135,6 +138,9 @@ export type Database = {
           created_at?: string
           id?: string
           items?: Json | null
+          omie_last_update?: string | null
+          omie_order_id?: string | null
+          omie_status?: string | null
           shipping_address?: Json | null
           status?: string
           total_amount: number
@@ -145,6 +151,9 @@ export type Database = {
           created_at?: string
           id?: string
           items?: Json | null
+          omie_last_update?: string | null
+          omie_order_id?: string | null
+          omie_status?: string | null
           shipping_address?: Json | null
           status?: string
           total_amount?: number
