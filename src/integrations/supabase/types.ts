@@ -9,7 +9,281 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      contact_form_configs: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          department: string
+          email: string
+          id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          department: string
+          email: string
+          id?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          department?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      dental_specialties: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      news: {
+        Row: {
+          author: string | null
+          category: string | null
+          content: string | null
+          created_at: string
+          featured_image: string | null
+          id: string
+          published_at: string
+          slug: string
+          summary: string | null
+          tags: string | null
+          title: string
+          views: number | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          featured_image?: string | null
+          id?: string
+          published_at?: string
+          slug: string
+          summary?: string | null
+          tags?: string | null
+          title: string
+          views?: number | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          featured_image?: string | null
+          id?: string
+          published_at?: string
+          slug?: string
+          summary?: string | null
+          tags?: string | null
+          title?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
+      news_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json | null
+          shipping_address: Json | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json | null
+          shipping_address?: Json | null
+          status?: string
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json | null
+          shipping_address?: Json | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          gallery: string[] | null
+          id: string
+          main_image: string | null
+          name: string
+          price: number | null
+          short_description: string | null
+          slug: string
+          technical_details: Json | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          gallery?: string[] | null
+          id?: string
+          main_image?: string | null
+          name: string
+          price?: number | null
+          short_description?: string | null
+          slug: string
+          technical_details?: Json | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          gallery?: string[] | null
+          id?: string
+          main_image?: string | null
+          name?: string
+          price?: number | null
+          short_description?: string | null
+          slug?: string
+          technical_details?: Json | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          city: string | null
+          cnpj: string | null
+          created_at: string
+          cro: string | null
+          full_name: string | null
+          id: string
+          is_admin: boolean | null
+          neighborhood: string | null
+          phone: string | null
+          receive_news: boolean | null
+          specialty: string | null
+          state: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          cro?: string | null
+          full_name?: string | null
+          id: string
+          is_admin?: boolean | null
+          neighborhood?: string | null
+          phone?: string | null
+          receive_news?: boolean | null
+          specialty?: string | null
+          state?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          cro?: string | null
+          full_name?: string | null
+          id?: string
+          is_admin?: boolean | null
+          neighborhood?: string | null
+          phone?: string | null
+          receive_news?: boolean | null
+          specialty?: string | null
+          state?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      scientific_studies: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string | null
+          id: string
+          published_date: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          published_date: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          published_date?: string
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
