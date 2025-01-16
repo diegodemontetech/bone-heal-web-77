@@ -26,27 +26,21 @@ const NewsList = () => {
   const { data: news, isLoading, error } = useQuery({
     queryKey: ["news"],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("news")
-          .select("*")
-          .order("published_at", { ascending: false });
-        
-        if (error) {
-          console.error("Error fetching news:", error);
-          toast({
-            variant: "destructive",
-            title: "Erro ao carregar notícias",
-            description: error.message,
-          });
-          throw error;
-        }
-        
-        return data as NewsItem[];
-      } catch (err) {
-        console.error("Error in news query:", err);
-        throw err;
+      const { data, error } = await supabase
+        .from("news")
+        .select("*")
+        .order("published_at", { ascending: false });
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar notícias",
+          description: error.message,
+        });
+        throw error;
       }
+      
+      return data as NewsItem[];
     },
   });
 
