@@ -1,8 +1,13 @@
-import { Shield, Heart, TrendingUp } from 'lucide-react';
+import { Shield, Heart, TrendingUp, Lightbulb } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Features = () => {
   const features = [
+    {
+      icon: Lightbulb,
+      title: "Tecnologia Inovadora",
+      description: "Simplifica procedimentos complexos, proporcionando resultados superiores."
+    },
     {
       icon: Shield,
       title: "Técnica Simples e Previsível",
@@ -37,7 +42,7 @@ const Features = () => {
             Tecnologia inovadora que simplifica procedimentos complexos
           </p>
         </motion.div>
-        <div className="grid md:grid-cols-3 gap-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
             <motion.div
               key={index}
@@ -45,12 +50,12 @@ const Features = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.2 }}
-              className="bg-white rounded-3xl p-10 shadow-lg hover:shadow-xl transition-shadow duration-300"
+              className="bg-white rounded-3xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300"
             >
-              <div className="bg-primary/10 w-20 h-20 rounded-2xl flex items-center justify-center mb-8">
-                <feature.icon className="w-10 h-10 text-primary" />
+              <div className="bg-primary/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-6">
+                <feature.icon className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 font-heading">{feature.title}</h3>
+              <h3 className="text-xl font-bold mb-3 font-heading">{feature.title}</h3>
               <p className="text-neutral-600 leading-relaxed font-light">{feature.description}</p>
             </motion.div>
           ))}
