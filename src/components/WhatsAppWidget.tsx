@@ -111,10 +111,10 @@ const WhatsAppWidget = () => {
       
       toast.success('Obrigado pelo contato!');
       
-      // Wait a bit before minimizing
+      // Increased wait time to 10 seconds before minimizing
       setTimeout(() => {
         setIsVisible(false);
-      }, 3000);
+      }, 10000);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Erro ao enviar mensagem. Tente novamente.');
