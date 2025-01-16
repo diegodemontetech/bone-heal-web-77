@@ -19,13 +19,16 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const session = useSession();
+  
+  // Placeholder image from Unsplash
+  const placeholderImage = "https://images.unsplash.com/photo-1649972904349-6e44c42644a7";
 
   return (
     <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
       <Link to={`/products/${product.slug}`}>
         <div className="aspect-[4/3] relative overflow-hidden">
           <img
-            src={`/products/${product.main_image}`}
+            src={product.main_image ? `/products/${product.main_image}` : placeholderImage}
             alt={product.name}
             className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
           />
