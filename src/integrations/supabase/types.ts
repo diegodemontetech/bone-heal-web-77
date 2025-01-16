@@ -225,9 +225,12 @@ export type Database = {
           id: string
           main_image: string | null
           name: string
+          omie_code: string | null
+          omie_sync: boolean | null
           price: number | null
           short_description: string | null
           slug: string
+          stock: number | null
           technical_details: Json | null
           updated_at: string
           video_url: string | null
@@ -239,9 +242,12 @@ export type Database = {
           id?: string
           main_image?: string | null
           name: string
+          omie_code?: string | null
+          omie_sync?: boolean | null
           price?: number | null
           short_description?: string | null
           slug: string
+          stock?: number | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
@@ -253,9 +259,12 @@ export type Database = {
           id?: string
           main_image?: string | null
           name?: string
+          omie_code?: string | null
+          omie_sync?: boolean | null
           price?: number | null
           short_description?: string | null
           slug?: string
+          stock?: number | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
@@ -274,6 +283,8 @@ export type Database = {
           id: string
           is_admin: boolean | null
           neighborhood: string | null
+          omie_code: string | null
+          omie_sync: boolean | null
           phone: string | null
           receive_news: boolean | null
           specialty: string | null
@@ -291,6 +302,8 @@ export type Database = {
           id: string
           is_admin?: boolean | null
           neighborhood?: string | null
+          omie_code?: string | null
+          omie_sync?: boolean | null
           phone?: string | null
           receive_news?: boolean | null
           specialty?: string | null
@@ -308,6 +321,8 @@ export type Database = {
           id?: string
           is_admin?: boolean | null
           neighborhood?: string | null
+          omie_code?: string | null
+          omie_sync?: boolean | null
           phone?: string | null
           receive_news?: boolean | null
           specialty?: string | null
@@ -348,7 +363,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_default_password: {
+        Args: {
+          document: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

@@ -36,7 +36,7 @@ serve(async (req) => {
     const omieCustomer = {
       codigo_cliente_integracao: profile.id,
       razao_social: profile.full_name,
-      cnpj_cpf: profile.cnpj || '',
+      cnpj_cpf: profile.cnpj || profile.cpf || '',
       telefone1_numero: profile.phone || '',
       endereco: profile.address || '',
       endereco_numero: "S/N",
@@ -45,7 +45,7 @@ serve(async (req) => {
       cidade: profile.city || '',
       cep: profile.zip_code || '',
       contribuinte: "2", // Contribuinte ICMS: 1 - Sim, 2 - Não
-      pessoa_fisica: "S",
+      pessoa_fisica: profile.cpf ? "S" : "N",
       exterior: "N"
     }
 
@@ -70,6 +70,17 @@ serve(async (req) => {
     if (omieData.faultstring) {
       throw new Error(omieData.faultstring)
     }
+
+    // Update profile with OMIE code
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({ 
+        omie_code: omieData.codigo_cliente_omie,
+        omie_sync: true 
+      })
+      .eq('id', profile_id)
+
+    if (updateError) throw updateError
 
     return new Response(
       JSON.stringify({ success: true, codigo_cliente_omie: omieData.codigo_cliente_omie }),
