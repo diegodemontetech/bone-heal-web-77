@@ -6,11 +6,10 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 const NewsList = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const { data: news, isLoading, error } = useQuery({
     queryKey: ["news"],
@@ -30,17 +29,16 @@ const NewsList = () => {
       return data;
     },
     retry: 1,
-    onError: (error) => {
-      console.error("Query error:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao carregar notícias",
-        description: "Por favor, tente novamente mais tarde.",
-      });
+    meta: {
+      errorMessage: "Erro ao carregar notícias"
     },
   });
 
   if (error) {
+    toast.error("Erro ao carregar notícias", {
+      description: "Por favor, tente novamente mais tarde."
+    });
+    
     return (
       <div className="text-center p-8">
         <div className="text-red-600 font-semibold mb-4">
