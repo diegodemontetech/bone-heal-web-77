@@ -24,6 +24,23 @@ import {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+interface OrderItem {
+  name: string;
+  quantity: number;
+}
+
+interface ShippingAddress {
+  state: string;
+}
+
+interface Order {
+  id: string;
+  total_amount: number;
+  shipping_address: ShippingAddress | null;
+  items: OrderItem[] | null;
+  created_at: string;
+}
+
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -64,17 +81,19 @@ const Admin = () => {
           shipping_address,
           items,
           created_at
-        `);
+        `) as { data: Order[] | null };
+
+      if (!orders) return null;
 
       // Process orders data for charts
-      const stateData = {};
-      const productData = {};
-      const monthlyData = [];
+      const stateData: Record<string, number> = {};
+      const productData: Record<string, number> = {};
+      const monthlyData: Array<{ month: string; amount: number }> = [];
 
-      orders?.forEach(order => {
+      orders.forEach(order => {
         // State data
         const state = order.shipping_address?.state || 'N/A';
-        stateData[state] = (stateData[state] || 0) + order.total_amount;
+        stateData[state] = (stateData[state] || 0) + Number(order.total_amount);
 
         // Product data
         const items = order.items || [];
@@ -87,9 +106,9 @@ const Admin = () => {
         const monthYear = date.toLocaleString('default', { month: 'short', year: 'numeric' });
         const monthIndex = monthlyData.findIndex(d => d.month === monthYear);
         if (monthIndex === -1) {
-          monthlyData.push({ month: monthYear, amount: order.total_amount });
+          monthlyData.push({ month: monthYear, amount: Number(order.total_amount) });
         } else {
-          monthlyData[monthIndex].amount += order.total_amount;
+          monthlyData[monthIndex].amount += Number(order.total_amount);
         }
       });
 
@@ -103,7 +122,7 @@ const Admin = () => {
           quantity,
         })),
         monthlyData: monthlyData.sort((a, b) => 
-          new Date(a.month) - new Date(b.month)
+          new Date(a.month).getTime() - new Date(b.month).getTime()
         ),
       };
     },
@@ -183,7 +202,7 @@ const Admin = () => {
                       outerRadius={80}
                       label
                     >
-                      {orderStats?.productData.map((entry, index) => (
+                      {orderStats?.productData?.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
