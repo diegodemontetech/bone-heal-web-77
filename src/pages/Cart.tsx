@@ -17,6 +17,7 @@ const Cart = () => {
   const [zipCode, setZipCode] = useState("");
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [shippingCost, setShippingCost] = useState<number | null>(null);
+  const [shippingError, setShippingError] = useState<string | null>(null);
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + (shippingCost || 0);
@@ -28,25 +29,40 @@ const Cart = () => {
     }
 
     setIsCalculatingShipping(true);
+    setShippingError(null);
+    
     try {
+      console.log("Calculando frete para CEP:", zipCode);
+      
       const { data, error } = await supabase.functions.invoke("correios-shipping", {
         body: {
-          zipCodeOrigin: "04180112", // Your company's ZIP code
+          zipCodeOrigin: "04180112",
           zipCodeDestination: zipCode,
-          weight: 1, // Default weight in kg
-          length: 20, // Default dimensions in cm
+          weight: 1,
+          length: 20,
           width: 20,
           height: 20,
         },
       });
 
+      console.log("Resposta do cálculo de frete:", { data, error });
+
       if (error) throw error;
 
-      setShippingCost(data.pcFinal || 0);
-      toast.success("Frete calculado com sucesso!");
+      if (!data?.pcFinal) {
+        throw new Error("Não foi possível calcular o frete para este CEP");
+      }
+
+      setShippingCost(data.pcFinal);
+      toast.success("Frete calculado com sucesso!", {
+        duration: 2000 // 2 segundos
+      });
     } catch (error) {
-      console.error("Error calculating shipping:", error);
-      toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
+      console.error("Erro ao calcular frete:", error);
+      setShippingError("Erro ao calcular o frete. Por favor, tente novamente.");
+      toast.error("Erro ao calcular o frete. Por favor, tente novamente.", {
+        duration: 2000 // 2 segundos
+      });
     } finally {
       setIsCalculatingShipping(false);
     }
@@ -54,23 +70,26 @@ const Cart = () => {
 
   const handleCheckout = async () => {
     if (!session) {
-      toast.error("Por favor, faça login para continuar");
+      toast.error("Por favor, faça login para continuar", {
+        duration: 2000
+      });
       return;
     }
 
     if (!shippingCost) {
-      toast.error("Por favor, calcule o frete antes de continuar");
+      toast.error("Por favor, calcule o frete antes de continuar", {
+        duration: 2000
+      });
       return;
     }
 
     try {
-      // Create order in database
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: session.user.id,
           total_amount: total,
-          items: cartItems as unknown as Json, // Type assertion to satisfy TypeScript
+          items: cartItems as unknown as Json,
           shipping_address: {
             zip_code: zipCode,
             shipping_cost: shippingCost,
@@ -81,18 +100,20 @@ const Cart = () => {
 
       if (orderError) throw orderError;
 
-      // Sync with OMIE
       const { error: omieError } = await supabase.functions.invoke("omie-integration", {
         body: { action: "sync_order", order_id: order.id },
       });
 
       if (omieError) throw omieError;
 
-      toast.success("Pedido criado com sucesso!");
-      // Redirect to orders page or payment page
+      toast.success("Pedido criado com sucesso!", {
+        duration: 2000
+      });
     } catch (error) {
-      console.error("Error creating order:", error);
-      toast.error("Erro ao criar o pedido. Por favor, tente novamente.");
+      console.error("Erro ao criar pedido:", error);
+      toast.error("Erro ao criar o pedido. Por favor, tente novamente.", {
+        duration: 2000
+      });
     }
   };
 
@@ -160,6 +181,9 @@ const Cart = () => {
                       )}
                     </Button>
                   </div>
+                  {shippingError && (
+                    <p className="text-sm text-red-500 mt-1">{shippingError}</p>
+                  )}
                 </div>
 
                 <Separator />
