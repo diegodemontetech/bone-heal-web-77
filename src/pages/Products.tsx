@@ -23,7 +23,8 @@ const Products = () => {
         throw dbError;
       }
 
-      console.log('Produtos do banco:', dbProducts);
+      console.log('Produtos encontrados no banco:', dbProducts?.length || 0);
+      console.log('Detalhes dos produtos:', JSON.stringify(dbProducts, null, 2));
 
       if (!dbProducts || dbProducts.length === 0) {
         console.log('Nenhum produto encontrado no banco');
@@ -37,7 +38,12 @@ const Products = () => {
 
       if (omieError) {
         console.error('Erro ao buscar produtos do Omie:', omieError);
-        throw omieError;
+        // Don't throw error here, just log it and continue with database products
+        console.log('Continuando apenas com produtos do banco devido a erro do Omie');
+        return dbProducts.map(product => ({
+          ...product,
+          stock: product.stock || 0
+        }));
       }
 
       console.log('Produtos do Omie:', omieProducts);
@@ -45,7 +51,7 @@ const Products = () => {
       // Merge Omie stock data with database products
       return dbProducts.map(product => ({
         ...product,
-        stock: omieProducts?.products?.find((p: any) => p.codigo === product.id)?.estoque || 0
+        stock: omieProducts?.products?.find((p: any) => p.codigo === product.id)?.estoque || product.stock || 0
       }));
     },
   });
