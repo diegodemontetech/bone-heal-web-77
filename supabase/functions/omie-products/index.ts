@@ -8,10 +8,6 @@ const corsHeaders = {
 const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY');
 const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET');
 
-if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
-  throw new Error('Missing Omie credentials');
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -19,6 +15,12 @@ serve(async (req) => {
   }
 
   try {
+    // Validate environment variables
+    if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
+      console.error('Missing Omie credentials');
+      throw new Error('Missing Omie credentials');
+    }
+
     console.log('Iniciando busca de produtos no Omie');
     console.log('Usando APP_KEY:', OMIE_APP_KEY.substring(0, 5) + '...');
 
@@ -35,21 +37,22 @@ serve(async (req) => {
           pagina: 1,
           registros_por_pagina: 50,
           apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N",
-          filtrar_apenas_ativos: "S"
+          filtrar_apenas_omiepdv: "N"
         }]
       }),
     });
 
+    console.log('Status da resposta Omie:', omieResponse.status);
+
     if (!omieResponse.ok) {
-      console.error('Erro na resposta do Omie:', omieResponse.status, omieResponse.statusText);
       const errorText = await omieResponse.text();
+      console.error('Erro na resposta do Omie:', omieResponse.status, omieResponse.statusText);
       console.error('Detalhes do erro:', errorText);
-      throw new Error(`HTTP error! status: ${omieResponse.status}`);
+      throw new Error(`Erro na API do Omie: ${errorText}`);
     }
 
     const data = await omieResponse.json();
-    console.log('Resposta completa do Omie:', JSON.stringify(data, null, 2));
+    console.log('Resposta do Omie recebida');
 
     if (data.faultstring) {
       console.error('Erro retornado pelo Omie:', data.faultstring);
@@ -64,8 +67,12 @@ serve(async (req) => {
       estoque: product.estoque_atual || 0
     })) || [];
 
-    console.log('Produtos processados:', products.length);
-    console.log('Primeiro produto (se houver):', products[0]);
+    console.log(`Processados ${products.length} produtos`);
+    if (products.length > 0) {
+      console.log('Primeiro produto:', JSON.stringify(products[0], null, 2));
+    } else {
+      console.log('Nenhum produto encontrado no Omie');
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -82,10 +89,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
+    
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: error.message,
+        details: error.stack
       }),
       { 
         status: 500,
