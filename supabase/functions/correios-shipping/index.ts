@@ -8,10 +8,10 @@ const corsHeaders = {
 interface ShippingRequest {
   zipCodeOrigin: string;
   zipCodeDestination: string;
-  weight: number; // in kg
-  length: number; // in cm
-  width: number;  // in cm
-  height: number; // in cm
+  weight: number;
+  length: number;
+  width: number;
+  height: number;
 }
 
 serve(async (req) => {
@@ -21,104 +21,98 @@ serve(async (req) => {
   }
 
   try {
-    const CORREIOS_TOKEN = Deno.env.get('CORREIOS_TOKEN');
-    
-    // Validate token exists and format
-    if (!CORREIOS_TOKEN) {
-      console.error('Correios token not configured');
-      throw new Error('Correios token not configured');
-    }
-
-    // Log token length and first/last few characters for debugging
-    console.log('Token length:', CORREIOS_TOKEN.length);
-    console.log('Token preview:', `${CORREIOS_TOKEN.substring(0, 5)}...${CORREIOS_TOKEN.substring(CORREIOS_TOKEN.length - 5)}`);
-
     const { zipCodeOrigin, zipCodeDestination, weight, length, width, height } = await req.json() as ShippingRequest;
 
-    // Format and validate ZIP codes
-    const formattedOriginZip = zipCodeOrigin.replace(/\D/g, '');
-    const formattedDestZip = zipCodeDestination.replace(/\D/g, '');
-
-    if (formattedOriginZip.length !== 8 || formattedDestZip.length !== 8) {
-      throw new Error('Invalid ZIP code format');
+    // Validar CEPs
+    if (!zipCodeOrigin || !zipCodeDestination) {
+      throw new Error("CEP de origem e destino são obrigatórios");
     }
 
-    // Correios API endpoint for price calculation
-    const url = 'https://api.correios.com.br/preco/v1/nacional/calculo';
+    // Remover caracteres não numéricos dos CEPs
+    const cleanOriginZip = zipCodeOrigin.replace(/\D/g, '');
+    const cleanDestinationZip = zipCodeDestination.replace(/\D/g, '');
 
-    // Format the request body according to Correios API specifications
-    const requestBody = {
-      coProduto: '03220', // PAC
-      cepOrigem: formattedOriginZip,
-      cepDestino: formattedDestZip,
-      psObjeto: weight,
-      tpObjeto: '2', // Package
-      comprimento: length,
-      largura: width,
-      altura: height,
-      servicosAdicionais: [],
-    };
+    // Construir URL dos Correios (usando PAC e SEDEX)
+    const url = `http://ws.correios.com.br/calculador/CalcPrecoPrazo.aspx?` + 
+      `nCdEmpresa=` +
+      `&sDsSenha=` +
+      `&sCepOrigem=${cleanOriginZip}` +
+      `&sCepDestino=${cleanDestinationZip}` +
+      `&nVlPeso=${weight}` +
+      `&nCdFormato=1` + // 1 = caixa/pacote
+      `&nVlComprimento=${length}` +
+      `&nVlAltura=${height}` +
+      `&nVlLargura=${width}` +
+      `&sCdMaoPropria=n` +
+      `&nVlValorDeclarado=0` +
+      `&sCdAvisoRecebimento=n` +
+      `&nCdServico=04510,04014` + // PAC e SEDEX
+      `&nVlDiametro=0` +
+      `&StrRetorno=xml` +
+      `&nIndicaCalculo=3`; // Preço e Prazo
 
-    console.log('Calculating shipping for:', requestBody);
+    console.log('Consultando Correios:', url);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CORREIOS_TOKEN}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const response = await fetch(url);
+    const xmlText = await response.text();
 
-    console.log('Correios API response status:', response.status);
+    // Parsear XML para JSON
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+    
+    // Extrair informações do XML
+    const services = Array.from(xmlDoc.getElementsByTagName('cServico')).map(service => ({
+      codigo: service.getElementsByTagName('Codigo')[0]?.textContent,
+      valor: service.getElementsByTagName('Valor')[0]?.textContent,
+      prazoEntrega: service.getElementsByTagName('PrazoEntrega')[0]?.textContent,
+      erro: service.getElementsByTagName('Erro')[0]?.textContent,
+      msgErro: service.getElementsByTagName('MsgErro')[0]?.textContent,
+    }));
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Correios API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText,
-      });
-      
-      if (response.status === 401) {
-        throw new Error('Invalid Correios token format or expired token');
-      } else if (response.status === 403) {
-        throw new Error('Correios token authentication failed');
-      }
-      
-      throw new Error(`Correios API error: ${response.status}`);
+    // Encontrar o menor preço entre os serviços disponíveis
+    const availableServices = services.filter(s => s.erro === '0');
+    const cheapestService = availableServices.reduce((min, current) => {
+      const currentPrice = parseFloat(current.valor.replace(',', '.'));
+      const minPrice = parseFloat(min.valor.replace(',', '.'));
+      return currentPrice < minPrice ? current : min;
+    }, availableServices[0]);
+
+    if (!cheapestService) {
+      throw new Error("Nenhum serviço disponível para este trajeto");
     }
 
-    const shippingData = await response.json();
-    console.log('Shipping calculation result:', shippingData);
+    // Converter preço para número
+    const finalPrice = parseFloat(cheapestService.valor.replace(',', '.'));
 
     return new Response(
-      JSON.stringify(shippingData),
+      JSON.stringify({
+        success: true,
+        services,
+        cheapestService,
+        pcFinal: finalPrice
+      }),
       { 
-        headers: { 
+        headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
       },
     );
-  } catch (error) {
-    console.error('Error calculating shipping:', error);
-    
-    // Determine if it's a token issue
-    const isAuthError = error.message.includes('token');
-    const statusCode = isAuthError ? 401 : 500;
-    const errorMessage = isAuthError 
-      ? 'Invalid or expired Correios token. Please update the token in Supabase settings.'
-      : error.message;
 
+  } catch (error) {
+    console.error('Erro ao calcular frete:', error);
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
       { 
-        status: statusCode,
-        headers: { 
+        headers: {
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
+        status: 400,
       },
     );
   }
