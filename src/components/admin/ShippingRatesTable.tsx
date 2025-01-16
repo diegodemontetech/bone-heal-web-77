@@ -86,8 +86,8 @@ const ShippingRatesTable = () => {
 
       const { error } = await supabase
         .from("shipping_rates")
-        .upsert({ 
-          id: id || undefined,
+        .upsert({
+          id: id === "new" ? undefined : id,
           state,
           rate: numericRate,
           price_per_kg: numericPricePerKg,
@@ -153,7 +153,7 @@ const ShippingRatesTable = () => {
         <TableBody>
           {STATES.map((state) => {
             const rate = ratesMap.get(state);
-            const isEditing = rate && editingId === rate.id;
+            const isEditing = editingId === (rate?.id || "new");
 
             return (
               <TableRow key={state}>
@@ -246,7 +246,7 @@ const ShippingRatesTable = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleSave(rate.id, state)}
+                        onClick={() => handleSave(rate?.id || "new", state)}
                       >
                         <Save className="w-4 h-4" />
                       </Button>
@@ -267,13 +267,12 @@ const ShippingRatesTable = () => {
                           handleEdit(rate);
                         } else {
                           setEditingId("new");
-                          setEditingRate("");
-                          setEditingPricePerKg("");
-                          setEditingAdditionalKgPrice("");
-                          setEditingInsurancePercentage("");
-                          setEditingDeliveryDays("");
+                          setEditingRate("0");
+                          setEditingPricePerKg("0");
+                          setEditingAdditionalKgPrice("0");
+                          setEditingInsurancePercentage("0");
+                          setEditingDeliveryDays("0");
                           setEditingServiceType("PAC");
-                          handleSave("new", state);
                         }
                       }}
                     >
