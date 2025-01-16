@@ -2,13 +2,13 @@ import { motion } from "framer-motion";
 
 const AboutHero = () => {
   return (
-    <section className="relative min-h-[60vh] flex items-center bg-primary pt-32 pb-24">
+    <section className="relative min-h-[60vh] flex items-center justify-center bg-primary pt-32 pb-24">
       <div className="container mx-auto px-8 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="max-w-4xl"
+          className="max-w-4xl mx-auto text-center"
         >
           <h1 className="text-5xl lg:text-6xl font-bold mb-6 text-white">
             Nossa História é Feita de Inovação e Dedicação
