@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from "@/hooks/use-toast";
 import { useQuery } from '@tanstack/react-query';
 
 const WhatsAppWidget = () => {
@@ -15,6 +15,7 @@ const WhatsAppWidget = () => {
   const [currentInput, setCurrentInput] = useState<'name' | 'phone' | null>(null);
   const [hasInterest, setHasInterest] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean; isUser?: boolean }>>([]);
+  const { toast } = useToast();
 
   // Fetch configurable messages
   const { data: configMessages, isLoading } = useQuery({
@@ -27,7 +28,6 @@ const WhatsAppWidget = () => {
       if (error) {
         console.error("Error fetching messages:", error);
         toast({
-          title: "Erro",
           description: "Não foi possível carregar as mensagens. Por favor, tente novamente.",
           variant: "destructive"
         });
@@ -124,7 +124,10 @@ const WhatsAppWidget = () => {
       // Validate phone number format
       const phoneNumber = value.replace(/\D/g, '');
       if (phoneNumber.length < 10 || phoneNumber.length > 11) {
-        toast.error('Por favor, insira um número de telefone válido com DDD');
+        toast({
+          description: 'Por favor, insira um número de telefone válido com DDD',
+          variant: "destructive"
+        });
         return;
       }
       setPhone(value);
@@ -171,7 +174,9 @@ const WhatsAppWidget = () => {
       }]);
       setIsTyping(false);
       
-      toast.success('Obrigado pelo contato!');
+      toast({
+        description: 'Obrigado pelo contato!'
+      });
       
       // Wait 10 seconds before minimizing
       setTimeout(() => {
@@ -179,13 +184,18 @@ const WhatsAppWidget = () => {
       }, 10000);
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Erro ao enviar mensagem. Tente novamente.');
+      toast({
+        description: 'Erro ao enviar mensagem. Tente novamente.',
+        variant: "destructive"
+      });
     }
   };
 
   if (isLoading) {
     return null; // Don't render anything while loading
   }
+
+  // ... keep existing code (return JSX)
 
   return (
     <AnimatePresence>
