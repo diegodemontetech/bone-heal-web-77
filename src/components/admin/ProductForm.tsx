@@ -60,8 +60,13 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
     setIsLoading(true);
     try {
       const data = {
-        ...values,
+        name: values.name,
+        slug: values.slug,
+        short_description: values.short_description,
+        description: values.description,
         price: values.price ? parseFloat(values.price) : null,
+        main_image: values.main_image,
+        video_url: values.video_url,
       };
 
       if (product) {
@@ -76,7 +81,9 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
           title: "Produto atualizado com sucesso!",
         });
       } else {
-        const { error } = await supabase.from("products").insert([data]);
+        const { error } = await supabase
+          .from("products")
+          .insert([data]);
 
         if (error) throw error;
 
