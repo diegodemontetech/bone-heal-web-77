@@ -17,6 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { toast } from "sonner";
@@ -31,18 +32,19 @@ L.Icon.Default.mergeOptions({
 
 const Contact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const { data: departments } = useQuery({
-    queryKey: ['contactDepartments'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('contact_form_configs')
-        .select('*')
-        .eq('active', true);
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  const [phone, setPhone] = useState('');
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    if (formatted.length <= 15) setPhone(formatted);
+  };
 
   const position: L.LatLngExpression = [-23.5505, -46.6333]; // São Paulo coordinates
 
@@ -52,9 +54,15 @@ const Contact = () => {
     setIsSubmitted(true);
   };
 
+  const departments = [
+    { id: 1, department: 'Comercial' },
+    { id: 2, department: 'Logística' },
+    { id: 3, department: 'Administrativo' },
+  ];
+
   return (
-    <section className="section-padding bg-primary" id="contact">
-      <div className="container mx-auto container-padding">
+    <section className="bg-primary" id="contact">
+      <div className="container mx-auto container-padding pt-32 pb-24">
         <h2 className="text-3xl md:text-4xl text-center mb-12 text-white">
           Central de Atendimento
         </h2>
@@ -70,6 +78,7 @@ const Contact = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-lg">(11) 94512-2884</p>
+                <p className="text-sm text-primary">WhatsApp</p>
               </CardContent>
             </Card>
 
@@ -178,7 +187,7 @@ const Contact = () => {
                     <SelectValue placeholder="Selecione um departamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments?.map((dept) => (
+                    {departments.map((dept) => (
                       <SelectItem key={dept.id} value={dept.department}>
                         {dept.department}
                       </SelectItem>
@@ -189,9 +198,9 @@ const Contact = () => {
               
               <div>
                 <label className="block text-sm font-medium mb-2">Nome</label>
-                <input
+                <Input
                   type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full"
                   placeholder="Seu nome"
                   required
                 />
@@ -199,19 +208,30 @@ const Contact = () => {
               
               <div>
                 <label className="block text-sm font-medium mb-2">Email</label>
-                <input
+                <Input
                   type="email"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full"
                   placeholder="seu@email.com"
                   required
                 />
               </div>
-              
+
               <div>
+                <label className="block text-sm font-medium mb-2">Telefone</label>
+                <Input
+                  type="tel"
+                  className="w-full"
+                  placeholder="(00) 00000-0000"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  required
+                />
+              </div>
+              
+              <div className="flex-grow">
                 <label className="block text-sm font-medium mb-2">Mensagem</label>
                 <textarea
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  rows={4}
+                  className="w-full h-40 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                   placeholder="Sua mensagem"
                   required
                 />
