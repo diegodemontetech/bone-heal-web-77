@@ -16,7 +16,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -27,7 +27,6 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const session = useSession();
-  const { toast } = useToast();
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
@@ -41,16 +40,41 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   ];
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
+    try {
+      // First check if we have a session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession) {
+        console.log("No active session found, redirecting to login");
+        navigate("/admin/login");
+        return;
+      }
+
+      // Attempt to sign out
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Sign out error:", error);
+        
+        // If we get a session_not_found error, we can still redirect
+        if (error.message.includes("session_not_found")) {
+          toast.success("Sessão encerrada", { duration: 1500 });
+          navigate("/admin/login");
+          return;
+        }
+        
+        // For other errors, show the error message
+        toast.error("Erro ao sair: " + error.message, { duration: 1500 });
+        return;
+      }
+
+      // Successful logout
+      toast.success("Sessão encerrada", { duration: 1500 });
+      navigate("/admin/login");
+    } catch (error: any) {
+      console.error("Sign out error:", error);
+      toast.error("Erro ao sair", { duration: 1500 });
     }
-    navigate("/admin/login");
   };
 
   useEffect(() => {
