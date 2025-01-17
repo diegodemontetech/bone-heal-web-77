@@ -30,13 +30,41 @@ const Navbar = () => {
   });
 
   const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      // First try to get the current session
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession) {
+        // If no session exists, just redirect to login
+        navigate("/login");
+        return;
+      }
+
+      // Attempt to sign out
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Sign out error:", error);
+        
+        // If we get a session_not_found error, we can still redirect
+        if (error.message.includes("session_not_found")) {
+          toast.success("Sessão encerrada", { duration: 1500 });
+          navigate("/login");
+          return;
+        }
+        
+        // For other errors, show the error message
+        toast.error("Erro ao sair: " + error.message, { duration: 1500 });
+        return;
+      }
+
+      // Successful logout
+      toast.success("Sessão encerrada", { duration: 1500 });
+      navigate("/login");
+    } catch (error: any) {
+      console.error("Sign out error:", error);
       toast.error("Erro ao sair", { duration: 1500 });
-      return;
     }
-    toast.success("Sessão encerrada", { duration: 1500 });
-    navigate("/login");
   };
 
   return (
