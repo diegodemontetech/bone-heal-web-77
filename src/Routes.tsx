@@ -30,22 +30,33 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
         .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
       return data;
     },
     enabled: !!session?.user?.id,
+    retry: 1,
   });
 
   if (!session || isLoading) {
-    return <Navigate to="/admin/login" replace />;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (!profile?.is_admin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return <>{children}</>;

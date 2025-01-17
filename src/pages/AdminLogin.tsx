@@ -10,7 +10,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: session } = useQuery({
+  const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -18,7 +18,7 @@ const AdminLogin = () => {
     },
   });
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
@@ -44,6 +44,7 @@ const AdminLogin = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
+        console.log("Auth state changed:", event);
         if (event === "SIGNED_IN") {
           // Check if user is admin after sign in
           const { data: profile } = await supabase
@@ -73,7 +74,7 @@ const AdminLogin = () => {
 
   // Check session and profile on mount and changes
   useEffect(() => {
-    if (session && !isLoading) {
+    if (!isSessionLoading && !isProfileLoading && session) {
       if (profile?.is_admin) {
         navigate("/admin");
       } else if (profile !== null) {
@@ -85,7 +86,15 @@ const AdminLogin = () => {
         supabase.auth.signOut();
       }
     }
-  }, [session, profile, isLoading, navigate, toast]);
+  }, [session, profile, isSessionLoading, isProfileLoading, navigate, toast]);
+
+  if (isSessionLoading || isProfileLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
