@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
 const AdminLogin = () => {
@@ -14,6 +14,7 @@ const AdminLogin = () => {
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session:", session);
       return session;
     },
   });
@@ -34,6 +35,7 @@ const AdminLogin = () => {
         throw error;
       }
       
+      console.log("Current profile:", data);
       return data;
     },
     enabled: !!session?.user?.id,
@@ -44,14 +46,26 @@ const AdminLogin = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, currentSession);
         if (event === "SIGNED_IN") {
           // Check if user is admin after sign in
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", currentSession?.user?.id)
-            .single();
+            .maybeSingle();
+
+          console.log("Profile after sign in:", profile);
+
+          if (error) {
+            console.error("Error checking admin status:", error);
+            toast({
+              title: "Erro",
+              description: "Ocorreu um erro ao verificar suas permissões.",
+              variant: "destructive",
+            });
+            return;
+          }
 
           if (profile?.is_admin) {
             navigate("/admin");
@@ -75,6 +89,8 @@ const AdminLogin = () => {
   // Check session and profile on mount and changes
   useEffect(() => {
     if (!isSessionLoading && !isProfileLoading && session) {
+      console.log("Checking session and profile:", { session, profile });
+      
       if (profile?.is_admin) {
         navigate("/admin");
       } else if (profile !== null) {

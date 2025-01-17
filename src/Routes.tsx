@@ -30,6 +30,8 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
+      console.log("Checking admin status for user:", session.user.id);
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -41,6 +43,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
 
+      console.log("Admin check profile:", data);
       return data;
     },
     enabled: !!session?.user?.id,
