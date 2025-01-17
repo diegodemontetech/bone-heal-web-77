@@ -26,7 +26,7 @@ import { supabase } from "./integrations/supabase/client";
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const session = useSession();
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
@@ -40,7 +40,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     enabled: !!session?.user?.id,
   });
 
-  if (!session) {
+  if (!session || isLoading) {
     return <Navigate to="/admin/login" replace />;
   }
 

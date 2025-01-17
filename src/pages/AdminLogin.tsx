@@ -40,30 +40,28 @@ const AdminLogin = () => {
     retry: 1,
   });
 
+  // Handle auth state changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (event === "SIGNED_IN") {
-          // Aguarda um momento para garantir que o perfil seja carregado
-          setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", currentSession?.user?.id)
-              .single();
+          // Check if user is admin after sign in
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentSession?.user?.id)
+            .single();
 
-            if (profile?.is_admin) {
-              navigate("/admin");
-            } else {
-              toast({
-                title: "Acesso negado",
-                description: "Você não tem permissão para acessar a área administrativa.",
-                variant: "destructive",
-              });
-              await supabase.auth.signOut();
-              navigate("/login");
-            }
-          }, 500);
+          if (profile?.is_admin) {
+            navigate("/admin");
+          } else {
+            toast({
+              title: "Acesso negado",
+              description: "Você não tem permissão para acessar a área administrativa.",
+              variant: "destructive",
+            });
+            await supabase.auth.signOut();
+          }
         }
       }
     );
@@ -73,6 +71,7 @@ const AdminLogin = () => {
     };
   }, [navigate, toast]);
 
+  // Check session and profile on mount and changes
   useEffect(() => {
     if (session && !isLoading) {
       if (profile?.is_admin) {
@@ -84,7 +83,6 @@ const AdminLogin = () => {
           variant: "destructive",
         });
         supabase.auth.signOut();
-        navigate("/login");
       }
     }
   }, [session, profile, isLoading, navigate, toast]);
