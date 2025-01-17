@@ -64,7 +64,7 @@ const WhatsAppWidget = () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     setMessages([
       {
-        text: configMessages.greeting || "Olá! Como posso ajudar?",
+        text: configMessages.greeting || "Olá! 👋 Sou a Maria, consultora da Bone Heal.",
         delay: 0
       }
     ]);
@@ -72,7 +72,7 @@ const WhatsAppWidget = () => {
     
     await new Promise(resolve => setTimeout(resolve, 2000));
     setMessages(prev => [...prev, {
-      text: configMessages.partnership_question || "Você tem interesse em ser um parceiro Bone Heal?",
+      text: configMessages.partnership_question || "Gostaria de saber mais sobre como se tornar um Dentista parceiro da Bone Heal?",
       delay: 0,
       showInterestButtons: true
     }]);
@@ -91,12 +91,20 @@ const WhatsAppWidget = () => {
     if (interested) {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
+      setMessages(prev => [...prev, {
+        text: "Ótimo! Por favor, me diga seu nome:",
+        delay: 0
+      }]);
       setIsTyping(false);
       setCurrentInput('name');
       setShowInput(true);
     } else {
       setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
+      setMessages(prev => [...prev, {
+        text: "Entendi. Obrigada pelo seu interesse!",
+        delay: 0
+      }]);
       setIsTyping(false);
       handleSubmit();
     }
@@ -217,7 +225,7 @@ const WhatsAppWidget = () => {
         <div
           className={`max-w-[80%] rounded-2xl px-4 py-2 ${
             message.isUser 
-              ? 'bg-pink-50 text-black' 
+              ? 'bg-pink-50 text-black ml-auto' 
               : 'bg-gray-100 text-black'
           }`}
         >
