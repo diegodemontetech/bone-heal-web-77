@@ -1,165 +1,107 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
-  Package,
-  FileText,
   Newspaper,
+  FileText,
   Users,
-  LogOut,
-  Menu,
-  X,
   Truck,
-  MessageSquare,
+  UserSquare2,
   MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const session = useSession();
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
-    { icon: Package, label: "Produtos", href: "/admin/products" },
+    { icon: Newspaper, label: "Produtos", href: "/admin/products" },
     { icon: FileText, label: "Estudos", href: "/admin/studies" },
     { icon: Newspaper, label: "Notícias", href: "/admin/news" },
     { icon: Users, label: "Usuários", href: "/admin/users" },
-    { icon: Truck, label: "Taxas de Frete", href: "/admin/shipping-rates" },
-    { icon: MessageSquare, label: "Leads", href: "/admin/leads" },
-    { icon: MessageCircle, label: "Mensagens WhatsApp", href: "/admin/whatsapp-messages", className: "text-left" },
+    { icon: Truck, label: "Fretes", href: "/admin/shipping-rates" },
+    { icon: UserSquare2, label: "Leads", href: "/admin/leads" },
+    { icon: MessageCircle, label: "WhatsApp", href: "/admin/whatsapp-messages" },
   ];
 
   const handleSignOut = async () => {
     try {
-      // First check if we have a session
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession) {
-        console.log("No active session found, redirecting to login");
-        navigate("/admin/login");
-        return;
-      }
-
-      // Attempt to sign out
+      console.log("Starting sign out process");
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error("Sign out error:", error);
-        
-        // If we get a session_not_found error, we can still redirect
-        if (error.message.includes("session_not_found")) {
-          toast.success("Sessão encerrada", { duration: 1500 });
-          navigate("/admin/login");
-          return;
-        }
-        
-        // For other errors, show the error message
-        toast.error("Erro ao sair: " + error.message, { duration: 1500 });
-        return;
+        toast.error("Erro ao sair: " + error.message);
+      } else {
+        console.log("Sign out successful");
+        toast.success("Sessão encerrada");
+        navigate("/admin/login");
       }
-
-      // Successful logout
-      toast.success("Sessão encerrada", { duration: 1500 });
-      navigate("/admin/login");
     } catch (error: any) {
-      console.error("Sign out error:", error);
-      toast.error("Erro ao sair", { duration: 1500 });
+      console.error("Unexpected error during sign out:", error);
+      toast.error("Erro inesperado ao sair");
     }
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/admin/login");
-      }
-    };
-    checkAuth();
-  }, [navigate]);
-
-  if (!session) {
-    return null;
-  }
+    if (!session) {
+      navigate("/admin/login");
+    }
+  }, [session, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Mobile Sidebar Toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          {isSidebarOpen ? (
-            <X className="h-4 w-4" />
-          ) : (
-            <Menu className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
-
+    <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-200 ease-in-out ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0`}
-      >
-        <div className="h-full flex flex-col">
-          <div className="p-4">
-            <h1 className="text-xl font-bold text-primary">Painel Admin</h1>
-          </div>
-
-          <nav className="flex-1 p-4 space-y-1">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-                    location.pathname === item.href
-                      ? "bg-primary text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  } ${item.className || ''}`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="p-4 border-t">
+      <div className="w-64 bg-white shadow-lg">
+        <div className="p-4">
+          <h2 className="text-xl font-bold">Admin Panel</h2>
+        </div>
+        <nav className="mt-4">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 ${
+                  location.pathname === item.href ? "bg-gray-100" : ""
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate(item.href);
+                }}
+              >
+                <Icon className="w-5 h-5 mr-2" />
+                {item.label}
+              </a>
+            );
+          })}
+          <div className="px-4 py-2">
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-full justify-start"
               onClick={handleSignOut}
             >
-              <LogOut className="w-5 h-5 mr-3" />
               Sair
             </Button>
           </div>
-        </div>
-      </aside>
+        </nav>
+      </div>
 
-      {/* Main Content */}
-      <main
-        className={`transition-all duration-200 ${
-          isSidebarOpen ? "lg:ml-64" : "lg:ml-0"
-        }`}
-      >
-        {children}
-      </main>
+      {/* Main content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-8">{children}</div>
+      </div>
     </div>
   );
 };
