@@ -35,11 +35,16 @@ serve(async (req) => {
     // Generate content using Gemini
     const prompt = `
       You are a professional content writer. I want you to read the following article and create a new version of it:
-      1. Paraphrase the content to make it unique while maintaining the key information
-      2. Create a concise title that captures the main point
-      3. Write a brief summary (2-3 sentences)
-      4. Generate relevant tags (comma-separated)
-      5. Format the response as JSON with the following structure:
+      
+      Important Guidelines:
+      1. The content should be between 800 and 1,500 words (approximately 4,800 to 9,000 characters)
+      2. Make it detailed enough to cover the topic thoroughly but not excessively long
+      3. Paraphrase the content to make it unique while maintaining the key information
+      4. Create a concise title that captures the main point
+      5. Write a brief summary (2-3 sentences)
+      6. Generate relevant tags (comma-separated)
+      
+      Format the response as JSON with the following structure:
       {
         "title": "The title",
         "summary": "The summary",
