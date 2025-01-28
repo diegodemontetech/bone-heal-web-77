@@ -17,8 +17,16 @@ serve(async (req) => {
     const { url } = await req.json();
     console.log('Fetching content from URL:', url);
 
+    if (!url) {
+      throw new Error('URL is required');
+    }
+
     // Fetch the content from the URL
     const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch URL: ${response.statusText}`);
+    }
+    
     const htmlContent = await response.text();
 
     // Extract text content from HTML (basic implementation)
@@ -64,20 +72,34 @@ serve(async (req) => {
 
     // Parse the JSON from the response
     const jsonMatch = response_text.match(/\{[\s\S]*\}/);
-    const generatedContent = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-
-    if (!generatedContent) {
+    if (!jsonMatch) {
       throw new Error('Failed to parse generated content');
     }
 
+    const generatedContent = JSON.parse(jsonMatch[0]);
+
     return new Response(JSON.stringify(generatedContent), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json' 
+      },
     });
+
   } catch (error) {
     console.error('Error in generate-news function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack
+      }), 
+      { 
+        status: 500,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
+      }
+    );
   }
 });
