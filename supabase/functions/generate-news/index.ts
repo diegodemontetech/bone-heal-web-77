@@ -28,24 +28,27 @@ serve(async (req) => {
     }
     
     const htmlContent = await response.text();
+    console.log('Raw HTML content length:', htmlContent.length);
 
-    // More aggressive cleaning and sanitization of the HTML content
+    // Aggressive cleaning of the HTML content
     const cleanContent = htmlContent
       .replace(/<[^>]*>/g, ' ') // Remove HTML tags
       .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
       .replace(/[^\x20-\x7E\xA0-\xFF]/g, '') // Only keep printable characters
       .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/['"]/g, '') // Remove quotes that might interfere with JSON
+      .replace(/['"]/g, '') // Remove quotes
+      .replace(/[\\]/g, '') // Remove backslashes
       .trim()
       .substring(0, 5000); // Limit input size
 
+    console.log('Cleaned content length:', cleanContent.length);
     console.log('Processing content with Gemini');
     
     // Initialize Gemini AI
     const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY') || '');
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    // Generate content using Gemini
+    // Generate content using Gemini with a more structured prompt
     const prompt = `
       You are a professional content writer. I want you to read the following article and create a new version of it:
       
@@ -58,7 +61,7 @@ serve(async (req) => {
       6. Generate relevant tags (comma-separated)
       7. VERY IMPORTANT: If the content is in any language other than Portuguese (PT-BR), translate everything to Portuguese (PT-BR)
       
-      Format the response EXACTLY like this JSON structure (no additional text before or after):
+      Return ONLY a valid JSON object with this exact structure (no additional text):
       {
         "title": "The title",
         "summary": "The summary",
@@ -66,7 +69,7 @@ serve(async (req) => {
         "tags": "tag1, tag2, tag3"
       }
 
-      Here's the article:
+      Here's the article to process:
       ${cleanContent}
     `;
 
@@ -74,48 +77,58 @@ serve(async (req) => {
     const response_text = result.response.text();
     
     console.log('Generated content successfully');
+    console.log('Response text length:', response_text.length);
 
-    try {
-      // First attempt: Try to parse the response directly
-      const generatedContent = JSON.parse(response_text);
-      return new Response(JSON.stringify(generatedContent), {
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        },
-      });
-    } catch (parseError) {
-      console.log('Direct parsing failed, attempting to extract JSON:', parseError);
-      
-      // Second attempt: Try to extract JSON using regex and clean it
-      const jsonMatch = response_text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.error('Failed to extract JSON from response:', response_text);
-        throw new Error('Failed to parse generated content');
-      }
-
-      // Clean the extracted JSON string
-      const cleanJson = jsonMatch[0]
+    // Helper function to clean JSON string
+    const cleanJsonString = (str: string) => {
+      return str
         .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
         .replace(/\\/g, '\\\\') // Escape backslashes
-        .replace(/\n/g, '\\n') // Escape newlines
-        .replace(/\r/g, '\\r') // Escape carriage returns
-        .replace(/\t/g, '\\t'); // Escape tabs
+        .replace(/\n/g, ' ') // Replace newlines with spaces
+        .replace(/\r/g, ' ') // Replace carriage returns with spaces
+        .replace(/\t/g, ' ') // Replace tabs with spaces
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3') // Ensure property names are quoted
+        .trim();
+    };
+
+    try {
+      // First attempt: direct parsing
+      console.log('Attempting direct JSON parse');
+      const generatedContent = JSON.parse(response_text);
+      return new Response(JSON.stringify(generatedContent), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (firstError) {
+      console.log('Direct parsing failed:', firstError.message);
+      
+      // Second attempt: extract JSON pattern and clean
+      console.log('Attempting to extract JSON pattern');
+      const jsonMatch = response_text.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        console.error('No JSON pattern found in response');
+        console.log('Response text:', response_text);
+        throw new Error('No valid JSON found in response');
+      }
+
+      const extractedJson = jsonMatch[0];
+      console.log('Extracted JSON length:', extractedJson.length);
+      
+      const cleanedJson = cleanJsonString(extractedJson);
+      console.log('Cleaned JSON length:', cleanedJson.length);
 
       try {
-        const generatedContent = JSON.parse(cleanJson);
+        const generatedContent = JSON.parse(cleanedJson);
         return new Response(JSON.stringify(generatedContent), {
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-      } catch (secondParseError) {
-        console.error('Failed to parse cleaned JSON:', secondParseError);
-        throw new Error('Failed to parse generated content after cleaning');
+      } catch (secondError) {
+        console.error('Failed to parse cleaned JSON:', secondError.message);
+        console.log('Cleaned JSON string:', cleanedJson);
+        throw new Error(`JSON parsing failed after cleaning: ${secondError.message}`);
       }
     }
-
   } catch (error) {
     console.error('Error in generate-news function:', error);
     console.error('Error details:', error.stack);
