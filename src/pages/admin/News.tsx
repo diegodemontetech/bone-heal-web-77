@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { NewsAIGenerator } from "@/components/admin/NewsAIGenerator";
 
 const AdminNews = () => {
   const { toast } = useToast();
@@ -154,6 +155,8 @@ const AdminNews = () => {
             Nova Notícia
           </Button>
         </div>
+
+        <NewsAIGenerator onNewsGenerated={refetch} />
 
         <div className="bg-white rounded-lg shadow">
           <Table>
