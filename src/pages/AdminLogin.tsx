@@ -28,7 +28,7 @@ const AdminLogin = () => {
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .maybeSingle();
+        .single();
       
       if (error) {
         console.error("Error fetching profile:", error);
@@ -39,7 +39,7 @@ const AdminLogin = () => {
       return data;
     },
     enabled: !!session?.user?.id,
-    retry: 1,
+    retry: false, // Don't retry on failure
   });
 
   // Handle auth state changes
@@ -53,7 +53,7 @@ const AdminLogin = () => {
             .from("profiles")
             .select("*")
             .eq("id", currentSession?.user?.id)
-            .maybeSingle();
+            .single();
 
           console.log("Profile after sign in:", profile);
 
@@ -86,30 +86,31 @@ const AdminLogin = () => {
     };
   }, [navigate, toast]);
 
-  // Check session and profile on mount and changes
+  // Show error if user is not admin
   useEffect(() => {
-    if (!isSessionLoading && !isProfileLoading && session) {
-      console.log("Checking session and profile:", { session, profile });
-      
-      if (profile?.is_admin) {
-        navigate("/admin");
-      } else if (profile !== null) {
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar a área administrativa.",
-          variant: "destructive",
-        });
-        supabase.auth.signOut();
-      }
+    if (!isSessionLoading && !isProfileLoading && session && profile !== null && !profile?.is_admin) {
+      toast({
+        title: "Acesso negado",
+        description: "Você não tem permissão para acessar a área administrativa.",
+        variant: "destructive",
+      });
+      supabase.auth.signOut();
     }
-  }, [session, profile, isSessionLoading, isProfileLoading, navigate, toast]);
+  }, [session, profile, isSessionLoading, isProfileLoading, toast]);
 
-  if (isSessionLoading || isProfileLoading) {
+  // Show loading state
+  if (isSessionLoading || (session && isProfileLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
+  }
+
+  // If user is already logged in and is admin, redirect to admin
+  if (session && profile?.is_admin) {
+    navigate("/admin");
+    return null;
   }
 
   return (
