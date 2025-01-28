@@ -2,12 +2,13 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => void }) => {
   const [url, setUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const generateNews = async () => {
     if (!url) {
@@ -25,6 +26,17 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
 
       if (generationError) throw generationError;
 
+      // Generate an image based on the title
+      const { data: imageData, error: imageError } = await supabase.functions
+        .invoke('generate-news-image', {
+          body: { prompt: `News article image about: ${generatedContent.title}` }
+        });
+
+      if (imageError) {
+        console.error('Error generating image:', imageError);
+        toast.error("Erro ao gerar imagem, mas continuando com o texto");
+      }
+
       // Create the news entry
       const { error: insertError } = await supabase
         .from('news')
@@ -37,6 +49,7 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
             summary: generatedContent.summary,
             content: generatedContent.content,
             tags: generatedContent.tags,
+            featured_image: imageData?.image || null,
             published_at: new Date().toISOString(),
           }
         ]);
@@ -51,6 +64,27 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
       toast.error("Erro ao gerar notícia: " + error.message);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const generateImageForExisting = async (title: string) => {
+    setIsGeneratingImage(true);
+    try {
+      const { data: imageData, error: imageError } = await supabase.functions
+        .invoke('generate-news-image', {
+          body: { prompt: `News article image about: ${title}` }
+        });
+
+      if (imageError) throw imageError;
+
+      toast.success("Imagem gerada com sucesso!");
+      return imageData.image;
+    } catch (error: any) {
+      console.error('Error generating image:', error);
+      toast.error("Erro ao gerar imagem: " + error.message);
+      return null;
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -74,7 +108,10 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
               Gerando...
             </>
           ) : (
-            "Gerar com IA"
+            <>
+              <Wand2 className="w-4 h-4 mr-2" />
+              Gerar com IA
+            </>
           )}
         </Button>
       </div>

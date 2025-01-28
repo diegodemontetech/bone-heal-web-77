@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Wand2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -28,6 +28,7 @@ const AdminNews = () => {
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -102,6 +103,44 @@ const AdminNews = () => {
       return null;
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const generateImageWithAI = async () => {
+    if (!formData.title) {
+      toast({
+        title: "Erro",
+        description: "Por favor, insira um título antes de gerar a imagem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    try {
+      const { data, error } = await supabase.functions
+        .invoke('generate-news-image', {
+          body: { prompt: `News article image about: ${formData.title}` }
+        });
+
+      if (error) throw error;
+
+      setFormData(prev => ({
+        ...prev,
+        featured_image: data.image
+      }));
+
+      toast({
+        title: "Imagem gerada com sucesso",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao gerar imagem",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingImage(false);
     }
   };
 
@@ -221,24 +260,40 @@ const AdminNews = () => {
               </div>
               <div>
                 <Label htmlFor="image">Imagem Destacada</Label>
-                <div className="flex items-center gap-4">
-                  <Input
-                    id="image"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setSelectedImage(file);
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  {isUploading && (
-                    <div className="text-sm text-neutral-500">
-                      Enviando...
-                    </div>
+                <div className="space-y-4">
+                  {formData.featured_image && (
+                    <img
+                      src={formData.featured_image}
+                      alt="Preview"
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
                   )}
+                  <div className="flex gap-4">
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSelectedImage(file);
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={generateImageWithAI}
+                      disabled={isGeneratingImage}
+                    >
+                      {isGeneratingImage ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div>
