@@ -43,6 +43,7 @@ serve(async (req) => {
       4. Create a concise title that captures the main point
       5. Write a brief summary (2-3 sentences)
       6. Generate relevant tags (comma-separated)
+      7. VERY IMPORTANT: If the content is in any language other than Portuguese (PT-BR), translate everything to Portuguese (PT-BR)
       
       Format the response as JSON with the following structure:
       {

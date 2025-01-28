@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/Layout";
 import {
@@ -26,15 +26,19 @@ import { NewsAIGenerator } from "@/components/admin/NewsAIGenerator";
 
 const AdminNews = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
     summary: "",
     content: "",
     featured_image: "",
+    category: "",
+    tags: "",
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
@@ -50,6 +54,66 @@ const AdminNews = () => {
       return data;
     },
   });
+
+  const updateNewsMutation = useMutation({
+    mutationFn: async (data: typeof formData & { id: string }) => {
+      const { error } = await supabase
+        .from("news")
+        .update({
+          title: data.title,
+          slug: data.title.toLowerCase().replace(/ /g, "-"),
+          summary: data.summary,
+          content: data.content,
+          featured_image: data.featured_image,
+          category: data.category,
+          tags: data.tags,
+        })
+        .eq("id", data.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-news"] });
+      toast({ title: "Notícia atualizada com sucesso" });
+      handleCloseForm();
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao atualizar notícia",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEdit = (news: any) => {
+    setEditingId(news.id);
+    setFormData({
+      title: news.title,
+      slug: news.slug,
+      summary: news.summary || "",
+      content: news.content || "",
+      featured_image: news.featured_image || "",
+      category: news.category || "",
+      tags: news.tags || "",
+    });
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingId(null);
+    setFormData({
+      title: "",
+      slug: "",
+      summary: "",
+      content: "",
+      featured_image: "",
+      category: "",
+      tags: "",
+    });
+    setSelectedImage(null);
+  };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase
@@ -156,32 +220,38 @@ const AdminNews = () => {
       }
     }
 
-    const { error } = await supabase
-      .from("news")
-      .insert([
-        {
-          ...formData,
-          featured_image,
-          slug: formData.title.toLowerCase().replace(/ /g, "-"),
-        },
-      ]);
-
-    if (error) {
-      toast({
-        title: "Erro ao criar notícia",
-        description: error.message,
-        variant: "destructive",
+    if (editingId) {
+      updateNewsMutation.mutate({
+        ...formData,
+        featured_image,
+        id: editingId,
       });
-      return;
-    }
+    } else {
+      const { error } = await supabase
+        .from("news")
+        .insert([
+          {
+            ...formData,
+            featured_image,
+            slug: formData.title.toLowerCase().replace(/ /g, "-"),
+          },
+        ]);
 
-    toast({
-      title: "Notícia criada com sucesso",
-    });
-    setIsFormOpen(false);
-    setFormData({ title: "", slug: "", summary: "", content: "", featured_image: "" });
-    setSelectedImage(null);
-    refetch();
+      if (error) {
+        toast({
+          title: "Erro ao criar notícia",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Notícia criada com sucesso",
+      });
+      handleCloseForm();
+      refetch();
+    }
   };
 
   return (
@@ -226,7 +296,11 @@ const AdminNews = () => {
                     {new Date(item.published_at).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="icon">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(item)}
+                    >
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button
@@ -244,9 +318,11 @@ const AdminNews = () => {
         </div>
 
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Nova Notícia</DialogTitle>
+              <DialogTitle>
+                {editingId ? "Editar Notícia" : "Nova Notícia"}
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -256,6 +332,22 @@ const AdminNews = () => {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
+                />
+              </div>
+              <div>
+                <Label htmlFor="category">Categoria</Label>
+                <Input
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tags">Tags (separadas por vírgula)</Label>
+                <Input
+                  id="tags"
+                  value={formData.tags}
+                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                 />
               </div>
               <div>
@@ -312,10 +404,11 @@ const AdminNews = () => {
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                   required
+                  className="min-h-[200px]"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isUploading}>
-                {isUploading ? "Enviando..." : "Criar Notícia"}
+                {isUploading ? "Enviando..." : editingId ? "Atualizar Notícia" : "Criar Notícia"}
               </Button>
             </form>
           </DialogContent>
