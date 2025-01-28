@@ -29,10 +29,13 @@ serve(async (req) => {
     
     const htmlContent = await response.text();
 
-    // Extract text content from HTML (basic implementation)
-    const textContent = htmlContent.replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    // Clean and sanitize the HTML content
+    const cleanContent = htmlContent
+      .replace(/<[^>]*>/g, ' ') // Remove HTML tags
+      .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
+      .substring(0, 5000); // Limit input size
 
     console.log('Processing content with Gemini');
     
@@ -45,7 +48,7 @@ serve(async (req) => {
       You are a professional content writer. I want you to read the following article and create a new version of it:
       
       Important Guidelines:
-      1. The content should be between 800 and 1,500 words (approximately 4,800 to 9,000 characters)
+      1. The content should be between 800 and 1,500 words
       2. Make it detailed enough to cover the topic thoroughly but not excessively long
       3. Paraphrase the content to make it unique while maintaining the key information
       4. Create a concise title that captures the main point
@@ -53,7 +56,7 @@ serve(async (req) => {
       6. Generate relevant tags (comma-separated)
       7. VERY IMPORTANT: If the content is in any language other than Portuguese (PT-BR), translate everything to Portuguese (PT-BR)
       
-      Format the response as JSON with the following structure:
+      Format the response EXACTLY like this JSON structure (no additional text before or after):
       {
         "title": "The title",
         "summary": "The summary",
@@ -62,7 +65,7 @@ serve(async (req) => {
       }
 
       Here's the article:
-      ${textContent.substring(0, 5000)} // Limit input size
+      ${cleanContent}
     `;
 
     const result = await model.generateContent(prompt);
@@ -70,23 +73,35 @@ serve(async (req) => {
     
     console.log('Generated content successfully');
 
-    // Parse the JSON from the response
-    const jsonMatch = response_text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to parse generated content');
+    try {
+      // Try to parse the response directly first
+      const generatedContent = JSON.parse(response_text);
+      return new Response(JSON.stringify(generatedContent), {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
+      });
+    } catch (parseError) {
+      // If direct parsing fails, try to extract JSON using regex
+      const jsonMatch = response_text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        console.error('Failed to extract JSON from response:', response_text);
+        throw new Error('Failed to parse generated content');
+      }
+
+      const generatedContent = JSON.parse(jsonMatch[0]);
+      return new Response(JSON.stringify(generatedContent), {
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        },
+      });
     }
-
-    const generatedContent = JSON.parse(jsonMatch[0]);
-
-    return new Response(JSON.stringify(generatedContent), {
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json' 
-      },
-    });
 
   } catch (error) {
     console.error('Error in generate-news function:', error);
+    console.error('Error details:', error.stack);
     
     return new Response(
       JSON.stringify({ 
