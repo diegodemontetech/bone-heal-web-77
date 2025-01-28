@@ -44,7 +44,7 @@ const Recognition = () => {
               <img 
                 src={achievement.image} 
                 alt={achievement.title}
-                className="w-32 h-32 object-contain mx-auto mb-6"
+                className="w-40 h-40 object-contain mx-auto mb-6" // Increased from w-32 h-32 to w-40 h-40
               />
               <h3 className="text-xl font-bold mb-4 text-primary text-center">{achievement.title}</h3>
               <p className="text-neutral-600 text-center">{achievement.description}</p>
