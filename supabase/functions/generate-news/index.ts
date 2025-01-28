@@ -29,11 +29,13 @@ serve(async (req) => {
     
     const htmlContent = await response.text();
 
-    // Clean and sanitize the HTML content
+    // More aggressive cleaning and sanitization of the HTML content
     const cleanContent = htmlContent
       .replace(/<[^>]*>/g, ' ') // Remove HTML tags
       .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
+      .replace(/[^\x20-\x7E\xA0-\xFF]/g, '') // Only keep printable characters
       .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/['"]/g, '') // Remove quotes that might interfere with JSON
       .trim()
       .substring(0, 5000); // Limit input size
 
@@ -74,7 +76,7 @@ serve(async (req) => {
     console.log('Generated content successfully');
 
     try {
-      // Try to parse the response directly first
+      // First attempt: Try to parse the response directly
       const generatedContent = JSON.parse(response_text);
       return new Response(JSON.stringify(generatedContent), {
         headers: { 
@@ -83,20 +85,35 @@ serve(async (req) => {
         },
       });
     } catch (parseError) {
-      // If direct parsing fails, try to extract JSON using regex
+      console.log('Direct parsing failed, attempting to extract JSON:', parseError);
+      
+      // Second attempt: Try to extract JSON using regex and clean it
       const jsonMatch = response_text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         console.error('Failed to extract JSON from response:', response_text);
         throw new Error('Failed to parse generated content');
       }
 
-      const generatedContent = JSON.parse(jsonMatch[0]);
-      return new Response(JSON.stringify(generatedContent), {
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        },
-      });
+      // Clean the extracted JSON string
+      const cleanJson = jsonMatch[0]
+        .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
+        .replace(/\\/g, '\\\\') // Escape backslashes
+        .replace(/\n/g, '\\n') // Escape newlines
+        .replace(/\r/g, '\\r') // Escape carriage returns
+        .replace(/\t/g, '\\t'); // Escape tabs
+
+      try {
+        const generatedContent = JSON.parse(cleanJson);
+        return new Response(JSON.stringify(generatedContent), {
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+        });
+      } catch (secondParseError) {
+        console.error('Failed to parse cleaned JSON:', secondParseError);
+        throw new Error('Failed to parse generated content after cleaning');
+      }
     }
 
   } catch (error) {
