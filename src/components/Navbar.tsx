@@ -69,7 +69,7 @@ const Navbar = () => {
             <img 
               src="https://i.ibb.co/ZczkjWn/7c232e-500-x-100-px.png" 
               alt="BoneHeal" 
-              className="h-8 md:h-10"
+              className="h-6 md:h-8" // Reduced from h-8 md:h-10 to h-6 md:h-8
             />
           </Link>
 
