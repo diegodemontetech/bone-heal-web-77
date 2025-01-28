@@ -31,34 +31,28 @@ const Navbar = () => {
 
   const handleSignOut = async () => {
     try {
-      // First try to get the current session
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       
       if (!currentSession) {
-        // If no session exists, just redirect to login
         navigate("/login");
         return;
       }
 
-      // Attempt to sign out
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error("Sign out error:", error);
         
-        // If we get a session_not_found error, we can still redirect
         if (error.message.includes("session_not_found")) {
           toast.success("Sessão encerrada", { duration: 1500 });
           navigate("/login");
           return;
         }
         
-        // For other errors, show the error message
         toast.error("Erro ao sair: " + error.message, { duration: 1500 });
         return;
       }
 
-      // Successful logout
       toast.success("Sessão encerrada", { duration: 1500 });
       navigate("/login");
     } catch (error: any) {
@@ -71,8 +65,12 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          <Link to="/" className="text-2xl font-bold text-primary">
-            BoneHeal
+          <Link to="/" className="flex items-center">
+            <img 
+              src="https://i.ibb.co/ZczkjWn/7c232e-500-x-100-px.png" 
+              alt="BoneHeal" 
+              className="h-8 md:h-10"
+            />
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
