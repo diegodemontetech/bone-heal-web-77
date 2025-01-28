@@ -5,17 +5,12 @@ const Recognition = () => {
     {
       title: "Certificação",
       description: "Produtos registrados e aprovados para uso em território nacional. Certificado de Boas Práticas de Fabricação.",
-      image: "https://www.gov.br/cdtn/pt-br/imagens/CertificadoBPF.png"
+      image: "https://skincademy.com.br/wp-content/uploads/2024/03/selo-anvisa.png"
     },
     {
-      title: "Patentes",
-      description: "Tecnologia protegida e reconhecida internacionalmente. Mais de 10 patentes nacionais e internacionais.",
+      title: "Propriedade Intelectual",
+      description: "Tecnologia protegida e reconhecida internacionalmente. Método ROG-M de Munir Salomão. Mais de 10 patentes nacionais e internacionais.",
       image: "https://robotx.com.br/wp-content/uploads/2022/02/Selo-produto-INPI.png"
-    },
-    {
-      title: "Direitos Autorais",
-      description: "Método ROG-M de Munir Salomão.",
-      image: "https://www.consulog.com.br/wp-content/uploads/2022/03/selo-anvisa.webp"
     },
     {
       title: "Prêmios",
@@ -36,7 +31,7 @@ const Recognition = () => {
         >
           Reconhecimentos e Certificações
         </motion.h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {achievements.map((achievement, index) => (
             <motion.div
               key={achievement.title}
