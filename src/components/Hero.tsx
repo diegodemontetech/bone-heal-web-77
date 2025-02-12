@@ -9,15 +9,16 @@ const Hero = () => {
       <div className="absolute inset-0 w-full h-full bg-black">
         <div className="relative w-full h-full">
           <iframe
-            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer&iv_load_policy=3&origin=https://boneheal.com.br&playsinline=1"
+            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer&iv_load_policy=3&origin=https://boneheal.com.br&playsinline=1&playbackRate=0.75"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            className="absolute w-screen h-screen scale-[1.5] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-700"
+            className="absolute w-screen h-screen scale-[1.2] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-1000"
             style={{ 
               pointerEvents: 'none',
               border: 'none',
-              filter: 'brightness(0.75) contrast(1.1)',
+              filter: 'brightness(0.7) contrast(1.1)',
               backgroundColor: '#000',
-              opacity: 0.95
+              opacity: 0.9,
+              willChange: 'transform'
             }}
           />
         </div>
