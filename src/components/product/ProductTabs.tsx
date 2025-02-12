@@ -11,51 +11,60 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
   const formatDescription = (text: string) => {
     if (!text) return "";
     
-    // Dividir o texto em linhas e remover espaços extras
-    const lines = text
-      .split("\n")
-      .map(line => line.trim())
-      .filter(Boolean);
-
+    // Dividir o texto em seções
+    const sections = text.split(/(?=Características:|Contraindicações:|Registro ANVISA:)/);
+    
     let output = "";
-    let currentSection = "";
-
-    // Processar cada linha
-    lines.forEach(line => {
+    
+    sections.forEach((section) => {
+      const lines = section.trim().split("\n").map(line => line.trim()).filter(Boolean);
+      
+      if (lines.length === 0) return;
+      
       // Se é um cabeçalho de seção
-      if (line.includes("Características:") || 
-          line.includes("Contraindicações:") || 
-          line.includes("Registro ANVISA:")) {
-        // Fechar a seção anterior se existir
-        if (currentSection) {
-          output += "</div>";
-        }
-        currentSection = line;
-        output += `<h3 class="text-lg font-semibold bg-neutral-100 px-6 py-4">${line}</h3><div class="divide-y divide-neutral-100">`;
-      }
-      // Se é um item de lista (começa com \n• ou apenas •)
-      else if (line.includes("•")) {
-        line.split("•").forEach(item => {
-          if (item.trim()) {
+      if (lines[0].includes("Características:") || 
+          lines[0].includes("Contraindicações:") || 
+          lines[0].includes("Registro ANVISA:")) {
+        output += `
+          <div class="border-t first:border-t-0">
+            <h3 class="text-lg font-semibold bg-neutral-100 px-6 py-4">${lines[0]}</h3>
+            <div class="divide-y divide-neutral-100">
+        `;
+        
+        // Processar as linhas restantes da seção
+        lines.slice(1).forEach((line, index) => {
+          if (line.includes(":")) {
+            const [title, content] = line.split(":");
             output += `
-              <div class="flex px-6 py-4 bg-white">
-                <span class="text-primary mr-2">•</span>
-                <span class="text-neutral-600">${item.trim()}</span>
-              </div>`;
+              <div class="${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} px-6 py-4 flex flex-col sm:flex-row">
+                <span class="font-medium text-neutral-900 sm:w-1/3">${title.trim()}:</span>
+                <span class="text-neutral-600 sm:w-2/3">${content.trim()}</span>
+              </div>
+            `;
+          } else if (line.includes("•")) {
+            line.split("•").forEach(item => {
+              if (item.trim()) {
+                output += `
+                  <div class="${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} px-6 py-4 flex">
+                    <span class="text-primary mr-2">•</span>
+                    <span class="text-neutral-600">${item.trim()}</span>
+                  </div>
+                `;
+              }
+            });
+          } else {
+            output += `
+              <div class="${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} px-6 py-4">
+                <span class="text-neutral-600">${line}</span>
+              </div>
+            `;
           }
         });
-      }
-      // Se é texto normal
-      else {
-        output += `<p class="px-6 py-4 bg-white text-neutral-600">${line}</p>`;
+        
+        output += "</div></div>";
       }
     });
-
-    // Fechar a última seção se existir
-    if (currentSection) {
-      output += "</div>";
-    }
-
+    
     return output;
   };
 
@@ -86,10 +95,10 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
                   index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'
                 }`}
               >
-                <dt className="font-medium text-neutral-900 capitalize mb-1 sm:mb-0">
+                <dt className="font-medium text-neutral-900 capitalize mb-1 sm:mb-0 sm:w-1/3">
                   {key.replace(/_/g, ' ')}
                 </dt>
-                <dd className="text-neutral-600">{value as string}</dd>
+                <dd className="text-neutral-600 sm:w-2/3">{value as string}</dd>
               </div>
             ))}
           </div>
