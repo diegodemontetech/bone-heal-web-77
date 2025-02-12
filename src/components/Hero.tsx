@@ -1,4 +1,3 @@
-
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -9,21 +8,21 @@ const Hero = () => {
       <div className="absolute inset-0 w-full h-full">
         <div className="relative w-full h-full">
           <iframe
-            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer"
+            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer&iv_load_policy=3"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             className="absolute w-screen h-screen scale-[2] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             style={{ 
               pointerEvents: 'none',
               border: 'none',
-              filter: 'brightness(1.1) contrast(1.1)',
-              backgroundColor: 'transparent'
+              filter: 'brightness(0.8) contrast(1.1)',
+              backgroundColor: '#000'
             }}
           />
         </div>
       </div>
 
-      {/* Background gradient overlay - ajustado para ser mais suave */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/70 via-primary/60 to-primary-dark/85" />
+      {/* Background gradient overlay - mais escuro para reduzir o brilho */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/80 to-primary-dark/90" />
 
       {/* Content Layer */}
       <div className="relative max-w-[1440px] mx-auto px-8 lg:px-24 py-32">
