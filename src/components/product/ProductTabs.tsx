@@ -11,57 +11,56 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
   const formatDescription = (text: string) => {
     if (!text) return "";
     
-    // Dividir o texto em seções
-    const sections = text.split(/(?=Características:|Contraindicações:|Registro ANVISA:)/);
-    
     let output = "";
     
-    sections.forEach((section) => {
-      const lines = section.trim().split("\n").map(line => line.trim()).filter(Boolean);
+    // Primeira seção - Nome do produto
+    output += `
+      <div class="px-6 py-4 bg-white">
+        <h2 class="text-2xl font-bold text-neutral-900 mb-6">${product.name}</h2>
+      </div>
+    `;
+
+    // Processamento das seções principais
+    const mainSections = ["Características:", "Contraindicações:", "Registro ANVISA:"];
+    
+    mainSections.forEach(sectionTitle => {
+      const sectionRegex = new RegExp(`${sectionTitle}([\\s\\S]*?)(?=(${mainSections.join('|')})|$)`);
+      const match = text.match(sectionRegex);
       
-      if (lines.length === 0) return;
-      
-      // Se é um cabeçalho de seção
-      if (lines[0].includes("Características:") || 
-          lines[0].includes("Contraindicações:") || 
-          lines[0].includes("Registro ANVISA:")) {
+      if (match) {
         output += `
-          <div class="border-t first:border-t-0">
-            <h3 class="text-lg font-semibold bg-neutral-100 px-6 py-4">${lines[0]}</h3>
-            <div class="divide-y divide-neutral-100">
+          <div class="border-t">
+            <h3 class="text-xl font-semibold bg-neutral-100 px-6 py-4">${sectionTitle}</h3>
+            <div class="py-2">
         `;
         
-        // Processar as linhas restantes da seção
-        lines.slice(1).forEach((line, index) => {
-          if (line.includes(":")) {
-            const [title, content] = line.split(":");
+        // Processar o conteúdo da seção
+        const content = match[1].trim();
+        const items = content.split(/[•\n]/).map(item => item.trim()).filter(Boolean);
+        
+        items.forEach(item => {
+          if (item.includes(":")) {
+            const [title, content] = item.split(":");
             output += `
-              <div class="${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} px-6 py-4 flex flex-col sm:flex-row">
+              <div class="px-6 py-3 bg-white flex flex-col sm:flex-row gap-2">
                 <span class="font-medium text-neutral-900 sm:w-1/3">${title.trim()}:</span>
                 <span class="text-neutral-600 sm:w-2/3">${content.trim()}</span>
               </div>
             `;
-          } else if (line.includes("•")) {
-            line.split("•").forEach(item => {
-              if (item.trim()) {
-                output += `
-                  <div class="${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} px-6 py-4 flex">
-                    <span class="text-primary mr-2">•</span>
-                    <span class="text-neutral-600">${item.trim()}</span>
-                  </div>
-                `;
-              }
-            });
           } else {
             output += `
-              <div class="${index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'} px-6 py-4">
-                <span class="text-neutral-600">${line}</span>
+              <div class="px-6 py-3 bg-white flex items-start">
+                <span class="text-primary mr-3 font-bold">•</span>
+                <span class="text-neutral-600">${item}</span>
               </div>
             `;
           }
         });
         
-        output += "</div></div>";
+        output += `
+            </div>
+          </div>
+        `;
       }
     });
     
@@ -91,9 +90,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
             {Object.entries(product.technical_details).map(([key, value], index) => (
               <div 
                 key={key} 
-                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'
-                }`}
+                className="flex flex-col sm:flex-row sm:items-center p-4 bg-white"
               >
                 <dt className="font-medium text-neutral-900 capitalize mb-1 sm:mb-0 sm:w-1/3">
                   {key.replace(/_/g, ' ')}
