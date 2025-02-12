@@ -10,47 +10,77 @@ interface ProductTabsProps {
 const ProductTabs = ({ product }: ProductTabsProps) => {
   const formatDescription = (text: string) => {
     if (!text) return "";
-    return text
+    const lines = text
       .split("\n")
       .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => {
-        if (line.startsWith("•")) {
-          return `<li class="ml-6 mb-2">${line.substring(1).trim()}</li>`;
+      .filter(Boolean);
+
+    let inList = false;
+    let formattedHtml = "";
+
+    lines.forEach((line) => {
+      if (line.startsWith("Características:") || 
+          line.startsWith("Contraindicações:") || 
+          line.includes("Registro ANVISA:")) {
+        if (inList) {
+          formattedHtml += "</ul>";
+          inList = false;
         }
-        if (line.startsWith("Características:") || 
-            line.startsWith("Contraindicações:") || 
-            line.includes("Registro ANVISA:")) {
-          return `<h3 class="font-semibold text-lg mt-6 mb-4">${line}</h3>`;
+        formattedHtml += `<h3 class="font-semibold text-lg py-4 px-6 bg-neutral-100">${line}</h3>`;
+      } else if (line.startsWith("•")) {
+        if (!inList) {
+          formattedHtml += '<ul class="divide-y divide-neutral-100">';
+          inList = true;
         }
-        return `<p class="mb-4">${line}</p>`;
-      })
-      .join("");
+        formattedHtml += `
+          <li class="flex px-6 py-3 bg-white">
+            <span class="text-primary mr-2">•</span>
+            <span class="text-neutral-600">${line.substring(1).trim()}</span>
+          </li>`;
+      } else {
+        if (inList) {
+          formattedHtml += "</ul>";
+          inList = false;
+        }
+        formattedHtml += `<p class="px-6 py-3 bg-white text-neutral-600">${line}</p>`;
+      }
+    });
+
+    if (inList) {
+      formattedHtml += "</ul>";
+    }
+
+    return formattedHtml;
   };
 
   return (
     <Tabs defaultValue="description" className="w-full">
-      <TabsList className="w-full border-b">
+      <TabsList className="w-full border-b bg-white">
         <TabsTrigger value="description" className="flex-1">Descrição</TabsTrigger>
         <TabsTrigger value="specifications" className="flex-1">Especificações</TabsTrigger>
         <TabsTrigger value="documents" className="flex-1">Documentos</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="description" className="mt-6">
+      <TabsContent value="description" className="mt-6 border rounded-lg overflow-hidden">
         <div 
-          className="prose prose-neutral max-w-none"
+          className="divide-y divide-neutral-100"
           dangerouslySetInnerHTML={{ 
             __html: formatDescription(product.description || "") 
           }}
         />
       </TabsContent>
 
-      <TabsContent value="specifications" className="mt-6">
+      <TabsContent value="specifications" className="mt-6 border rounded-lg overflow-hidden">
         {product.technical_details && (
-          <div className="space-y-4">
-            {Object.entries(product.technical_details).map(([key, value]) => (
-              <div key={key} className="border-b pb-4">
-                <dt className="font-medium text-neutral-900 mb-1 capitalize">
+          <div className="divide-y divide-neutral-100">
+            {Object.entries(product.technical_details).map(([key, value], index) => (
+              <div 
+                key={key} 
+                className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 ${
+                  index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'
+                }`}
+              >
+                <dt className="font-medium text-neutral-900 capitalize mb-1 sm:mb-0">
                   {key.replace(/_/g, ' ')}
                 </dt>
                 <dd className="text-neutral-600">{value as string}</dd>
@@ -60,7 +90,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
         )}
       </TabsContent>
 
-      <TabsContent value="documents" className="mt-6">
+      <TabsContent value="documents" className="mt-6 border rounded-lg p-6">
         {product.documents ? (
           <div className="space-y-4">
             {Object.entries(product.documents).map(([name, url]) => (
