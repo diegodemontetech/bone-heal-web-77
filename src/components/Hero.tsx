@@ -1,20 +1,12 @@
+
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Hero = () => {
   return (
-    <div className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background Video/GIF Layer - Optimized */}
-      <div className="absolute inset-0">
-        <img 
-          src="https://s7.gifyu.com/images/SesbK.gif" 
-          alt="Regeneração óssea em movimento"
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
-        {/* Red gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-primary-dark/90" />
-      </div>
+    <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
+      {/* Background gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-primary-dark/90" />
 
       {/* Content Layer */}
       <div className="relative max-w-[1440px] mx-auto px-8 lg:px-24 py-32">
