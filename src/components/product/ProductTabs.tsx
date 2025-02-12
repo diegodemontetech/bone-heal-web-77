@@ -10,47 +10,54 @@ interface ProductTabsProps {
 const ProductTabs = ({ product }: ProductTabsProps) => {
   const formatDescription = (text: string) => {
     if (!text) return "";
+    
+    // Dividir o texto em linhas e remover espaços extras
     const lines = text
       .split("\n")
-      .map((line) => line.trim())
+      .map(line => line.trim())
       .filter(Boolean);
 
-    let inList = false;
-    let formattedHtml = "";
+    let output = "";
+    let currentSection = "";
 
-    lines.forEach((line) => {
-      if (line.startsWith("Características:") || 
-          line.startsWith("Contraindicações:") || 
+    // Processar cada linha
+    lines.forEach(line => {
+      // Se é um cabeçalho de seção
+      if (line.includes("Características:") || 
+          line.includes("Contraindicações:") || 
           line.includes("Registro ANVISA:")) {
-        if (inList) {
-          formattedHtml += "</ul>";
-          inList = false;
+        // Fechar a seção anterior se existir
+        if (currentSection) {
+          output += "</div>";
         }
-        formattedHtml += `<h3 class="font-semibold text-lg py-4 px-6 bg-neutral-100">${line}</h3>`;
-      } else if (line.startsWith("•")) {
-        if (!inList) {
-          formattedHtml += '<ul class="divide-y divide-neutral-100">';
-          inList = true;
-        }
-        formattedHtml += `
-          <li class="flex px-6 py-3 bg-white">
-            <span class="text-primary mr-2">•</span>
-            <span class="text-neutral-600">${line.substring(1).trim()}</span>
-          </li>`;
-      } else {
-        if (inList) {
-          formattedHtml += "</ul>";
-          inList = false;
-        }
-        formattedHtml += `<p class="px-6 py-3 bg-white text-neutral-600">${line}</p>`;
+        currentSection = line;
+        output += `<h3 class="text-lg font-semibold bg-neutral-100 px-6 py-4">${line}</h3><div class="divide-y divide-neutral-100">`;
+      }
+      // Se é um item de lista (começa com \n• ou apenas •)
+      else if (line.includes("•")) {
+        const items = line.split("•").filter(Boolean);
+        items.forEach(item => {
+          if (item.trim()) {
+            output += `
+              <div class="flex px-6 py-4 bg-white">
+                <span class="text-primary mr-2">•</span>
+                <span class="text-neutral-600">${item.trim()}</span>
+              </div>`;
+          }
+        });
+      }
+      // Se é texto normal
+      else {
+        output += `<p class="px-6 py-4 bg-white text-neutral-600">${line}</p>`;
       }
     });
 
-    if (inList) {
-      formattedHtml += "</ul>";
+    // Fechar a última seção se existir
+    if (currentSection) {
+      output += "</div>";
     }
 
-    return formattedHtml;
+    return output;
   };
 
   return (
