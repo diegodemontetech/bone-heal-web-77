@@ -25,65 +25,89 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
         <div class="px-6">
           <h3 class="text-lg font-semibold mb-4">Descrição</h3>
           <p class="text-neutral-600">
-            Película utilizada como barreira para regeneração óssea guiada. 
-            Constituída 100% por polipropileno com tratamento de superfície.
+            ${product.description || ''}
           </p>
         </div>
-    `;
 
-    // Seções principais com seus conteúdos
-    const sections = [
-      {
-        title: "Características",
-        content: cleanText.match(/Características:(.*?)(?=Contraindicações:|$)/s)?.[1] || ""
-      },
-      {
-        title: "Contraindicações",
-        content: cleanText.match(/Contraindicações:(.*?)(?=Registro ANVISA:|$)/s)?.[1] || ""
-      },
-      {
-        title: "Registro ANVISA",
-        content: cleanText.match(/Registro ANVISA:(.*?)$/s)?.[1] || ""
-      }
-    ];
-
-    // Processar cada seção
-    sections.forEach(section => {
-      const items = section.content
-        .split(/[•\n]/)
-        .map(item => item.trim())
-        .filter(Boolean);
-
-      if (items.length > 0) {
-        output += `
-          <div class="px-6">
-            <h3 class="text-lg font-semibold mb-4">${section.title}</h3>
-            <div class="space-y-3">
-        `;
-
-        items.forEach(item => {
-          if (section.title === "Registro ANVISA") {
-            output += `
-              <p class="text-neutral-600">${item}</p>
-            `;
-          } else {
-            output += `
-              <div class="flex items-start">
-                <span class="text-primary mr-3 mt-1.5">•</span>
-                <span class="text-neutral-600">${item}</span>
-              </div>
-            `;
-          }
-        });
-
-        output += `
+        <!-- Características -->
+        <div class="px-6">
+          <h3 class="text-lg font-semibold mb-4">Características</h3>
+          <div class="space-y-3">
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Não necessita de segunda cirurgia para remoção</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Atóxica e biocompatível</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Mantém o espaço necessário para neoformação óssea</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Adaptável e de fácil manipulação</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Superfície lisa (não aderente)</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Alta resistência mecânica</span>
             </div>
           </div>
-        `;
-      }
-    });
+        </div>
 
-    output += "</div>";
+        <!-- Indicações -->
+        <div class="px-6">
+          <h3 class="text-lg font-semibold mb-4">Indicações</h3>
+          <div class="space-y-3">
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Regeneração óssea guiada</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Preservação alveolar</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Regeneração tecidual guiada</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Levantamento de seio maxilar</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contraindicações -->
+        <div class="px-6">
+          <h3 class="text-lg font-semibold mb-4">Contraindicações</h3>
+          <div class="space-y-3">
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Pacientes que apresentem quadro de infecção ativa no local</span>
+            </div>
+            <div class="flex items-start">
+              <span class="text-primary mr-3 mt-1.5">•</span>
+              <span class="text-neutral-600">Cobertura primária insuficiente dos tecidos moles</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Registro ANVISA -->
+        <div class="px-6">
+          <h3 class="text-lg font-semibold mb-4">Registro ANVISA</h3>
+          <p class="text-neutral-600">
+            81832580001
+          </p>
+        </div>
+      </div>
+    `;
+
     return output;
   };
 
