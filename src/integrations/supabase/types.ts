@@ -261,7 +261,6 @@ export type Database = {
           price: number | null
           short_description: string | null
           slug: string
-          stock: number | null
           technical_details: Json | null
           updated_at: string
           video_url: string | null
@@ -279,7 +278,6 @@ export type Database = {
           price?: number | null
           short_description?: string | null
           slug: string
-          stock?: number | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
@@ -297,7 +295,6 @@ export type Database = {
           price?: number | null
           short_description?: string | null
           slug?: string
-          stock?: number | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
