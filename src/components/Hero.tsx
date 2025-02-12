@@ -1,27 +1,29 @@
+
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
-      {/* Video Background */}
-      <div className="absolute inset-0 w-full h-full">
+      {/* Video Background with black preloader */}
+      <div className="absolute inset-0 w-full h-full bg-black">
         <div className="relative w-full h-full">
           <iframe
-            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer&iv_load_policy=3"
+            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer&iv_load_policy=3&origin=https://boneheal.com.br&playsinline=1"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            className="absolute w-screen h-screen scale-[2] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="absolute w-screen h-screen scale-[1.5] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-opacity duration-700"
             style={{ 
               pointerEvents: 'none',
               border: 'none',
-              filter: 'brightness(0.8) contrast(1.1)',
-              backgroundColor: '#000'
+              filter: 'brightness(0.75) contrast(1.1)',
+              backgroundColor: '#000',
+              opacity: 0.95
             }}
           />
         </div>
       </div>
 
-      {/* Background gradient overlay - mais escuro para reduzir o brilho */}
+      {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/80 to-primary-dark/90" />
 
       {/* Content Layer */}
