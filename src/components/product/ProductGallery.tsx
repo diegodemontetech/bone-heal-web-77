@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Product } from "@/types/product";
@@ -7,7 +8,7 @@ interface ProductGalleryProps {
 }
 
 const ProductGallery = ({ product }: ProductGalleryProps) => {
-  const [selectedImage, setSelectedImage] = useState(product.main_image);
+  const [selectedImage, setSelectedImage] = useState(product.main_image || product.default_image_url);
 
   return (
     <motion.div
@@ -18,15 +19,15 @@ const ProductGallery = ({ product }: ProductGalleryProps) => {
     >
       <div className="aspect-square rounded-2xl overflow-hidden bg-white shadow-lg">
         <img
-          src={selectedImage ? `/products/${selectedImage}` : "/placeholder.svg"}
+          src={selectedImage || "/placeholder.svg"}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       </div>
       
       {product.gallery && product.gallery.length > 0 && (
         <div className="grid grid-cols-4 gap-4">
-          {[product.main_image, ...product.gallery].map((image, index) => (
+          {[product.main_image || product.default_image_url, ...product.gallery].map((image, index) => (
             <button
               key={index}
               onClick={() => setSelectedImage(image)}
@@ -35,9 +36,9 @@ const ProductGallery = ({ product }: ProductGalleryProps) => {
               }`}
             >
               <img
-                src={`/products/${image}`}
+                src={image || "/placeholder.svg"}
                 alt={`${product.name} - Imagem ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </button>
           ))}

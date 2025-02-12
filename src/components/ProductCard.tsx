@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,6 +14,7 @@ interface ProductCardProps {
     slug: string;
     short_description: string;
     main_image: string;
+    default_image_url: string;
     gallery?: string[];
     price?: number;
     stock?: number;
@@ -24,13 +26,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Combine main_image and gallery for the carousel
-  const images = product.main_image 
-    ? [product.main_image, ...(product.gallery || [])]
+  const images = (product.main_image || product.default_image_url)
+    ? [product.main_image || product.default_image_url, ...(product.gallery || [])]
     : [];
   
-  // Placeholder image from Unsplash
-  const placeholderImage = "https://images.unsplash.com/photo-1649972904349-6e44c42644a7";
-
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
@@ -44,9 +43,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
       <Link to={`/products/${product.slug}`}>
         <div className="aspect-[4/3] relative overflow-hidden group">
           <img
-            src={images.length > 0 ? `/products/${images[currentImageIndex]}` : placeholderImage}
+            src={images[currentImageIndex] || "/placeholder.svg"}
             alt={product.name}
-            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain transform group-hover:scale-105 transition-transform duration-300"
           />
           {images.length > 1 && (
             <>

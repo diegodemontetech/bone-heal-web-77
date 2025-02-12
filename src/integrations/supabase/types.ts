@@ -250,6 +250,7 @@ export type Database = {
       products: {
         Row: {
           created_at: string
+          default_image_url: string | null
           description: string | null
           gallery: string[] | null
           id: string
@@ -267,6 +268,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          default_image_url?: string | null
           description?: string | null
           gallery?: string[] | null
           id?: string
@@ -284,6 +286,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          default_image_url?: string | null
           description?: string | null
           gallery?: string[] | null
           id?: string

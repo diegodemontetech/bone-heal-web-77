@@ -1,3 +1,4 @@
+
 export interface Product {
   id: string;
   name: string;
@@ -6,6 +7,7 @@ export interface Product {
   description?: string;
   full_description?: string;
   main_image?: string;
+  default_image_url?: string;
   gallery?: string[];
   price?: number;
   video_url?: string;
