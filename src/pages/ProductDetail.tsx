@@ -1,10 +1,11 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/product";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Loader2, Play } from "lucide-react"; // Added Play icon import
+import { Loader2, Play } from "lucide-react";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import ProductTabs from "@/components/product/ProductTabs";
@@ -12,27 +13,27 @@ import ProductTabs from "@/components/product/ProductTabs";
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
 
-  const { data: product, isLoading, isError } = useQuery({
+  const { data: product, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
-      if (!slug) throw new Error("No slug provided");
+      console.log("Fetching product with slug:", slug);
       
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select()
         .eq("slug", slug)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === "PGRST116") {
-          return null; // Product not found
-        }
+        console.error("Error fetching product:", error);
         throw error;
       }
       
+      console.log("Product data:", data);
       return data as Product;
     },
     enabled: !!slug,
+    retry: 1
   });
 
   if (isLoading) {
@@ -43,7 +44,7 @@ const ProductDetail = () => {
     );
   }
 
-  if (isError || !product) {
+  if (!product) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
