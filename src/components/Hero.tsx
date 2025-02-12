@@ -11,8 +11,11 @@ const Hero = () => {
           <iframe
             src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            className="absolute w-full h-full object-cover"
-            style={{ pointerEvents: 'none' }}
+            className="absolute w-[300%] h-[300%] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 object-cover"
+            style={{ 
+              pointerEvents: 'none',
+              border: 'none'
+            }}
           />
         </div>
       </div>
