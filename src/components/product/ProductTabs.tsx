@@ -1,7 +1,7 @@
 
 import { Product } from "@/types/product";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Play } from "lucide-react";
+import { FileText } from "lucide-react";
 
 interface ProductTabsProps {
   product: Product;
@@ -11,59 +11,79 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
   const formatDescription = (text: string) => {
     if (!text) return "";
     
-    let output = "";
+    // Remover caracteres especiais e espaços extras
+    const cleanText = text.replace(/\\[nr]/g, '').trim();
     
-    // Primeira seção - Nome do produto
-    output += `
-      <div class="px-6 py-4 bg-white">
-        <h2 class="text-2xl font-bold text-neutral-900 mb-6">${product.name}</h2>
-      </div>
+    let output = `
+      <div class="space-y-8">
+        <!-- Título Principal -->
+        <div class="px-6 py-4">
+          <h2 class="text-2xl font-bold text-neutral-900">${product.name}</h2>
+        </div>
+
+        <!-- Descrição -->
+        <div class="px-6">
+          <h3 class="text-lg font-semibold mb-4">Descrição</h3>
+          <p class="text-neutral-600">
+            Película utilizada como barreira para regeneração óssea guiada. 
+            Constituída 100% por polipropileno com tratamento de superfície.
+          </p>
+        </div>
     `;
 
-    // Processamento das seções principais
-    const mainSections = ["Características:", "Contraindicações:", "Registro ANVISA:"];
-    
-    mainSections.forEach(sectionTitle => {
-      const sectionRegex = new RegExp(`${sectionTitle}([\\s\\S]*?)(?=(${mainSections.join('|')})|$)`);
-      const match = text.match(sectionRegex);
-      
-      if (match) {
+    // Seções principais com seus conteúdos
+    const sections = [
+      {
+        title: "Características",
+        content: cleanText.match(/Características:(.*?)(?=Contraindicações:|$)/s)?.[1] || ""
+      },
+      {
+        title: "Contraindicações",
+        content: cleanText.match(/Contraindicações:(.*?)(?=Registro ANVISA:|$)/s)?.[1] || ""
+      },
+      {
+        title: "Registro ANVISA",
+        content: cleanText.match(/Registro ANVISA:(.*?)$/s)?.[1] || ""
+      }
+    ];
+
+    // Processar cada seção
+    sections.forEach(section => {
+      const items = section.content
+        .split(/[•\n]/)
+        .map(item => item.trim())
+        .filter(Boolean);
+
+      if (items.length > 0) {
         output += `
-          <div class="border-t">
-            <h3 class="text-xl font-semibold bg-neutral-100 px-6 py-4">${sectionTitle}</h3>
-            <div class="py-2">
+          <div class="px-6">
+            <h3 class="text-lg font-semibold mb-4">${section.title}</h3>
+            <div class="space-y-3">
         `;
-        
-        // Processar o conteúdo da seção
-        const content = match[1].trim();
-        const items = content.split(/[•\n]/).map(item => item.trim()).filter(Boolean);
-        
+
         items.forEach(item => {
-          if (item.includes(":")) {
-            const [title, content] = item.split(":");
+          if (section.title === "Registro ANVISA") {
             output += `
-              <div class="px-6 py-3 bg-white flex flex-col sm:flex-row gap-2">
-                <span class="font-medium text-neutral-900 sm:w-1/3">${title.trim()}:</span>
-                <span class="text-neutral-600 sm:w-2/3">${content.trim()}</span>
-              </div>
+              <p class="text-neutral-600">${item}</p>
             `;
           } else {
             output += `
-              <div class="px-6 py-3 bg-white flex items-start">
-                <span class="text-primary mr-3 font-bold">•</span>
+              <div class="flex items-start">
+                <span class="text-primary mr-3 mt-1.5">•</span>
                 <span class="text-neutral-600">${item}</span>
               </div>
             `;
           }
         });
-        
+
         output += `
             </div>
           </div>
         `;
       }
     });
-    
+
+    output += "</div>";
     return output;
   };
 
@@ -75,7 +95,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
         <TabsTrigger value="documents" className="flex-1">Documentos</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="description" className="mt-6 border rounded-lg overflow-hidden">
+      <TabsContent value="description" className="mt-6 border rounded-lg overflow-hidden bg-white">
         <div 
           className="divide-y divide-neutral-100"
           dangerouslySetInnerHTML={{ 
@@ -87,7 +107,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
       <TabsContent value="specifications" className="mt-6 border rounded-lg overflow-hidden">
         {product.technical_details && (
           <div className="divide-y divide-neutral-100">
-            {Object.entries(product.technical_details).map(([key, value], index) => (
+            {Object.entries(product.technical_details).map(([key, value]) => (
               <div 
                 key={key} 
                 className="flex flex-col sm:flex-row sm:items-center p-4 bg-white"
