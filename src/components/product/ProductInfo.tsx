@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,11 +17,6 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const session = useSession();
 
   const handleAddToCart = () => {
-    if (!product.stock || product.stock <= 0) {
-      toast.error("Produto fora de estoque");
-      return;
-    }
-
     const newItem: CartItem = {
       id: product.id,
       name: product.name,
@@ -47,7 +43,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   };
 
   const handleQuantityChange = (value: number) => {
-    if (value >= 1 && (!product.stock || value <= product.stock)) {
+    if (value >= 1) {
       setQuantity(value);
     }
   };
@@ -94,7 +90,6 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
                 variant="outline"
                 size="icon"
                 onClick={() => handleQuantityChange(quantity + 1)}
-                disabled={product.stock !== undefined && quantity >= product.stock}
               >
                 +
               </Button>
@@ -102,19 +97,11 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
             <Button 
               onClick={handleAddToCart} 
               className="flex-1 font-bold text-white hover:bg-primary-dark"
-              disabled={!product.stock || product.stock <= 0}
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
-              {product.stock && product.stock > 0 
-                ? "Adicionar ao Carrinho"
-                : "Fora de Estoque"}
+              Adicionar ao Carrinho
             </Button>
           </div>
-          {product.stock !== undefined && product.stock > 0 && (
-            <p className="text-sm text-gray-500 mt-2">
-              {product.stock} unidades em estoque
-            </p>
-          )}
         </div>
       )}
     </div>

@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@supabase/auth-helpers-react";
-import { Badge } from "@/components/ui/badge";
 
 interface ProductCardProps {
   product: {
@@ -17,7 +16,6 @@ interface ProductCardProps {
     default_image_url: string;
     gallery?: string[];
     price?: number;
-    stock?: number;
   };
 }
 
@@ -79,13 +77,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </div>
             </>
           )}
-          {product.stock !== undefined && product.stock <= 0 && (
-            <div className="absolute top-2 right-2">
-              <Badge variant="destructive">
-                Indisponível
-              </Badge>
-            </div>
-          )}
         </div>
       </Link>
       <div className="p-6 bg-primary text-white">
@@ -96,11 +87,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
         {session && product.price && (
           <p className="text-lg font-bold mb-4">
             R$ {product.price.toFixed(2)}
-          </p>
-        )}
-        {product.stock !== undefined && product.stock > 0 && (
-          <p className="text-sm mb-4">
-            {product.stock} unidades em estoque
           </p>
         )}
         <Link to={`/products/${product.slug}`}>
