@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -67,9 +68,9 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center">
             <img 
-              src="https://i.ibb.co/ZczkjWn/7c232e-500-x-100-px.png" 
+              src="https://i.ibb.co/Mkv44CY8/7c232e-500-x-100-px-1.png" 
               alt="BoneHeal" 
-              className="h-6 md:h-8" // Reduced from h-8 md:h-10 to h-6 md:h-8
+              className="h-6 md:h-8"
             />
           </Link>
 
