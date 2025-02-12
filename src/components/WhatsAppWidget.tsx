@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -273,12 +274,12 @@ const WhatsAppWidget = () => {
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full overflow-hidden">
                         <img 
-                          src="https://i.ibb.co/Mkv44CY8/7c232e-500-x-100-px-1.png" 
-                          alt="BoneHeal" 
+                          src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&h=80&q=80" 
+                          alt="Maria" 
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#8B2F4B]"></div>
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#8B2F4B]"></span>
                     </div>
                     <div className="ml-3">
                       <h3 className="text-white font-semibold text-lg">Maria</h3>
