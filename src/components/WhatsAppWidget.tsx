@@ -265,7 +265,7 @@ const WhatsAppWidget = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-white rounded-lg shadow-2xl w-[380px] overflow-hidden"
+              className="bg-white rounded-lg shadow-2xl w-[280px] overflow-hidden" // Reduzido de 380px para 280px (aprox. 30% menor)
             >
               <div className="bg-[#8B2F4B] p-4">
                 <div className="flex items-center justify-between">
@@ -294,7 +294,7 @@ const WhatsAppWidget = () => {
                 </div>
               </div>
               
-              <div className="p-4 h-[400px] flex flex-col">
+              <div className="p-4 h-[320px] flex flex-col"> {/* Reduzido de 400px para 320px (20% menor) */}
                 <div className="flex-1 overflow-y-auto space-y-2">
                   {messages.map((message, index) => renderMessage(message, index))}
                   
