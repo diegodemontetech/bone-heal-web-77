@@ -35,8 +35,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
       }
       // Se é um item de lista (começa com \n• ou apenas •)
       else if (line.includes("•")) {
-        const items = line.split("•").filter(Boolean);
-        items.forEach(item => {
+        line.split("•").forEach(item => {
           if (item.trim()) {
             output += `
               <div class="flex px-6 py-4 bg-white">
