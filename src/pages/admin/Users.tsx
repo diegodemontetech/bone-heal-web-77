@@ -78,7 +78,7 @@ const Users = () => {
     try {
       let query = supabase
         .from("profiles")
-        .select("*, auth_users:auth.users(email)")
+        .select("*, auth_users:id(email)")
         .order("created_at", { ascending: false });
 
       if (isAdminFilter !== null) {
@@ -91,7 +91,7 @@ const Users = () => {
         console.error("Erro ao buscar usuários:", error);
         toast.error("Erro ao buscar usuários: " + error.message);
       } else if (data) {
-        const usersWithProfile: UserWithProfile[] = (data as DatabaseProfile[]).map((profile) => ({
+        const usersWithProfile: UserWithProfile[] = (data as unknown as DatabaseProfile[]).map((profile) => ({
           id: profile.id,
           email: profile.auth_users?.[0]?.email || null,
           created_at: profile.created_at,
