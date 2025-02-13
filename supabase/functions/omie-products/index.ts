@@ -35,7 +35,8 @@ serve(async (req) => {
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N"
+        apenas_importado_api: "N",
+        filtrar_apenas_omiepdv: "N"
       }]
     };
 
@@ -49,13 +50,27 @@ serve(async (req) => {
       body: JSON.stringify(listRequestBody),
     });
 
-    const listData = await listResponse.json();
-    console.log('Lista response:', JSON.stringify(listData, null, 2));
+    // Log da resposta bruta para debug
+    const listResponseText = await listResponse.text();
+    console.log('Lista response (raw):', listResponseText);
+    
+    let listData;
+    try {
+      listData = JSON.parse(listResponseText);
+    } catch (error) {
+      console.error('Erro ao parsear resposta da lista:', error);
+      throw new Error(`Erro ao parsear resposta da API: ${listResponseText}`);
+    }
+
+    console.log('Lista response (parsed):', JSON.stringify(listData, null, 2));
 
     if (listData.faultstring) {
       throw new Error(`Erro Omie (lista): ${listData.faultstring}`);
     }
 
+    // Verificar todos os campos da resposta
+    console.log('Campos da resposta:', Object.keys(listData));
+    
     const produtosResumidos = listData.produto_servico_resumido || [];
     console.log(`Produtos encontrados: ${produtosResumidos.length}`);
 
@@ -74,13 +89,16 @@ serve(async (req) => {
     const products = [];
     for (const produtoResumido of produtosResumidos) {
       try {
+        console.log('Processando produto resumido:', produtoResumido);
+        
         const detailRequestBody = {
           call: 'ConsultarProduto',
           app_key: OMIE_APP_KEY,
           app_secret: OMIE_APP_SECRET,
           param: [{
             codigo_produto: produtoResumido.codigo_produto,
-            codigo: produtoResumido.codigo
+            codigo: produtoResumido.codigo,
+            codigo_produto_integracao: produtoResumido.codigo_produto_integracao
           }]
         };
 
@@ -94,15 +112,28 @@ serve(async (req) => {
           body: JSON.stringify(detailRequestBody),
         });
 
-        const detailData = await detailResponse.json();
-        console.log('Detail response:', JSON.stringify(detailData, null, 2));
+        // Log da resposta bruta para debug
+        const detailResponseText = await detailResponse.text();
+        console.log('Detail response (raw):', detailResponseText);
+        
+        let detailData;
+        try {
+          detailData = JSON.parse(detailResponseText);
+        } catch (error) {
+          console.error('Erro ao parsear resposta do detalhe:', error);
+          continue;
+        }
+
+        console.log('Detail response (parsed):', JSON.stringify(detailData, null, 2));
 
         if (detailData.faultstring) {
           console.error(`Erro ao consultar produto ${produtoResumido.codigo}:`, detailData.faultstring);
           continue;
         }
 
-        const product = detailData;
+        // Se o produto vier dentro de um objeto, extrair
+        const product = detailData.produto_servico_cadastro || detailData;
+        
         if (!product.descricao || !product.codigo) {
           console.log('Produto inválido:', product);
           continue;
