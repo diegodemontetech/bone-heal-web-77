@@ -91,18 +91,16 @@ serve(async (req) => {
             continue;
           }
 
-          // Primeiro verifica se já existe um usuário com este email
-          const { data: existingUser } = await supabase
-            .from('auth_users')
-            .select('id, email')
-            .eq('email', cliente.email)
-            .maybeSingle();
+          // Busca o usuário pelo email usando auth.users
+          const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
+          const existingUser = users.users.find(u => u.email === cliente.email);
 
           let userId;
 
           if (existingUser) {
-            console.log(`Usuário já existe para o email ${cliente.email}`);
+            console.log(`Atualizando usuário existente: ${cliente.email}`);
             userId = existingUser.id;
+            updated++;
           } else {
             // Se não existe, cria um novo usuário
             const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
@@ -122,19 +120,29 @@ serve(async (req) => {
             });
 
             if (signUpError) {
-              console.error(`Erro ao criar usuário para ${cliente.email}:`, signUpError);
-              errors++;
-              continue;
+              if (signUpError.message.includes('already been registered')) {
+                console.log(`Usuário já existe, pulando criação: ${cliente.email}`);
+                const { data: existingUserData } = await supabase.auth.admin.getUserById(existingUser?.id || '');
+                userId = existingUserData?.user?.id;
+                if (!userId) {
+                  errors++;
+                  continue;
+                }
+                updated++;
+              } else {
+                console.error(`Erro ao criar usuário para ${cliente.email}:`, signUpError);
+                errors++;
+                continue;
+              }
+            } else {
+              userId = user?.id;
+              if (!userId) {
+                console.error(`Usuário não foi criado para ${cliente.email}`);
+                errors++;
+                continue;
+              }
+              created++;
             }
-
-            if (!user?.id) {
-              console.error(`Usuário não foi criado para ${cliente.email}`);
-              errors++;
-              continue;
-            }
-
-            userId = user.id;
-            created++;
           }
 
           // Define o tipo de contato
@@ -144,13 +152,6 @@ serve(async (req) => {
           } else if (cliente.tipo_atividade === 'Cliente/Fornecedor') {
             contactType = 'both';
           }
-
-          // Verifica se já existe um perfil para este usuário
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
 
           const profileData = {
             full_name: cliente.razao_social,
@@ -167,30 +168,18 @@ serve(async (req) => {
             contact_type: contactType
           };
 
-          if (existingProfile) {
-            // Atualiza o perfil existente
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update(profileData)
-              .eq('id', userId);
+          // Upsert do perfil (atualiza se existe, cria se não existe)
+          const { error: upsertError } = await supabase
+            .from('profiles')
+            .upsert({ 
+              ...profileData, 
+              id: userId 
+            });
 
-            if (updateError) {
-              console.error(`Erro ao atualizar perfil para ${cliente.email}:`, updateError);
-              errors++;
-              continue;
-            }
-            updated++;
-          } else {
-            // Cria um novo perfil
-            const { error: insertError } = await supabase
-              .from('profiles')
-              .insert({ ...profileData, id: userId });
-
-            if (insertError) {
-              console.error(`Erro ao criar perfil para ${cliente.email}:`, insertError);
-              errors++;
-              continue;
-            }
+          if (upsertError) {
+            console.error(`Erro ao atualizar/criar perfil para ${cliente.email}:`, upsertError);
+            errors++;
+            continue;
           }
 
           console.log(`Processado com sucesso: ${cliente.razao_social}`);

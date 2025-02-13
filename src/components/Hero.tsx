@@ -1,4 +1,3 @@
-
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -7,27 +6,22 @@ const Hero = () => {
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* Video Background with dark overlay */}
       <div className="absolute inset-0 w-full h-full">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
+        <img
+          src="https://i.ibb.co/5g0Yg8N/d547c5cc-b17c-4dbe-a4b7-3d574fdf699b.gif"
+          alt="Background"
           className="absolute inset-0 w-full h-full object-cover"
           style={{
             filter: 'brightness(0.7)',
           }}
-        >
-          <source src="https://i.ibb.co/5g0Yg8N/d547c5cc-b17c-4dbe-a4b7-3d574fdf699b.gif" type="video/mp4" />
-        </video>
+        />
       </div>
 
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/80 to-primary-dark/90" />
 
       {/* Content Layer */}
-      <div className="relative max-w-[1440px] mx-auto px-8 lg:px-24 py-32">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div 
+      <div className="relative max-w-[1440px] mx-auto px-8 lg:px-24 py-32 mt-20">
+        <motion.div 
             initial={{ opacity: 0, x: -100 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ 
@@ -98,7 +92,6 @@ const Hero = () => {
               </motion.a>
             </motion.div>
           </motion.div>
-        </div>
 
         {/* Scroll Indicator with enhanced animation */}
         <motion.div

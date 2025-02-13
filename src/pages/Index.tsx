@@ -1,4 +1,5 @@
 
+import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import ProductsPreview from "@/components/ProductsPreview";
@@ -9,6 +10,7 @@ import TestOmieSync from "@/components/TestOmieSync";
 const Index = () => {
   return (
     <>
+      <Navbar />
       <Hero />
       <Features />
       <ProductsPreview />
