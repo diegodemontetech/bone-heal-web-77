@@ -257,10 +257,13 @@ export type Database = {
           main_image: string | null
           name: string
           omie_code: string | null
+          omie_last_update: string | null
+          omie_product_id: string | null
           omie_sync: boolean | null
           price: number | null
           short_description: string | null
           slug: string
+          stock: number | null
           technical_details: Json | null
           updated_at: string
           video_url: string | null
@@ -274,10 +277,13 @@ export type Database = {
           main_image?: string | null
           name: string
           omie_code?: string | null
+          omie_last_update?: string | null
+          omie_product_id?: string | null
           omie_sync?: boolean | null
           price?: number | null
           short_description?: string | null
           slug: string
+          stock?: number | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
@@ -291,10 +297,13 @@ export type Database = {
           main_image?: string | null
           name?: string
           omie_code?: string | null
+          omie_last_update?: string | null
+          omie_product_id?: string | null
           omie_sync?: boolean | null
           price?: number | null
           short_description?: string | null
           slug?: string
+          stock?: number | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null

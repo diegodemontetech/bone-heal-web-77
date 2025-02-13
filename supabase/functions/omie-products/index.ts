@@ -1,5 +1,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,22 +9,24 @@ const corsHeaders = {
 
 const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY');
 const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     // Validate environment variables
-    if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
-      console.error('Missing Omie credentials');
-      throw new Error('Missing Omie credentials');
+    if (!OMIE_APP_KEY || !OMIE_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Missing required environment variables');
     }
 
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
     console.log('Iniciando busca de produtos no Omie');
-    console.log('Usando APP_KEY:', OMIE_APP_KEY.substring(0, 5) + '...');
 
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
@@ -43,41 +46,68 @@ serve(async (req) => {
       }),
     });
 
-    console.log('Status da resposta Omie:', omieResponse.status);
-
     if (!omieResponse.ok) {
-      const errorText = await omieResponse.text();
-      console.error('Erro na resposta do Omie:', omieResponse.status, omieResponse.statusText);
-      console.error('Detalhes do erro:', errorText);
-      throw new Error(`Erro na API do Omie: ${errorText}`);
+      throw new Error(`HTTP error! status: ${omieResponse.status}`);
     }
 
     const data = await omieResponse.json();
-    console.log('Resposta do Omie recebida');
 
     if (data.faultstring) {
-      console.error('Erro retornado pelo Omie:', data.faultstring);
       throw new Error(data.faultstring);
     }
 
-    // Map Omie products to our format
     const products = data.produto_servico_lista?.map((product: any) => ({
-      codigo: product.codigo,
-      descricao: product.descricao,
-      valor_unitario: product.valor_unitario,
-      estoque: product.estoque_atual || 0
+      omie_code: product.codigo,
+      omie_product_id: product.codigo_produto,
+      name: product.descricao,
+      price: parseFloat(product.valor_unitario),
+      stock: parseInt(product.estoque_atual || '0'),
+      slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      omie_sync: true,
+      omie_last_update: new Date().toISOString()
     })) || [];
 
-    console.log(`Processados ${products.length} produtos`);
-    if (products.length > 0) {
-      console.log('Primeiro produto:', JSON.stringify(products[0], null, 2));
-    } else {
-      console.log('Nenhum produto encontrado no Omie');
+    console.log(`Processando ${products.length} produtos do Omie`);
+
+    // Atualizar produtos no Supabase
+    for (const product of products) {
+      // Verificar se o produto já existe
+      const { data: existingProduct } = await supabase
+        .from('products')
+        .select('id, omie_code')
+        .eq('omie_code', product.omie_code)
+        .single();
+
+      if (existingProduct) {
+        // Atualizar produto existente
+        const { error: updateError } = await supabase
+          .from('products')
+          .update(product)
+          .eq('id', existingProduct.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar produto:', updateError);
+          continue;
+        }
+        console.log(`Produto atualizado: ${product.name}`);
+      } else {
+        // Inserir novo produto
+        const { error: insertError } = await supabase
+          .from('products')
+          .insert([product]);
+
+        if (insertError) {
+          console.error('Erro ao inserir produto:', insertError);
+          continue;
+        }
+        console.log(`Novo produto inserido: ${product.name}`);
+      }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
+        message: `${products.length} produtos sincronizados com sucesso`,
         products 
       }),
       { 
@@ -89,13 +119,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
-    
+    console.error('Erro na sincronização:', error);
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message,
-        details: error.stack
+        error: error.message
       }),
       { 
         status: 500,
