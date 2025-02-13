@@ -5,20 +5,20 @@ import { motion } from 'framer-motion';
 const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
-      {/* Video Background with black preloader */}
+      {/* Video Background with dark overlay */}
       <div className="absolute inset-0 w-full h-full bg-black">
-        <div className="relative w-full h-full">
-          <iframe
-            src="https://www.youtube.com/embed/Mu3SihIAloc?autoplay=1&mute=1&controls=0&loop=1&playlist=Mu3SihIAloc&showinfo=0&rel=0&modestbranding=1&enablejsapi=1&version=3&playerapiid=ytplayer&iv_load_policy=3&origin=https://boneheal.com.br&playsinline=1&playbackRate=0.75"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            className="absolute w-screen h-screen scale-[1.2] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-1000"
-            style={{ 
-              pointerEvents: 'none',
-              border: 'none',
+        <div className="relative w-full h-full overflow-hidden">
+          {/* Using the GIF as background with adjustments to hide watermark */}
+          <div
+            className="absolute inset-0 w-[120%] h-[120%] -left-[10%] -top-[10%]"
+            style={{
+              backgroundImage: 'url(https://i.ibb.co/5g0Yg8N/d547c5cc-b17c-4dbe-a4b7-3d574fdf699b.gif)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               filter: 'brightness(0.7) contrast(1.1)',
-              backgroundColor: '#000',
+              transform: 'scale(1.2)',
               opacity: 0.9,
-              willChange: 'transform'
             }}
           />
         </div>
