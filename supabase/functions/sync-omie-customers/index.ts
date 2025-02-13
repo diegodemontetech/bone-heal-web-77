@@ -26,8 +26,9 @@ serve(async (req) => {
 
     console.log('Iniciando busca de clientes no Omie');
 
+    // Primeiro, buscar a lista de clientes resumida
     const listRequestBody = {
-      call: 'ListarClientes',
+      call: 'ListarClientesResumido',
       app_key: OMIE_APP_KEY,
       app_secret: OMIE_APP_SECRET,
       param: [{
@@ -51,8 +52,8 @@ serve(async (req) => {
       throw new Error(`Erro Omie: ${listData.faultstring}`);
     }
 
-    const clientes = listData.clientes_cadastro || [];
-    console.log(`Clientes encontrados: ${clientes.length}`);
+    const clientesResumidos = listData.clientes_cadastro_resumido || [];
+    console.log(`Clientes encontrados: ${clientesResumidos.length}`);
 
     let created = 0;
     let errors = 0;
@@ -61,12 +62,36 @@ serve(async (req) => {
     const BATCH_SIZE = 10;
     const DELAY_BETWEEN_BATCHES = 1000; // 1 segundo de delay entre lotes
 
-    for (let i = 0; i < clientes.length; i += BATCH_SIZE) {
-      const batch = clientes.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < clientesResumidos.length; i += BATCH_SIZE) {
+      const batch = clientesResumidos.slice(i, i + BATCH_SIZE);
       
-      for (const cliente of batch) {
+      for (const clienteResumido of batch) {
         try {
-          // Verifica se é realmente um cliente (dupla verificação)
+          // Consultar dados completos do cliente
+          const consultaRequestBody = {
+            call: 'ConsultarCliente',
+            app_key: OMIE_APP_KEY,
+            app_secret: OMIE_APP_SECRET,
+            param: [{
+              codigo_cliente_omie: clienteResumido.codigo_cliente
+            }]
+          };
+
+          const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(consultaRequestBody),
+          });
+
+          const cliente = await consultaResponse.json();
+
+          if (cliente.faultstring) {
+            throw new Error(`Erro Omie ao consultar cliente: ${cliente.faultstring}`);
+          }
+
+          // Verifica se é realmente um cliente
           if (cliente.tipo_atividade !== 'Consumidor' && cliente.tipo_atividade !== 'Outros') {
             console.log(`Pulando ${cliente.codigo_cliente_omie} pois não é cliente (${cliente.tipo_atividade})`);
             continue;
@@ -127,13 +152,13 @@ serve(async (req) => {
           created++;
           console.log(`Usuário criado com sucesso para ${cliente.razao_social}`);
         } catch (error) {
-          console.error(`Erro ao processar cliente ${cliente.codigo_cliente_omie}:`, error);
+          console.error(`Erro ao processar cliente:`, error);
           errors++;
         }
       }
 
       // Aguarda antes de processar o próximo lote
-      if (i + BATCH_SIZE < clientes.length) {
+      if (i + BATCH_SIZE < clientesResumidos.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
       }
     }
@@ -142,7 +167,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Sincronização concluída: ${created} usuários criados, ${errors} erros`,
-        totalClientes: clientes.length
+        totalClientes: clientesResumidos.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
