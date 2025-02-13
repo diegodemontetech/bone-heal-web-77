@@ -1,7 +1,10 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import AdminLayout from "@/components/admin/Layout";
+import { useEffect, useState } from "react";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -10,226 +13,289 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
+import { MoreVertical, Pencil, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { useModal } from "@/hooks/use-modal";
+import { User } from "@supabase/supabase-js";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import TestOmieSync from "@/components/TestOmieSync";
 
-const formSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
-  fullName: z.string().min(2, "Nome muito curto"),
-  isAdmin: z.boolean().default(false),
-});
+interface UserWithProfile {
+  id: string;
+  email: string | null;
+  created_at: string;
+  profile: {
+    full_name: string | null;
+    phone: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    zip_code: string | null;
+    is_admin: boolean | null;
+  } | null;
+}
 
-const AdminUsers = () => {
-  const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+const Users = () => {
+  const [users, setUsers] = useState<UserWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { onOpen } = useModal();
+  const [search, setSearch] = useState("");
+  const [isAdminFilter, setIsAdminFilter] = useState<boolean | null>(null);
 
-  const { data: users, refetch } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  useEffect(() => {
+    fetchUsers();
+  }, [isAdminFilter]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      isAdmin: false,
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const fetchUsers = async () => {
+    setLoading(true);
     try {
-      setIsLoading(true);
-      
-      const { error: signUpError, data: { user } } = await supabase.auth.signUp({
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName,
-          },
-        },
-      });
-
-      if (signUpError) throw signUpError;
-
-      if (!user?.id) throw new Error("Erro ao criar usuário");
-
-      const { error: profileError } = await supabase
+      let query = supabase
         .from("profiles")
-        .update({
-          full_name: values.fullName,
-          is_admin: values.isAdmin,
-        })
-        .eq("id", user.id);
+        .select(
+          `
+          id,
+          full_name,
+          phone,
+          address,
+          city,
+          state,
+          zip_code,
+          is_admin,
+          created_at,
+          email:profiles(email)
+        `
+        )
+        .order("created_at", { ascending: false });
 
-      if (profileError) throw profileError;
+      if (isAdminFilter !== null) {
+        query = query.eq("is_admin", isAdminFilter);
+      }
 
-      toast({
-        title: "Sucesso",
-        description: "Usuário criado com sucesso!",
-        variant: "default",
-      });
-      
-      setIsOpen(false);
-      form.reset();
-      refetch();
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao criar usuário",
-        variant: "destructive",
-      });
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Erro ao buscar usuários:", error);
+        toast.error("Erro ao buscar usuários: " + error.message);
+      } else {
+        const usersWithProfile: UserWithProfile[] = data.map((profile) => ({
+          id: profile.id,
+          email: profile.email ? profile.email[0]?.email : null,
+          created_at: profile.created_at,
+          profile: {
+            full_name: profile.full_name,
+            phone: profile.phone,
+            address: profile.address,
+            city: profile.city,
+            state: profile.state,
+            zip_code: profile.zip_code,
+            is_admin: profile.is_admin,
+          },
+        }));
+        setUsers(usersWithProfile);
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  return (
-    <AdminLayout>
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Usuários</h1>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Usuário
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Criar Novo Usuário</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Senha</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="password" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome Completo</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="isAdmin"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Administrador
-                          </FormLabel>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Criando..." : "Criar Usuário"}
-                  </Button>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </div>
+  const handleDelete = async (userId: string) => {
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
 
-        <div className="bg-white rounded-lg shadow">
+      if (error) {
+        console.error("Erro ao excluir usuário:", error);
+        toast.error("Erro ao excluir usuário: " + error.message);
+      } else {
+        toast.success("Usuário excluído com sucesso!");
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Erro ao excluir usuário:", error);
+      toast.error("Erro ao excluir usuário: " + (error as Error).message);
+    }
+  };
+
+  const columns: ColumnDef<UserWithProfile>[] = [
+    {
+      accessorKey: "profile.full_name",
+      header: "Nome",
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <Avatar>
+            <AvatarImage
+              src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${row.getValue(
+                "profile.full_name"
+              )}`}
+            />
+            <AvatarFallback>
+              {row.getValue("profile.full_name")
+                ? row
+                    .getValue("profile.full_name")
+                    ?.substring(0, 2)
+                    .toUpperCase()
+                : "UN"}
+            </AvatarFallback>
+          </Avatar>
+          <span>{row.getValue("profile.full_name")}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+    },
+    {
+      accessorKey: "profile.phone",
+      header: "Telefone",
+    },
+    {
+      accessorKey: "profile.city",
+      header: "Cidade",
+    },
+    {
+      accessorKey: "profile.state",
+      header: "Estado",
+    },
+    {
+      accessorKey: "created_at",
+      header: "Criado em",
+      cell: ({ row }) => {
+        const date = new Date(row.getValue("created_at"));
+        return date.toLocaleDateString();
+      },
+    },
+    {
+      id: "actions",
+      header: "Ações",
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Abrir menu</span>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() =>
+                onOpen("editUser", {
+                  userId: row.original.id,
+                  user: row.original,
+                })
+              }
+            >
+              <Pencil className="mr-2 h-4 w-4" /> Editar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => handleDelete(row.original.id)}
+              className="text-red-500 focus:text-red-500"
+            >
+              <Trash className="mr-2 h-4 w-4" /> Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
+    },
+  ];
+
+  const table = useReactTable({
+    data: users.filter((user) => {
+      const fullName = user.profile?.full_name || "";
+      return fullName.toLowerCase().includes(search.toLowerCase());
+    }),
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+
+  return (
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">Gerenciamento de Usuários</h1>
+      <TestOmieSync />
+      <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="search">Pesquisar:</Label>
+          <Input
+            id="search"
+            type="search"
+            placeholder="Pesquisar por nome..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center space-x-2">
+          <Label htmlFor="isAdminFilter">Filtrar por Admin:</Label>
+          <Switch
+            id="isAdminFilter"
+            checked={isAdminFilter === true}
+            onCheckedChange={(checked) => {
+              if (checked) {
+                setIsAdminFilter(true);
+              } else if (isAdminFilter === true) {
+                setIsAdminFilter(null);
+              } else {
+                setIsAdminFilter(false);
+              }
+            }}
+          />
+        </div>
+        <Button onClick={() => onOpen("createUser")}>Criar Usuário</Button>
+      </div>
+      <div className="mt-4">
+        {loading ? (
+          <p>Carregando usuários...</p>
+        ) : users.length === 0 ? (
+          <p>Nenhum usuário encontrado.</p>
+        ) : (
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>CRO</TableHead>
-                <TableHead>Especialidade</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
             </TableHeader>
             <TableBody>
-              {users?.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>{user.full_name}</TableCell>
-                  <TableCell>{user.cro}</TableCell>
-                  <TableCell>{user.specialty}</TableCell>
-                  <TableCell>{user.is_admin ? "Sim" : "Não"}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="icon">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        )}
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 
-export default AdminUsers;
+export default Users;
