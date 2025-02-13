@@ -1,4 +1,4 @@
-import { useState, useEffect, KeyboardEvent } from 'react';
+import { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,15 @@ const WhatsAppWidget = () => {
   const [hasInterest, setHasInterest] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Array<{ text: string; delay: number; showInterestButtons?: boolean; isUser?: boolean }>>([]);
   const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]); // Scroll whenever messages change or typing status changes
 
   // Fetch configurable messages
   const { data: configMessages, isLoading } = useQuery({
@@ -325,6 +334,7 @@ const WhatsAppWidget = () => {
                       </div>
                     </div>
                   )}
+                  <div ref={messagesEndRef} /> {/* Add this invisible element at the end */}
                 </div>
 
                 {showInput && (
