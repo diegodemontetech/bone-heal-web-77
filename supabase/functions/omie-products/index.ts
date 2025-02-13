@@ -28,19 +28,20 @@ serve(async (req) => {
     console.log('Usando as credenciais:', { OMIE_APP_KEY, OMIE_APP_SECRET });
 
     const requestBody = {
-      call: 'ConsultarProduto',
+      call: 'ListarProdutos',
       app_key: OMIE_APP_KEY,
       app_secret: OMIE_APP_SECRET,
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N"
+        apenas_importado_api: "N",
+        filtrar_apenas_omiepdv: "N"
       }]
     };
 
     console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-    const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+    const response = await fetch('https://app.omie.com.br/api/v1/produtos/produto/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
