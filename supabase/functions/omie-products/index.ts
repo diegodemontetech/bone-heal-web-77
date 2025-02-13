@@ -26,20 +26,18 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
-    // Requisição para listar produtos
-    const response = await fetch('https://app.omie.com.br/api/v1/produtos/produto/', {
+    const response = await fetch('https://app.omie.com.br/api/v1/produtos/cadastro/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        call: 'ListarProdutos',
+        call: 'ListarProdutosCadastro',
         app_key: OMIE_APP_KEY,
         app_secret: OMIE_APP_SECRET,
         param: [{
           pagina: 1,
-          registros_por_pagina: 50,
-          apenas_importado_api: "N"
+          registros_por_pagina: 50
         }]
       }),
     });
@@ -55,7 +53,7 @@ serve(async (req) => {
       throw new Error(`Erro Omie: ${data.faultstring}`);
     }
 
-    const produtos = data.produto_servico_lista || [];
+    const produtos = data.produto_servico_cadastro || [];
     console.log(`Produtos encontrados: ${produtos.length}`);
 
     if (produtos.length === 0) {
