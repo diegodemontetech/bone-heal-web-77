@@ -42,8 +42,7 @@ serve(async (req) => {
           pagina: 1,
           registros_por_pagina: 50,
           apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N",
-          inativo: "N"
+          filtrar_apenas_omiepdv: "N"
         }]
       }),
     });
@@ -53,7 +52,7 @@ serve(async (req) => {
     }
 
     const firstData = await firstResponse.json();
-    console.log('Estrutura da resposta:', Object.keys(firstData));
+    console.log('Resposta da primeira página:', JSON.stringify(firstData, null, 2));
     
     if (firstData.faultstring) {
       throw new Error(firstData.faultstring);
@@ -62,22 +61,19 @@ serve(async (req) => {
     let allProducts: any[] = [];
     let totalPages = 1;
 
-    // Verificar se há produtos na primeira página
-    if (firstData.produto_servico_lista && Array.isArray(firstData.produto_servico_lista)) {
-      console.log(`Encontrados ${firstData.produto_servico_lista.length} produtos na primeira página`);
-      allProducts = [...firstData.produto_servico_lista];
-
-      // Calcular total de páginas apenas se houver produtos
-      if (firstData.total_de_registros && firstData.registros_por_pagina) {
-        totalPages = Math.ceil(firstData.total_de_registros / firstData.registros_por_pagina);
-        console.log(`Total de páginas calculado: ${totalPages}`);
-      }
-    } else {
-      console.log('Primeira página não retornou lista de produtos válida');
-      console.log('Resposta completa:', JSON.stringify(firstData, null, 2));
+    // Verificar o total de páginas pela resposta
+    if (firstData.total_de_paginas) {
+      totalPages = firstData.total_de_paginas;
+      console.log(`Total de páginas informado pela API: ${totalPages}`);
     }
 
-    // Buscar páginas adicionais se necessário
+    // Adicionar produtos da primeira página
+    if (firstData.produto_servico_lista && Array.isArray(firstData.produto_servico_lista)) {
+      allProducts = [...firstData.produto_servico_lista];
+      console.log(`Produtos encontrados na página 1: ${firstData.produto_servico_lista.length}`);
+    }
+
+    // Buscar páginas adicionais
     if (totalPages > 1) {
       for (let page = 2; page <= totalPages; page++) {
         console.log(`Buscando página ${page} de ${totalPages}`);
@@ -95,8 +91,7 @@ serve(async (req) => {
               pagina: page,
               registros_por_pagina: 50,
               apenas_importado_api: "N",
-              filtrar_apenas_omiepdv: "N",
-              inativo: "N"
+              filtrar_apenas_omiepdv: "N"
             }]
           }),
         });
@@ -107,13 +102,11 @@ serve(async (req) => {
         }
 
         const pageData = await pageResponse.json();
+        console.log(`Resposta da página ${page}:`, JSON.stringify(pageData, null, 2));
         
         if (pageData.produto_servico_lista && Array.isArray(pageData.produto_servico_lista)) {
-          console.log(`Encontrados ${pageData.produto_servico_lista.length} produtos na página ${page}`);
           allProducts = [...allProducts, ...pageData.produto_servico_lista];
-        } else {
-          console.log(`Página ${page} não retornou lista de produtos válida`);
-          console.log('Resposta da página:', JSON.stringify(pageData, null, 2));
+          console.log(`Produtos encontrados na página ${page}: ${pageData.produto_servico_lista.length}`);
         }
       }
     }
@@ -136,32 +129,26 @@ serve(async (req) => {
       );
     }
 
-    // Log do primeiro produto para debug
-    if (allProducts[0]) {
-      console.log('Estrutura do primeiro produto:', Object.keys(allProducts[0]));
-      console.log('Primeiro produto completo:', JSON.stringify(allProducts[0], null, 2));
-    }
-
     // Mapear produtos para o formato do Supabase
     const products = allProducts.map((product: any) => {
-      if (!product.codigo || !product.descricao) {
-        console.log('Produto com estrutura inválida:', product);
+      try {
+        return {
+          omie_code: product.codigo || '',
+          omie_product_id: product.codigo_produto || '',
+          name: product.descricao || '',
+          price: product.valor_unitario ? parseFloat(product.valor_unitario) : 0,
+          stock: product.quantidade_estoque ? parseInt(product.quantidade_estoque) : 0,
+          slug: (product.descricao || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          omie_sync: true,
+          omie_last_update: new Date().toISOString()
+        };
+      } catch (error) {
+        console.error('Erro ao mapear produto:', error, product);
         return null;
       }
-
-      return {
-        omie_code: product.codigo,
-        omie_product_id: product.codigo_produto,
-        name: product.descricao,
-        price: product.valor_unitario ? parseFloat(product.valor_unitario) : 0,
-        stock: product.estoque_atual ? parseInt(product.estoque_atual) : 0,
-        slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-        omie_sync: true,
-        omie_last_update: new Date().toISOString()
-      };
     }).filter(Boolean);
 
-    console.log(`${products.length} produtos válidos para processar`);
+    console.log(`Produtos válidos para processar: ${products.length}`);
 
     // Atualizar produtos no Supabase
     let updatedCount = 0;
@@ -170,6 +157,11 @@ serve(async (req) => {
 
     for (const product of products) {
       try {
+        if (!product.name || !product.omie_code) {
+          console.log('Produto inválido, pulando:', product);
+          continue;
+        }
+
         // Verificar se o produto já existe
         const { data: existingProduct, error: selectError } = await supabase
           .from('products')
@@ -222,8 +214,7 @@ serve(async (req) => {
         success: true, 
         message: `Sincronização concluída: ${insertedCount} produtos inseridos, ${updatedCount} atualizados, ${errorCount} erros`,
         totalProducts: allProducts.length,
-        validProducts: products.length,
-        products 
+        validProducts: products.length
       }),
       { 
         headers: { 
