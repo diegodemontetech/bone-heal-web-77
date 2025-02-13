@@ -26,7 +26,7 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
-    const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+    const response = await fetch('https://app.omie.com.br/api/v1/produtos/cadastro/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -38,8 +38,7 @@ serve(async (req) => {
         param: [{
           pagina: 1,
           registros_por_pagina: 50,
-          apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N"
+          apenas_importado_api: "N"
         }]
       }),
     });
@@ -55,7 +54,7 @@ serve(async (req) => {
       throw new Error(`Erro Omie: ${data.faultstring}`);
     }
 
-    const produtos = data.produto_servico_lista || [];
+    const produtos = data.produto_servico_cadastro || [];
     console.log(`Produtos encontrados: ${produtos.length}`);
 
     if (produtos.length === 0) {
@@ -77,13 +76,16 @@ serve(async (req) => {
           return null;
         }
 
+        const imageUrl = product.imagens && product.imagens[0] ? product.imagens[0].url_imagem : null;
+
         return {
           name: product.descricao,
           omie_code: product.codigo,
-          omie_product_id: product.codigo_produto,
+          omie_product_id: product.codigo_produto.toString(),
           price: product.valor_unitario ? parseFloat(product.valor_unitario) : 0,
           stock: product.quantidade_estoque ? parseInt(product.quantidade_estoque) : 0,
           slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          main_image: imageUrl,
           omie_sync: true,
           omie_last_update: new Date().toISOString()
         };
