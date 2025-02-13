@@ -28,14 +28,13 @@ serve(async (req) => {
     console.log('Usando as credenciais:', { OMIE_APP_KEY, OMIE_APP_SECRET });
 
     const requestBody = {
-      call: 'ListarCadastrosProduto',
+      call: 'ConsultarProduto',
       app_key: OMIE_APP_KEY,
       app_secret: OMIE_APP_SECRET,
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N",
-        inativo: "N"
+        apenas_importado_api: "N"
       }]
     };
 
