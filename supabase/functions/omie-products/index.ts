@@ -28,41 +28,65 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
-    // Fazer requisição para a API do Omie
-    const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        call: 'ListarProdutos',
-        app_key: OMIE_APP_KEY,
-        app_secret: OMIE_APP_SECRET,
-        param: [{
-          pagina: 1,
-          registros_por_pagina: 50,
-          apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N",
-          inativo: "N"  // Adicionado para buscar apenas produtos ativos
-        }]
-      }),
-    });
+    let allProducts: any[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
 
-    if (!omieResponse.ok) {
-      console.error('Erro na resposta do Omie:', omieResponse.status);
-      throw new Error(`HTTP error! status: ${omieResponse.status}`);
-    }
+    // Loop através de todas as páginas
+    do {
+      console.log(`Buscando página ${currentPage}...`);
+      
+      // Fazer requisição para a API do Omie
+      const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          call: 'ListarProdutos',
+          app_key: OMIE_APP_KEY,
+          app_secret: OMIE_APP_SECRET,
+          param: [{
+            pagina: currentPage,
+            registros_por_pagina: 50,
+            apenas_importado_api: "N",
+            filtrar_apenas_omiepdv: "N",
+            inativo: "N"
+          }]
+        }),
+      });
 
-    const data = await omieResponse.json();
-    console.log('Resposta do Omie:', JSON.stringify(data, null, 2));
+      if (!omieResponse.ok) {
+        console.error('Erro na resposta do Omie:', omieResponse.status);
+        throw new Error(`HTTP error! status: ${omieResponse.status}`);
+      }
 
-    if (data.faultstring) {
-      console.error('Erro retornado pelo Omie:', data.faultstring);
-      throw new Error(data.faultstring);
-    }
+      const data = await omieResponse.json();
+      console.log(`Resposta da página ${currentPage}:`, JSON.stringify(data, null, 2));
 
-    // Verificar se temos produtos na resposta
-    if (!data.produto_servico_lista || data.produto_servico_lista.length === 0) {
+      if (data.faultstring) {
+        console.error('Erro retornado pelo Omie:', data.faultstring);
+        throw new Error(data.faultstring);
+      }
+
+      // Atualizar total de páginas na primeira iteração
+      if (currentPage === 1) {
+        totalPages = Math.ceil(data.total_de_registros / data.registros);
+        console.log(`Total de páginas a buscar: ${totalPages}`);
+      }
+
+      // Adicionar produtos desta página ao array total
+      if (data.produto_servico_lista && data.produto_servico_lista.length > 0) {
+        allProducts = [...allProducts, ...data.produto_servico_lista];
+        console.log(`Adicionados ${data.produto_servico_lista.length} produtos da página ${currentPage}`);
+      }
+
+      currentPage++;
+    } while (currentPage <= totalPages);
+
+    console.log(`Total de produtos encontrados: ${allProducts.length}`);
+
+    if (allProducts.length === 0) {
       console.log('Nenhum produto encontrado no Omie');
       return new Response(
         JSON.stringify({ 
@@ -79,7 +103,7 @@ serve(async (req) => {
       );
     }
 
-    const products = data.produto_servico_lista.map((product: any) => ({
+    const products = allProducts.map((product: any) => ({
       omie_code: product.codigo,
       omie_product_id: product.codigo_produto,
       name: product.descricao,
