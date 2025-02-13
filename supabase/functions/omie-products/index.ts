@@ -57,6 +57,7 @@ serve(async (req) => {
     }
 
     const firstData = await firstResponse.json();
+    console.log('Resposta completa da primeira página:', JSON.stringify(firstData, null, 2));
     
     if (firstData.faultstring) {
       throw new Error(firstData.faultstring);
@@ -68,8 +69,11 @@ serve(async (req) => {
 
     // Adicionar produtos da primeira página
     if (firstData.produto_servico_lista && firstData.produto_servico_lista.length > 0) {
+      console.log('Produtos da primeira página:', JSON.stringify(firstData.produto_servico_lista, null, 2));
       allProducts = [...firstData.produto_servico_lista];
       console.log(`Adicionados ${firstData.produto_servico_lista.length} produtos da página 1`);
+    } else {
+      console.log('Primeira página não contém produtos. Estrutura da resposta:', Object.keys(firstData));
     }
 
     // Buscar as páginas restantes
@@ -100,6 +104,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log(`Resposta da página ${currentPage}:`, JSON.stringify(data, null, 2));
       
       if (data.faultstring) {
         throw new Error(data.faultstring);
@@ -108,10 +113,15 @@ serve(async (req) => {
       if (data.produto_servico_lista && data.produto_servico_lista.length > 0) {
         allProducts = [...allProducts, ...data.produto_servico_lista];
         console.log(`Adicionados ${data.produto_servico_lista.length} produtos da página ${currentPage}`);
+      } else {
+        console.log(`Página ${currentPage} não contém produtos. Estrutura da resposta:`, Object.keys(data));
       }
     }
 
     console.log(`Total de produtos encontrados: ${allProducts.length}`);
+    if (allProducts.length > 0) {
+      console.log('Exemplo do primeiro produto:', JSON.stringify(allProducts[0], null, 2));
+    }
 
     if (allProducts.length === 0) {
       return new Response(
@@ -142,6 +152,7 @@ serve(async (req) => {
     }));
 
     console.log(`Processando ${products.length} produtos do Omie para inserção/atualização`);
+    console.log('Exemplo do primeiro produto processado:', JSON.stringify(products[0], null, 2));
 
     // Atualizar produtos no Supabase
     for (const product of products) {
