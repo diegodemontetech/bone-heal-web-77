@@ -97,8 +97,7 @@ serve(async (req) => {
           app_secret: OMIE_APP_SECRET,
           param: [{
             codigo_produto: produtoResumido.codigo_produto,
-            codigo: produtoResumido.codigo,
-            codigo_produto_integracao: produtoResumido.codigo_produto_integracao
+            codigo_produto_integracao: null
           }]
         };
 
