@@ -10,7 +10,7 @@ const Footer = () => {
           <div>
             <img 
               src="https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/dados_processo_seletivo/logo_empresa/167858/bone-heal-logo-01.png"
-              alt="Bone Heal"
+              alt="Bone Heal®"
               className="h-12 mb-6 brightness-0 invert"
             />
             <p className="text-neutral-400 mb-6">
@@ -124,7 +124,7 @@ const Footer = () => {
         <div className="mt-16 pt-8 border-t border-neutral-800">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-neutral-400 text-sm">
-              © 2024 Bone Heal. Todos os direitos reservados.
+              © 2024 Bone Heal®. Todos os direitos reservados.
             </p>
             <div className="flex space-x-6">
               <a href="#" className="text-neutral-400 hover:text-white text-sm transition-colors">

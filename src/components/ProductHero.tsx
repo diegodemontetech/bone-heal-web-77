@@ -1,8 +1,9 @@
+
 import { motion } from "framer-motion";
 
 const ProductHero = () => {
   return (
-    <section className="relative bg-gradient-to-br from-primary/5 to-white pt-32 pb-16"> {/* Changed pt-24 to pt-32 */}
+    <section className="relative bg-gradient-to-br from-primary/5 to-white pt-32 pb-16">
       <div className="container mx-auto px-8">
         <div className="max-w-3xl">
           <motion.h1
@@ -19,7 +20,7 @@ const ProductHero = () => {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg text-neutral-600 leading-relaxed"
           >
-            Conheça nossa linha de produtos, desenvolvidos para simplificar procedimentos, 
+            Conheça nossa linha de produtos Bone Heal®, desenvolvidos para simplificar procedimentos, 
             otimizar resultados clínicos e melhorar a experiência do paciente.
           </motion.p>
         </div>

@@ -54,7 +54,7 @@ const Hero = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
-              A Bone Heal – Inovação, Simplicidade e Eficiência para Seus Procedimentos
+              Bone Heal® – Inovação, Simplicidade e Eficiência para Seus Procedimentos
             </motion.p>
             <motion.div 
               className="flex flex-col sm:flex-row gap-6"
