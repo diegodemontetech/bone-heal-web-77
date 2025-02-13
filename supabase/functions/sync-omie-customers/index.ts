@@ -26,50 +26,102 @@ serve(async (req) => {
 
     console.log('Iniciando busca de contatos no Omie');
 
-    const listRequestBody = {
-      call: 'ListarClientes',
-      app_key: OMIE_APP_KEY,
-      app_secret: OMIE_APP_SECRET,
-      param: [{
-        pagina: 1,
-        registros_por_pagina: 50,
-        apenas_importado_api: "N"
-      }]
-    };
-
-    const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(listRequestBody),
-    });
-
-    const listData = await listResponse.json();
-    
-    if (listData.faultstring) {
-      throw new Error(`Erro Omie: ${listData.faultstring}`);
-    }
-
-    // Usando a lista completa de clientes ao invés da resumida
-    const clientes = listData.clientes_cadastro || [];
-    console.log(`Contatos encontrados: ${clientes.length}`);
-
+    let page = 1;
+    const registersPerPage = 50;
+    let hasMorePages = true;
     let created = 0;
     let skipped = 0;
     let errors = 0;
 
-    // Processamento em lotes para evitar rate limit
-    const BATCH_SIZE = 10;
-    const DELAY_BETWEEN_BATCHES = 1000; // 1 segundo de delay entre lotes
+    while (hasMorePages) {
+      // Primeiro busca a lista resumida
+      const listRequestBody = {
+        call: 'ListarClientesResumido',
+        app_key: OMIE_APP_KEY,
+        app_secret: OMIE_APP_SECRET,
+        param: [{
+          pagina: page,
+          registros_por_pagina: registersPerPage,
+          apenas_importado_api: "N"
+        }]
+      };
 
-    for (let i = 0; i < clientes.length; i += BATCH_SIZE) {
-      const batch = clientes.slice(i, i + BATCH_SIZE);
+      console.log(`Buscando página ${page}...`);
+
+      const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(listRequestBody),
+      });
+
+      const listData = await listResponse.json();
       
-      for (const cliente of batch) {
+      if (listData.faultstring) {
+        throw new Error(`Erro Omie: ${listData.faultstring}`);
+      }
+
+      const clientes = listData.clientes_cadastro_resumido || [];
+      
+      // Para cada cliente na lista resumida, busca os detalhes
+      for (const clienteResumido of clientes) {
         try {
+          // Consulta os detalhes do cliente
+          const consultaRequestBody = {
+            call: 'ConsultarCliente',
+            app_key: OMIE_APP_KEY,
+            app_secret: OMIE_APP_SECRET,
+            param: [{
+              codigo_cliente_omie: clienteResumido.codigo_cliente
+            }]
+          };
+
+          const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(consultaRequestBody),
+          });
+
+          const cliente = await consultaResponse.json();
+
           if (!cliente.email) {
             console.log(`Pulando ${cliente.codigo_cliente_omie} - email não encontrado`);
+            skipped++;
+            continue;
+          }
+
+          // Verifica se o código Omie já está associado a algum perfil
+          const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('omie_code', cliente.codigo_cliente_omie.toString());
+
+          if (existingProfile && existingProfile.length > 0) {
+            console.log(`Atualizando ${cliente.codigo_cliente_omie} - código Omie já cadastrado`);
+            
+            // Atualiza o perfil existente
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                full_name: cliente.razao_social,
+                cnpj: cliente.pessoa_fisica === 'N' ? cliente.cnpj_cpf : null,
+                cpf: cliente.pessoa_fisica === 'S' ? cliente.cnpj_cpf : null,
+                address: cliente.endereco,
+                city: cliente.cidade,
+                state: cliente.estado,
+                neighborhood: cliente.bairro,
+                phone: cliente.telefone1_numero,
+                zip_code: cliente.cep,
+                omie_sync: true,
+                contact_type: cliente.tipo_atividade === 'Fornecedor' ? 'supplier' : 
+                            cliente.tipo_atividade === 'Cliente/Fornecedor' ? 'both' : 'customer'
+              })
+              .eq('id', existingProfile[0].id);
+
+            if (updateError) throw updateError;
             skipped++;
             continue;
           }
@@ -83,18 +135,6 @@ serve(async (req) => {
 
           if (existingUser) {
             console.log(`Pulando ${cliente.codigo_cliente_omie} - email já cadastrado: ${cliente.email}`);
-            skipped++;
-            continue;
-          }
-
-          // Verifica se o código Omie já está associado a algum perfil
-          const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('omie_code', cliente.codigo_cliente_omie.toString());
-
-          if (existingProfile && existingProfile.length > 0) {
-            console.log(`Pulando ${cliente.codigo_cliente_omie} - código Omie já cadastrado`);
             skipped++;
             continue;
           }
@@ -116,13 +156,12 @@ serve(async (req) => {
           }
 
           // Cria o usuário no Supabase Auth
-          const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+          const { data: { user }, error: signUpError } = await supabase.auth.admin.createUser({
             email: cliente.email,
             password: numeroDocumento,
-            options: {
-              data: {
-                full_name: cliente.razao_social,
-              }
+            email_confirm: true,
+            user_metadata: {
+              full_name: cliente.razao_social,
             }
           });
 
@@ -152,23 +191,31 @@ serve(async (req) => {
 
           created++;
           console.log(`Usuário criado com sucesso para ${cliente.razao_social}`);
+
+          // Aguarda um pouco entre cada criação para evitar sobrecarga
+          await new Promise(resolve => setTimeout(resolve, 500));
+
         } catch (error) {
           console.error(`Erro ao processar contato:`, error);
           errors++;
         }
       }
 
-      // Aguarda antes de processar o próximo lote
-      if (i + BATCH_SIZE < clientes.length) {
-        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+      // Verifica se há mais páginas
+      hasMorePages = listData.total_de_paginas > page;
+      page++;
+
+      // Aguarda entre as páginas para evitar rate limit
+      if (hasMorePages) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Sincronização concluída: ${created} usuários criados, ${skipped} pulados, ${errors} erros`,
-        totalContatos: clientes.length
+        message: `Sincronização concluída: ${created} usuários criados, ${skipped} atualizados/pulados, ${errors} erros`,
+        totalContatos: created + skipped
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
