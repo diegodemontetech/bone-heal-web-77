@@ -57,10 +57,15 @@ serve(async (req) => {
     }
 
     const firstData = await firstResponse.json();
-    console.log('Resposta completa da primeira página:', JSON.stringify(firstData, null, 2));
+    console.log('Resposta da primeira página:', JSON.stringify(firstData, null, 2));
     
     if (firstData.faultstring) {
       throw new Error(firstData.faultstring);
+    }
+
+    // Verificar se temos a estrutura esperada
+    if (!firstData.total_de_registros || !firstData.registros) {
+      throw new Error('Resposta do Omie não contém as informações necessárias de paginação');
     }
 
     // Calcular total de páginas
@@ -68,12 +73,9 @@ serve(async (req) => {
     console.log(`Total de registros: ${firstData.total_de_registros}, Total de páginas: ${totalPages}`);
 
     // Adicionar produtos da primeira página
-    if (firstData.produto_servico_lista && firstData.produto_servico_lista.length > 0) {
-      console.log('Produtos da primeira página:', JSON.stringify(firstData.produto_servico_lista, null, 2));
+    if (firstData.produto_servico_lista) {
+      console.log(`Produtos encontrados na página 1:`, firstData.produto_servico_lista.length);
       allProducts = [...firstData.produto_servico_lista];
-      console.log(`Adicionados ${firstData.produto_servico_lista.length} produtos da página 1`);
-    } else {
-      console.log('Primeira página não contém produtos. Estrutura da resposta:', Object.keys(firstData));
     }
 
     // Buscar as páginas restantes
@@ -104,26 +106,22 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log(`Resposta da página ${currentPage}:`, JSON.stringify(data, null, 2));
       
       if (data.faultstring) {
         throw new Error(data.faultstring);
       }
 
-      if (data.produto_servico_lista && data.produto_servico_lista.length > 0) {
+      if (data.produto_servico_lista) {
+        console.log(`Produtos encontrados na página ${currentPage}:`, data.produto_servico_lista.length);
         allProducts = [...allProducts, ...data.produto_servico_lista];
-        console.log(`Adicionados ${data.produto_servico_lista.length} produtos da página ${currentPage}`);
-      } else {
-        console.log(`Página ${currentPage} não contém produtos. Estrutura da resposta:`, Object.keys(data));
       }
     }
 
     console.log(`Total de produtos encontrados: ${allProducts.length}`);
-    if (allProducts.length > 0) {
-      console.log('Exemplo do primeiro produto:', JSON.stringify(allProducts[0], null, 2));
-    }
 
+    // Se não encontrou produtos, retorna vazio
     if (allProducts.length === 0) {
+      console.log('Nenhum produto encontrado para processar');
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -139,6 +137,9 @@ serve(async (req) => {
       );
     }
 
+    // Log do primeiro produto para debug
+    console.log('Exemplo do primeiro produto do Omie:', JSON.stringify(allProducts[0], null, 2));
+
     // Mapear produtos para o formato do Supabase
     const products = allProducts.map((product: any) => ({
       omie_code: product.codigo,
@@ -151,48 +152,61 @@ serve(async (req) => {
       omie_last_update: new Date().toISOString()
     }));
 
-    console.log(`Processando ${products.length} produtos do Omie para inserção/atualização`);
-    console.log('Exemplo do primeiro produto processado:', JSON.stringify(products[0], null, 2));
+    console.log(`Produtos mapeados para inserção: ${products.length}`);
+    console.log('Exemplo do primeiro produto mapeado:', JSON.stringify(products[0], null, 2));
 
     // Atualizar produtos no Supabase
+    let updatedCount = 0;
+    let insertedCount = 0;
+    let errorCount = 0;
+
     for (const product of products) {
-      // Verificar se o produto já existe
-      const { data: existingProduct } = await supabase
-        .from('products')
-        .select('id, omie_code')
-        .eq('omie_code', product.omie_code)
-        .maybeSingle();
-
-      if (existingProduct) {
-        // Atualizar produto existente
-        const { error: updateError } = await supabase
+      try {
+        // Verificar se o produto já existe
+        const { data: existingProduct } = await supabase
           .from('products')
-          .update(product)
-          .eq('id', existingProduct.id);
+          .select('id, omie_code')
+          .eq('omie_code', product.omie_code)
+          .maybeSingle();
 
-        if (updateError) {
-          console.error('Erro ao atualizar produto:', updateError);
-          continue;
-        }
-        console.log(`Produto atualizado: ${product.name}`);
-      } else {
-        // Inserir novo produto
-        const { error: insertError } = await supabase
-          .from('products')
-          .insert([product]);
+        if (existingProduct) {
+          // Atualizar produto existente
+          const { error: updateError } = await supabase
+            .from('products')
+            .update(product)
+            .eq('id', existingProduct.id);
 
-        if (insertError) {
-          console.error('Erro ao inserir produto:', insertError);
-          continue;
+          if (updateError) {
+            console.error('Erro ao atualizar produto:', updateError);
+            errorCount++;
+          } else {
+            updatedCount++;
+            console.log(`Produto atualizado: ${product.name}`);
+          }
+        } else {
+          // Inserir novo produto
+          const { error: insertError } = await supabase
+            .from('products')
+            .insert([product]);
+
+          if (insertError) {
+            console.error('Erro ao inserir produto:', insertError);
+            errorCount++;
+          } else {
+            insertedCount++;
+            console.log(`Novo produto inserido: ${product.name}`);
+          }
         }
-        console.log(`Novo produto inserido: ${product.name}`);
+      } catch (error) {
+        console.error('Erro ao processar produto:', error);
+        errorCount++;
       }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${products.length} produtos sincronizados com sucesso`,
+        message: `Sincronização concluída: ${insertedCount} produtos inseridos, ${updatedCount} atualizados, ${errorCount} erros`,
         products 
       }),
       { 
