@@ -18,18 +18,16 @@ serve(async (req) => {
   }
 
   try {
-    // Validate environment variables
     if (!OMIE_APP_KEY || !OMIE_APP_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing required environment variables');
     }
 
-    // Initialize Supabase client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     console.log('Iniciando busca de produtos no Omie');
 
-    // Primeira requisição para obter total de páginas
-    const firstResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+    // Requisição para listar produtos
+    const response = await fetch('https://app.omie.com.br/api/v1/produtos/produto/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -40,73 +38,27 @@ serve(async (req) => {
         app_secret: OMIE_APP_SECRET,
         param: [{
           pagina: 1,
-          registros_por_pagina: 50
+          registros_por_pagina: 50,
+          apenas_importado_api: "N"
         }]
       }),
     });
 
-    if (!firstResponse.ok) {
-      throw new Error(`HTTP error! status: ${firstResponse.status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const firstData = await firstResponse.json();
-    console.log('Primeira resposta:', JSON.stringify(firstData, null, 2));
+    const data = await response.json();
+    console.log('Resposta do Omie:', JSON.stringify(data, null, 2));
 
-    if (firstData.faultstring) {
-      throw new Error(firstData.faultstring);
+    if (data.faultstring) {
+      throw new Error(`Erro Omie: ${data.faultstring}`);
     }
 
-    let allProducts: any[] = [];
-    let totalPages = 1;
+    const produtos = data.produto_servico_lista || [];
+    console.log(`Produtos encontrados: ${produtos.length}`);
 
-    if (firstData.total_de_paginas) {
-      totalPages = firstData.total_de_paginas;
-      console.log(`Total de páginas: ${totalPages}`);
-    }
-
-    // Adicionar produtos da primeira página
-    if (firstData.produto_servico_lista && Array.isArray(firstData.produto_servico_lista)) {
-      allProducts = [...firstData.produto_servico_lista];
-      console.log(`Produtos na primeira página: ${firstData.produto_servico_lista.length}`);
-    }
-
-    // Buscar páginas adicionais se houver
-    if (totalPages > 1) {
-      for (let page = 2; page <= totalPages; page++) {
-        console.log(`Buscando página ${page}`);
-        
-        const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            call: 'ListarProdutos',
-            app_key: OMIE_APP_KEY,
-            app_secret: OMIE_APP_SECRET,
-            param: [{
-              pagina: page,
-              registros_por_pagina: 50
-            }]
-          }),
-        });
-
-        if (!response.ok) {
-          console.error(`Erro na página ${page}: ${response.status}`);
-          continue;
-        }
-
-        const data = await response.json();
-        
-        if (data.produto_servico_lista && Array.isArray(data.produto_servico_lista)) {
-          allProducts = [...allProducts, ...data.produto_servico_lista];
-          console.log(`Produtos na página ${page}: ${data.produto_servico_lista.length}`);
-        }
-      }
-    }
-
-    if (allProducts.length === 0) {
-      console.log('Nenhum produto encontrado');
+    if (produtos.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -117,13 +69,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Total de produtos encontrados: ${allProducts.length}`);
-
-    // Mapear produtos para o formato do Supabase
-    const products = allProducts.map(product => {
+    // Mapear produtos
+    const products = produtos.map(product => {
       try {
         if (!product.descricao || !product.codigo) {
-          console.log('Produto com dados incompletos:', product);
+          console.log('Produto inválido:', product);
           return null;
         }
 
@@ -145,7 +95,7 @@ serve(async (req) => {
 
     console.log(`Produtos válidos: ${products.length}`);
 
-    // Processar produtos no Supabase
+    // Atualizar no Supabase
     let updated = 0;
     let inserted = 0;
     let errors = 0;
@@ -164,26 +114,18 @@ serve(async (req) => {
             .update(product)
             .eq('id', existing.id);
 
-          if (error) {
-            console.error('Erro ao atualizar:', error);
-            errors++;
-          } else {
-            updated++;
-          }
+          if (error) throw error;
+          updated++;
         } else {
           const { error } = await supabase
             .from('products')
             .insert([product]);
 
-          if (error) {
-            console.error('Erro ao inserir:', error);
-            errors++;
-          } else {
-            inserted++;
-          }
+          if (error) throw error;
+          inserted++;
         }
       } catch (error) {
-        console.error('Erro ao processar:', error);
+        console.error('Erro ao processar produto no Supabase:', error);
         errors++;
       }
     }
@@ -192,7 +134,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Sincronização concluída: ${inserted} produtos inseridos, ${updated} atualizados, ${errors} erros`,
-        totalProducts: allProducts.length,
+        totalProducts: produtos.length,
         validProducts: products.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -201,7 +143,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro na sincronização:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
