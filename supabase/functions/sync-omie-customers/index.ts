@@ -26,6 +26,22 @@ serve(async (req) => {
 
     console.log('Iniciando busca de contatos no Omie');
 
+    // Primeiro busca todos os usuários existentes
+    const { data: existingUsersData, error: usersError } = await supabase.auth.admin.listUsers();
+    if (usersError) {
+      throw new Error(`Erro ao buscar usuários existentes: ${usersError.message}`);
+    }
+
+    // Cria um mapa de emails para IDs de usuários existentes
+    const emailToUserId = new Map();
+    existingUsersData.users.forEach(user => {
+      if (user.email) {
+        emailToUserId.set(user.email.toLowerCase(), user.id);
+      }
+    });
+
+    console.log(`Total de usuários existentes: ${emailToUserId.size}`);
+
     let page = 1;
     const registersPerPage = 50;
     let hasMorePages = true;
@@ -91,23 +107,14 @@ serve(async (req) => {
             continue;
           }
 
-          // Primeiro, tenta encontrar o usuário existente
-          const { data: foundUser, error: searchError } = await supabase.auth.admin.listUsers();
-          if (searchError) {
-            console.error(`Erro ao buscar usuários:`, searchError);
-            errors++;
-            continue;
-          }
+          const emailLowerCase = cliente.email.toLowerCase();
+          let userId = emailToUserId.get(emailLowerCase);
 
-          const existingUser = foundUser?.users?.find(u => u.email === cliente.email);
-          let userId;
-
-          if (existingUser) {
+          if (userId) {
             console.log(`Usuário encontrado para ${cliente.email}, atualizando perfil...`);
-            userId = existingUser.id;
             updated++;
           } else {
-            // Se não existe, tenta criar um novo usuário
+            // Se não existe, cria um novo usuário
             const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
             if (!numeroDocumento) {
               console.log(`Pulando ${cliente.codigo_cliente_omie} - CPF/CNPJ não encontrado`);
@@ -126,16 +133,16 @@ serve(async (req) => {
               });
 
               if (createError) {
-                // Se o erro for de usuário já existente, tenta buscar novamente
                 if (createError.message.includes('already been registered')) {
-                  console.log(`Usuário já existe para ${cliente.email}, buscando...`);
+                  // Se por algum motivo o usuário não estava no mapa inicial
                   const { data: existingUserData } = await supabase.auth.admin.listUsers();
-                  const foundExistingUser = existingUserData?.users?.find(u => u.email === cliente.email);
-                  if (foundExistingUser) {
-                    userId = foundExistingUser.id;
+                  const foundUser = existingUserData?.users?.find(u => u.email?.toLowerCase() === emailLowerCase);
+                  if (foundUser) {
+                    userId = foundUser.id;
+                    emailToUserId.set(emailLowerCase, userId);
                     updated++;
                   } else {
-                    console.error(`Não foi possível encontrar usuário existente para ${cliente.email}`);
+                    console.error(`Usuário existe mas não foi encontrado: ${cliente.email}`);
                     errors++;
                     continue;
                   }
@@ -146,10 +153,11 @@ serve(async (req) => {
                 }
               } else if (user) {
                 userId = user.id;
+                emailToUserId.set(emailLowerCase, userId);
                 created++;
               }
             } catch (error) {
-              console.error(`Erro ao criar/buscar usuário para ${cliente.email}:`, error);
+              console.error(`Erro ao criar usuário para ${cliente.email}:`, error);
               errors++;
               continue;
             }
