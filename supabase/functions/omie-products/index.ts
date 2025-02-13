@@ -28,86 +28,56 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
-    // Primeira requisição
-    const firstResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        call: 'ListarProdutos',
-        app_key: OMIE_APP_KEY,
-        app_secret: OMIE_APP_SECRET,
-        param: [{
-          pagina: 1,
-          registros_por_pagina: 50,
-          apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N"
-        }]
-      }),
-    });
-
-    if (!firstResponse.ok) {
-      throw new Error(`HTTP error! status: ${firstResponse.status}`);
-    }
-
-    const firstData = await firstResponse.json();
-    console.log('Resposta da primeira página:', JSON.stringify(firstData, null, 2));
-    
-    if (firstData.faultstring) {
-      throw new Error(firstData.faultstring);
-    }
-
     let allProducts: any[] = [];
-    let totalPages = 1;
+    let page = 1;
+    let hasMorePages = true;
 
-    // Verificar o total de páginas pela resposta
-    if (firstData.total_de_paginas) {
-      totalPages = firstData.total_de_paginas;
-      console.log(`Total de páginas informado pela API: ${totalPages}`);
-    }
+    while (hasMorePages) {
+      console.log(`Buscando página ${page}`);
+      
+      const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          call: 'ListarProdutos',
+          app_key: OMIE_APP_KEY,
+          app_secret: OMIE_APP_SECRET,
+          param: [{
+            pagina: page,
+            registros_por_pagina: 50,
+            apenas_importado_api: "N",
+            filtrar_apenas_omiepdv: "N"
+          }]
+        }),
+      });
 
-    // Adicionar produtos da primeira página
-    if (firstData.produto_servico_lista && Array.isArray(firstData.produto_servico_lista)) {
-      allProducts = [...firstData.produto_servico_lista];
-      console.log(`Produtos encontrados na página 1: ${firstData.produto_servico_lista.length}`);
-    }
+      if (!response.ok) {
+        console.error(`Erro HTTP na página ${page}: ${response.status}`);
+        break;
+      }
 
-    // Buscar páginas adicionais
-    if (totalPages > 1) {
-      for (let page = 2; page <= totalPages; page++) {
-        console.log(`Buscando página ${page} de ${totalPages}`);
-        
-        const pageResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            call: 'ListarProdutos',
-            app_key: OMIE_APP_KEY,
-            app_secret: OMIE_APP_SECRET,
-            param: [{
-              pagina: page,
-              registros_por_pagina: 50,
-              apenas_importado_api: "N",
-              filtrar_apenas_omiepdv: "N"
-            }]
-          }),
-        });
+      const data = await response.json();
+      console.log(`Resposta da página ${page}:`, JSON.stringify(data, null, 2));
 
-        if (!pageResponse.ok) {
-          console.error(`Erro ao buscar página ${page}: ${pageResponse.status}`);
-          continue;
-        }
+      if (data.faultstring) {
+        throw new Error(data.faultstring);
+      }
 
-        const pageData = await pageResponse.json();
-        console.log(`Resposta da página ${page}:`, JSON.stringify(pageData, null, 2));
-        
-        if (pageData.produto_servico_lista && Array.isArray(pageData.produto_servico_lista)) {
-          allProducts = [...allProducts, ...pageData.produto_servico_lista];
-          console.log(`Produtos encontrados na página ${page}: ${pageData.produto_servico_lista.length}`);
-        }
+      if (!data.produto_servico_lista || !Array.isArray(data.produto_servico_lista)) {
+        console.log(`Página ${page} não retornou lista de produtos válida`);
+        break;
+      }
+
+      allProducts = [...allProducts, ...data.produto_servico_lista];
+      console.log(`${data.produto_servico_lista.length} produtos encontrados na página ${page}`);
+
+      // Verifica se há mais páginas
+      if (data.total_de_paginas && page < data.total_de_paginas) {
+        page++;
+      } else {
+        hasMorePages = false;
       }
     }
 
@@ -132,13 +102,19 @@ serve(async (req) => {
     // Mapear produtos para o formato do Supabase
     const products = allProducts.map((product: any) => {
       try {
+        const name = product.descricao || '';
+        if (!name || !product.codigo) {
+          console.log('Produto sem nome ou código, pulando:', product);
+          return null;
+        }
+
         return {
-          omie_code: product.codigo || '',
+          omie_code: product.codigo,
           omie_product_id: product.codigo_produto || '',
-          name: product.descricao || '',
+          name: name,
           price: product.valor_unitario ? parseFloat(product.valor_unitario) : 0,
           stock: product.quantidade_estoque ? parseInt(product.quantidade_estoque) : 0,
-          slug: (product.descricao || '').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
           omie_sync: true,
           omie_last_update: new Date().toISOString()
         };
@@ -157,11 +133,6 @@ serve(async (req) => {
 
     for (const product of products) {
       try {
-        if (!product.name || !product.omie_code) {
-          console.log('Produto inválido, pulando:', product);
-          continue;
-        }
-
         // Verificar se o produto já existe
         const { data: existingProduct, error: selectError } = await supabase
           .from('products')
