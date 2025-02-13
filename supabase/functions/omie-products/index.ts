@@ -28,11 +28,7 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
-    let allProducts: any[] = [];
-    let currentPage = 1;
-    let totalPages = 1;
-
-    // Primeira requisição para obter o total de páginas
+    // Primeira requisição
     const firstResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
@@ -43,7 +39,7 @@ serve(async (req) => {
         app_key: OMIE_APP_KEY,
         app_secret: OMIE_APP_SECRET,
         param: [{
-          pagina: currentPage,
+          pagina: 1,
           registros_por_pagina: 50,
           apenas_importado_api: "N",
           filtrar_apenas_omiepdv: "N",
@@ -57,71 +53,74 @@ serve(async (req) => {
     }
 
     const firstData = await firstResponse.json();
-    console.log('Resposta da primeira página:', JSON.stringify(firstData, null, 2));
+    console.log('Estrutura da resposta:', Object.keys(firstData));
     
     if (firstData.faultstring) {
       throw new Error(firstData.faultstring);
     }
 
-    // Verificar se temos a estrutura esperada
-    if (!firstData.total_de_registros || !firstData.registros) {
-      throw new Error('Resposta do Omie não contém as informações necessárias de paginação');
-    }
+    let allProducts: any[] = [];
+    let totalPages = 1;
 
-    // Calcular total de páginas
-    totalPages = Math.ceil(firstData.total_de_registros / firstData.registros);
-    console.log(`Total de registros: ${firstData.total_de_registros}, Total de páginas: ${totalPages}`);
-
-    // Adicionar produtos da primeira página
-    if (firstData.produto_servico_lista) {
-      console.log(`Produtos encontrados na página 1:`, firstData.produto_servico_lista.length);
+    // Verificar se há produtos na primeira página
+    if (firstData.produto_servico_lista && Array.isArray(firstData.produto_servico_lista)) {
+      console.log(`Encontrados ${firstData.produto_servico_lista.length} produtos na primeira página`);
       allProducts = [...firstData.produto_servico_lista];
+
+      // Calcular total de páginas apenas se houver produtos
+      if (firstData.total_de_registros && firstData.registros_por_pagina) {
+        totalPages = Math.ceil(firstData.total_de_registros / firstData.registros_por_pagina);
+        console.log(`Total de páginas calculado: ${totalPages}`);
+      }
+    } else {
+      console.log('Primeira página não retornou lista de produtos válida');
+      console.log('Resposta completa:', JSON.stringify(firstData, null, 2));
     }
 
-    // Buscar as páginas restantes
-    for (currentPage = 2; currentPage <= totalPages; currentPage++) {
-      console.log(`Buscando página ${currentPage} de ${totalPages}...`);
-      
-      const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          call: 'ListarProdutos',
-          app_key: OMIE_APP_KEY,
-          app_secret: OMIE_APP_SECRET,
-          param: [{
-            pagina: currentPage,
-            registros_por_pagina: 50,
-            apenas_importado_api: "N",
-            filtrar_apenas_omiepdv: "N",
-            inativo: "N"
-          }]
-        }),
-      });
+    // Buscar páginas adicionais se necessário
+    if (totalPages > 1) {
+      for (let page = 2; page <= totalPages; page++) {
+        console.log(`Buscando página ${page} de ${totalPages}`);
+        
+        const pageResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            call: 'ListarProdutos',
+            app_key: OMIE_APP_KEY,
+            app_secret: OMIE_APP_SECRET,
+            param: [{
+              pagina: page,
+              registros_por_pagina: 50,
+              apenas_importado_api: "N",
+              filtrar_apenas_omiepdv: "N",
+              inativo: "N"
+            }]
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        if (!pageResponse.ok) {
+          console.error(`Erro ao buscar página ${page}: ${pageResponse.status}`);
+          continue;
+        }
 
-      const data = await response.json();
-      
-      if (data.faultstring) {
-        throw new Error(data.faultstring);
-      }
-
-      if (data.produto_servico_lista) {
-        console.log(`Produtos encontrados na página ${currentPage}:`, data.produto_servico_lista.length);
-        allProducts = [...allProducts, ...data.produto_servico_lista];
+        const pageData = await pageResponse.json();
+        
+        if (pageData.produto_servico_lista && Array.isArray(pageData.produto_servico_lista)) {
+          console.log(`Encontrados ${pageData.produto_servico_lista.length} produtos na página ${page}`);
+          allProducts = [...allProducts, ...pageData.produto_servico_lista];
+        } else {
+          console.log(`Página ${page} não retornou lista de produtos válida`);
+          console.log('Resposta da página:', JSON.stringify(pageData, null, 2));
+        }
       }
     }
 
-    console.log(`Total de produtos encontrados: ${allProducts.length}`);
+    console.log(`Total de produtos coletados: ${allProducts.length}`);
 
-    // Se não encontrou produtos, retorna vazio
     if (allProducts.length === 0) {
-      console.log('Nenhum produto encontrado para processar');
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -138,22 +137,31 @@ serve(async (req) => {
     }
 
     // Log do primeiro produto para debug
-    console.log('Exemplo do primeiro produto do Omie:', JSON.stringify(allProducts[0], null, 2));
+    if (allProducts[0]) {
+      console.log('Estrutura do primeiro produto:', Object.keys(allProducts[0]));
+      console.log('Primeiro produto completo:', JSON.stringify(allProducts[0], null, 2));
+    }
 
     // Mapear produtos para o formato do Supabase
-    const products = allProducts.map((product: any) => ({
-      omie_code: product.codigo,
-      omie_product_id: product.codigo_produto,
-      name: product.descricao,
-      price: parseFloat(product.valor_unitario),
-      stock: parseInt(product.estoque_atual || '0'),
-      slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      omie_sync: true,
-      omie_last_update: new Date().toISOString()
-    }));
+    const products = allProducts.map((product: any) => {
+      if (!product.codigo || !product.descricao) {
+        console.log('Produto com estrutura inválida:', product);
+        return null;
+      }
 
-    console.log(`Produtos mapeados para inserção: ${products.length}`);
-    console.log('Exemplo do primeiro produto mapeado:', JSON.stringify(products[0], null, 2));
+      return {
+        omie_code: product.codigo,
+        omie_product_id: product.codigo_produto,
+        name: product.descricao,
+        price: product.valor_unitario ? parseFloat(product.valor_unitario) : 0,
+        stock: product.estoque_atual ? parseInt(product.estoque_atual) : 0,
+        slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        omie_sync: true,
+        omie_last_update: new Date().toISOString()
+      };
+    }).filter(Boolean);
+
+    console.log(`${products.length} produtos válidos para processar`);
 
     // Atualizar produtos no Supabase
     let updatedCount = 0;
@@ -163,11 +171,17 @@ serve(async (req) => {
     for (const product of products) {
       try {
         // Verificar se o produto já existe
-        const { data: existingProduct } = await supabase
+        const { data: existingProduct, error: selectError } = await supabase
           .from('products')
           .select('id, omie_code')
           .eq('omie_code', product.omie_code)
           .maybeSingle();
+
+        if (selectError) {
+          console.error('Erro ao buscar produto existente:', selectError);
+          errorCount++;
+          continue;
+        }
 
         if (existingProduct) {
           // Atualizar produto existente
@@ -207,6 +221,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: `Sincronização concluída: ${insertedCount} produtos inseridos, ${updatedCount} atualizados, ${errorCount} erros`,
+        totalProducts: allProducts.length,
+        validProducts: products.length,
         products 
       }),
       { 
