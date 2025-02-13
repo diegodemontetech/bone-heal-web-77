@@ -16,4 +16,8 @@ export interface Product {
   created_at?: string;
   updated_at?: string;
   stock?: number;
+  omie_code?: string;
+  omie_sync?: boolean;
+  omie_last_update?: string;
+  omie_product_id?: string;
 }
