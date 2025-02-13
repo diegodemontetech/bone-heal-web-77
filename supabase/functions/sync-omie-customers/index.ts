@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -33,7 +32,10 @@ serve(async (req) => {
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N"
+        apenas_importado_api: "N",
+        clientesFiltro: {
+          tipo_atividade: "Consumidor"
+        }
       }]
     };
 
