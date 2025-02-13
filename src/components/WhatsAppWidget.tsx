@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, KeyboardEvent } from 'react';
 import { MessageSquare, X, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -111,6 +110,17 @@ const WhatsAppWidget = () => {
     }
   };
 
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (currentInput === 'phone' && phone) {
+        handleInputSubmit(phone);
+      } else if (currentInput === 'name' && name) {
+        handleInputSubmit(name);
+      }
+    }
+  };
+
   const handleInputSubmit = async (value: string) => {
     if (currentInput === 'name') {
       setName(value);
@@ -146,7 +156,7 @@ const WhatsAppWidget = () => {
         delay: 0,
         isUser: true
       }]);
-      setCurrentInput(null); // Important: Set to null to prevent further input
+      setCurrentInput(null);
       handleSubmit(value);
     }
   };
@@ -160,6 +170,8 @@ const WhatsAppWidget = () => {
 
   const handleSubmit = async (phoneValue?: string) => {
     if (!configMessages) return;
+
+    setIsTyping(true);
 
     try {
       const { error } = await supabase
@@ -175,13 +187,11 @@ const WhatsAppWidget = () => {
 
       if (error) throw error;
 
-      setIsTyping(true);
       await new Promise(resolve => setTimeout(resolve, 1500));
       setMessages(prev => [...prev, {
         text: configMessages.thank_you.replace('{name}', name.toLowerCase()),
         delay: 0
       }]);
-      setIsTyping(false);
       
       toast({
         description: 'Obrigado pelo contato!'
@@ -197,12 +207,10 @@ const WhatsAppWidget = () => {
         description: 'Erro ao enviar mensagem. Tente novamente.',
         variant: "destructive"
       });
+    } finally {
+      setIsTyping(false);
     }
   };
-
-  if (isLoading) {
-    return null; // Don't render anything while loading
-  }
 
   const renderMessage = (message: { text: string; isUser?: boolean; showInterestButtons?: boolean }, index: number) => {
     return (
@@ -331,6 +339,7 @@ const WhatsAppWidget = () => {
                           setName(e.target.value);
                         }
                       }}
+                      onKeyPress={handleKeyPress}
                       placeholder={
                         currentInput === 'phone' 
                           ? "Seu telefone com DDD (ex: 11999999999)" 
