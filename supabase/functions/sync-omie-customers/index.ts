@@ -24,7 +24,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Iniciando busca de clientes no Omie');
+    console.log('Iniciando busca de contatos no Omie');
 
     // Primeiro, buscar a lista de clientes resumida
     const listRequestBody = {
@@ -53,7 +53,7 @@ serve(async (req) => {
     }
 
     const clientesResumidos = listData.clientes_cadastro_resumido || [];
-    console.log(`Clientes encontrados: ${clientesResumidos.length}`);
+    console.log(`Contatos encontrados: ${clientesResumidos.length}`);
 
     let created = 0;
     let errors = 0;
@@ -91,28 +91,30 @@ serve(async (req) => {
             throw new Error(`Erro Omie ao consultar cliente: ${cliente.faultstring}`);
           }
 
-          // Verifica se é realmente um cliente
-          if (cliente.tipo_atividade !== 'Consumidor' && cliente.tipo_atividade !== 'Outros') {
-            console.log(`Pulando ${cliente.codigo_cliente_omie} pois não é cliente (${cliente.tipo_atividade})`);
-            continue;
-          }
-
-          // Verifica se o cliente já tem um usuário
+          // Verifica se o contato já tem um usuário
           const { data: existingProfiles } = await supabase
             .from('profiles')
             .select('id')
             .eq('omie_code', cliente.codigo_cliente_omie.toString());
 
           if (existingProfiles && existingProfiles.length > 0) {
-            console.log(`Cliente ${cliente.codigo_cliente_omie} já tem usuário`);
+            console.log(`Contato ${cliente.codigo_cliente_omie} já tem usuário`);
             continue;
           }
 
           // Gera senha inicial baseada no CPF/CNPJ (apenas números)
           const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
           if (!numeroDocumento) {
-            console.log(`Cliente ${cliente.codigo_cliente_omie} não tem CPF/CNPJ`);
+            console.log(`Contato ${cliente.codigo_cliente_omie} não tem CPF/CNPJ`);
             continue;
+          }
+
+          // Define o tipo de contato baseado na atividade
+          let contactType = 'customer';
+          if (cliente.tipo_atividade === 'Fornecedor') {
+            contactType = 'supplier';
+          } else if (cliente.tipo_atividade === 'Cliente/Fornecedor') {
+            contactType = 'both';
           }
 
           // Cria o usuário no Supabase Auth
@@ -143,7 +145,8 @@ serve(async (req) => {
               phone: cliente.telefone1_numero,
               zip_code: cliente.cep,
               omie_code: cliente.codigo_cliente_omie.toString(),
-              omie_sync: true
+              omie_sync: true,
+              contact_type: contactType
             })
             .eq('id', user.id);
 
@@ -152,7 +155,7 @@ serve(async (req) => {
           created++;
           console.log(`Usuário criado com sucesso para ${cliente.razao_social}`);
         } catch (error) {
-          console.error(`Erro ao processar cliente:`, error);
+          console.error(`Erro ao processar contato:`, error);
           errors++;
         }
       }
@@ -167,7 +170,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Sincronização concluída: ${created} usuários criados, ${errors} erros`,
-        totalClientes: clientesResumidos.length
+        totalContatos: clientesResumidos.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

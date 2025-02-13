@@ -27,11 +27,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useModal } from "@/hooks/use-modal";
-import { User } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import TestOmieSync from "@/components/TestOmieSync";
 
 interface UserWithProfile {
@@ -46,6 +44,7 @@ interface UserWithProfile {
     state: string | null;
     zip_code: string | null;
     is_admin: boolean | null;
+    contact_type: string | null;
   } | null;
 }
 
@@ -58,6 +57,7 @@ interface DatabaseProfile {
   state: string | null;
   zip_code: string | null;
   is_admin: boolean | null;
+  contact_type: string | null;
   created_at: string;
   auth_users: { email: string }[] | null;
 }
@@ -67,11 +67,11 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const { onOpen } = useModal();
   const [search, setSearch] = useState("");
-  const [isAdminFilter, setIsAdminFilter] = useState<boolean | null>(null);
+  const [contactTypeFilter, setContactTypeFilter] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
-  }, [isAdminFilter]);
+  }, [contactTypeFilter]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -81,8 +81,8 @@ const Users = () => {
         .select("*, auth_users:id(email)")
         .order("created_at", { ascending: false });
 
-      if (isAdminFilter !== null) {
-        query = query.eq("is_admin", isAdminFilter);
+      if (contactTypeFilter) {
+        query = query.eq("contact_type", contactTypeFilter);
       }
 
       const { data, error } = await query;
@@ -103,6 +103,7 @@ const Users = () => {
             state: profile.state,
             zip_code: profile.zip_code,
             is_admin: profile.is_admin,
+            contact_type: profile.contact_type,
           },
         }));
         setUsers(usersWithProfile);
@@ -153,6 +154,14 @@ const Users = () => {
     {
       accessorKey: "email",
       header: "Email",
+    },
+    {
+      accessorKey: "profile.contact_type",
+      header: "Tipo",
+      cell: ({ row }) => {
+        const type = row.getValue("profile.contact_type") as string;
+        return type === 'customer' ? 'Cliente' : type === 'supplier' ? 'Fornecedor' : 'Cliente/Fornecedor';
+      },
     },
     {
       accessorKey: "profile.phone",
@@ -235,20 +244,18 @@ const Users = () => {
           />
         </div>
         <div className="flex items-center space-x-2">
-          <Label htmlFor="isAdminFilter">Filtrar por Admin:</Label>
-          <Switch
-            id="isAdminFilter"
-            checked={isAdminFilter === true}
-            onCheckedChange={(checked) => {
-              if (checked) {
-                setIsAdminFilter(true);
-              } else if (isAdminFilter === true) {
-                setIsAdminFilter(null);
-              } else {
-                setIsAdminFilter(false);
-              }
-            }}
-          />
+          <Label htmlFor="contactTypeFilter">Tipo de Contato:</Label>
+          <select
+            id="contactTypeFilter"
+            className="border rounded p-2"
+            value={contactTypeFilter || ""}
+            onChange={(e) => setContactTypeFilter(e.target.value || null)}
+          >
+            <option value="">Todos</option>
+            <option value="customer">Clientes</option>
+            <option value="supplier">Fornecedores</option>
+            <option value="both">Cliente/Fornecedor</option>
+          </select>
         </div>
         <Button onClick={() => onOpen("createUser")}>Criar Usuário</Button>
       </div>
