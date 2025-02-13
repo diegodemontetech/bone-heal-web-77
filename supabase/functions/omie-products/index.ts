@@ -25,30 +25,39 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     console.log('Iniciando busca de produtos no Omie');
+    console.log('Usando as credenciais:', { OMIE_APP_KEY, OMIE_APP_SECRET });
+
+    const requestBody = {
+      call: 'ListarCadastrosProduto',
+      app_key: OMIE_APP_KEY,
+      app_secret: OMIE_APP_SECRET,
+      param: [{
+        pagina: 1,
+        registros_por_pagina: 50,
+        apenas_importado_api: "N"
+      }]
+    };
+
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        call: 'ListarCadastrosProduto',
-        app_key: OMIE_APP_KEY,
-        app_secret: OMIE_APP_SECRET,
-        param: [{
-          pagina: 1,
-          registros_por_pagina: 50,
-          apenas_importado_api: "N"
-        }]
-      }),
+      body: JSON.stringify(requestBody),
     });
 
+    const responseText = await response.text();
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    console.log('Response text:', responseText);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}, response: ${responseText}`);
     }
 
-    const data = await response.json();
-    console.log('Resposta do Omie:', JSON.stringify(data, null, 2));
+    const data = JSON.parse(responseText);
 
     if (data.faultstring) {
       throw new Error(`Erro Omie: ${data.faultstring}`);
