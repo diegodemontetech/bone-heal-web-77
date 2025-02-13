@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   ColumnDef,
@@ -48,6 +49,19 @@ interface UserWithProfile {
   } | null;
 }
 
+interface DatabaseProfile {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zip_code: string | null;
+  is_admin: boolean | null;
+  created_at: string;
+  users: { email: string }[] | null;
+}
+
 const Users = () => {
   const [users, setUsers] = useState<UserWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,16 +79,10 @@ const Users = () => {
       let query = supabase
         .from("profiles")
         .select(`
-          id,
-          full_name,
-          phone,
-          address,
-          city,
-          state,
-          zip_code,
-          is_admin,
-          created_at,
-          users:auth.users(email)
+          *,
+          users:auth.users (
+            email
+          )
         `)
         .order("created_at", { ascending: false });
 
@@ -88,9 +96,9 @@ const Users = () => {
         console.error("Erro ao buscar usuários:", error);
         toast.error("Erro ao buscar usuários: " + error.message);
       } else {
-        const usersWithProfile: UserWithProfile[] = data.map((profile) => ({
+        const usersWithProfile: UserWithProfile[] = (data as DatabaseProfile[]).map((profile) => ({
           id: profile.id,
-          email: profile.users && profile.users[0]?.email || null,
+          email: profile.users?.[0]?.email || null,
           created_at: profile.created_at,
           profile: {
             full_name: profile.full_name,
