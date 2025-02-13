@@ -32,12 +32,51 @@ serve(async (req) => {
     let currentPage = 1;
     let totalPages = 1;
 
-    // Loop através de todas as páginas
-    do {
-      console.log(`Buscando página ${currentPage}...`);
+    // Primeira requisição para obter o total de páginas
+    const firstResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        call: 'ListarProdutos',
+        app_key: OMIE_APP_KEY,
+        app_secret: OMIE_APP_SECRET,
+        param: [{
+          pagina: currentPage,
+          registros_por_pagina: 50,
+          apenas_importado_api: "N",
+          filtrar_apenas_omiepdv: "N",
+          inativo: "N"
+        }]
+      }),
+    });
+
+    if (!firstResponse.ok) {
+      throw new Error(`HTTP error! status: ${firstResponse.status}`);
+    }
+
+    const firstData = await firstResponse.json();
+    
+    if (firstData.faultstring) {
+      throw new Error(firstData.faultstring);
+    }
+
+    // Calcular total de páginas
+    totalPages = Math.ceil(firstData.total_de_registros / firstData.registros);
+    console.log(`Total de registros: ${firstData.total_de_registros}, Total de páginas: ${totalPages}`);
+
+    // Adicionar produtos da primeira página
+    if (firstData.produto_servico_lista && firstData.produto_servico_lista.length > 0) {
+      allProducts = [...firstData.produto_servico_lista];
+      console.log(`Adicionados ${firstData.produto_servico_lista.length} produtos da página 1`);
+    }
+
+    // Buscar as páginas restantes
+    for (currentPage = 2; currentPage <= totalPages; currentPage++) {
+      console.log(`Buscando página ${currentPage} de ${totalPages}...`);
       
-      // Fazer requisição para a API do Omie
-      const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+      const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -56,38 +95,25 @@ serve(async (req) => {
         }),
       });
 
-      if (!omieResponse.ok) {
-        console.error('Erro na resposta do Omie:', omieResponse.status);
-        throw new Error(`HTTP error! status: ${omieResponse.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await omieResponse.json();
-      console.log(`Resposta da página ${currentPage}:`, JSON.stringify(data, null, 2));
-
+      const data = await response.json();
+      
       if (data.faultstring) {
-        console.error('Erro retornado pelo Omie:', data.faultstring);
         throw new Error(data.faultstring);
       }
 
-      // Atualizar total de páginas na primeira iteração
-      if (currentPage === 1) {
-        totalPages = Math.ceil(data.total_de_registros / data.registros);
-        console.log(`Total de páginas a buscar: ${totalPages}`);
-      }
-
-      // Adicionar produtos desta página ao array total
       if (data.produto_servico_lista && data.produto_servico_lista.length > 0) {
         allProducts = [...allProducts, ...data.produto_servico_lista];
         console.log(`Adicionados ${data.produto_servico_lista.length} produtos da página ${currentPage}`);
       }
-
-      currentPage++;
-    } while (currentPage <= totalPages);
+    }
 
     console.log(`Total de produtos encontrados: ${allProducts.length}`);
 
     if (allProducts.length === 0) {
-      console.log('Nenhum produto encontrado no Omie');
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -103,6 +129,7 @@ serve(async (req) => {
       );
     }
 
+    // Mapear produtos para o formato do Supabase
     const products = allProducts.map((product: any) => ({
       omie_code: product.codigo,
       omie_product_id: product.codigo_produto,
@@ -114,7 +141,7 @@ serve(async (req) => {
       omie_last_update: new Date().toISOString()
     }));
 
-    console.log(`Processando ${products.length} produtos do Omie`);
+    console.log(`Processando ${products.length} produtos do Omie para inserção/atualização`);
 
     // Atualizar produtos no Supabase
     for (const product of products) {
