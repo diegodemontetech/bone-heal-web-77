@@ -76,7 +76,7 @@ const Users = () => {
           zip_code,
           is_admin,
           created_at,
-          email:profiles(email)
+          email:auth.users(email)
         `
         )
         .order("created_at", { ascending: false });
