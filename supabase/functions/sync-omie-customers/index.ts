@@ -26,9 +26,8 @@ serve(async (req) => {
 
     console.log('Iniciando busca de contatos no Omie');
 
-    // Primeiro, buscar a lista de clientes resumida
     const listRequestBody = {
-      call: 'ListarClientesResumido',
+      call: 'ListarClientes',
       app_key: OMIE_APP_KEY,
       app_secret: OMIE_APP_SECRET,
       param: [{
@@ -52,60 +51,59 @@ serve(async (req) => {
       throw new Error(`Erro Omie: ${listData.faultstring}`);
     }
 
-    const clientesResumidos = listData.clientes_cadastro_resumido || [];
-    console.log(`Contatos encontrados: ${clientesResumidos.length}`);
+    // Usando a lista completa de clientes ao invés da resumida
+    const clientes = listData.clientes_cadastro || [];
+    console.log(`Contatos encontrados: ${clientes.length}`);
 
     let created = 0;
+    let skipped = 0;
     let errors = 0;
 
     // Processamento em lotes para evitar rate limit
     const BATCH_SIZE = 10;
     const DELAY_BETWEEN_BATCHES = 1000; // 1 segundo de delay entre lotes
 
-    for (let i = 0; i < clientesResumidos.length; i += BATCH_SIZE) {
-      const batch = clientesResumidos.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < clientes.length; i += BATCH_SIZE) {
+      const batch = clientes.slice(i, i + BATCH_SIZE);
       
-      for (const clienteResumido of batch) {
+      for (const cliente of batch) {
         try {
-          // Consultar dados completos do cliente
-          const consultaRequestBody = {
-            call: 'ConsultarCliente',
-            app_key: OMIE_APP_KEY,
-            app_secret: OMIE_APP_SECRET,
-            param: [{
-              codigo_cliente_omie: clienteResumido.codigo_cliente
-            }]
-          };
-
-          const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(consultaRequestBody),
-          });
-
-          const cliente = await consultaResponse.json();
-
-          if (cliente.faultstring) {
-            throw new Error(`Erro Omie ao consultar cliente: ${cliente.faultstring}`);
+          if (!cliente.email) {
+            console.log(`Pulando ${cliente.codigo_cliente_omie} - email não encontrado`);
+            skipped++;
+            continue;
           }
 
-          // Verifica se o contato já tem um usuário
-          const { data: existingProfiles } = await supabase
+          // Verifica se já existe um usuário com este email
+          const { data: existingUser } = await supabase
+            .from('auth_users')
+            .select('id')
+            .eq('email', cliente.email)
+            .single();
+
+          if (existingUser) {
+            console.log(`Pulando ${cliente.codigo_cliente_omie} - email já cadastrado: ${cliente.email}`);
+            skipped++;
+            continue;
+          }
+
+          // Verifica se o código Omie já está associado a algum perfil
+          const { data: existingProfile } = await supabase
             .from('profiles')
             .select('id')
             .eq('omie_code', cliente.codigo_cliente_omie.toString());
 
-          if (existingProfiles && existingProfiles.length > 0) {
-            console.log(`Contato ${cliente.codigo_cliente_omie} já tem usuário`);
+          if (existingProfile && existingProfile.length > 0) {
+            console.log(`Pulando ${cliente.codigo_cliente_omie} - código Omie já cadastrado`);
+            skipped++;
             continue;
           }
 
           // Gera senha inicial baseada no CPF/CNPJ (apenas números)
           const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
           if (!numeroDocumento) {
-            console.log(`Contato ${cliente.codigo_cliente_omie} não tem CPF/CNPJ`);
+            console.log(`Pulando ${cliente.codigo_cliente_omie} - CPF/CNPJ não encontrado`);
+            skipped++;
             continue;
           }
 
@@ -161,7 +159,7 @@ serve(async (req) => {
       }
 
       // Aguarda antes de processar o próximo lote
-      if (i + BATCH_SIZE < clientesResumidos.length) {
+      if (i + BATCH_SIZE < clientes.length) {
         await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
       }
     }
@@ -169,8 +167,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Sincronização concluída: ${created} usuários criados, ${errors} erros`,
-        totalContatos: clientesResumidos.length
+        message: `Sincronização concluída: ${created} usuários criados, ${skipped} pulados, ${errors} erros`,
+        totalContatos: clientes.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
