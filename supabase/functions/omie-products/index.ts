@@ -27,47 +27,39 @@ serve(async (req) => {
     console.log('Iniciando busca de produtos no Omie');
     console.log('Usando as credenciais:', { OMIE_APP_KEY, OMIE_APP_SECRET });
 
-    const requestBody = {
-      call: 'ListarProdutos',
+    // Primeiro, vamos listar os produtos de forma resumida
+    const listRequestBody = {
+      call: 'ListarProdutosResumido',
       app_key: OMIE_APP_KEY,
       app_secret: OMIE_APP_SECRET,
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N",
-        filtrar_apenas_omiepdv: "N"
+        apenas_importado_api: "N"
       }]
     };
 
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('Request body (list):', JSON.stringify(listRequestBody, null, 2));
 
-    const response = await fetch('https://app.omie.com.br/api/v1/produtos/produto/', {
+    const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(listRequestBody),
     });
 
-    const responseText = await response.text();
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-    console.log('Response text:', responseText);
+    const listData = await listResponse.json();
+    console.log('Lista response:', JSON.stringify(listData, null, 2));
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}, response: ${responseText}`);
+    if (listData.faultstring) {
+      throw new Error(`Erro Omie (lista): ${listData.faultstring}`);
     }
 
-    const data = JSON.parse(responseText);
+    const produtosResumidos = listData.produto_servico_resumido || [];
+    console.log(`Produtos encontrados: ${produtosResumidos.length}`);
 
-    if (data.faultstring) {
-      throw new Error(`Erro Omie: ${data.faultstring}`);
-    }
-
-    const produtos = data.produto_servico_cadastro || [];
-    console.log(`Produtos encontrados: ${produtos.length}`);
-
-    if (produtos.length === 0) {
+    if (produtosResumidos.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -78,18 +70,48 @@ serve(async (req) => {
       );
     }
 
-    // Mapear produtos
-    const products = produtos.map(product => {
+    // Agora vamos buscar os detalhes de cada produto
+    const products = [];
+    for (const produtoResumido of produtosResumidos) {
       try {
+        const detailRequestBody = {
+          call: 'ConsultarProduto',
+          app_key: OMIE_APP_KEY,
+          app_secret: OMIE_APP_SECRET,
+          param: [{
+            codigo_produto: produtoResumido.codigo_produto,
+            codigo: produtoResumido.codigo
+          }]
+        };
+
+        console.log('Request body (detail):', JSON.stringify(detailRequestBody, null, 2));
+
+        const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(detailRequestBody),
+        });
+
+        const detailData = await detailResponse.json();
+        console.log('Detail response:', JSON.stringify(detailData, null, 2));
+
+        if (detailData.faultstring) {
+          console.error(`Erro ao consultar produto ${produtoResumido.codigo}:`, detailData.faultstring);
+          continue;
+        }
+
+        const product = detailData;
         if (!product.descricao || !product.codigo) {
           console.log('Produto inválido:', product);
-          return null;
+          continue;
         }
 
         // Pegar a primeira URL de imagem se existir
         const imageUrl = product.imagens && product.imagens[0] ? product.imagens[0].url_imagem : null;
 
-        return {
+        products.push({
           name: product.descricao,
           omie_code: product.codigo,
           omie_product_id: product.codigo_produto.toString(),
@@ -99,12 +121,11 @@ serve(async (req) => {
           main_image: imageUrl,
           omie_sync: true,
           omie_last_update: new Date().toISOString()
-        };
+        });
       } catch (error) {
         console.error('Erro ao processar produto:', error);
-        return null;
       }
-    }).filter(Boolean);
+    }
 
     console.log(`Produtos válidos: ${products.length}`);
 
@@ -147,7 +168,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         message: `Sincronização concluída: ${inserted} produtos inseridos, ${updated} atualizados, ${errors} erros`,
-        totalProducts: produtos.length,
+        totalProducts: produtosResumidos.length,
         validProducts: products.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
