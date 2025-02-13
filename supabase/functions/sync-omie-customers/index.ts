@@ -33,8 +33,7 @@ serve(async (req) => {
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N",
-        clientesFornecedores: "C" // Adicionado: Apenas clientes
+        apenas_importado_api: "N"
       }]
     };
 
