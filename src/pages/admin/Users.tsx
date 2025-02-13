@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   ColumnDef,
@@ -65,8 +64,7 @@ const Users = () => {
     try {
       let query = supabase
         .from("profiles")
-        .select(
-          `
+        .select(`
           id,
           full_name,
           phone,
@@ -76,9 +74,8 @@ const Users = () => {
           zip_code,
           is_admin,
           created_at,
-          email:auth.users(email)
-        `
-        )
+          users:auth.users(email)
+        `)
         .order("created_at", { ascending: false });
 
       if (isAdminFilter !== null) {
@@ -93,7 +90,7 @@ const Users = () => {
       } else {
         const usersWithProfile: UserWithProfile[] = data.map((profile) => ({
           id: profile.id,
-          email: profile.email ? profile.email[0]?.email : null,
+          email: profile.users && profile.users[0]?.email || null,
           created_at: profile.created_at,
           profile: {
             full_name: profile.full_name,
