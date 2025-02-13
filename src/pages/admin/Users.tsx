@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   ColumnDef,
@@ -58,7 +59,7 @@ interface DatabaseProfile {
   zip_code: string | null;
   is_admin: boolean | null;
   created_at: string;
-  users: { email: string }[] | null;
+  auth_users: { email: string }[] | null;
 }
 
 const Users = () => {
@@ -77,7 +78,7 @@ const Users = () => {
     try {
       let query = supabase
         .from("profiles")
-        .select("*, auth.users!profiles_id_fkey(email)")
+        .select("*, auth_users:auth.users(email)")
         .order("created_at", { ascending: false });
 
       if (isAdminFilter !== null) {
@@ -90,9 +91,9 @@ const Users = () => {
         console.error("Erro ao buscar usuários:", error);
         toast.error("Erro ao buscar usuários: " + error.message);
       } else if (data) {
-        const usersWithProfile: UserWithProfile[] = (data as unknown as DatabaseProfile[]).map((profile) => ({
+        const usersWithProfile: UserWithProfile[] = (data as DatabaseProfile[]).map((profile) => ({
           id: profile.id,
-          email: profile.users?.[0]?.email || null,
+          email: profile.auth_users?.[0]?.email || null,
           created_at: profile.created_at,
           profile: {
             full_name: profile.full_name,
