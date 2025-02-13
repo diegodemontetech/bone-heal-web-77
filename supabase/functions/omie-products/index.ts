@@ -28,6 +28,7 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
+    // Fazer requisição para a API do Omie
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
@@ -41,22 +42,44 @@ serve(async (req) => {
           pagina: 1,
           registros_por_pagina: 50,
           apenas_importado_api: "N",
-          filtrar_apenas_omiepdv: "N"
+          filtrar_apenas_omiepdv: "N",
+          inativo: "N"  // Adicionado para buscar apenas produtos ativos
         }]
       }),
     });
 
     if (!omieResponse.ok) {
+      console.error('Erro na resposta do Omie:', omieResponse.status);
       throw new Error(`HTTP error! status: ${omieResponse.status}`);
     }
 
     const data = await omieResponse.json();
+    console.log('Resposta do Omie:', JSON.stringify(data, null, 2));
 
     if (data.faultstring) {
+      console.error('Erro retornado pelo Omie:', data.faultstring);
       throw new Error(data.faultstring);
     }
 
-    const products = data.produto_servico_lista?.map((product: any) => ({
+    // Verificar se temos produtos na resposta
+    if (!data.produto_servico_lista || data.produto_servico_lista.length === 0) {
+      console.log('Nenhum produto encontrado no Omie');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Nenhum produto encontrado no Omie',
+          products: [] 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+    }
+
+    const products = data.produto_servico_lista.map((product: any) => ({
       omie_code: product.codigo,
       omie_product_id: product.codigo_produto,
       name: product.descricao,
@@ -65,7 +88,7 @@ serve(async (req) => {
       slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       omie_sync: true,
       omie_last_update: new Date().toISOString()
-    })) || [];
+    }));
 
     console.log(`Processando ${products.length} produtos do Omie`);
 
@@ -76,7 +99,7 @@ serve(async (req) => {
         .from('products')
         .select('id, omie_code')
         .eq('omie_code', product.omie_code)
-        .single();
+        .maybeSingle();
 
       if (existingProduct) {
         // Atualizar produto existente
