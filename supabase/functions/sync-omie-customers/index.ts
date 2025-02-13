@@ -91,18 +91,23 @@ serve(async (req) => {
             continue;
           }
 
-          // Busca o usuário pelo email usando auth.users
-          const { data: users, error: usersError } = await supabase.auth.admin.listUsers();
-          const existingUser = users.users.find(u => u.email === cliente.email);
+          // Primeiro, tenta encontrar o usuário existente
+          const { data: foundUser, error: searchError } = await supabase.auth.admin.listUsers();
+          if (searchError) {
+            console.error(`Erro ao buscar usuários:`, searchError);
+            errors++;
+            continue;
+          }
 
+          const existingUser = foundUser?.users?.find(u => u.email === cliente.email);
           let userId;
 
           if (existingUser) {
-            console.log(`Atualizando usuário existente: ${cliente.email}`);
+            console.log(`Usuário encontrado para ${cliente.email}, atualizando perfil...`);
             userId = existingUser.id;
             updated++;
           } else {
-            // Se não existe, cria um novo usuário
+            // Se não existe, tenta criar um novo usuário
             const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
             if (!numeroDocumento) {
               console.log(`Pulando ${cliente.codigo_cliente_omie} - CPF/CNPJ não encontrado`);
@@ -110,39 +115,50 @@ serve(async (req) => {
               continue;
             }
 
-            const { data: { user }, error: signUpError } = await supabase.auth.admin.createUser({
-              email: cliente.email,
-              password: numeroDocumento,
-              email_confirm: true,
-              user_metadata: {
-                full_name: cliente.razao_social,
-              }
-            });
+            try {
+              const { data: { user }, error: createError } = await supabase.auth.admin.createUser({
+                email: cliente.email,
+                password: numeroDocumento,
+                email_confirm: true,
+                user_metadata: {
+                  full_name: cliente.razao_social,
+                }
+              });
 
-            if (signUpError) {
-              if (signUpError.message.includes('already been registered')) {
-                console.log(`Usuário já existe, pulando criação: ${cliente.email}`);
-                const { data: existingUserData } = await supabase.auth.admin.getUserById(existingUser?.id || '');
-                userId = existingUserData?.user?.id;
-                if (!userId) {
+              if (createError) {
+                // Se o erro for de usuário já existente, tenta buscar novamente
+                if (createError.message.includes('already been registered')) {
+                  console.log(`Usuário já existe para ${cliente.email}, buscando...`);
+                  const { data: existingUserData } = await supabase.auth.admin.listUsers();
+                  const foundExistingUser = existingUserData?.users?.find(u => u.email === cliente.email);
+                  if (foundExistingUser) {
+                    userId = foundExistingUser.id;
+                    updated++;
+                  } else {
+                    console.error(`Não foi possível encontrar usuário existente para ${cliente.email}`);
+                    errors++;
+                    continue;
+                  }
+                } else {
+                  console.error(`Erro ao criar usuário para ${cliente.email}:`, createError);
                   errors++;
                   continue;
                 }
-                updated++;
-              } else {
-                console.error(`Erro ao criar usuário para ${cliente.email}:`, signUpError);
-                errors++;
-                continue;
+              } else if (user) {
+                userId = user.id;
+                created++;
               }
-            } else {
-              userId = user?.id;
-              if (!userId) {
-                console.error(`Usuário não foi criado para ${cliente.email}`);
-                errors++;
-                continue;
-              }
-              created++;
+            } catch (error) {
+              console.error(`Erro ao criar/buscar usuário para ${cliente.email}:`, error);
+              errors++;
+              continue;
             }
+          }
+
+          if (!userId) {
+            console.error(`ID do usuário não encontrado para ${cliente.email}`);
+            errors++;
+            continue;
           }
 
           // Define o tipo de contato
@@ -153,7 +169,9 @@ serve(async (req) => {
             contactType = 'both';
           }
 
+          // Atualiza ou cria o perfil
           const profileData = {
+            id: userId,
             full_name: cliente.razao_social,
             cnpj: cliente.pessoa_fisica === 'N' ? cliente.cnpj_cpf : null,
             cpf: cliente.pessoa_fisica === 'S' ? cliente.cnpj_cpf : null,
@@ -168,13 +186,9 @@ serve(async (req) => {
             contact_type: contactType
           };
 
-          // Upsert do perfil (atualiza se existe, cria se não existe)
           const { error: upsertError } = await supabase
             .from('profiles')
-            .upsert({ 
-              ...profileData, 
-              id: userId 
-            });
+            .upsert(profileData);
 
           if (upsertError) {
             console.error(`Erro ao atualizar/criar perfil para ${cliente.email}:`, upsertError);
