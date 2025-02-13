@@ -33,7 +33,8 @@ serve(async (req) => {
       param: [{
         pagina: 1,
         registros_por_pagina: 50,
-        apenas_importado_api: "N"
+        apenas_importado_api: "N",
+        clientesFornecedores: "C" // Adicionado: Apenas clientes
       }]
     };
 
@@ -57,65 +58,84 @@ serve(async (req) => {
     let created = 0;
     let errors = 0;
 
-    for (const cliente of clientes) {
-      try {
-        // Verifica se o cliente já tem um usuário
-        const { data: existingProfiles } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('omie_code', cliente.codigo_cliente_omie.toString());
+    // Processamento em lotes para evitar rate limit
+    const BATCH_SIZE = 10;
+    const DELAY_BETWEEN_BATCHES = 1000; // 1 segundo de delay entre lotes
 
-        if (existingProfiles && existingProfiles.length > 0) {
-          console.log(`Cliente ${cliente.codigo_cliente_omie} já tem usuário`);
-          continue;
-        }
-
-        // Gera senha inicial baseada no CPF/CNPJ (apenas números)
-        const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
-        if (!numeroDocumento) {
-          console.log(`Cliente ${cliente.codigo_cliente_omie} não tem CPF/CNPJ`);
-          continue;
-        }
-
-        // Cria o usuário no Supabase Auth
-        const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-          email: cliente.email,
-          password: numeroDocumento,
-          options: {
-            data: {
-              full_name: cliente.razao_social,
-            }
+    for (let i = 0; i < clientes.length; i += BATCH_SIZE) {
+      const batch = clientes.slice(i, i + BATCH_SIZE);
+      
+      for (const cliente of batch) {
+        try {
+          // Verifica se é realmente um cliente (dupla verificação)
+          if (cliente.tipo_atividade !== 'Consumidor' && cliente.tipo_atividade !== 'Outros') {
+            console.log(`Pulando ${cliente.codigo_cliente_omie} pois não é cliente (${cliente.tipo_atividade})`);
+            continue;
           }
-        });
 
-        if (signUpError) throw signUpError;
-        if (!user?.id) throw new Error('Usuário não foi criado');
+          // Verifica se o cliente já tem um usuário
+          const { data: existingProfiles } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('omie_code', cliente.codigo_cliente_omie.toString());
 
-        // Atualiza o perfil com os dados do Omie
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: cliente.razao_social,
-            cnpj: cliente.pessoa_fisica === 'N' ? cliente.cnpj_cpf : null,
-            cpf: cliente.pessoa_fisica === 'S' ? cliente.cnpj_cpf : null,
-            address: cliente.endereco,
-            city: cliente.cidade,
-            state: cliente.estado,
-            neighborhood: cliente.bairro,
-            phone: cliente.telefone1_numero,
-            zip_code: cliente.cep,
-            omie_code: cliente.codigo_cliente_omie.toString(),
-            omie_sync: true
-          })
-          .eq('id', user.id);
+          if (existingProfiles && existingProfiles.length > 0) {
+            console.log(`Cliente ${cliente.codigo_cliente_omie} já tem usuário`);
+            continue;
+          }
 
-        if (profileError) throw profileError;
+          // Gera senha inicial baseada no CPF/CNPJ (apenas números)
+          const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
+          if (!numeroDocumento) {
+            console.log(`Cliente ${cliente.codigo_cliente_omie} não tem CPF/CNPJ`);
+            continue;
+          }
 
-        created++;
-        console.log(`Usuário criado com sucesso para ${cliente.razao_social}`);
-      } catch (error) {
-        console.error(`Erro ao processar cliente ${cliente.codigo_cliente_omie}:`, error);
-        errors++;
+          // Cria o usuário no Supabase Auth
+          const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+            email: cliente.email,
+            password: numeroDocumento,
+            options: {
+              data: {
+                full_name: cliente.razao_social,
+              }
+            }
+          });
+
+          if (signUpError) throw signUpError;
+          if (!user?.id) throw new Error('Usuário não foi criado');
+
+          // Atualiza o perfil com os dados do Omie
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              full_name: cliente.razao_social,
+              cnpj: cliente.pessoa_fisica === 'N' ? cliente.cnpj_cpf : null,
+              cpf: cliente.pessoa_fisica === 'S' ? cliente.cnpj_cpf : null,
+              address: cliente.endereco,
+              city: cliente.cidade,
+              state: cliente.estado,
+              neighborhood: cliente.bairro,
+              phone: cliente.telefone1_numero,
+              zip_code: cliente.cep,
+              omie_code: cliente.codigo_cliente_omie.toString(),
+              omie_sync: true
+            })
+            .eq('id', user.id);
+
+          if (profileError) throw profileError;
+
+          created++;
+          console.log(`Usuário criado com sucesso para ${cliente.razao_social}`);
+        } catch (error) {
+          console.error(`Erro ao processar cliente ${cliente.codigo_cliente_omie}:`, error);
+          errors++;
+        }
+      }
+
+      // Aguarda antes de processar o próximo lote
+      if (i + BATCH_SIZE < clientes.length) {
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
       }
     }
 
