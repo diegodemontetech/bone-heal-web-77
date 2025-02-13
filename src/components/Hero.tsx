@@ -6,22 +6,19 @@ const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* Video Background with dark overlay */}
-      <div className="absolute inset-0 w-full h-full bg-black">
-        <div className="relative w-full h-full overflow-hidden">
-          {/* Using the GIF as background with adjustments to hide watermark */}
-          <div
-            className="absolute inset-0 w-[120%] h-[120%] -left-[10%] -top-[10%]"
-            style={{
-              backgroundImage: 'url(https://i.ibb.co/5g0Yg8N/d547c5cc-b17c-4dbe-a4b7-3d574fdf699b.gif)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              filter: 'brightness(0.7) contrast(1.1)',
-              transform: 'scale(1.2)',
-              opacity: 0.9,
-            }}
-          />
-        </div>
+      <div className="absolute inset-0 w-full h-full">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{
+            filter: 'brightness(0.7)',
+          }}
+        >
+          <source src="https://i.ibb.co/5g0Yg8N/d547c5cc-b17c-4dbe-a4b7-3d574fdf699b.gif" type="video/mp4" />
+        </video>
       </div>
 
       {/* Background gradient overlay */}
