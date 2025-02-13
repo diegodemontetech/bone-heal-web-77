@@ -133,26 +133,22 @@ const Users = () => {
     {
       accessorKey: "profile.full_name",
       header: "Nome",
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <Avatar>
-            <AvatarImage
-              src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${row.getValue(
-                "profile.full_name"
-              )}`}
-            />
-            <AvatarFallback>
-              {row.getValue("profile.full_name")
-                ? row
-                    .getValue("profile.full_name")
-                    ?.substring(0, 2)
-                    .toUpperCase()
-                : "UN"}
-            </AvatarFallback>
-          </Avatar>
-          <span>{row.getValue("profile.full_name")}</span>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const fullName = row.getValue("profile.full_name") as string | null;
+        return (
+          <div className="flex items-center space-x-2">
+            <Avatar>
+              <AvatarImage
+                src={`https://api.dicebear.com/7.x/pixel-art/svg?seed=${fullName}`}
+              />
+              <AvatarFallback>
+                {fullName ? fullName.substring(0, 2).toUpperCase() : "UN"}
+              </AvatarFallback>
+            </Avatar>
+            <span>{fullName}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "email",
