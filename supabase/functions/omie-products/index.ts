@@ -26,13 +26,13 @@ serve(async (req) => {
 
     console.log('Iniciando busca de produtos no Omie');
 
-    const response = await fetch('https://app.omie.com.br/api/v1/produtos/cadastro/', {
+    const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        call: 'ListarProdutos',
+        call: 'ListarCadastrosProduto',
         app_key: OMIE_APP_KEY,
         app_secret: OMIE_APP_SECRET,
         param: [{
