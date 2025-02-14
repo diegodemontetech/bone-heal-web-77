@@ -18,19 +18,25 @@ const Users = () => {
     try {
       let query = supabase
         .from("profiles")
-        .select("*, auth_users:id(email)")
+        .select(`
+          *,
+          auth_users:id(email)
+        `)
         .order("created_at", { ascending: false });
 
       if (contactTypeFilter) {
         query = query.eq("contact_type", contactTypeFilter);
       }
 
+      console.log('Executando query de usuários...');
       const { data, error } = await query;
+      console.log('Resultado da query:', data);
 
       if (error) {
         console.error("Erro ao buscar usuários:", error);
         toast.error("Erro ao buscar usuários: " + error.message);
       } else if (data) {
+        // Mapeia os dados considerando o retorno correto da query
         const usersWithProfile: UserWithProfile[] = (data as unknown as DatabaseProfile[]).map((profile) => ({
           id: profile.id,
           email: profile.auth_users?.[0]?.email || null,
@@ -46,8 +52,13 @@ const Users = () => {
             contact_type: profile.contact_type,
           },
         }));
+        
+        console.log('Usuários processados:', usersWithProfile);
         setUsers(usersWithProfile);
       }
+    } catch (error) {
+      console.error("Erro inesperado:", error);
+      toast.error("Erro inesperado ao buscar usuários");
     } finally {
       setLoading(false);
     }
