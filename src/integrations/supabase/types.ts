@@ -436,6 +436,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_progress: {
+        Row: {
+          created_at: string
+          id: string
+          last_processed_code: number | null
+          stats: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          last_processed_code?: number | null
+          stats?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_processed_code?: number | null
+          stats?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       whatsapp_messages_config: {
         Row: {
           active: boolean | null
