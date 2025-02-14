@@ -166,6 +166,7 @@ serve(async (req) => {
     let processedInThisRun = 0;
     const maxProcessPerRun = 50; // Limite por execução da função
 
+    // Removendo o filtro e usando apenas paginação
     const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -176,10 +177,7 @@ serve(async (req) => {
         param: [{
           pagina: 1,
           registros_por_pagina: batchSize,
-          apenas_importado_api: "N",
-          clientesFiltro: {
-            codigo_cliente_maior_que: lastProcessedCode
-          }
+          apenas_importado_api: "N"
         }]
       })
     });
@@ -189,7 +187,10 @@ serve(async (req) => {
 
     const clientes = listData.clientes_cadastro_resumido || [];
     
-    if (clientes.length === 0) {
+    // Filtramos manualmente os clientes após o último código processado
+    const clientesFiltrados = clientes.filter(c => c.codigo_cliente > lastProcessedCode);
+    
+    if (clientesFiltrados.length === 0) {
       // Sincronização completa
       return new Response(
         JSON.stringify({
@@ -204,7 +205,7 @@ serve(async (req) => {
 
     // Busca detalhes completos dos clientes do lote
     const clientesDetalhados = [];
-    for (const clienteResumido of clientes) {
+    for (const clienteResumido of clientesFiltrados) {
       const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -223,7 +224,7 @@ serve(async (req) => {
     // Processa o lote atual
     await processarLoteDeClientes(clientesDetalhados, supabase, stats);
 
-    const proximoBatch = clientes.length === batchSize;
+    const proximoBatch = clientesFiltrados.length === batchSize;
     
     return new Response(
       JSON.stringify({
@@ -231,7 +232,7 @@ serve(async (req) => {
         message: `Lote processado com sucesso: ${stats.created} criados, ${stats.updated} atualizados, ${stats.exists} já existentes, ${stats.skipped} pulados, ${stats.errors} erros`,
         stats,
         complete: !proximoBatch,
-        lastProcessedCode: clientes[clientes.length - 1].codigo_cliente
+        lastProcessedCode: clientesFiltrados[clientesFiltrados.length - 1].codigo_cliente
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
