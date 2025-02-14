@@ -178,7 +178,7 @@ serve(async (req) => {
           registros_por_pagina: batchSize,
           apenas_importado_api: "N",
           clientesFiltro: {
-            codigo_cliente_omie_maior_que: lastProcessedCode
+            codigo_cliente_maior_que: lastProcessedCode
           }
         }]
       })
