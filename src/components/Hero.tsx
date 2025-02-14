@@ -1,3 +1,4 @@
+
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -6,10 +7,10 @@ const Hero = () => {
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* Video Background with dark overlay */}
       <div className="absolute inset-0 w-full h-full">
-        <img
-          src="https://i.ibb.co/5g0Yg8N/d547c5cc-b17c-4dbe-a4b7-3d574fdf699b.gif"
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
+        <iframe
+          src="https://www.youtube.com/embed/8XWiSW_3yig?autoplay=1&controls=0&mute=1&loop=1&playlist=8XWiSW_3yig&showinfo=0&rel=0&modestbranding=1"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
           style={{
             filter: 'brightness(0.7)',
           }}
