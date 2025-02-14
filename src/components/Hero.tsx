@@ -9,11 +9,11 @@ const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* GIF Background with dark overlay */}
-      <div className="absolute inset-0 w-[120%] h-[120%] -left-[10%] -top-[10%]"> 
+      <div className="absolute inset-0 overflow-hidden"> 
         <img
           src="https://s3.gifyu.com/images/bSSkw.gif"
           alt="Bone Heal Background"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-125"
+          className="absolute w-[150%] h-[150%] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 object-cover pointer-events-none"
           style={{
             filter: 'brightness(0.7)',
           }}
