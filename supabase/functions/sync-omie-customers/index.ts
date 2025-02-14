@@ -13,46 +13,6 @@ const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-async function buscarCaracteristicasCliente(codigo_cliente_omie: number) {
-  const requestBody = {
-    call: 'ConsultarCaractCliente',
-    app_key: OMIE_APP_KEY,
-    app_secret: OMIE_APP_SECRET,
-    param: [{
-      codigo_cliente_omie
-    }]
-  };
-
-  const response = await fetch('https://app.omie.com.br/api/v1/geral/clientescaract/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  const data = await response.json();
-  return data.caracteristicas || [];
-}
-
-async function buscarTagsCliente(codigo_cliente_omie: number) {
-  const requestBody = {
-    call: 'ListarTags',
-    app_key: OMIE_APP_KEY,
-    app_secret: OMIE_APP_SECRET,
-    param: [{
-      nCodCliente: codigo_cliente_omie
-    }]
-  };
-
-  const response = await fetch('https://app.omie.com.br/api/v1/geral/clientetag/', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  const data = await response.json();
-  return data.tagsLista || [];
-}
-
 async function processarCliente(cliente: any, supabase: any) {
   try {
     if (!cliente.email) {
@@ -82,7 +42,14 @@ async function processarCliente(cliente: any, supabase: any) {
         .from('profiles')
         .update({ 
           omie_code: cliente.codigo_cliente_omie.toString(),
-          omie_sync: true
+          omie_sync: true,
+          cnpj: cliente.cnpj_cpf || null,
+          phone: cliente.telefone1_numero || null,
+          address: cliente.endereco || null,
+          city: cliente.cidade || null,
+          state: cliente.estado || null,
+          neighborhood: cliente.bairro || null,
+          zip_code: cliente.cep || null
         })
         .eq('id', existingUser.id);
 
@@ -141,6 +108,36 @@ async function processarCliente(cliente: any, supabase: any) {
   }
 }
 
+async function processarLoteDeClientes(clientes: any[], supabase: any, stats: any) {
+  for (const cliente of clientes) {
+    try {
+      const result = await processarCliente(cliente, supabase);
+      
+      if (result.status === 'created') stats.created++;
+      else if (result.status === 'updated') stats.updated++;
+      else if (result.status === 'skipped') stats.skipped++;
+      else if (result.status === 'error') stats.errors++;
+      else if (result.status === 'exists') stats.exists++;
+
+      // Salvamos o progresso após cada cliente
+      await supabase
+        .from('sync_progress')
+        .upsert({ 
+          id: 'omie_customers',
+          last_processed_code: cliente.codigo_cliente,
+          stats: stats,
+          updated_at: new Date().toISOString()
+        });
+
+    } catch (error) {
+      console.error(`Erro ao processar cliente ${cliente.codigo_cliente}:`, error);
+      stats.errors++;
+    }
+    // Pequena pausa entre clientes para não sobrecarregar
+    await new Promise(resolve => setTimeout(resolve, 200));
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -152,90 +149,89 @@ serve(async (req) => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    console.log('Iniciando sincronização de clientes Omie');
+    
+    // Recupera o progresso anterior
+    const { data: progress } = await supabase
+      .from('sync_progress')
+      .select('*')
+      .eq('id', 'omie_customers')
+      .single();
 
-    let page = 1;
-    const registersPerPage = 50;
-    let hasMorePages = true;
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
-    let errors = 0;
-    let exists = 0;
+    let lastProcessedCode = progress?.last_processed_code || 0;
+    let stats = progress?.stats || { created: 0, updated: 0, skipped: 0, errors: 0, exists: 0 };
 
-    while (hasMorePages) {
-      try {
-        const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            call: 'ListarClientesResumido',
-            app_key: OMIE_APP_KEY,
-            app_secret: OMIE_APP_SECRET,
-            param: [{
-              pagina: page,
-              registros_por_pagina: registersPerPage,
-              apenas_importado_api: "N"
-            }]
-          })
-        });
+    console.log('Iniciando/Continuando sincronização a partir do código:', lastProcessedCode);
 
-        const listData = await listResponse.json();
-        if (listData.faultstring) throw new Error(listData.faultstring);
+    const batchSize = 10; // Processa 10 clientes por vez
+    let processedInThisRun = 0;
+    const maxProcessPerRun = 50; // Limite por execução da função
 
-        const clientes = listData.clientes_cadastro_resumido || [];
-        console.log(`Processando página ${page} - ${clientes.length} clientes`);
-
-        for (const clienteResumido of clientes) {
-          try {
-            const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                call: 'ConsultarCliente',
-                app_key: OMIE_APP_KEY,
-                app_secret: OMIE_APP_SECRET,
-                param: [{ codigo_cliente_omie: clienteResumido.codigo_cliente }]
-              })
-            });
-
-            const cliente = await detailResponse.json();
-            const result = await processarCliente(cliente, supabase);
-
-            if (result.status === 'created') created++;
-            else if (result.status === 'updated') updated++;
-            else if (result.status === 'skipped') skipped++;
-            else if (result.status === 'error') errors++;
-            else if (result.status === 'exists') exists++;
-
-          } catch (error) {
-            console.error(`Erro ao processar cliente ${clienteResumido.codigo_cliente}:`, error);
-            errors++;
+    const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        call: 'ListarClientesResumido',
+        app_key: OMIE_APP_KEY,
+        app_secret: OMIE_APP_SECRET,
+        param: [{
+          pagina: 1,
+          registros_por_pagina: batchSize,
+          apenas_importado_api: "N",
+          clientesFiltro: {
+            codigo_cliente_omie_maior_que: lastProcessedCode
           }
+        }]
+      })
+    });
 
-          // Aguarda um pouco entre cada cliente para evitar sobrecarga
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+    const listData = await listResponse.json();
+    if (listData.faultstring) throw new Error(listData.faultstring);
 
-        hasMorePages = listData.total_de_paginas > page;
-        page++;
-
-        if (hasMorePages) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-      } catch (error) {
-        console.error(`Erro ao processar página ${page}:`, error);
-        errors++;
-        break;
-      }
+    const clientes = listData.clientes_cadastro_resumido || [];
+    
+    if (clientes.length === 0) {
+      // Sincronização completa
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Sincronização completa!',
+          stats,
+          complete: true
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
+    // Busca detalhes completos dos clientes do lote
+    const clientesDetalhados = [];
+    for (const clienteResumido of clientes) {
+      const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          call: 'ConsultarCliente',
+          app_key: OMIE_APP_KEY,
+          app_secret: OMIE_APP_SECRET,
+          param: [{ codigo_cliente_omie: clienteResumido.codigo_cliente }]
+        })
+      });
+      
+      const clienteDetalhado = await detailResponse.json();
+      clientesDetalhados.push(clienteDetalhado);
+    }
+
+    // Processa o lote atual
+    await processarLoteDeClientes(clientesDetalhados, supabase, stats);
+
+    const proximoBatch = clientes.length === batchSize;
+    
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Sincronização concluída: ${created} criados, ${updated} atualizados, ${exists} já existentes, ${skipped} pulados, ${errors} erros`,
-        stats: { created, updated, exists, skipped, errors }
+        message: `Lote processado com sucesso: ${stats.created} criados, ${stats.updated} atualizados, ${stats.exists} já existentes, ${stats.skipped} pulados, ${stats.errors} erros`,
+        stats,
+        complete: !proximoBatch,
+        lastProcessedCode: clientes[clientes.length - 1].codigo_cliente
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
