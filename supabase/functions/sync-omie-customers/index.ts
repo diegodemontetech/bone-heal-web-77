@@ -183,15 +183,23 @@ serve(async (req) => {
     });
 
     const listData = await listResponse.json();
-    if (listData.faultstring) throw new Error(listData.faultstring);
+    console.log('Resposta da API ListarClientesResumido:', listData);
+    
+    if (listData.faultstring) {
+      console.error('Erro da API Omie:', listData.faultstring);
+      throw new Error(listData.faultstring);
+    }
 
     const clientes = listData.clientes_cadastro_resumido || [];
+    console.log('Total de clientes retornados:', clientes.length);
     
     // Filtramos manualmente os clientes após o último código processado
     const clientesFiltrados = clientes.filter(c => c.codigo_cliente > lastProcessedCode);
+    console.log('Clientes filtrados:', clientesFiltrados.length);
     
     if (clientesFiltrados.length === 0) {
       // Sincronização completa
+      console.log('Nenhum cliente novo para processar');
       return new Response(
         JSON.stringify({
           success: true,
@@ -206,21 +214,49 @@ serve(async (req) => {
     // Busca detalhes completos dos clientes do lote
     const clientesDetalhados = [];
     for (const clienteResumido of clientesFiltrados) {
-      console.log('Buscando detalhes do cliente:', clienteResumido.codigo_cliente);
-      const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          call: 'ConsultarCliente',
-          app_key: OMIE_APP_KEY,
-          app_secret: OMIE_APP_SECRET,
-          param: [{ codigo_cliente_omie: clienteResumido.codigo_cliente }]
-        })
-      });
-      
-      const clienteDetalhado = await detailResponse.json();
-      console.log('Detalhes do cliente:', clienteDetalhado);
-      clientesDetalhados.push(clienteDetalhado.cadastro);
+      try {
+        console.log('Buscando detalhes do cliente:', clienteResumido.codigo_cliente);
+        const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            call: 'ConsultarCliente',
+            app_key: OMIE_APP_KEY,
+            app_secret: OMIE_APP_SECRET,
+            param: [{ codigo_cliente_omie: clienteResumido.codigo_cliente }]
+          })
+        });
+        
+        const clienteDetalhado = await detailResponse.json();
+        console.log('Detalhes do cliente recebidos:', clienteResumido.codigo_cliente);
+        
+        if (clienteDetalhado.faultstring) {
+          console.error('Erro ao buscar detalhes do cliente:', clienteDetalhado.faultstring);
+          continue;
+        }
+        
+        if (clienteDetalhado.cadastro) {
+          clientesDetalhados.push(clienteDetalhado.cadastro);
+        } else {
+          console.error('Cliente sem dados de cadastro:', clienteResumido.codigo_cliente);
+        }
+      } catch (error) {
+        console.error('Erro ao processar cliente:', clienteResumido.codigo_cliente, error);
+        continue;
+      }
+    }
+
+    console.log('Total de clientes detalhados:', clientesDetalhados.length);
+
+    if (clientesDetalhados.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Nenhum cliente válido para processar neste lote',
+          stats
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Processa o lote atual
@@ -242,8 +278,15 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro na sincronização:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        message: 'Erro ao processar a sincronização'
+      }),
+      { 
+        status: 200, // Mudando para 200 para evitar erro na edge function
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });
