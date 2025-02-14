@@ -206,6 +206,7 @@ serve(async (req) => {
     // Busca detalhes completos dos clientes do lote
     const clientesDetalhados = [];
     for (const clienteResumido of clientesFiltrados) {
+      console.log('Buscando detalhes do cliente:', clienteResumido.codigo_cliente);
       const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -218,7 +219,8 @@ serve(async (req) => {
       });
       
       const clienteDetalhado = await detailResponse.json();
-      clientesDetalhados.push(clienteDetalhado);
+      console.log('Detalhes do cliente:', clienteDetalhado);
+      clientesDetalhados.push(clienteDetalhado.cadastro);
     }
 
     // Processa o lote atual
