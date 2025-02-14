@@ -9,7 +9,7 @@ const Footer = () => {
           {/* Company Info */}
           <div>
             <img 
-              src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/images/logo.png"
+              src="/lovable-uploads/675ec55f-a56b-418f-b97b-4381493c3b3f.png"
               alt="Bone Heal®"
               className="h-10 mb-6 brightness-0 invert"
             />

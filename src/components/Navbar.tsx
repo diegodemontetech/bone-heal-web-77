@@ -68,7 +68,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-20">
           <Link to="/" className="flex items-center">
             <img 
-              src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/images/logo.png" 
+              src="/lovable-uploads/675ec55f-a56b-418f-b97b-4381493c3b3f.png"
               alt="BoneHeal" 
               className="h-8 md:h-10"
             />
