@@ -1,3 +1,4 @@
+
 import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -9,7 +10,7 @@ const Footer = () => {
           {/* Company Info */}
           <div>
             <img 
-              src="https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/dados_processo_seletivo/logo_empresa/167858/bone-heal-logo-01.png"
+              src="https://i.ibb.co/Mkv44CY/7c232e-500-x-100-px-1.png"
               alt="Bone Heal®"
               className="h-12 mb-6 brightness-0 invert"
             />
