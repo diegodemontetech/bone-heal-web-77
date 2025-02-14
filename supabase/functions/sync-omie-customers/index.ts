@@ -56,73 +56,94 @@ async function buscarTagsCliente(codigo_cliente_omie: number) {
 async function processarCliente(cliente: any, supabase: any) {
   try {
     if (!cliente.email) {
-      console.log(`Pulando ${cliente.codigo_cliente_omie} - email não encontrado`);
-      return { status: 'skipped' };
+      console.log(`Pulando cliente ${cliente.codigo_cliente_omie} - email não encontrado`);
+      return { status: 'skipped', reason: 'no_email' };
     }
 
-    // Busca características e tags do cliente
-    const [caracteristicas, tags] = await Promise.all([
-      buscarCaracteristicasCliente(cliente.codigo_cliente_omie),
-      buscarTagsCliente(cliente.codigo_cliente_omie)
-    ]);
-
-    // Procura usuário existente
+    // Procura usuário existente pelo código Omie
     const { data: existingProfile } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, email:auth_users(email)')
       .eq('omie_code', cliente.codigo_cliente_omie.toString())
-      .maybeSingle();
+      .single();
 
-    let userId;
-    if (existingProfile?.id) {
-      userId = existingProfile.id;
-      console.log(`Usuário encontrado pelo código Omie ${cliente.codigo_cliente_omie}`);
-      return { status: 'updated', userId };
+    if (existingProfile) {
+      console.log(`Cliente ${cliente.codigo_cliente_omie} já existe no sistema`);
+      return { status: 'exists', id: existingProfile.id };
     }
 
-    // Busca por email
+    // Busca usuário pelo email
     const { data: { users } } = await supabase.auth.admin.listUsers();
     const existingUser = users?.find(u => u.email?.toLowerCase() === cliente.email.toLowerCase());
 
     if (existingUser) {
-      userId = existingUser.id;
-      console.log(`Usuário encontrado pelo email ${cliente.email}`);
-      return { status: 'updated', userId };
+      // Atualiza o perfil existente com o código Omie
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          omie_code: cliente.codigo_cliente_omie.toString(),
+          omie_sync: true
+        })
+        .eq('id', existingUser.id);
+
+      if (updateError) throw updateError;
+
+      console.log(`Perfil atualizado para o cliente ${cliente.codigo_cliente_omie}`);
+      return { status: 'updated', id: existingUser.id };
+    }
+
+    // Se chegou aqui, é um cliente novo
+    const numeroDocumento = (cliente.cnpj_cpf || '').replace(/[^\d]/g, '');
+    if (!numeroDocumento) {
+      console.log(`Pulando cliente ${cliente.codigo_cliente_omie} - CPF/CNPJ não encontrado`);
+      return { status: 'skipped', reason: 'no_document' };
     }
 
     // Cria novo usuário
-    const numeroDocumento = cliente.cnpj_cpf.replace(/[^\d]/g, '');
-    if (!numeroDocumento) {
-      console.log(`Pulando ${cliente.codigo_cliente_omie} - CPF/CNPJ não encontrado`);
-      return { status: 'skipped' };
-    }
-
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: cliente.email,
       password: numeroDocumento,
       email_confirm: true,
-      user_metadata: { full_name: cliente.razao_social }
+      user_metadata: { 
+        full_name: cliente.razao_social,
+        omie_code: cliente.codigo_cliente_omie.toString()
+      }
     });
 
     if (createError) {
-      throw createError;
+      console.error(`Erro ao criar usuário ${cliente.email}:`, createError);
+      return { status: 'error', error: createError };
     }
 
-    userId = newUser.user.id;
-    console.log(`Novo usuário criado: ${cliente.email}`);
-    return { status: 'created', userId };
+    // Atualiza o perfil com dados adicionais do Omie
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        omie_code: cliente.codigo_cliente_omie.toString(),
+        omie_sync: true,
+        cnpj: cliente.cnpj_cpf || null,
+        phone: cliente.telefone1_numero || null,
+        address: cliente.endereco || null,
+        city: cliente.cidade || null,
+        state: cliente.estado || null,
+        neighborhood: cliente.bairro || null,
+        zip_code: cliente.cep || null
+      })
+      .eq('id', newUser.user.id);
+
+    if (profileError) throw profileError;
+
+    console.log(`Novo usuário criado para o cliente ${cliente.codigo_cliente_omie}`);
+    return { status: 'created', id: newUser.user.id };
   } catch (error) {
     console.error(`Erro ao processar cliente ${cliente.codigo_cliente_omie}:`, error);
-    throw error;
+    return { status: 'error', error };
   }
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: corsHeaders
-    });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -140,6 +161,7 @@ serve(async (req) => {
     let updated = 0;
     let skipped = 0;
     let errors = 0;
+    let exists = 0;
 
     while (hasMorePages) {
       try {
@@ -183,14 +205,16 @@ serve(async (req) => {
             if (result.status === 'created') created++;
             else if (result.status === 'updated') updated++;
             else if (result.status === 'skipped') skipped++;
-
-            // Aguarda um pouco entre cada cliente para evitar sobrecarga
-            await new Promise(resolve => setTimeout(resolve, 500));
+            else if (result.status === 'error') errors++;
+            else if (result.status === 'exists') exists++;
 
           } catch (error) {
             console.error(`Erro ao processar cliente ${clienteResumido.codigo_cliente}:`, error);
             errors++;
           }
+
+          // Aguarda um pouco entre cada cliente para evitar sobrecarga
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
 
         hasMorePages = listData.total_de_paginas > page;
@@ -210,28 +234,17 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Sincronização concluída: ${created} criados, ${updated} atualizados, ${skipped} pulados, ${errors} erros`,
-        stats: { created, updated, skipped, errors }
+        message: `Sincronização concluída: ${created} criados, ${updated} atualizados, ${exists} já existentes, ${skipped} pulados, ${errors} erros`,
+        stats: { created, updated, exists, skipped, errors }
       }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('Erro na sincronização:', error);
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -70,7 +69,7 @@ const Navbar = () => {
             <img 
               src="https://i.ibb.co/Mkv44CY/7c232e-500-x-100-px-1.png" 
               alt="BoneHeal" 
-              className="h-6 md:h-8"
+              className="h-8 md:h-10"
             />
           </Link>
 

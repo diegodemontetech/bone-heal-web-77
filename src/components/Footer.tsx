@@ -1,4 +1,3 @@
-
 import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -12,7 +11,7 @@ const Footer = () => {
             <img 
               src="https://i.ibb.co/Mkv44CY/7c232e-500-x-100-px-1.png"
               alt="Bone Heal®"
-              className="h-12 mb-6 brightness-0 invert"
+              className="h-10 mb-6 brightness-0 invert"
             />
             <p className="text-neutral-400 mb-6">
               Inovação em regeneração óssea para procedimentos odontológicos.
