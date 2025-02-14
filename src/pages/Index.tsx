@@ -5,7 +5,9 @@ import Features from "@/components/Features";
 import ProductsPreview from "@/components/ProductsPreview";
 import Recognition from "@/components/Recognition";
 import CallToAction from "@/components/CallToAction";
-import TestOmieSync from "@/components/TestOmieSync";
+import Footer from "@/components/Footer";
+import StudiesPreview from "@/components/StudiesPreview";
+import NewsPreview from "@/components/NewsPreview";
 
 const Index = () => {
   return (
@@ -14,9 +16,11 @@ const Index = () => {
       <Hero />
       <Features />
       <ProductsPreview />
+      <StudiesPreview />
       <Recognition />
+      <NewsPreview />
       <CallToAction />
-      <TestOmieSync />
+      <Footer />
     </>
   );
 };
