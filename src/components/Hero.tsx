@@ -6,11 +6,11 @@ const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* Video Background with dark overlay */}
-      <div className="absolute inset-0 w-full h-[105%] -bottom-[5%]"> {/* Aumentado altura e ajustado posição */}
+      <div className="absolute inset-0 w-[120%] h-[120%] -left-[10%] -top-[10%]"> {/* Aumentadas dimensões e ajustado posicionamento */}
         <iframe
           src="https://www.youtube.com/embed/8XWiSW_3yig?autoplay=1&controls=0&mute=1&loop=1&playlist=8XWiSW_3yig&showinfo=0&rel=0&modestbranding=1"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-110" // Adicionado scale-110 para garantir cobertura
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-125" // Aumentado scale para 125%
           style={{
             filter: 'brightness(0.7)',
           }}
