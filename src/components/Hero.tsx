@@ -8,20 +8,16 @@ const Hero = () => {
 
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
-      {/* Video Background with dark overlay */}
+      {/* GIF Background with dark overlay */}
       <div className="absolute inset-0 w-[120%] h-[120%] -left-[10%] -top-[10%]"> 
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
+        <img
+          src="https://s3.gifyu.com/images/bSSkw.gif"
+          alt="Bone Heal Background"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-125"
           style={{
             filter: 'brightness(0.7)',
           }}
-        >
-          <source src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/bone-heal-video.mp4" type="video/mp4" />
-        </video>
+        />
       </div>
 
       {/* Background gradient overlay mais intenso para uniformidade */}
