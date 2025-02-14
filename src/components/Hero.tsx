@@ -10,31 +10,18 @@ const Hero = () => {
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* Video Background with dark overlay */}
       <div className="absolute inset-0 w-[120%] h-[120%] -left-[10%] -top-[10%]"> 
-        {isMobile ? (
-          // Video elemento nativo para mobile
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-125"
-            style={{
-              filter: 'brightness(0.7)',
-            }}
-          >
-            <source src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/bone-heal-video.mp4" type="video/mp4" />
-          </video>
-        ) : (
-          // YouTube iframe para desktop
-          <iframe
-            src="https://www.youtube.com/embed/8XWiSW_3yig?autoplay=1&controls=0&mute=1&loop=1&playlist=8XWiSW_3yig&showinfo=0&rel=0&modestbranding=1&playsinline=1"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-125"
-            style={{
-              filter: 'brightness(0.7)',
-            }}
-          />
-        )}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-125"
+          style={{
+            filter: 'brightness(0.7)',
+          }}
+        >
+          <source src="https://gflhpcvldqoqjikeepjh.supabase.co/storage/v1/object/public/videos/bone-heal-video.mp4" type="video/mp4" />
+        </video>
       </div>
 
       {/* Background gradient overlay mais intenso para uniformidade */}
