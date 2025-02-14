@@ -1,3 +1,4 @@
+
 import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -9,7 +10,7 @@ const Footer = () => {
           {/* Company Info */}
           <div>
             <img 
-              src="/lovable-uploads/675ec55f-a56b-418f-b97b-4381493c3b3f.png"
+              src="/lovable-uploads/c5a855af-42eb-4ffd-8fa0-bacd9ce220b3.png"
               alt="Bone Heal®"
               className="h-10 mb-6 brightness-0 invert"
             />
