@@ -6,19 +6,19 @@ const Hero = () => {
   return (
     <div className="relative min-h-screen flex items-center overflow-hidden bg-primary">
       {/* Video Background with dark overlay */}
-      <div className="absolute inset-0 w-full h-full">
+      <div className="absolute inset-0 w-full h-[105%] -bottom-[5%]"> {/* Aumentado altura e ajustado posição */}
         <iframe
           src="https://www.youtube.com/embed/8XWiSW_3yig?autoplay=1&controls=0&mute=1&loop=1&playlist=8XWiSW_3yig&showinfo=0&rel=0&modestbranding=1"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none scale-110" // Adicionado scale-110 para garantir cobertura
           style={{
             filter: 'brightness(0.7)',
           }}
         />
       </div>
 
-      {/* Background gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/85 via-primary/80 to-primary-dark/90" />
+      {/* Background gradient overlay mais intenso para uniformidade */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/85 to-primary-dark/95" />
 
       {/* Content Layer */}
       <div className="relative max-w-[1440px] mx-auto px-8 lg:px-24 py-32 mt-20">
