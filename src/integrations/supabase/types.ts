@@ -541,6 +541,7 @@ export type Database = {
           cnpj: string | null
           cpf: string | null
           created_at: string
+          crm: string | null
           cro: string | null
           full_name: string | null
           id: string
@@ -560,6 +561,7 @@ export type Database = {
           cnpj?: string | null
           cpf?: string | null
           created_at?: string
+          crm?: string | null
           cro?: string | null
           full_name?: string | null
           id: string
@@ -579,6 +581,7 @@ export type Database = {
           cnpj?: string | null
           cpf?: string | null
           created_at?: string
+          crm?: string | null
           cro?: string | null
           full_name?: string | null
           id?: string
