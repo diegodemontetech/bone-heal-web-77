@@ -23,6 +23,8 @@ import News from "@/pages/News";
 import Studies from "@/pages/Studies";
 import Shipping from "@/pages/Shipping";
 import Sync from "@/pages/admin/Sync";
+import Tickets from "@/pages/support/Tickets";
+import TicketDetails from "@/pages/support/TicketDetails";
 
 const routes = createBrowserRouter([
   {
@@ -108,6 +110,14 @@ const routes = createBrowserRouter([
   {
     path: "/admin/sync",
     element: <Sync />,
+  },
+  {
+    path: "/support/tickets",
+    element: <Tickets />,
+  },
+  {
+    path: "/support/tickets/:id",
+    element: <TicketDetails />,
   },
 ]);
 
