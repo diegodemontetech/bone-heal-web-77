@@ -3,7 +3,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import WhatsAppWidget from "@/components/WhatsAppWidget";
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { supabase } from './integrations/supabase/client';
 import Index from "./pages/Index";
@@ -86,7 +85,6 @@ function App() {
         <RouterProvider router={router} />
         <Toaster />
         <Sonner position="top-right" />
-        <WhatsAppWidget />
       </QueryClientProvider>
     </SessionContextProvider>
   );
