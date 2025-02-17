@@ -242,42 +242,63 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          discount: number
           id: string
+          installments: number | null
           items: Json | null
+          mp_preference_id: string | null
           omie_last_update: string | null
           omie_order_id: string | null
           omie_status: string | null
+          payment_method: string | null
           shipping_address: Json | null
+          shipping_fee: number
           status: string
+          subtotal: number
           total_amount: number
           updated_at: string
           user_id: string | null
+          voucher_id: string | null
         }
         Insert: {
           created_at?: string
+          discount?: number
           id?: string
+          installments?: number | null
           items?: Json | null
+          mp_preference_id?: string | null
           omie_last_update?: string | null
           omie_order_id?: string | null
           omie_status?: string | null
+          payment_method?: string | null
           shipping_address?: Json | null
+          shipping_fee?: number
           status?: string
+          subtotal?: number
           total_amount: number
           updated_at?: string
           user_id?: string | null
+          voucher_id?: string | null
         }
         Update: {
           created_at?: string
+          discount?: number
           id?: string
+          installments?: number | null
           items?: Json | null
+          mp_preference_id?: string | null
           omie_last_update?: string | null
           omie_order_id?: string | null
           omie_status?: string | null
+          payment_method?: string | null
           shipping_address?: Json | null
+          shipping_fee?: number
           status?: string
+          subtotal?: number
           total_amount?: number
           updated_at?: string
           user_id?: string | null
+          voucher_id?: string | null
         }
         Relationships: [
           {
@@ -285,6 +306,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
             referencedColumns: ["id"]
           },
         ]
@@ -594,6 +622,45 @@ export type Database = {
           last_processed_code?: number | null
           stats?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      vouchers: {
+        Row: {
+          code: string
+          created_at: string | null
+          current_uses: number | null
+          discount_type: string
+          discount_value: number
+          id: string
+          max_uses: number | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          max_uses?: number | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          current_uses?: number | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          max_uses?: number | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_until?: string | null
         }
         Relationships: []
       }
