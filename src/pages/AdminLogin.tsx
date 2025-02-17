@@ -5,12 +5,13 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Buscar sessão atual
   const { data: session, isLoading: isSessionLoading } = useQuery({
@@ -53,6 +54,9 @@ const AdminLogin = () => {
       async (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession);
         
+        // Atualizar o cache do React Query quando a sessão mudar
+        queryClient.setQueryData(["session"], currentSession);
+        
         if (event === "SIGNED_IN" && currentSession) {
           try {
             const { data: profile, error } = await supabase
@@ -62,6 +66,9 @@ const AdminLogin = () => {
               .maybeSingle();
 
             if (error) throw error;
+
+            // Atualizar o cache do perfil
+            queryClient.setQueryData(["profile", currentSession.user.id], profile);
 
             if (profile?.is_admin) {
               navigate("/admin");
@@ -73,7 +80,7 @@ const AdminLogin = () => {
               });
               await supabase.auth.signOut();
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error("Error checking admin status:", error);
             toast({
               title: "Erro",
@@ -88,7 +95,7 @@ const AdminLogin = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [navigate, toast, queryClient]);
 
   // Redirecionar se já estiver logado como admin
   useEffect(() => {
