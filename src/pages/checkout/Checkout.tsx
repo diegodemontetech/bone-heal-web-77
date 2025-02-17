@@ -6,8 +6,12 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, CreditCard, QrCode } from "lucide-react";
 import { toast } from "sonner";
+import OrderSummary from "@/components/orders/OrderSummary";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Checkout = () => {
   const { cartItems, total, clear } = useCart();
@@ -15,6 +19,10 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [zipCode, setZipCode] = useState("");
+  const [shippingFee, setShippingFee] = useState(0);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
 
   useEffect(() => {
     if (!session?.user) {
@@ -35,14 +43,53 @@ const Checkout = () => {
       }
 
       setProfile(data);
+      if (data.zip_code) {
+        setZipCode(data.zip_code);
+        calculateShipping(data.zip_code);
+      }
     };
 
     getProfile();
   }, [session, navigate]);
 
+  const calculateShipping = async (zip: string) => {
+    if (!zip || zip.length !== 8 || cartItems.length === 0) return;
+
+    setIsCalculatingShipping(true);
+    try {
+      const { data: shipping, error } = await supabase.functions.invoke(
+        "omie-integration",
+        {
+          body: {
+            action: "calculate_shipping",
+            zip_code: zip,
+            items: cartItems.map(item => ({
+              product_id: item.id,
+              quantity: item.quantity,
+              price: item.price
+            })),
+          },
+        }
+      );
+
+      if (error) throw error;
+      setShippingFee(shipping?.value || 0);
+    } catch (error) {
+      console.error("Error calculating shipping:", error);
+      toast.error("Erro ao calcular frete");
+    } finally {
+      setIsCalculatingShipping(false);
+    }
+  };
+
   const handleCheckout = async () => {
     try {
       setLoading(true);
+
+      if (!zipCode) {
+        toast.error("Por favor, informe o CEP para entrega");
+        return;
+      }
 
       // Criar pedido
       const { data: order, error: orderError } = await supabase
@@ -54,8 +101,12 @@ const Checkout = () => {
             quantity: item.quantity,
             price: item.price,
           })),
-          total_amount: total,
+          shipping_address: { zip_code: zipCode },
+          subtotal: total,
+          shipping_fee: shippingFee,
+          total_amount: total + shippingFee,
           status: "pending",
+          payment_method: paymentMethod,
         })
         .select()
         .single();
@@ -89,7 +140,8 @@ const Checkout = () => {
         .from("payments")
         .insert({
           order_id: order.id,
-          amount: total,
+          amount: total + shippingFee,
+          payment_method: paymentMethod,
           mercadopago_preference_id: preference.id,
         });
 
@@ -126,48 +178,91 @@ const Checkout = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Checkout</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="border-b pb-4">
-              <h3 className="font-medium mb-2">Itens do pedido</h3>
-              {cartItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-center py-2">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-gray-500">
-                      Quantidade: {item.quantity || 1}
-                    </p>
-                  </div>
-                  <p className="font-medium">
-                    R$ {(item.price * (item.quantity || 1)).toFixed(2)}
-                  </p>
-                </div>
-              ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações de Entrega</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="zipCode">CEP</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="zipCode"
+                  placeholder="00000-000"
+                  value={zipCode}
+                  onChange={(e) => {
+                    const zip = e.target.value.replace(/\D/g, "");
+                    setZipCode(zip);
+                    if (zip.length === 8) {
+                      calculateShipping(zip);
+                    }
+                  }}
+                  maxLength={8}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => calculateShipping(zipCode)}
+                  disabled={zipCode.length !== 8 || isCalculatingShipping}
+                >
+                  {isCalculatingShipping ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Calcular"
+                  )}
+                </Button>
+              </div>
             </div>
 
-            <div className="flex justify-between items-center text-lg font-bold">
-              <span>Total</span>
-              <span>R$ {total.toFixed(2)}</span>
-            </div>
+            <Tabs defaultValue="credit" onValueChange={(v) => setPaymentMethod(v as "credit" | "pix")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="credit">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Cartão
+                </TabsTrigger>
+                <TabsTrigger value="pix">
+                  <QrCode className="w-4 h-4 mr-2" />
+                  PIX
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="credit">
+                <p className="text-sm text-muted-foreground">
+                  Você será redirecionado para a página segura do Mercado Pago para finalizar o pagamento.
+                </p>
+              </TabsContent>
+              <TabsContent value="pix">
+                <p className="text-sm text-muted-foreground">
+                  Você receberá um QR Code para pagamento após confirmar o pedido.
+                </p>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Resumo do Pedido</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <OrderSummary
+              items={cartItems}
+              subtotal={total}
+              shippingFee={shippingFee}
+              total={total + shippingFee}
+            />
 
             <Button
-              className="w-full"
+              className="w-full mt-6"
               size="lg"
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || !zipCode}
             >
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Processando..." : "Finalizar Compra"}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
