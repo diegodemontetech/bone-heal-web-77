@@ -57,23 +57,35 @@ const Checkout = () => {
 
     setIsCalculatingShipping(true);
     try {
-      const { data: shipping, error } = await supabase.functions.invoke(
-        "omie-integration",
-        {
-          body: {
-            action: "calculate_shipping",
-            zip_code: zip,
-            items: cartItems.map(item => ({
-              product_id: item.id,
-              quantity: item.quantity,
-              price: item.price
-            })),
-          },
-        }
-      );
+      // Primeiro, vamos obter o estado do CEP usando a API dos Correios
+      const { data: correiosData, error: correiosError } = await supabase.functions.invoke("correios-shipping", {
+        body: {
+          zipCodeOrigin: "04180112",
+          zipCodeDestination: zip,
+          weight: 1,
+          length: 20,
+          width: 20,
+          height: 20,
+        },
+      });
 
-      if (error) throw error;
-      setShippingFee(shipping?.value || 0);
+      if (correiosError) throw correiosError;
+
+      // Agora vamos buscar a taxa de frete baseada no estado
+      const { data: shippingRate, error: shippingError } = await supabase
+        .from('shipping_rates')
+        .select('rate, delivery_days')
+        .eq('state', correiosData.state)
+        .single();
+
+      if (shippingError) throw shippingError;
+
+      if (!shippingRate) {
+        throw new Error("Não foi possível calcular o frete para este CEP");
+      }
+
+      setShippingFee(shippingRate.rate);
+      toast.success(`Frete calculado: entrega em ${shippingRate.delivery_days} dias úteis`);
     } catch (error) {
       console.error("Error calculating shipping:", error);
       toast.error("Erro ao calcular frete");
