@@ -5,17 +5,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/product";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ProductFilters } from "@/components/products/ProductFilters";
+import { ProductFilters, FilterValues } from "@/components/products/ProductFilters";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import { Loader2 } from "lucide-react";
 
+const initialFilters: FilterValues = {
+  search: "",
+  priceRange: [0, 1000],
+  category: "",
+  sortBy: "name-asc",
+};
+
 export default function Products() {
-  const [filters, setFilters] = useState({
-    search: "",
-    priceRange: [0, 1000],
-    category: "",
-    sortBy: "name-asc",
-  });
+  const [filters, setFilters] = useState<FilterValues>(initialFilters);
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", filters],
@@ -48,6 +50,10 @@ export default function Products() {
     },
   });
 
+  const handleFilterChange = (newFilters: FilterValues) => {
+    setFilters(newFilters);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -56,7 +62,10 @@ export default function Products() {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar with filters */}
           <aside className="w-full md:w-64 shrink-0">
-            <ProductFilters onFilterChange={setFilters} />
+            <ProductFilters 
+              onFilterChange={handleFilterChange} 
+              initialValues={filters}
+            />
           </aside>
 
           {/* Main content */}

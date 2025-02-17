@@ -23,29 +23,31 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 
-const filterSchema = z.object({
-  search: z.string(),
-  priceRange: z.array(z.number()),
-  category: z.string().optional(),
-  sortBy: z.string(),
-});
-
-type FilterValues = z.infer<typeof filterSchema>;
+export interface FilterValues {
+  search: string;
+  priceRange: number[];
+  category: string;
+  sortBy: string;
+}
 
 interface ProductFiltersProps {
   onFilterChange: (values: FilterValues) => void;
+  initialValues: FilterValues;
 }
 
-export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
-  const [priceRange, setPriceRange] = useState([0, 1000]);
+const filterSchema = z.object({
+  search: z.string(),
+  priceRange: z.array(z.number()),
+  category: z.string(),
+  sortBy: z.string(),
+});
+
+export function ProductFilters({ onFilterChange, initialValues }: ProductFiltersProps) {
+  const [priceRange, setPriceRange] = useState(initialValues.priceRange);
 
   const form = useForm<FilterValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: {
-      search: "",
-      priceRange: [0, 1000],
-      sortBy: "name-asc",
-    },
+    defaultValues: initialValues,
   });
 
   const onSubmit = (data: FilterValues) => {
