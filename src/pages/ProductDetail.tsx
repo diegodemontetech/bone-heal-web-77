@@ -9,32 +9,34 @@ import { Loader2, Play } from "lucide-react";
 import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import ProductTabs from "@/components/product/ProductTabs";
+import { useBrowseHistory } from "@/hooks/use-browse-history";
+import { useEffect } from "react";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { addToHistory } = useBrowseHistory();
 
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
-      console.log("Fetching product with slug:", slug);
-      
       const { data, error } = await supabase
         .from("products")
         .select()
         .eq("slug", slug)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching product:", error);
-        throw error;
-      }
-      
-      console.log("Product data:", data);
+      if (error) throw error;
       return data as Product;
     },
     enabled: !!slug,
-    retry: 1
+    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
   });
+
+  useEffect(() => {
+    if (product) {
+      addToHistory(product);
+    }
+  }, [product, addToHistory]);
 
   if (isLoading) {
     return (
