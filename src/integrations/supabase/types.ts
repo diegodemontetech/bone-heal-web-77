@@ -131,34 +131,40 @@ export type Database = {
       email_templates: {
         Row: {
           active: boolean | null
+          auto_send: boolean | null
           body: string
           created_at: string
           event_type: string
           id: string
           name: string
           subject: string
+          trigger_event: string | null
           updated_at: string
           variables: Json | null
         }
         Insert: {
           active?: boolean | null
+          auto_send?: boolean | null
           body: string
           created_at?: string
           event_type: string
           id?: string
           name: string
           subject: string
+          trigger_event?: string | null
           updated_at?: string
           variables?: Json | null
         }
         Update: {
           active?: boolean | null
+          auto_send?: boolean | null
           body?: string
           created_at?: string
           event_type?: string
           id?: string
           name?: string
           subject?: string
+          trigger_event?: string | null
           updated_at?: string
           variables?: Json | null
         }
@@ -283,12 +289,42 @@ export type Database = {
           },
         ]
       }
+      payment_gateway_configs: {
+        Row: {
+          config: Json
+          created_at: string
+          gateway: string
+          id: string
+          is_active: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          gateway: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          gateway?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
           boleto_url: string | null
           created_at: string
           id: string
+          mercadopago_payment_id: string | null
+          mercadopago_payment_type: string | null
+          mercadopago_status: string | null
           order_id: string
           paid_at: string | null
           payment_method: string
@@ -301,6 +337,9 @@ export type Database = {
           boleto_url?: string | null
           created_at?: string
           id?: string
+          mercadopago_payment_id?: string | null
+          mercadopago_payment_type?: string | null
+          mercadopago_status?: string | null
           order_id: string
           paid_at?: string | null
           payment_method: string
@@ -313,6 +352,9 @@ export type Database = {
           boleto_url?: string | null
           created_at?: string
           id?: string
+          mercadopago_payment_id?: string | null
+          mercadopago_payment_type?: string | null
+          mercadopago_status?: string | null
           order_id?: string
           paid_at?: string | null
           payment_method?: string
@@ -336,7 +378,9 @@ export type Database = {
           default_image_url: string | null
           description: string | null
           gallery: string[] | null
+          height: number | null
           id: string
+          length: number | null
           main_image: string | null
           name: string
           omie_code: string | null
@@ -350,13 +394,17 @@ export type Database = {
           technical_details: Json | null
           updated_at: string
           video_url: string | null
+          weight: number | null
+          width: number | null
         }
         Insert: {
           created_at?: string
           default_image_url?: string | null
           description?: string | null
           gallery?: string[] | null
+          height?: number | null
           id?: string
+          length?: number | null
           main_image?: string | null
           name: string
           omie_code?: string | null
@@ -370,13 +418,17 @@ export type Database = {
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
+          weight?: number | null
+          width?: number | null
         }
         Update: {
           created_at?: string
           default_image_url?: string | null
           description?: string | null
           gallery?: string[] | null
+          height?: number | null
           id?: string
+          length?: number | null
           main_image?: string | null
           name?: string
           omie_code?: string | null
@@ -390,6 +442,8 @@ export type Database = {
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
+          weight?: number | null
+          width?: number | null
         }
         Relationships: []
       }
