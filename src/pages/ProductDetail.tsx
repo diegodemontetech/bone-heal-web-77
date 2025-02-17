@@ -11,19 +11,25 @@ import ProductInfo from "@/components/product/ProductInfo";
 import ProductTabs from "@/components/product/ProductTabs";
 import { useBrowseHistory } from "@/hooks/use-browse-history";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { addToHistory } = useBrowseHistory();
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, error } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
       console.log('Buscando produto com slug:', slug);
       
+      if (!slug) {
+        console.error('Slug não fornecido');
+        throw new Error('Slug não fornecido');
+      }
+
       const { data, error } = await supabase
         .from("products")
-        .select()
+        .select("*")
         .eq("slug", slug)
         .maybeSingle();
 
@@ -32,10 +38,20 @@ const ProductDetail = () => {
         throw error;
       }
 
+      if (!data) {
+        console.error('Produto não encontrado para o slug:', slug);
+        return null;
+      }
+
       console.log('Produto encontrado:', data);
       return data as Product;
     },
     enabled: !!slug,
+    retry: false,
+    onError: (error) => {
+      console.error('Erro na query do produto:', error);
+      toast.error("Erro ao carregar produto");
+    }
   });
 
   useEffect(() => {
@@ -56,7 +72,7 @@ const ProductDetail = () => {
     );
   }
 
-  if (!product) {
+  if (error || !product) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/Layout";
@@ -25,12 +25,18 @@ const AdminProducts = () => {
   const { data: products, refetch, isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
+      console.log("Buscando produtos...");
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .order("created_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar produtos:", error);
+        throw error;
+      }
+
+      console.log("Produtos encontrados:", data);
       return data;
     },
   });

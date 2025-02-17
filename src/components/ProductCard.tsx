@@ -14,10 +14,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
     currency: "BRL",
   }).format(product.price || 0);
 
+  // Garantir que temos um slug válido
+  const productUrl = product.slug ? `/products/${product.slug}` : "#";
+
   return (
     <Card className="relative group">
       <FavoriteButton product={product} variant="icon" />
-      <Link to={`/products/${product.slug}`}>
+      <Link to={productUrl}>
         <CardContent className="pt-4">
           <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg">
             <img
