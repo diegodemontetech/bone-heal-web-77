@@ -48,9 +48,10 @@ const ProductDetail = () => {
     },
     enabled: !!slug,
     retry: false,
-    onError: (error) => {
-      console.error('Erro na query do produto:', error);
-      toast.error("Erro ao carregar produto");
+    meta: {
+      onError: () => {
+        toast.error("Erro ao carregar produto");
+      }
     }
   });
 
