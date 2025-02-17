@@ -1,6 +1,7 @@
 
 import AdminLayout from "@/components/admin/Layout";
 import { Card, CardContent } from "@/components/ui/card";
+import PriceCalculator from "@/components/admin/PriceCalculator";
 
 const Orders = () => {
   return (
@@ -9,7 +10,7 @@ const Orders = () => {
         <Card>
           <CardContent className="p-6">
             <h1 className="text-2xl font-bold mb-4">Gerenciamento de Pedidos</h1>
-            <p>Página em construção</p>
+            <PriceCalculator />
           </CardContent>
         </Card>
       </div>
