@@ -103,7 +103,7 @@ const Checkout = () => {
         return;
       }
 
-      // Criar pedido
+      // Criar pedido com status 'pending'
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -123,7 +123,10 @@ const Checkout = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("Erro ao criar pedido:", orderError);
+        throw orderError;
+      }
 
       // Criar preferência de pagamento no Mercado Pago
       const { data: preference, error: preferenceError } = await supabase.functions.invoke(
@@ -137,6 +140,7 @@ const Checkout = () => {
               quantity: item.quantity || 1,
               unit_price: Number(item.price),
             })),
+            shipping_cost: shippingFee,
             buyer: {
               name: profile?.full_name || session?.user?.email,
               email: session?.user?.email,
@@ -145,7 +149,10 @@ const Checkout = () => {
         }
       );
 
-      if (preferenceError) throw preferenceError;
+      if (preferenceError) {
+        console.error("Erro ao criar preferência:", preferenceError);
+        throw preferenceError;
+      }
 
       // Criar registro de pagamento
       const { error: paymentError } = await supabase
@@ -154,10 +161,14 @@ const Checkout = () => {
           order_id: order.id,
           amount: total + shippingFee,
           payment_method: paymentMethod,
+          status: "pending",
           mercadopago_preference_id: preference.id,
         });
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error("Erro ao criar pagamento:", paymentError);
+        throw paymentError;
+      }
 
       // Limpar carrinho e redirecionar para o Mercado Pago
       clear();
