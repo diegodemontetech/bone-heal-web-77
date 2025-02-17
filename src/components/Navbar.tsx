@@ -1,146 +1,137 @@
-
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useSession } from "@supabase/auth-helpers-react";
+import { Link } from "react-router-dom";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuList,
+} from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, LogOut } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
-import CartWidget from "@/components/cart/CartWidget";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
+import { Heart } from "lucide-react";
+import { useFavorites } from "@/hooks/use-favorites";
 
-const Navbar = () => {
-  const session = useSession();
-  const { cartItems } = useCart();
-  const [isCartOpen, setIsCartOpen] = useState(false);
+export default function Navbar() {
+  const { signOut, user } = useAuth();
   const navigate = useNavigate();
-
-  const { data: profile } = useQuery({
-    queryKey: ["profile", session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user?.id) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
+  const [open, setOpen] = useState(false);
+  const { favorites } = useFavorites();
 
   const handleSignOut = async () => {
-    try {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession) {
-        navigate("/login");
-        return;
-      }
-
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error("Sign out error:", error);
-        
-        if (error.message.includes("session_not_found")) {
-          toast.success("Sessão encerrada", { duration: 1500 });
-          navigate("/login");
-          return;
-        }
-        
-        toast.error("Erro ao sair: " + error.message, { duration: 1500 });
-        return;
-      }
-
-      toast.success("Sessão encerrada", { duration: 1500 });
-      navigate("/login");
-    } catch (error: any) {
-      console.error("Sign out error:", error);
-      toast.error("Erro ao sair", { duration: 1500 });
-    }
+    await signOut();
+    navigate("/login");
   };
-
+  
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
-          <Link to="/" className="flex items-center">
-            <img 
-              src="/lovable-uploads/c5a855af-42eb-4ffd-8fa0-bacd9ce220b3.png"
-              alt="BoneHeal" 
-              className="h-8 md:h-10"
-            />
-          </Link>
+    <div className="bg-background border-b">
+      <div className="container flex items-center justify-between py-4">
+        <Link to="/" className="font-bold text-2xl">
+          E-commerce
+        </Link>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/products" className="text-neutral-600 hover:text-primary">
-              Produtos
+        <NavigationMenu className="hidden md:flex">
+          <NavigationMenuList>
+            <NavigationMenuItem>
+              <Link to="/products">Produtos</Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/profile">Perfil</Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/favorites" className="relative">
+                <Heart className="w-6 h-6" />
+                {favorites.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                    {favorites.length}
+                  </span>
+                )}
+              </Link>
+            </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
+
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
+                  <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem onClick={() => navigate("/profile")}>Perfil</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>Sair</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <div className="hidden md:flex gap-2">
+            <Link to="/login">
+              <Button variant="outline">Entrar</Button>
             </Link>
-            <Link to="/studies" className="text-neutral-600 hover:text-primary">
-              Estudos
-            </Link>
-            <Link to="/news" className="text-neutral-600 hover:text-primary">
-              Notícias
-            </Link>
-            <Link to="/about" className="text-neutral-600 hover:text-primary">
-              Sobre
-            </Link>
-            <Link to="/contact" className="text-neutral-600 hover:text-primary">
-              Contato
+            <Link to="/register">
+              <Button>Cadastrar</Button>
             </Link>
           </div>
+        )}
 
-          <div className="flex items-center space-x-4">
-            {session ? (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative"
-                  onClick={() => setIsCartOpen(true)}
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  {cartItems.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                      {cartItems.length}
-                    </span>
-                  )}
+        <Sheet open={open} onOpenChange={setOpen} >
+          <SheetTrigger className="md:hidden">
+            <Button variant="outline" size="icon">
+              <Menu />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="sm:max-w-sm">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+              <SheetDescription>
+                Navegue pelo nosso e-commerce.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="grid gap-4 py-4">
+              <Link to="/products">
+                <Button variant="ghost" className="w-full justify-start">
+                  Produtos
                 </Button>
-                <Link to="/orders">
-                  <Button variant="ghost">Meus Pedidos</Button>
-                </Link>
-                {profile?.is_admin && (
-                  <Link to="/admin">
-                    <Button variant="ghost">Admin</Button>
-                  </Link>
-                )}
-                <Button 
-                  variant="ghost" 
-                  onClick={handleSignOut}
-                  className="flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
+              </Link>
+              <Link to="/profile">
+                <Button variant="ghost" className="w-full justify-start">
+                  Perfil
+                </Button>
+              </Link>
+              {user ? (
+                <Button variant="destructive" className="w-full" onClick={handleSignOut}>
                   Sair
                 </Button>
-              </>
-            ) : (
-              <Link to="/login">
-                <Button className="font-bold text-white">Área do Dentista</Button>
-              </Link>
-            )}
-          </div>
-        </div>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant="secondary" className="w-full">
+                      Entrar
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button className="w-full">Cadastrar</Button>
+                  </Link>
+                </>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
-
-      <CartWidget
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-      />
-    </nav>
+    </div>
   );
-};
-
-export default Navbar;
+}
