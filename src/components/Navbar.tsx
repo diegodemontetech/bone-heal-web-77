@@ -9,7 +9,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, Book, Mail, Newspaper, Info } from "lucide-react";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -20,7 +20,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-import { Heart } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 
 export default function Navbar() {
@@ -37,26 +36,41 @@ export default function Navbar() {
   return (
     <div className="bg-background border-b">
       <div className="container flex items-center justify-between py-4">
-        <Link to="/" className="font-bold text-2xl">
-          E-commerce
+        <Link to="/" className="flex items-center gap-2">
+          <img src="/lovable-uploads/675ec55f-a56b-418f-b97b-4381493c3b3f.png" alt="BoneHeal" className="h-8" />
+          <span className="font-bold text-2xl text-primary">BoneHeal</span>
         </Link>
 
         <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
+          <NavigationMenuList className="flex items-center gap-6">
             <NavigationMenuItem>
-              <Link to="/products">Produtos</Link>
+              <Link to="/products" className="flex items-center gap-2">
+                <Book className="w-4 h-4" />
+                <span>Produtos</span>
+              </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link to="/profile">Perfil</Link>
+              <Link to="/contact" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                <span>Contato</span>
+              </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link to="/favorites" className="relative">
-                <Heart className="w-6 h-6" />
-                {favorites.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    {favorites.length}
-                  </span>
-                )}
+              <Link to="/about" className="flex items-center gap-2">
+                <Info className="w-4 h-4" />
+                <span>História</span>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/news" className="flex items-center gap-2">
+                <Newspaper className="w-4 h-4" />
+                <span>Notícias</span>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link to="/studies" className="flex items-center gap-2">
+                <Book className="w-4 h-4" />
+                <span>Artigos Científicos</span>
               </Link>
             </NavigationMenuItem>
           </NavigationMenuList>
@@ -89,7 +103,7 @@ export default function Navbar() {
           </div>
         )}
 
-        <Sheet open={open} onOpenChange={setOpen} >
+        <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger className="md:hidden">
             <Button variant="outline" size="icon">
               <Menu />
@@ -99,18 +113,38 @@ export default function Navbar() {
             <SheetHeader>
               <SheetTitle>Menu</SheetTitle>
               <SheetDescription>
-                Navegue pelo nosso e-commerce.
+                Navegue pelo site da BoneHeal
               </SheetDescription>
             </SheetHeader>
             <div className="grid gap-4 py-4">
               <Link to="/products">
-                <Button variant="ghost" className="w-full justify-start">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Book className="w-4 h-4" />
                   Produtos
                 </Button>
               </Link>
-              <Link to="/profile">
-                <Button variant="ghost" className="w-full justify-start">
-                  Perfil
+              <Link to="/contact">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Mail className="w-4 h-4" />
+                  Contato
+                </Button>
+              </Link>
+              <Link to="/about">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Info className="w-4 h-4" />
+                  História
+                </Button>
+              </Link>
+              <Link to="/news">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Newspaper className="w-4 h-4" />
+                  Notícias
+                </Button>
+              </Link>
+              <Link to="/studies">
+                <Button variant="ghost" className="w-full justify-start gap-2">
+                  <Book className="w-4 h-4" />
+                  Artigos Científicos
                 </Button>
               </Link>
               {user ? (
@@ -125,7 +159,9 @@ export default function Navbar() {
                     </Button>
                   </Link>
                   <Link to="/register">
-                    <Button className="w-full">Cadastrar</Button>
+                    <Button className="w-full">
+                      Cadastrar
+                    </Button>
                   </Link>
                 </>
               )}
