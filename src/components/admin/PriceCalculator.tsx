@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 // Constantes para facilitar ajustes futuros
 const DISCOUNT_RULES = [
@@ -53,11 +53,20 @@ interface Product {
   code: string;
   name: string;
   price: number;
+  weight: number;
 }
 
 interface ProductQuantity {
   id: string;
   quantity: number;
+}
+
+interface ShippingAddress {
+  cep: string;
+  state: string;
+  city: string;
+  address: string;
+  number: string;
 }
 
 const PriceCalculator = () => {
@@ -70,7 +79,7 @@ const PriceCalculator = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, omie_code")
+        .select("id, name, price, omie_code, weight")
         .in("omie_code", ["HB1540", "HB2030", "HB3040", "BH3040"])
         .order("name");
 
@@ -90,6 +99,16 @@ const PriceCalculator = () => {
       );
     }
   }, [products]);
+
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
+    cep: "",
+    state: "",
+    city: "",
+    address: "",
+    number: "",
+  });
+  const [shippingCost, setShippingCost] = useState<number>(0);
+  const [customerPhone, setCustomerPhone] = useState("");
 
   const getTotalQuantity = () => {
     return quantities.reduce((sum, item) => sum + item.quantity, 0);
@@ -137,12 +156,108 @@ const PriceCalculator = () => {
     return totalWithFee / installments;
   };
 
+  const calculateShipping = async () => {
+    if (!shippingAddress.cep) {
+      toast.error("Por favor, preencha o CEP");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('correios-shipping', {
+        body: {
+          cep: shippingAddress.cep,
+          items: quantities.map(q => {
+            const product = products?.find(p => p.id === q.id);
+            return {
+              quantity: q.quantity,
+              product_id: q.id,
+              weight: product?.weight || 0.5 // peso padrão se não especificado
+            };
+          })
+        }
+      });
+
+      if (error) throw error;
+      setShippingCost(data.cost || 0);
+    } catch (error) {
+      toast.error("Erro ao calcular frete: " + error.message);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const generateQuote = () => {
+    const totalQuantity = getTotalQuantity();
+    const subtotal = calculateSubtotal();
+    const finalTotal = calculateTotalWithDiscount();
+    const quantityDiscount = getQuantityDiscount();
+
+    let message = `*Orçamento Bone Heal*\n\n`;
+    message += `*Produtos:*\n`;
+    
+    products?.forEach(product => {
+      const quantity = quantities.find(q => q.id === product.id)?.quantity || 0;
+      if (quantity > 0) {
+        message += `${product.name}: ${quantity} un x ${formatCurrency(product.price)} = ${formatCurrency(product.price * quantity)}\n`;
+      }
+    });
+
+    message += `\n*Resumo:*\n`;
+    message += `Quantidade total: ${totalQuantity} produtos\n`;
+    message += `Subtotal: ${formatCurrency(subtotal)}\n`;
+    message += `Desconto por quantidade: ${quantityDiscount}%\n`;
+    
+    if (selectedPayment === "pix") {
+      message += `Desconto PIX: ${PIX_DISCOUNT}%\n`;
+    }
+
+    if (shippingCost > 0) {
+      message += `Frete: ${formatCurrency(shippingCost)}\n`;
+    }
+
+    message += `\n*Total Final: ${formatCurrency(finalTotal + shippingCost)}*\n`;
+
+    if (selectedPayment === "credit" && installments > 1) {
+      const installmentValue = calculateInstallmentValue();
+      message += `\nParcelamento: ${installments}x de ${formatCurrency(installmentValue)}`;
+    }
+
+    return message;
+  };
+
+  const sendQuoteToWhatsApp = async () => {
+    if (!customerPhone) {
+      toast.error("Por favor, informe o telefone do cliente");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.functions.invoke('send-whatsapp', {
+        body: {
+          phone: customerPhone.replace(/\D/g, ''),
+          message: generateQuote()
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Orçamento enviado com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao enviar orçamento: " + error.message);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Calculadora de Preços</CardTitle>
         <CardDescription>
-          Calcule preços e descontos baseados na quantidade
+          Calcule preços, fretes e envie orçamentos
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -186,6 +301,32 @@ const PriceCalculator = () => {
             ))}
           </TableBody>
         </Table>
+
+        {/* Dados de Entrega */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Dados de Entrega</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>CEP</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={shippingAddress.cep}
+                  onChange={(e) => setShippingAddress({ ...shippingAddress, cep: e.target.value })}
+                  placeholder="00000-000"
+                />
+                <Button onClick={calculateShipping}>Calcular Frete</Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone do Cliente (WhatsApp)</Label>
+              <Input
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Forma de Pagamento */}
         <div className="grid grid-cols-2 gap-4">
@@ -252,9 +393,15 @@ const PriceCalculator = () => {
                 <span>Subtotal:</span>
                 <span>R$ {calculateSubtotal().toFixed(2)}</span>
               </div>
+              {shippingCost > 0 && (
+                <div className="flex justify-between">
+                  <span>Frete:</span>
+                  <span>R$ {shippingCost.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg">
-                <span>Total Final:</span>
-                <span>R$ {calculateTotalWithDiscount().toFixed(2)}</span>
+                <span>Total Final (com frete):</span>
+                <span>R$ {(calculateTotalWithDiscount() + shippingCost).toFixed(2)}</span>
               </div>
               {selectedPayment === "credit" && installments > 1 && (
                 <div className="flex justify-between text-sm text-muted-foreground">
@@ -268,8 +415,23 @@ const PriceCalculator = () => {
 
         {/* Botões de Ação */}
         <div className="flex justify-end gap-4">
-          <Button variant="outline">Limpar</Button>
-          <Button>Aplicar ao Pedido</Button>
+          <Button variant="outline" onClick={() => {
+            setQuantities(products?.map(p => ({ id: p.id, quantity: 0 })) || []);
+            setShippingAddress({
+              cep: "",
+              state: "",
+              city: "",
+              address: "",
+              number: "",
+            });
+            setShippingCost(0);
+            setCustomerPhone("");
+          }}>
+            Limpar
+          </Button>
+          <Button onClick={sendQuoteToWhatsApp}>
+            Enviar Orçamento por WhatsApp
+          </Button>
         </div>
       </CardContent>
     </Card>
