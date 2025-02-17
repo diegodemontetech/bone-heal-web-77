@@ -12,15 +12,20 @@ const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Buscar sessão atual
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log("Current session:", session);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting session:", error);
+        throw error;
+      }
       return session;
     },
   });
 
+  // Buscar perfil se houver sessão
   const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
@@ -30,54 +35,51 @@ const AdminLogin = () => {
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error("Error fetching profile:", error);
         throw error;
       }
       
-      console.log("Current profile:", data);
       return data;
     },
     enabled: !!session?.user?.id,
   });
 
-  // Handle auth state changes
+  // Monitorar mudanças na autenticação
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession);
-        if (event === "SIGNED_IN") {
-          // Check if user is admin after sign in
-          const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", currentSession?.user?.id)
-            .single();
+        
+        if (event === "SIGNED_IN" && currentSession) {
+          try {
+            const { data: profile, error } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", currentSession.user.id)
+              .maybeSingle();
 
-          console.log("Profile after sign in:", profile);
+            if (error) throw error;
 
-          if (error) {
+            if (profile?.is_admin) {
+              navigate("/admin");
+            } else {
+              toast({
+                title: "Acesso negado",
+                description: "Você não tem permissão para acessar a área administrativa.",
+                variant: "destructive",
+              });
+              await supabase.auth.signOut();
+            }
+          } catch (error) {
             console.error("Error checking admin status:", error);
             toast({
               title: "Erro",
               description: "Ocorreu um erro ao verificar suas permissões.",
               variant: "destructive",
             });
-            return;
-          }
-
-          if (profile?.is_admin) {
-            navigate("/admin");
-          } else {
-            toast({
-              title: "Acesso negado",
-              description: "Você não tem permissão para acessar a área administrativa.",
-              variant: "destructive",
-            });
-            await supabase.auth.signOut();
-            navigate("/login");
           }
         }
       }
@@ -88,25 +90,14 @@ const AdminLogin = () => {
     };
   }, [navigate, toast]);
 
-  // Se já estiver logado como admin, redireciona para /admin
+  // Redirecionar se já estiver logado como admin
   useEffect(() => {
     if (profile?.is_admin) {
       navigate("/admin");
     }
   }, [profile, navigate]);
 
-  // Se estiver logado mas não for admin, redireciona para /login
-  useEffect(() => {
-    if (session && profile && !profile.is_admin) {
-      toast({
-        title: "Acesso negado",
-        description: "Você não tem permissão para acessar a área administrativa.",
-        variant: "destructive",
-      });
-      navigate("/login");
-    }
-  }, [session, profile, navigate, toast]);
-
+  // Mostrar loading enquanto carrega
   if (isSessionLoading || (session && isProfileLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -115,6 +106,7 @@ const AdminLogin = () => {
     );
   }
 
+  // Se não estiver logado, mostrar formulário de login
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
