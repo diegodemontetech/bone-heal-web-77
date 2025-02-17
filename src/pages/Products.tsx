@@ -2,43 +2,49 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import ProductCard from "@/components/ProductCard";
-import ProductSearch from "@/components/products/ProductSearch";
+import { Product } from "@/types/product";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ProductHero from "@/components/ProductHero";
+import { ProductFilters } from "@/components/products/ProductFilters";
+import { ProductGrid } from "@/components/products/ProductGrid";
 import { Loader2 } from "lucide-react";
 
-const Products = () => {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+export default function Products() {
+  const [filters, setFilters] = useState({
+    search: "",
+    priceRange: [0, 1000],
+    category: "",
+    sortBy: "name-asc",
+  });
 
-  const { data: products, isLoading, error } = useQuery({
-    queryKey: ["products", search, category],
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["products", filters],
     queryFn: async () => {
       let query = supabase
         .from("products")
         .select("*")
-        .order('created_at', { ascending: false });
+        .order(filters.sortBy.split("-")[0], {
+          ascending: filters.sortBy.split("-")[1] === "asc",
+        });
 
-      // Aplicar filtro de categoria
-      if (category !== "all") {
-        query = query.eq("category", category);
+      if (filters.search) {
+        query = query.ilike("name", `%${filters.search}%`);
       }
 
-      // Aplicar busca por texto
-      if (search) {
-        query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      if (filters.category) {
+        query = query.eq("category", filters.category);
+      }
+
+      if (filters.priceRange) {
+        query = query
+          .gte("price", filters.priceRange[0])
+          .lte("price", filters.priceRange[1]);
       }
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error("Error fetching products:", error);
-        throw error;
-      }
-
-      return data;
+      if (error) throw error;
+      return data as Product[];
     },
   });
 
@@ -46,44 +52,33 @@ const Products = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <ProductHero />
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Sidebar with filters */}
+          <aside className="w-full md:w-64 shrink-0">
+            <ProductFilters onFilterChange={setFilters} />
+          </aside>
 
-      <main className="flex-grow">
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-8">
-            <ProductSearch
-              search={search}
-              category={category}
-              onSearchChange={setSearch}
-              onCategoryChange={setCategory}
-            />
-
+          {/* Main content */}
+          <div className="flex-1">
             {isLoading ? (
-              <div className="flex items-center justify-center min-h-[400px]">
+              <div className="flex items-center justify-center h-96">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            ) : error ? (
-              <div className="text-center py-12">
-                <p className="text-red-600">Erro ao carregar produtos</p>
-              </div>
-            ) : !products || products.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-neutral-600">Nenhum produto encontrado</p>
+            ) : !products?.length ? (
+              <div className="flex items-center justify-center h-96">
+                <p className="text-muted-foreground">
+                  Nenhum produto encontrado com os filtros selecionados.
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
+              <ProductGrid products={products} />
             )}
           </div>
-        </section>
+        </div>
       </main>
 
       <Footer />
     </div>
   );
-};
-
-export default Products;
+}
