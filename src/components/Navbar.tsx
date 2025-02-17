@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -9,29 +9,47 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, Book, Mail, Newspaper, Info } from "lucide-react";
+import { Menu, Book, Mail, Newspaper, Info, User } from "lucide-react";
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuList,
 } from "@/components/ui/navigation-menu";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { useSession } from "@supabase/auth-helpers-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useNavigate } from "react-router-dom";
-import { useFavorites } from "@/hooks/use-favorites";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Navbar() {
-  const { signOut, user } = useAuth();
+  const session = useSession();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { favorites } = useFavorites();
   const location = useLocation();
+  const { toast } = useToast();
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/login");
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso",
+      });
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -41,7 +59,7 @@ export default function Navbar() {
           <img 
             src="https://i.ibb.co/Mkv44CY8/7c232e-500-x-100-px-1.png" 
             alt="BoneHeal" 
-            className="h-10" // Reduzido de h-12 para h-10
+            className="h-10"
           />
         </Link>
 
@@ -95,26 +113,35 @@ export default function Navbar() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {user ? (
+        {session ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.user_metadata?.full_name} />
-                  <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={session.user.user_metadata?.avatar_url} />
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem onClick={() => navigate("/profile")}>Perfil</DropdownMenuItem>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
+                Meu Perfil
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/orders")}>
+                Meus Pedidos
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>Sair</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
+                Sair
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className="hidden md:flex">
+          <div className="hidden md:flex gap-2">
             <Link to="/login">
-              <Button variant="outline" className="text-sm font-semibold">Área do Dentista</Button>
+              <Button variant="outline">Área do Dentista</Button>
             </Link>
           </div>
         )}
@@ -133,42 +160,57 @@ export default function Navbar() {
               </SheetDescription>
             </SheetHeader>
             <div className="grid gap-4 py-4">
-              <Link to="/products">
+              <Link to="/products" onClick={() => setOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <Book className="w-4 h-4" />
                   Produtos
                 </Button>
               </Link>
-              <Link to="/contact">
+              <Link to="/contact" onClick={() => setOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <Mail className="w-4 h-4" />
                   Contato
                 </Button>
               </Link>
-              <Link to="/about">
+              <Link to="/about" onClick={() => setOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <Info className="w-4 h-4" />
                   História
                 </Button>
               </Link>
-              <Link to="/news">
+              <Link to="/news" onClick={() => setOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <Newspaper className="w-4 h-4" />
                   Notícias
                 </Button>
               </Link>
-              <Link to="/studies">
+              <Link to="/studies" onClick={() => setOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-2">
                   <Book className="w-4 h-4" />
                   Artigos Científicos
                 </Button>
               </Link>
-              {user ? (
-                <Button variant="destructive" className="w-full" onClick={handleSignOut}>
-                  Sair
-                </Button>
+              {session ? (
+                <>
+                  <Link to="/profile" onClick={() => setOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start gap-2">
+                      <User className="w-4 h-4" />
+                      Meu Perfil
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full" 
+                    onClick={() => {
+                      handleSignOut();
+                      setOpen(false);
+                    }}
+                  >
+                    Sair
+                  </Button>
+                </>
               ) : (
-                <Link to="/login">
+                <Link to="/login" onClick={() => setOpen(false)}>
                   <Button className="w-full">Área do Dentista</Button>
                 </Link>
               )}
