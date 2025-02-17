@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { Json } from "@/integrations/supabase/types";
 
 export interface CartItem {
-  [key: string]: string | number; // This makes CartItem compatible with Json type
+  [key: string]: string | number;
   id: string;
   name: string;
   quantity: number;
@@ -14,7 +14,7 @@ export interface CartItem {
 interface CartStore {
   cartItems: CartItem[];
   setCartItems: (items: CartItem[] | ((prev: CartItem[]) => CartItem[])) => void;
-  addItem: (product: { id: string; name: string; price: number; image: string }) => void;
+  addItem: (product: Omit<CartItem, 'quantity'>) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
   clearCart: () => void;

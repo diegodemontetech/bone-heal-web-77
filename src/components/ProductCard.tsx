@@ -25,13 +25,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
     : [];
 
   const handleAddToCart = () => {
-    addItem({
+    const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price || 0,
-      quantity: 1,
       image: product.main_image || product.default_image_url || "",
-    });
+    };
+    
+    addItem(cartItem);
     toast.success(`${product.name} adicionado ao carrinho`);
   };
   
