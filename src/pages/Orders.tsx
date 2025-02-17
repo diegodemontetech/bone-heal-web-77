@@ -1,3 +1,4 @@
+
 import { useSession } from "@supabase/auth-helpers-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,7 @@ const Orders = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*, payments(*)")
+        .eq("user_id", session?.user?.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
