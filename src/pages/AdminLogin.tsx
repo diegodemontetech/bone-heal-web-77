@@ -6,6 +6,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -40,7 +41,6 @@ const AdminLogin = () => {
       return data;
     },
     enabled: !!session?.user?.id,
-    retry: false, // Don't retry on failure
   });
 
   // Handle auth state changes
@@ -77,6 +77,7 @@ const AdminLogin = () => {
               variant: "destructive",
             });
             await supabase.auth.signOut();
+            navigate("/login");
           }
         }
       }
@@ -87,31 +88,31 @@ const AdminLogin = () => {
     };
   }, [navigate, toast]);
 
-  // Show error if user is not admin
+  // Se já estiver logado como admin, redireciona para /admin
   useEffect(() => {
-    if (!isSessionLoading && !isProfileLoading && session && profile !== null && !profile?.is_admin) {
+    if (profile?.is_admin) {
+      navigate("/admin");
+    }
+  }, [profile, navigate]);
+
+  // Se estiver logado mas não for admin, redireciona para /login
+  useEffect(() => {
+    if (session && profile && !profile.is_admin) {
       toast({
         title: "Acesso negado",
         description: "Você não tem permissão para acessar a área administrativa.",
         variant: "destructive",
       });
-      supabase.auth.signOut();
+      navigate("/login");
     }
-  }, [session, profile, isSessionLoading, isProfileLoading, toast]);
+  }, [session, profile, navigate, toast]);
 
-  // Show loading state
   if (isSessionLoading || (session && isProfileLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  // If user is already logged in and is admin, redirect to admin
-  if (session && profile?.is_admin) {
-    navigate("/admin");
-    return null;
   }
 
   return (
@@ -141,15 +142,6 @@ const AdminLogin = () => {
                   loading_button_label: 'Entrando...',
                   email_input_placeholder: 'Seu email',
                   password_input_placeholder: 'Sua senha',
-                },
-                sign_up: {
-                  email_label: 'Email',
-                  password_label: 'Senha',
-                  button_label: 'Cadastrar',
-                  loading_button_label: 'Cadastrando...',
-                  email_input_placeholder: 'Seu email',
-                  password_input_placeholder: 'Sua senha',
-                  link_text: 'Não tem uma conta? Cadastre-se',
                 },
               },
             }}

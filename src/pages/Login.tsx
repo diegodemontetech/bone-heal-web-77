@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
@@ -61,18 +60,15 @@ const Login = () => {
           if (error) throw error;
 
           if (profile?.is_admin) {
-            toast({
-              title: "Bem-vindo, Administrador!",
-              description: "Você foi redirecionado para a área administrativa.",
-            });
             navigate("/admin");
-          } else {
-            toast({
-              title: "Login realizado com sucesso!",
-              description: "Bem-vindo à área do dentista.",
-            });
-            navigate("/products");
+            return;
           }
+
+          toast({
+            title: "Login realizado com sucesso!",
+            description: "Bem-vindo à área do dentista.",
+          });
+          navigate("/products");
         } catch (error: any) {
           console.error("Error after sign in:", error);
           toast({
