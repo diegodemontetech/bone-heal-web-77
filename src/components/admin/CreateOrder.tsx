@@ -31,22 +31,29 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
 
   // Buscar clientes
-  const { data: customers, isLoading: isLoadingCustomers } = useQuery({
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["customers", search],
     queryFn: async () => {
+      if (!search) return [];
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .ilike("full_name", `%${search}%`)
         .limit(10);
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error fetching customers:", error);
+        return [];
+      }
+      
+      return data || [];
     },
+    enabled: !!search,
   });
 
   // Buscar produtos
-  const { data: products, isLoading: isLoadingProducts } = useQuery({
+  const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -54,8 +61,12 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         .select("*")
         .order("name");
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("Error fetching products:", error);
+        return [];
+      }
+      
+      return data || [];
     },
   });
 
@@ -96,8 +107,8 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         user_id: selectedCustomer.id,
         items: selectedProducts,
         subtotal: calculateTotal(),
-        shipping_fee: shipping.value || 0,
-        total_amount: calculateTotal() + (shipping.value || 0),
+        shipping_fee: shipping?.value || 0,
+        total_amount: calculateTotal() + (shipping?.value || 0),
         status: "pending",
       });
 
@@ -133,6 +144,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
             <Command>
               <CommandInput
                 placeholder="Buscar cliente..."
+                value={search}
                 onValueChange={setSearch}
               />
               <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
@@ -142,7 +154,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                     <Loader2 className="w-4 h-4 animate-spin" />
                   </div>
                 ) : (
-                  customers?.map((customer) => (
+                  customers.map((customer) => (
                     <CommandItem
                       key={customer.id}
                       value={customer.id}
@@ -177,7 +189,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           </div>
         ) : (
           <div className="grid gap-4">
-            {products?.map((product) => (
+            {products.map((product) => (
               <div
                 key={product.id}
                 className="flex items-center justify-between p-4 border rounded-lg"
