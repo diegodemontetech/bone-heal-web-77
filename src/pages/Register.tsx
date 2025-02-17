@@ -1,5 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
+import RegistrationForm from "@/components/auth/RegistrationForm";
 
 const Register = () => {
   return (
@@ -7,7 +8,7 @@ const Register = () => {
       <Card>
         <CardContent className="p-6">
           <h1 className="text-2xl font-bold mb-4">Registro</h1>
-          <p>Página em construção</p>
+          <RegistrationForm />
         </CardContent>
       </Card>
     </div>

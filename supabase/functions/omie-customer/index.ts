@@ -1,201 +1,147 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const OMIE_API_URL = 'https://app.omie.com.br/api/v1/geral/clientes/'
-const OMIE_CARACT_API_URL = 'https://app.omie.com.br/api/v1/geral/clientescaract/'
-const OMIE_TAG_API_URL = 'https://app.omie.com.br/api/v1/geral/clientetag/'
-
-// Interfaces para tipagem
-interface OmieResponse {
-  codigo_cliente_omie: number;
-  codigo_status?: string;
-  descricao_status?: string;
+// Handle CORS preflight requests
+function handleOptions() {
+  return new Response(null, {
+    headers: corsHeaders
+  })
 }
 
-interface OmieCaracteristica {
-  campo: string;
-  conteudo: string;
-}
-
-interface OmieTag {
-  tag: string;
-}
-
-async function incluirCaracteristicasCliente(
-  codigo_cliente_omie: number,
-  caracteristicas: OmieCaracteristica[],
-  appKey: string,
-  appSecret: string
-) {
-  const promises = caracteristicas.map(async (caract) => {
-    const requestBody = {
-      call: 'IncluirCaractCliente',
-      app_key: appKey,
-      app_secret: appSecret,
-      param: [{
-        codigo_cliente_omie,
-        campo: caract.campo,
-        conteudo: caract.conteudo
-      }]
-    };
-
-    const response = await fetch(OMIE_CARACT_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    return response.json();
-  });
-
-  return Promise.all(promises);
-}
-
-async function incluirTagsCliente(
-  codigo_cliente_omie: number,
-  tags: OmieTag[],
-  appKey: string,
-  appSecret: string
-) {
-  const requestBody = {
-    call: 'IncluirTags',
-    app_key: appKey,
-    app_secret: appSecret,
-    param: [{
-      nCodCliente: codigo_cliente_omie,
-      tags: tags
-    }]
-  };
-
-  const response = await fetch(OMIE_TAG_API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody)
-  });
-
-  return response.json();
-}
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
+async function handleRequest(req: Request) {
   try {
     const { profile_id } = await req.json()
 
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
+    if (!profile_id) {
+      throw new Error('Profile ID is required')
+    }
 
-    // Busca detalhes do perfil
-    const { data: profile, error: profileError } = await supabaseClient
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Fetch profile data
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', profile_id)
       .single()
 
-    if (profileError) throw profileError
-    if (!profile) throw new Error('Profile not found')
-
-    // Cria cliente no OMIE
-    const omieCustomer = {
-      codigo_cliente_integracao: profile.id,
-      razao_social: profile.full_name,
-      cnpj_cpf: profile.cnpj || profile.cpf || '',
-      telefone1_numero: profile.phone || '',
-      endereco: profile.address || '',
-      endereco_numero: "S/N",
-      bairro: profile.neighborhood || '',
-      estado: profile.state || '',
-      cidade: profile.city || '',
-      cep: profile.zip_code || '',
-      contribuinte: "2",
-      pessoa_fisica: profile.cpf ? "S" : "N",
-      exterior: "N"
+    if (profileError) {
+      throw profileError
     }
 
-    console.log('Creating customer in OMIE:', omieCustomer)
+    if (!profile) {
+      throw new Error('Profile not found')
+    }
 
-    const omieResponse = await fetch(OMIE_API_URL, {
+    // OMIE API credentials
+    const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY')
+    const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET')
+
+    if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
+      throw new Error('Missing OMIE credentials')
+    }
+
+    // Prepare customer data for OMIE
+    const customerData = {
+      call: 'IncluirCliente',
+      app_key: OMIE_APP_KEY,
+      app_secret: OMIE_APP_SECRET,
+      param: [{
+        razao_social: profile.full_name,
+        cnpj_cpf: profile.cnpj || profile.cpf,
+        email: profile.email,
+        telefone1_ddd: profile.phone?.substring(0, 2) || '',
+        telefone1_numero: profile.phone?.substring(2) || '',
+        endereco: profile.address,
+        endereco_numero: 'S/N',
+        bairro: profile.neighborhood,
+        estado: profile.state,
+        cidade: profile.city,
+        cep: profile.zip_code,
+        codigo_cliente_integracao: profile.id,
+        inscricao_estadual: profile.cro || '',
+      }]
+    }
+
+    console.log('Sending customer data to OMIE:', JSON.stringify(customerData))
+
+    // Send request to OMIE API
+    const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        call: 'IncluirCliente',
-        app_key: Deno.env.get('OMIE_APP_KEY'),
-        app_secret: Deno.env.get('OMIE_APP_SECRET'),
-        param: [omieCustomer],
-      }),
+      body: JSON.stringify(customerData)
     })
 
     const omieData = await omieResponse.json()
-    console.log('OMIE response:', omieData)
 
-    if (omieData.faultstring) {
-      throw new Error(omieData.faultstring)
+    if (!omieResponse.ok) {
+      throw new Error(`OMIE API error: ${JSON.stringify(omieData)}`)
     }
 
-    // Adiciona características do cliente
-    const caracteristicas: OmieCaracteristica[] = [
-      { campo: "ESPECIALIDADE", conteudo: profile.specialty || '' },
-      { campo: "CRO", conteudo: profile.cro || '' }
-    ]
+    console.log('OMIE response:', omieData)
 
-    await incluirCaracteristicasCliente(
-      omieData.codigo_cliente_omie,
-      caracteristicas,
-      Deno.env.get('OMIE_APP_KEY') || '',
-      Deno.env.get('OMIE_APP_SECRET') || ''
-    )
-
-    // Adiciona tags
-    const tags: OmieTag[] = [
-      { tag: profile.contact_type || 'customer' }
-    ]
-
-    await incluirTagsCliente(
-      omieData.codigo_cliente_omie,
-      tags,
-      Deno.env.get('OMIE_APP_KEY') || '',
-      Deno.env.get('OMIE_APP_SECRET') || ''
-    )
-
-    // Atualiza perfil com código Omie
-    const { error: updateError } = await supabaseClient
+    // Update profile with OMIE code
+    const { error: updateError } = await supabase
       .from('profiles')
-      .update({ 
-        omie_code: omieData.codigo_cliente_omie.toString(),
-        omie_sync: true 
+      .update({
+        omie_code: omieData.codigo_cliente_omie?.toString(),
+        omie_sync: true
       })
       .eq('id', profile_id)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      throw updateError
+    }
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        codigo_cliente_omie: omieData.codigo_cliente_omie,
-        message: 'Cliente criado com sucesso no Omie incluindo características e tags'
+        message: 'Customer successfully created in OMIE',
+        omie_code: omieData.codigo_cliente_omie 
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
     )
+
   } catch (error) {
     console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
       }
     )
   }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return handleOptions()
+  }
+
+  if (req.method === 'POST') {
+    return handleRequest(req)
+  }
+
+  return new Response('Method not allowed', {
+    headers: corsHeaders,
+    status: 405
+  })
 })
