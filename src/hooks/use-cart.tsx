@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 import { Json } from "@/integrations/supabase/types";
 
@@ -13,7 +14,10 @@ export interface CartItem {
 interface CartStore {
   cartItems: CartItem[];
   setCartItems: (items: CartItem[] | ((prev: CartItem[]) => CartItem[])) => void;
-  addToCart: (product: { id: string; name: string; price: number; image: string }) => void;
+  addItem: (product: { id: string; name: string; price: number; image: string }) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (productId: string) => void;
+  clearCart: () => void;
 }
 
 export const useCart = create<CartStore>((set) => ({
@@ -21,7 +25,7 @@ export const useCart = create<CartStore>((set) => ({
   setCartItems: (items) => set((state) => ({
     cartItems: typeof items === "function" ? items(state.cartItems) : items,
   })),
-  addToCart: (product) => set((state) => {
+  addItem: (product) => set((state) => {
     const existingItem = state.cartItems.find(item => item.id === product.id);
     if (existingItem) {
       return {
@@ -36,4 +40,15 @@ export const useCart = create<CartStore>((set) => ({
       cartItems: [...state.cartItems, { ...product, quantity: 1 }]
     };
   }),
+  updateQuantity: (productId, quantity) => set((state) => ({
+    cartItems: state.cartItems.map(item =>
+      item.id === productId
+        ? { ...item, quantity }
+        : item
+    )
+  })),
+  removeItem: (productId) => set((state) => ({
+    cartItems: state.cartItems.filter(item => item.id !== productId)
+  })),
+  clearCart: () => set({ cartItems: [] }),
 }));
