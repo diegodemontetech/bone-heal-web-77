@@ -49,11 +49,17 @@ const ProductDetail = () => {
     enabled: !!slug,
     retry: false,
     meta: {
-      onError: () => {
-        toast.error("Erro ao carregar produto");
-      }
-    }
+      errorMessage: "Erro ao carregar produto"
+    },
+    gcTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 1 // 1 minute
   });
+
+  useEffect(() => {
+    if (error) {
+      toast.error("Erro ao carregar produto");
+    }
+  }, [error]);
 
   useEffect(() => {
     if (product) {
