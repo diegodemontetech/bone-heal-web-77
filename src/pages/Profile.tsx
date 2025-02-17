@@ -9,6 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Loader2 } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 interface Profile {
   id: string;
@@ -92,79 +95,89 @@ const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="container mx-auto p-4 flex items-center justify-center flex-1">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+        <WhatsAppWidget />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Meu Perfil</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Nome Completo</Label>
-              <Input
-                id="full_name"
-                value={profile?.full_name || ""}
-                onChange={(e) => setProfile(prev => ({ ...prev!, full_name: e.target.value }))}
-                required
-              />
-            </div>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="container mx-auto p-4 flex-1">
+        <Card>
+          <CardHeader>
+            <CardTitle>Meu Perfil</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Nome Completo</Label>
+                <Input
+                  id="full_name"
+                  value={profile?.full_name || ""}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, full_name: e.target.value }))}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="specialty">Especialidade</Label>
-              <Input
-                id="specialty"
-                value={profile?.specialty || ""}
-                onChange={(e) => setProfile(prev => ({ ...prev!, specialty: e.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="specialty">Especialidade</Label>
+                <Input
+                  id="specialty"
+                  value={profile?.specialty || ""}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, specialty: e.target.value }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="crm">CRM</Label>
-              <Input
-                id="crm"
-                value={profile?.crm || ""}
-                onChange={(e) => setProfile(prev => ({ ...prev!, crm: e.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="crm">CRM</Label>
+                <Input
+                  id="crm"
+                  value={profile?.crm || ""}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, crm: e.target.value }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input
-                id="phone"
-                value={profile?.phone || ""}
-                onChange={(e) => setProfile(prev => ({ ...prev!, phone: e.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={profile?.phone || ""}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, phone: e.target.value }))}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
-              <Input
-                id="address"
-                value={profile?.address || ""}
-                onChange={(e) => setProfile(prev => ({ ...prev!, address: e.target.value }))}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Endereço</Label>
+                <Input
+                  id="address"
+                  value={profile?.address || ""}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, address: e.target.value }))}
+                />
+              </div>
 
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                "Salvar Alterações"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Alterações"
+                )}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+      <Footer />
+      <WhatsAppWidget />
     </div>
   );
 };
