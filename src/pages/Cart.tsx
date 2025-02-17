@@ -32,9 +32,8 @@ const Cart = () => {
     setShippingError(null);
     
     try {
-      console.log("Calculando frete para CEP:", zipCode);
-      
-      const { data, error } = await supabase.functions.invoke("correios-shipping", {
+      // Primeiro, vamos obter o estado do CEP usando a API dos Correios
+      const { data: correiosData, error: correiosError } = await supabase.functions.invoke("correios-shipping", {
         body: {
           zipCodeOrigin: "04180112",
           zipCodeDestination: zipCode,
@@ -45,23 +44,30 @@ const Cart = () => {
         },
       });
 
-      console.log("Resposta do cálculo de frete:", { data, error });
+      if (correiosError) throw correiosError;
 
-      if (error) throw error;
+      // Agora vamos buscar a taxa de frete baseada no estado
+      const { data: shippingRate, error: shippingError } = await supabase
+        .from('shipping_rates')
+        .select('rate, delivery_days')
+        .eq('state', correiosData.state)
+        .single();
 
-      if (!data?.pcFinal) {
+      if (shippingError) throw shippingError;
+
+      if (!shippingRate) {
         throw new Error("Não foi possível calcular o frete para este CEP");
       }
 
-      setShippingCost(data.pcFinal);
-      toast.success("Frete calculado com sucesso!", {
-        duration: 2000 // 2 segundos
+      setShippingCost(shippingRate.rate);
+      toast.success(`Frete calculado: entrega em ${shippingRate.delivery_days} dias úteis`, {
+        duration: 3000
       });
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
       setShippingError("Erro ao calcular o frete. Por favor, tente novamente.");
       toast.error("Erro ao calcular o frete. Por favor, tente novamente.", {
-        duration: 2000 // 2 segundos
+        duration: 2000
       });
     } finally {
       setIsCalculatingShipping(false);
