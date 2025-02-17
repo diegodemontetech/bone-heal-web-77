@@ -1,3 +1,4 @@
+
 import AdminLayout from "@/components/admin/Layout";
 import ShippingRatesTable from "@/components/admin/ShippingRatesTable";
 

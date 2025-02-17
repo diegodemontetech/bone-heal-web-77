@@ -1,167 +1,216 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+import { createClient } from '@supabase/supabase-js'
+import { corsHeaders } from '../_shared/cors.ts'
+
+interface OmieOrderRequest {
+  call: string;
+  app_key: string;
+  app_secret: string;
+  param: any[];
 }
 
-const OMIE_API_URL = 'https://app.omie.com.br/api/v1'
+interface ShippingConfig {
+  carrier: string;
+  omie_carrier_code: string;
+  omie_service_code: string;
+}
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') as string
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') as string
+    const omieAppKey = Deno.env.get('OMIE_APP_KEY') as string
+    const omieAppSecret = Deno.env.get('OMIE_APP_SECRET') as string
 
-    const { action } = await req.json()
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
-    switch (action) {
-      case 'sync_order': {
-        const { order_id } = await req.json()
-        
-        // Get order details from database
-        const { data: order, error: orderError } = await supabaseClient
-          .from('orders')
-          .select('*')
-          .eq('id', order_id)
-          .single()
+    const { action, order_id } = await req.json()
 
-        if (orderError) throw orderError
+    if (action === 'sync_order') {
+      // Buscar pedido no Supabase
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          profiles (
+            full_name,
+            cpf,
+            cnpj,
+            address,
+            city,
+            state,
+            zip_code,
+            phone,
+            omie_code
+          )
+        `)
+        .eq('id', order_id)
+        .single()
 
-        // Create order in OMIE
-        const omieOrder = {
-          cabecalho: {
-            codigo_cliente: order.user_id,
-            data_previsao: new Date().toISOString().split('T')[0],
-            etapa: "10", // Initial status
-            codigo_pedido: order.id,
-          },
-          det: order.items.map((item: any) => ({
-            produto: {
-              codigo_produto: item.id,
-              descricao: item.name,
-            },
-            inf_adic: {
-              peso_liquido: 0, // Add actual weight when available
-              peso_bruto: 0,   // Add actual weight when available
-            },
+      if (orderError || !order) {
+        throw new Error('Pedido não encontrado')
+      }
+
+      // Buscar configuração de frete
+      const { data: shippingConfig } = await supabase
+        .from('shipping_configs')
+        .select('*')
+        .eq('active', true)
+        .single()
+
+      // Preparar dados para o Omie
+      const orderData = {
+        cabecalho: {
+          codigo_cliente: order.profiles.omie_code,
+          data_previsao: new Date().toISOString().split('T')[0],
+          etapa: '10', // Pedido Realizado
+          codigo_pedido: order.id,
+        },
+        frete: {
+          modalidade: "1", // CIF
+          transportadora: shippingConfig?.omie_carrier_code || "",
+          codigo_servico_correios: shippingConfig?.omie_service_code || "",
+          valor_frete: order.shipping_fee
+        },
+        det: order.items.map((item: any) => ({
+          produto: {
+            codigo: item.product_id,
             quantidade: item.quantity,
-            valor_unitario: item.price,
-          })),
-        }
-
-        const omieResponse = await fetch(`${OMIE_API_URL}/produtos/pedido/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            call: 'IncluirPedido',
-            app_key: Deno.env.get('OMIE_APP_KEY'),
-            app_secret: Deno.env.get('OMIE_APP_SECRET'),
-            param: [omieOrder],
-          }),
-        })
-
-        const omieData = await omieResponse.json()
-
-        // Update order with OMIE ID
-        const { error: updateError } = await supabaseClient
-          .from('orders')
-          .update({
-            omie_order_id: omieData.codigo_pedido,
-            omie_status: 'novo',
-            omie_last_update: new Date().toISOString(),
-          })
-          .eq('id', order_id)
-
-        if (updateError) throw updateError
-
-        return new Response(
-          JSON.stringify({ success: true }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+            valor_unitario: item.price
+          }
+        }))
       }
 
-      case 'check_status': {
-        const { order_id } = await req.json()
-        
-        // Get order details from database
-        const { data: order, error: orderError } = await supabaseClient
-          .from('orders')
-          .select('*')
-          .eq('id', order_id)
-          .single()
-
-        if (orderError) throw orderError
-
-        // Check order status in OMIE
-        const omieResponse = await fetch(`${OMIE_API_URL}/produtos/pedido/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            call: 'ConsultarPedido',
-            app_key: Deno.env.get('OMIE_APP_KEY'),
-            app_secret: Deno.env.get('OMIE_APP_SECRET'),
-            param: [{
-              codigo_pedido: order.omie_order_id,
-            }],
-          }),
+      // Enviar pedido para o Omie
+      const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          call: 'IncluirPedido',
+          app_key: omieAppKey,
+          app_secret: omieAppSecret,
+          param: [orderData]
         })
+      })
 
-        const omieData = await omieResponse.json()
+      const omieData = await omieResponse.json()
 
-        // Map OMIE status to our status
-        let status = 'novo'
-        switch (omieData.etapa) {
-          case '10': status = 'novo'; break;
-          case '20': status = 'aguardando_pagamento'; break;
-          case '30': status = 'pago'; break;
-          case '40': status = 'faturando'; break;
-          case '50': status = 'faturado'; break;
-          case '60': status = 'separacao'; break;
-          case '70': status = 'aguardando_envio'; break;
-          case '80': status = 'enviado'; break;
-          case '90': status = 'entregue'; break;
-          case '100': status = 'cancelado'; break;
-        }
-
-        // Update order status
-        const { error: updateError } = await supabaseClient
-          .from('orders')
-          .update({
-            omie_status: status,
-            omie_last_update: new Date().toISOString(),
-          })
-          .eq('id', order_id)
-
-        if (updateError) throw updateError
-
-        return new Response(
-          JSON.stringify({ success: true, status }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      if (omieData.faultstring) {
+        throw new Error(omieData.faultstring)
       }
 
-      default:
-        throw new Error('Invalid action')
+      // Atualizar pedido no Supabase
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          omie_order_id: omieData.codigo_pedido,
+          omie_status: 'novo',
+          omie_last_sync_attempt: new Date().toISOString()
+        })
+        .eq('id', order_id)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, omie_order_id: omieData.codigo_pedido }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
-  } catch (error) {
-    console.error('Error:', error)
+
+    else if (action === 'check_status') {
+      // Buscar pedido no Supabase
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', order_id)
+        .single()
+
+      if (orderError || !order || !order.omie_order_id) {
+        throw new Error('Pedido não encontrado ou não sincronizado com Omie')
+      }
+
+      // Consultar status no Omie
+      const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          call: 'ConsultarPedido',
+          app_key: omieAppKey,
+          app_secret: omieAppSecret,
+          param: [{
+            codigo_pedido: order.omie_order_id
+          }]
+        })
+      })
+
+      const omieData = await omieResponse.json()
+
+      if (omieData.faultstring) {
+        throw new Error(omieData.faultstring)
+      }
+
+      // Mapear status do Omie para nosso sistema
+      const statusMap: Record<string, string> = {
+        '10': 'novo',
+        '20': 'aguardando_pagamento',
+        '30': 'pago',
+        '40': 'faturando',
+        '50': 'faturado',
+        '60': 'separacao',
+        '70': 'aguardando_envio',
+        '80': 'enviado',
+        '90': 'entregue',
+        '100': 'cancelado'
+      }
+
+      const newStatus = statusMap[omieData.etapa] || order.omie_status
+
+      // Atualizar pedido no Supabase
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          omie_status: newStatus,
+          omie_invoice_number: omieData.numero_nf || order.omie_invoice_number,
+          omie_invoice_key: omieData.chave_nf || order.omie_invoice_key,
+          omie_invoice_date: omieData.data_nf || order.omie_invoice_date,
+          omie_tracking_code: omieData.codigo_rastreio || order.omie_tracking_code,
+          omie_shipping_company: omieData.transportadora || order.omie_shipping_company,
+          omie_last_sync_attempt: new Date().toISOString()
+        })
+        .eq('id', order_id)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          status: newStatus,
+          tracking: omieData.codigo_rastreio
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    throw new Error('Ação inválida')
+
+  } catch (err) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: err.message }),
       { 
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
       }
     )
   }

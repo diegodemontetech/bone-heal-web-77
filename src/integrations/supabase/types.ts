@@ -247,9 +247,17 @@ export type Database = {
           installments: number | null
           items: Json | null
           mp_preference_id: string | null
+          omie_invoice_date: string | null
+          omie_invoice_key: string | null
+          omie_invoice_number: string | null
+          omie_last_sync_attempt: string | null
           omie_last_update: string | null
           omie_order_id: string | null
+          omie_shipping_code: string | null
+          omie_shipping_company: string | null
           omie_status: string | null
+          omie_sync_errors: Json | null
+          omie_tracking_code: string | null
           payment_method: string | null
           shipping_address: Json | null
           shipping_fee: number
@@ -267,9 +275,17 @@ export type Database = {
           installments?: number | null
           items?: Json | null
           mp_preference_id?: string | null
+          omie_invoice_date?: string | null
+          omie_invoice_key?: string | null
+          omie_invoice_number?: string | null
+          omie_last_sync_attempt?: string | null
           omie_last_update?: string | null
           omie_order_id?: string | null
+          omie_shipping_code?: string | null
+          omie_shipping_company?: string | null
           omie_status?: string | null
+          omie_sync_errors?: Json | null
+          omie_tracking_code?: string | null
           payment_method?: string | null
           shipping_address?: Json | null
           shipping_fee?: number
@@ -287,9 +303,17 @@ export type Database = {
           installments?: number | null
           items?: Json | null
           mp_preference_id?: string | null
+          omie_invoice_date?: string | null
+          omie_invoice_key?: string | null
+          omie_invoice_number?: string | null
+          omie_last_sync_attempt?: string | null
           omie_last_update?: string | null
           omie_order_id?: string | null
+          omie_shipping_code?: string | null
+          omie_shipping_company?: string | null
           omie_status?: string | null
+          omie_sync_errors?: Json | null
+          omie_tracking_code?: string | null
           payment_method?: string | null
           shipping_address?: Json | null
           shipping_fee?: number
@@ -559,6 +583,39 @@ export type Database = {
           id?: string
           published_date?: string
           title?: string
+        }
+        Relationships: []
+      }
+      shipping_configs: {
+        Row: {
+          active: boolean | null
+          carrier: string
+          created_at: string
+          id: string
+          omie_carrier_code: string | null
+          omie_service_code: string | null
+          settings: Json | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          carrier: string
+          created_at?: string
+          id?: string
+          omie_carrier_code?: string | null
+          omie_service_code?: string | null
+          settings?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          carrier?: string
+          created_at?: string
+          id?: string
+          omie_carrier_code?: string | null
+          omie_service_code?: string | null
+          settings?: Json | null
+          updated_at?: string
         }
         Relationships: []
       }
