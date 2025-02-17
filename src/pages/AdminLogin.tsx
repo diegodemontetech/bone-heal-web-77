@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
@@ -140,6 +141,15 @@ const AdminLogin = () => {
                   loading_button_label: 'Entrando...',
                   email_input_placeholder: 'Seu email',
                   password_input_placeholder: 'Sua senha',
+                },
+                sign_up: {
+                  email_label: 'Email',
+                  password_label: 'Senha',
+                  button_label: 'Cadastrar',
+                  loading_button_label: 'Cadastrando...',
+                  email_input_placeholder: 'Seu email',
+                  password_input_placeholder: 'Sua senha',
+                  link_text: 'Não tem uma conta? Cadastre-se',
                 },
               },
             }}
