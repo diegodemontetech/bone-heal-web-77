@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -27,6 +27,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const { favorites } = useFavorites();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -35,40 +36,54 @@ export default function Navbar() {
   
   return (
     <div className="bg-background border-b">
-      <div className="container flex items-center justify-between py-4">
+      <div className="container flex items-center justify-between py-2">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/lovable-uploads/675ec55f-a56b-418f-b97b-4381493c3b3f.png" alt="BoneHeal" className="h-8" />
-          <span className="font-bold text-2xl text-primary">BoneHeal</span>
+          <img src="https://i.ibb.co/Mkv44CY8/7c232e-500-x-100-px-1.png" alt="BoneHeal" className="h-12" />
         </Link>
 
         <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList className="flex items-center gap-6">
+          <NavigationMenuList className="flex items-center gap-8">
             <NavigationMenuItem>
-              <Link to="/products" className="flex items-center gap-2">
+              <Link 
+                to="/products" 
+                className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/products' ? 'text-primary' : ''}`}
+              >
                 <Book className="w-4 h-4" />
                 <span>Produtos</span>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link to="/contact" className="flex items-center gap-2">
+              <Link 
+                to="/contact"
+                className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/contact' ? 'text-primary' : ''}`}
+              >
                 <Mail className="w-4 h-4" />
                 <span>Contato</span>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link to="/about" className="flex items-center gap-2">
+              <Link 
+                to="/about"
+                className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/about' ? 'text-primary' : ''}`}
+              >
                 <Info className="w-4 h-4" />
                 <span>História</span>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link to="/news" className="flex items-center gap-2">
+              <Link 
+                to="/news"
+                className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/news' ? 'text-primary' : ''}`}
+              >
                 <Newspaper className="w-4 h-4" />
                 <span>Notícias</span>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link to="/studies" className="flex items-center gap-2">
+              <Link 
+                to="/studies"
+                className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/studies' ? 'text-primary' : ''}`}
+              >
                 <Book className="w-4 h-4" />
                 <span>Artigos Científicos</span>
               </Link>
@@ -93,12 +108,9 @@ export default function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className="hidden md:flex gap-2">
+          <div className="hidden md:flex">
             <Link to="/login">
-              <Button variant="outline">Entrar</Button>
-            </Link>
-            <Link to="/register">
-              <Button>Cadastrar</Button>
+              <Button variant="outline" className="text-sm font-semibold">Área do Dentista</Button>
             </Link>
           </div>
         )}
@@ -152,18 +164,9 @@ export default function Navbar() {
                   Sair
                 </Button>
               ) : (
-                <>
-                  <Link to="/login">
-                    <Button variant="secondary" className="w-full">
-                      Entrar
-                    </Button>
-                  </Link>
-                  <Link to="/register">
-                    <Button className="w-full">
-                      Cadastrar
-                    </Button>
-                  </Link>
-                </>
+                <Link to="/login">
+                  <Button className="w-full">Área do Dentista</Button>
+                </Link>
               )}
             </div>
           </SheetContent>
