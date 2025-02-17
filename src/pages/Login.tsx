@@ -1,15 +1,18 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -155,6 +158,8 @@ const Login = () => {
           </Tabs>
         </div>
       </div>
+      <Footer />
+      <WhatsAppWidget />
     </div>
   );
 };
