@@ -1,69 +1,66 @@
-# Welcome to your Lovable project
 
-## Project info
+# BoneHeal Website
 
-**URL**: https://lovable.dev/projects/0950a60a-e3cb-478e-9bf5-5d4ba7f9d8fc
+## Descrição
+Website da BoneHeal, uma empresa especializada em produtos para regeneração óssea. O site inclui catálogo de produtos, blog de notícias, estudos científicos e sistema completo de e-commerce com integração ao Mercado Pago e Omie.
 
-## How can I edit this code?
+## Tecnologias Utilizadas
+- React
+- TypeScript
+- Tailwind CSS
+- Supabase (Backend e Autenticação)
+- Mercado Pago (Pagamentos)
+- Omie (ERP)
 
-There are several ways of editing your application.
+## Funcionalidades Principais
+- Catálogo de produtos com detalhes técnicos
+- Blog de notícias e estudos científicos
+- Carrinho de compras
+- Checkout integrado com Mercado Pago
+- Área administrativa para:
+  - Gerenciamento de produtos
+  - Gerenciamento de pedidos
+  - Configuração de fretes
+  - Gestão de conteúdo (notícias e estudos)
+  - Configuração de mensagens WhatsApp
+  - Gestão de leads e usuários
+  - Sincronização com Omie
 
-**Use Lovable**
+## Setup do Projeto
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0950a60a-e3cb-478e-9bf5-5d4ba7f9d8fc) and start prompting.
+### Requisitos
+- Node.js (versão LTS recomendada)
+- Conta no Supabase
+- Conta no Mercado Pago
+- Conta no Omie
 
-Changes made via Lovable will be committed automatically to this repo.
+### Instalação
+1. Clone o repositório
+2. Instale as dependências:
+```bash
+npm install
+```
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Configuração
+1. Configure as credenciais do Supabase
+2. Configure o token do Mercado Pago
+3. Configure as credenciais do Omie
+4. Execute o projeto:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Estrutura do Projeto
+- `/src/components`: Componentes React reutilizáveis
+- `/src/pages`: Páginas da aplicação
+- `/src/hooks`: Custom hooks
+- `/src/integrations`: Integrações com serviços externos
+- `/supabase/functions`: Edge Functions do Supabase
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/0950a60a-e3cb-478e-9bf5-5d4ba7f9d8fc) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## Contribuição
+Para contribuir com o projeto:
+1. Faça um fork do repositório
+2. Crie uma branch para sua feature
+3. Faça commit das mudanças
+4. Push para a branch
+5. Abra um Pull Request

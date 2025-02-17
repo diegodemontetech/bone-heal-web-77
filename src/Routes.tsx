@@ -1,124 +1,71 @@
 
-import {
-  createBrowserRouter,
-} from "react-router-dom";
+import { Routes as RouterRoutes, Route } from "react-router-dom";
 import Index from "@/pages/Index";
-import Login from "@/pages/Login";
 import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
+import About from "@/pages/About";
 import Contact from "@/pages/Contact";
-import Register from "@/pages/Register";
-import Profile from "@/pages/Profile";
-import Admin from "@/pages/Admin";
-import Users from "@/pages/admin/Users";
-import ProductsAdmin from "@/pages/admin/Products";
-import OrdersAdmin from "@/pages/admin/Orders";
-import NewsAdmin from "@/pages/admin/News";
-import StudiesAdmin from "@/pages/admin/Studies";
-import ShippingRatesAdmin from "@/pages/admin/ShippingRates";
-import WhatsappAdmin from "@/pages/admin/Whatsapp";
-import LeadsAdmin from "@/pages/admin/Leads";
-import Orders from "@/pages/Orders";
 import News from "@/pages/News";
+import NewsDetail from "@/pages/NewsDetail";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Admin from "@/pages/Admin";
+import AdminProducts from "@/pages/admin/Products";
+import AdminShippingRates from "@/pages/admin/ShippingRates";
+import AdminNews from "@/pages/admin/News";
+import AdminWhatsApp from "@/pages/admin/Whatsapp";
+import AdminWhatsAppMessages from "@/pages/admin/WhatsAppMessages";
+import AdminLogin from "@/pages/AdminLogin";
+import AdminStudies from "@/pages/admin/Studies";
 import Studies from "@/pages/Studies";
-import Shipping from "@/pages/Shipping";
-import Sync from "@/pages/admin/Sync";
-import Tickets from "@/pages/support/Tickets";
-import TicketDetails from "@/pages/support/TicketDetails";
+import Checkout from "@/pages/checkout/Checkout";
+import Success from "@/pages/checkout/Success";
+import Failure from "@/pages/checkout/Failure";
+import Cart from "@/pages/Cart";
+import Profile from "@/pages/Profile";
+import Orders from "@/pages/Orders";
+import AdminOrders from "@/pages/admin/Orders";
+import AdminEmailTemplates from "@/pages/admin/EmailTemplates";
+import AdminLeads from "@/pages/admin/Leads";
+import AdminSync from "@/pages/admin/Sync";
+import AdminUsers from "@/pages/admin/Users";
+import AdminSecurity from "@/pages/admin/Security";
 
-const routes = createBrowserRouter([
-  {
-    path: "/",
-    element: <Index />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/products",
-    element: <Products />,
-  },
-  {
-    path: "/products/:id",
-    element: <ProductDetail />,
-  },
-  {
-    path: "/contact",
-    element: <Contact />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-  },
-  {
-    path: "/profile",
-    element: <Profile />,
-  },
-  {
-    path: "/admin",
-    element: <Admin />,
-  },
-  {
-    path: "/admin/users",
-    element: <Users />,
-  },
-  {
-    path: "/admin/products",
-    element: <ProductsAdmin />,
-  },
-  {
-    path: "/admin/orders",
-    element: <OrdersAdmin />,
-  },
-  {
-    path: "/admin/news",
-    element: <NewsAdmin />,
-  },
-  {
-    path: "/admin/studies",
-    element: <StudiesAdmin />,
-  },
-  {
-    path: "/admin/shipping-rates",
-    element: <ShippingRatesAdmin />,
-  },
-  {
-    path: "/admin/whatsapp",
-    element: <WhatsappAdmin />,
-  },
-  {
-    path: "/admin/leads",
-    element: <LeadsAdmin />,
-  },
-  {
-    path: "/orders",
-    element: <Orders />,
-  },
-  {
-    path: "/news",
-    element: <News />,
-  },
-  {
-    path: "/studies",
-    element: <Studies />,
-  },
-  {
-    path: "/shipping",
-    element: <Shipping />,
-  },
-  {
-    path: "/admin/sync",
-    element: <Sync />,
-  },
-  {
-    path: "/support/tickets",
-    element: <Tickets />,
-  },
-  {
-    path: "/support/tickets/:id",
-    element: <TicketDetails />,
-  },
-]);
+const Routes = () => {
+  return (
+    <RouterRoutes>
+      <Route path="/" element={<Index />} />
+      <Route path="/products" element={<Products />} />
+      <Route path="/products/:slug" element={<ProductDetail />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/news" element={<News />} />
+      <Route path="/news/:slug" element={<NewsDetail />} />
+      <Route path="/studies" element={<Studies />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout/success" element={<Success />} />
+      <Route path="/checkout/failure" element={<Failure />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/orders" element={<Orders />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/products" element={<AdminProducts />} />
+      <Route path="/admin/shipping-rates" element={<AdminShippingRates />} />
+      <Route path="/admin/news" element={<AdminNews />} />
+      <Route path="/admin/studies" element={<AdminStudies />} />
+      <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
+      <Route path="/admin/whatsapp-messages" element={<AdminWhatsAppMessages />} />
+      <Route path="/admin/orders" element={<AdminOrders />} />
+      <Route path="/admin/email-templates" element={<AdminEmailTemplates />} />
+      <Route path="/admin/leads" element={<AdminLeads />} />
+      <Route path="/admin/sync" element={<AdminSync />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/security" element={<AdminSecurity />} />
+    </RouterRoutes>
+  );
+};
 
-export default routes;
+export default Routes;
