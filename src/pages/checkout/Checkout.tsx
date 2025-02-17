@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const Checkout = () => {
-  const { items, total, clear } = useCart();
+  const { cartItems, total, clear } = useCart();
   const session = useSession();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ const Checkout = () => {
         .from("orders")
         .insert({
           user_id: session?.user?.id,
-          items: items.map((item) => ({
+          items: cartItems.map((item) => ({
             product_id: item.id,
             quantity: item.quantity,
             price: item.price,
@@ -68,7 +68,7 @@ const Checkout = () => {
         {
           body: {
             orderId: order.id,
-            items: items.map((item) => ({
+            items: cartItems.map((item) => ({
               id: item.id,
               title: item.name,
               quantity: item.quantity || 1,
@@ -106,7 +106,7 @@ const Checkout = () => {
     }
   };
 
-  if (!items.length) {
+  if (!cartItems.length) {
     return (
       <div className="container mx-auto p-4">
         <Card>
@@ -134,7 +134,7 @@ const Checkout = () => {
           <div className="space-y-4">
             <div className="border-b pb-4">
               <h3 className="font-medium mb-2">Itens do pedido</h3>
-              {items.map((item) => (
+              {cartItems.map((item) => (
                 <div key={item.id} className="flex justify-between items-center py-2">
                   <div>
                     <p className="font-medium">{item.name}</p>

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Product } from "@/types/product";
-import { useCart, CartItem } from "@/hooks/use-cart";
+import { useCart } from "@/hooks/use-cart";
 import { ShoppingCart } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
 
@@ -13,28 +13,15 @@ interface ProductInfoProps {
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const [quantity, setQuantity] = useState(1);
-  const { cartItems, setCartItems } = useCart();
+  const { addItem } = useCart();
   const session = useSession();
 
   const handleAddToCart = () => {
-    const newItem: CartItem = {
+    addItem({
       id: product.id,
       name: product.name,
-      quantity,
       price: product.price || 0,
       image: product.main_image || "",
-    };
-
-    setCartItems((prev) => {
-      const existingItem = prev.find((item) => item.id === product.id);
-      if (existingItem) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, newItem];
     });
 
     toast.success("Produto adicionado ao carrinho", {
