@@ -2,31 +2,38 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useSession } from "@supabase/auth-helpers-react";
+import { useCart } from "@/hooks/use-cart";
+import { toast } from "sonner";
+import type { Product } from "@/types/product";
 
 interface ProductCardProps {
-  product: {
-    id: string;
-    name: string;
-    slug: string;
-    short_description: string;
-    main_image: string;
-    default_image_url: string;
-    gallery?: string[];
-    price?: number;
-  };
+  product: Product;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const session = useSession();
+  const { addItem } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Combine main_image and gallery for the carousel
   const images = (product.main_image || product.default_image_url)
     ? [product.main_image || product.default_image_url, ...(product.gallery || [])]
     : [];
+
+  const handleAddToCart = () => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price || 0,
+      quantity: 1,
+      image: product.main_image || product.default_image_url || "",
+    });
+    toast.success(`${product.name} adicionado ao carrinho`);
+  };
   
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -37,7 +44,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden"
+    >
       <Link to={`/products/${product.slug}`}>
         <div className="aspect-[4/3] relative overflow-hidden group">
           <img
@@ -77,6 +89,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
               </div>
             </>
           )}
+          {product.stock && product.stock < 5 && (
+            <Badge
+              variant="secondary"
+              className="absolute top-2 right-2 bg-red-100 text-red-800"
+            >
+              Últimas unidades
+            </Badge>
+          )}
         </div>
       </Link>
       <div className="p-6 bg-primary text-white">
@@ -89,14 +109,25 @@ const ProductCard = ({ product }: ProductCardProps) => {
             R$ {product.price.toFixed(2)}
           </p>
         )}
-        <Link to={`/products/${product.slug}`}>
-          <Button variant="secondary" className="w-full group">
-            Ver Detalhes
-            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link to={`/products/${product.slug}`} className="flex-1">
+            <Button variant="secondary" className="w-full group">
+              Ver Detalhes
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
+          {session && product.stock && product.stock > 0 && (
+            <Button
+              variant="secondary"
+              onClick={handleAddToCart}
+              className="flex-none"
+            >
+              <ShoppingBag className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
