@@ -19,17 +19,23 @@ const ProductDetail = () => {
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
+      console.log('Buscando produto com slug:', slug);
+      
       const { data, error } = await supabase
         .from("products")
         .select()
         .eq("slug", slug)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar produto:', error);
+        throw error;
+      }
+
+      console.log('Produto encontrado:', data);
       return data as Product;
     },
     enabled: !!slug,
-    staleTime: 1000 * 60 * 5, // Cache por 5 minutos
   });
 
   useEffect(() => {
@@ -40,8 +46,12 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
       </div>
     );
   }
