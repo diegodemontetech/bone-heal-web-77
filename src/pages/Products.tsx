@@ -10,10 +10,7 @@ import { ProductGrid } from "@/components/products/ProductGrid";
 import { Loader2 } from "lucide-react";
 
 const initialFilters: FilterValues = {
-  search: "",
-  priceRange: [0, 1000],
-  category: "",
-  sortBy: "name-asc",
+  sortBy: "price-asc",
 };
 
 export default function Products() {
@@ -28,20 +25,6 @@ export default function Products() {
         .order(filters.sortBy.split("-")[0], {
           ascending: filters.sortBy.split("-")[1] === "asc",
         });
-
-      if (filters.search) {
-        query = query.ilike("name", `%${filters.search}%`);
-      }
-
-      if (filters.category) {
-        query = query.eq("category", filters.category);
-      }
-
-      if (filters.priceRange) {
-        query = query
-          .gte("price", filters.priceRange[0])
-          .lte("price", filters.priceRange[1]);
-      }
 
       const { data, error } = await query;
 
@@ -77,7 +60,7 @@ export default function Products() {
             ) : !products?.length ? (
               <div className="flex items-center justify-center h-96">
                 <p className="text-muted-foreground">
-                  Nenhum produto encontrado com os filtros selecionados.
+                  Nenhum produto encontrado.
                 </p>
               </div>
             ) : (
