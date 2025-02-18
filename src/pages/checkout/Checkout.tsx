@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -57,21 +56,14 @@ const Checkout = () => {
 
     setIsCalculatingShipping(true);
     try {
-      // Primeiro, vamos obter o estado do CEP usando a API dos Correios
       const { data: correiosData, error: correiosError } = await supabase.functions.invoke("correios-shipping", {
         body: {
-          zipCodeOrigin: "04180112",
           zipCodeDestination: zip,
-          weight: 1,
-          length: 20,
-          width: 20,
-          height: 20,
         },
       });
 
       if (correiosError) throw correiosError;
 
-      // Agora vamos buscar a taxa de frete baseada no estado
       const { data: shippingRate, error: shippingError } = await supabase
         .from('shipping_rates')
         .select('rate, delivery_days')
@@ -137,7 +129,7 @@ const Checkout = () => {
             items: cartItems.map((item) => ({
               id: item.id,
               title: item.name,
-              quantity: item.quantity || 1,
+              quantity: item.quantity,
               unit_price: Number(item.price),
             })),
             shipping_cost: shippingFee,
@@ -162,7 +154,7 @@ const Checkout = () => {
           amount: total + shippingFee,
           payment_method: paymentMethod,
           status: "pending",
-          mercadopago_preference_id: preference.id,
+          external_id: preference.id
         });
 
       if (paymentError) {
