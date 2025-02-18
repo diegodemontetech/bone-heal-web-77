@@ -160,6 +160,9 @@ const Login = () => {
                       loading_button_label: 'Entrando...',
                       email_input_placeholder: 'Seu email',
                       password_input_placeholder: 'Sua senha',
+                      email_input_error: 'Email inválido',
+                      password_input_error: 'Senha inválida',
+                      general_error: 'Email ou senha incorretos',
                     },
                   },
                 }}
