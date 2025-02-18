@@ -19,17 +19,24 @@ export default function Products() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
+      console.log("Fetching products with filters:", filters);
+      
       let query = supabase
         .from("products")
         .select("*")
-        .eq('active', true) // Apenas produtos ativos
+        .eq('active', true)
         .order(filters.sortBy.split("-")[0], {
           ascending: filters.sortBy.split("-")[1] === "asc",
         });
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching products:", error);
+        throw error;
+      }
+
+      console.log("Products fetched:", data);
       return data as Product[];
     },
   });
