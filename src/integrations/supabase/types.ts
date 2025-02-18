@@ -373,6 +373,7 @@ export type Database = {
           amount: number
           boleto_url: string | null
           created_at: string
+          external_id: string | null
           id: string
           mercadopago_payment_id: string | null
           mercadopago_payment_type: string | null
@@ -388,6 +389,7 @@ export type Database = {
           amount: number
           boleto_url?: string | null
           created_at?: string
+          external_id?: string | null
           id?: string
           mercadopago_payment_id?: string | null
           mercadopago_payment_type?: string | null
@@ -403,6 +405,7 @@ export type Database = {
           amount?: number
           boleto_url?: string | null
           created_at?: string
+          external_id?: string | null
           id?: string
           mercadopago_payment_id?: string | null
           mercadopago_payment_type?: string | null

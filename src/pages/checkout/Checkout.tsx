@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -146,6 +147,17 @@ const Checkout = () => {
         throw preferenceError;
       }
 
+      // Atualizar pedido com o ID da preferência
+      const { error: updateOrderError } = await supabase
+        .from("orders")
+        .update({ mp_preference_id: preference.id })
+        .eq("id", order.id);
+
+      if (updateOrderError) {
+        console.error("Erro ao atualizar pedido:", updateOrderError);
+        throw updateOrderError;
+      }
+
       // Criar registro de pagamento
       const { error: paymentError } = await supabase
         .from("payments")
@@ -154,9 +166,6 @@ const Checkout = () => {
           amount: total + shippingFee,
           payment_method: paymentMethod,
           status: "pending",
-          mercadopago_payment_id: null,
-          mercadopago_status: null,
-          mercadopago_payment_type: null,
           external_id: preference.id
         });
 
