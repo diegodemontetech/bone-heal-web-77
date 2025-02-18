@@ -96,7 +96,7 @@ export default function RegistrationForm() {
     try {
       setLoading(true);
 
-      const userData = {
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -114,21 +114,23 @@ export default function RegistrationForm() {
             receive_news: values.receiveNews,
           }
         }
-      };
+      });
 
-      console.log('Enviando dados para registro:', userData);
-
-      const { data, error } = await supabase.auth.signUp(userData);
-
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("User already registered")) {
+          toast.error("Este email já está cadastrado. Por favor, faça login.");
+          return;
+        }
+        throw error;
+      }
 
       console.log('Registro realizado com sucesso:', data);
       
-      toast.success('Cadastro realizado com sucesso! Verifique seu email.');
+      toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
       navigate('/login');
     } catch (error: any) {
       console.error('Erro no cadastro:', error);
-      toast.error(error.message || 'Erro ao realizar cadastro');
+      toast.error(error.message || 'Erro ao realizar cadastro. Por favor, tente novamente.');
     } finally {
       setLoading(false);
     }
