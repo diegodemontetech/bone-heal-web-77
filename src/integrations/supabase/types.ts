@@ -461,6 +461,7 @@ export type Database = {
       }
       products: {
         Row: {
+          active: boolean | null
           created_at: string
           default_image_url: string | null
           description: string | null
@@ -485,6 +486,7 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          active?: boolean | null
           created_at?: string
           default_image_url?: string | null
           description?: string | null
@@ -509,6 +511,7 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          active?: boolean | null
           created_at?: string
           default_image_url?: string | null
           description?: string | null
