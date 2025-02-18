@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useCart } from "@/hooks/use-cart";
@@ -9,7 +10,6 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
 
 const Cart = () => {
   const session = useSession();
@@ -90,34 +90,49 @@ const Cart = () => {
     }
 
     try {
+      const orderData = {
+        user_id: session.user.id,
+        total_amount: total,
+        subtotal: subtotal,
+        shipping_fee: shippingCost,
+        items: cartItems.map(item => ({
+          product_id: item.id,
+          quantity: item.quantity,
+          price: item.price
+        })),
+        shipping_address: {
+          zip_code: zipCode
+        },
+        status: 'pending'
+      };
+
+      // Criar pedido
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert({
-          user_id: session.user.id,
-          total_amount: total,
-          items: cartItems as unknown as Json,
-          shipping_address: {
-            zip_code: zipCode,
-            shipping_cost: shippingCost,
-          } as Json,
-        })
+        .insert(orderData)
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      const { error: omieError } = await supabase.functions.invoke("omie-integration", {
-        body: { action: "sync_order", order_id: order.id },
-      });
+      // Criar pagamento
+      const { error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          order_id: order.id,
+          amount: total,
+          payment_method: 'pix',
+          status: 'pending'
+        });
 
-      if (omieError) throw omieError;
+      if (paymentError) throw paymentError;
 
-      toast.success("Pedido criado com sucesso!", {
-        duration: 2000
-      });
+      // Redirecionar para checkout
+      window.location.href = `/checkout/${order.id}`;
+      
     } catch (error) {
-      console.error("Erro ao criar pedido:", error);
-      toast.error("Erro ao criar o pedido. Por favor, tente novamente.", {
+      console.error("Erro no checkout:", error);
+      toast.error("Erro ao processar o pedido. Por favor, tente novamente.", {
         duration: 2000
       });
     }
@@ -143,7 +158,7 @@ const Cart = () => {
                   className="flex items-center gap-4 bg-white p-4 rounded-lg shadow"
                 >
                   <img
-                    src={`/products/${item.image}`}
+                    src={item.image}
                     alt={item.name}
                     className="w-20 h-20 object-cover rounded"
                   />
