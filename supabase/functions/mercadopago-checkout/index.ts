@@ -1,105 +1,75 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { corsHeaders } from "../_shared/cors.ts"
+import MercadoPago from 'https://esm.sh/mercadopago@1.5.16'
 
-interface RequestBody {
-  orderId: string;
-  items: Array<{
-    id: string;
-    title: string;
-    quantity: number;
-    unit_price: number;
-  }>;
-  buyer: {
-    name: string;
-    email: string;
-  };
-}
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+const handler = async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
+    const { orderId, items, shipping_cost, buyer } = await req.json()
 
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('Missing Authorization header')
-    }
+    // Configurar MercadoPago
+    const mercadopago = new MercadoPago(Deno.env.get('MP_ACCESS_TOKEN'))
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (userError || !user) {
-      throw new Error('Invalid token')
-    }
-
-    const { orderId, items, buyer } = await req.json() as RequestBody
-
-    // Criar preferência no Mercado Pago
+    // Criar preferência para checkout transparente
     const preference = {
-      items,
+      items: items.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        quantity: item.quantity,
+        unit_price: Number(item.unit_price),
+        currency_id: 'BRL',
+      })),
       payer: {
-        name: buyer.name,
         email: buyer.email,
+        name: buyer.name,
+      },
+      payment_methods: {
+        excluded_payment_methods: [],
+        excluded_payment_types: [],
+        installments: 12,
+      },
+      shipments: {
+        cost: shipping_cost,
+        mode: "not_specified",
       },
       back_urls: {
-        success: `${req.headers.get('origin')}/checkout/success`,
-        failure: `${req.headers.get('origin')}/checkout/failure`,
-        pending: `${req.headers.get('origin')}/checkout/pending`,
+        success: `${req.headers.get("origin")}/checkout/success?order_id=${orderId}`,
+        failure: `${req.headers.get("origin")}/checkout/failure?order_id=${orderId}`,
+        pending: `${req.headers.get("origin")}/checkout/pending?order_id=${orderId}`,
       },
       auto_return: "approved",
       external_reference: orderId,
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      notification_url: `${req.headers.get("origin")}/api/mercadopago-webhook`,
     }
 
-    const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('MP_ACCESS_TOKEN')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(preference),
-    })
-
-    if (!mpResponse.ok) {
-      throw new Error(`Mercado Pago error: ${await mpResponse.text()}`)
-    }
-
-    const mpData = await mpResponse.json()
-
-    // Atualizar o pedido com o ID da preferência
-    const { error: updateError } = await supabaseClient
-      .from('orders')
-      .update({ mp_preference_id: mpData.id })
-      .eq('id', orderId)
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      throw new Error(`Error updating order: ${updateError.message}`)
-    }
-
+    const response = await mercadopago.preferences.create(preference)
+    
     return new Response(
-      JSON.stringify(mpData),
+      JSON.stringify({
+        id: response.body.id,
+        init_point: response.body.init_point,
+        sandbox_init_point: response.body.sandbox_init_point,
+        public_key: Deno.env.get('MP_PUBLIC_KEY'),
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
       },
     )
   } catch (error) {
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     )
   }
-})
+}
+
+serve(handler)

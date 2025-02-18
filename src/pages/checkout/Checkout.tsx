@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -122,7 +121,7 @@ const Checkout = () => {
       }
 
       // Criar preferência de pagamento no Mercado Pago
-      const { data: preference, error: preferenceError } = await supabase.functions.invoke(
+      const { data: mpPreference, error: preferenceError } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
           body: {
@@ -147,10 +146,28 @@ const Checkout = () => {
         throw preferenceError;
       }
 
+      // Inicializar o Mercado Pago
+      // @ts-ignore
+      const mp = new MercadoPago(mpPreference.public_key, {
+        locale: 'pt-BR'
+      });
+
+      // Criar botão de pagamento
+      // @ts-ignore
+      const checkout = mp.checkout({
+        preference: {
+          id: mpPreference.id
+        },
+        render: {
+          container: '#payment-form',
+          label: 'Pagar',
+        }
+      });
+
       // Atualizar pedido com o ID da preferência
       const { error: updateOrderError } = await supabase
         .from("orders")
-        .update({ mp_preference_id: preference.id })
+        .update({ mp_preference_id: mpPreference.id })
         .eq("id", order.id);
 
       if (updateOrderError) {
@@ -166,7 +183,7 @@ const Checkout = () => {
           amount: total + shippingFee,
           payment_method: paymentMethod,
           status: "pending",
-          external_id: preference.id
+          external_id: mpPreference.id
         });
 
       if (paymentError) {
@@ -174,9 +191,10 @@ const Checkout = () => {
         throw paymentError;
       }
 
-      // Limpar carrinho e redirecionar para o Mercado Pago
+      // Limpar carrinho
       clear();
-      window.location.href = preference.init_point;
+      
+      // O checkout será renderizado no elemento com id 'payment-form'
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       toast.error(error.message || "Erro ao processar pagamento");
@@ -290,6 +308,8 @@ const Checkout = () => {
           </CardContent>
         </Card>
       </div>
+      {/* Adicionar div para renderizar o formulário de pagamento */}
+      <div id="payment-form" className="mt-6"></div>
     </div>
   );
 };
