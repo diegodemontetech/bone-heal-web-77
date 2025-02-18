@@ -9,7 +9,6 @@ import Footer from "@/components/Footer";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RegistrationForm from "@/components/auth/RegistrationForm";
-import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
@@ -18,50 +17,37 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Simplificar a verificação de sessão
-  const { data: session, isLoading: isSessionLoading } = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
-    },
-  });
-
-  // Remover a query de perfil separada e incluir na verificação de auth
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
-      
-      if (event === "SIGNED_IN") {
-        if (!session?.user?.id) return;
+    // Verificar sessão existente
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        navigate("/products");
+      }
+    };
 
+    checkSession();
+
+    // Monitorar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
         try {
-          const { data: profile, error } = await supabase
+          const { data: profile } = await supabase
             .from("profiles")
             .select("is_admin")
             .eq("id", session.user.id)
             .single();
 
-          if (error) throw error;
-
-          // Redirecionar imediatamente com base no perfil
-          if (profile?.is_admin) {
-            navigate("/admin");
-          } else {
-            navigate("/products");
-          }
-
+          const destination = profile?.is_admin ? "/admin" : "/products";
+          navigate(destination);
+          
           toast({
             title: "Login realizado com sucesso!",
             description: profile?.is_admin ? "Bem-vindo à área administrativa." : "Bem-vindo à área do dentista.",
           });
-        } catch (error: any) {
-          console.error("Error after sign in:", error);
-          toast({
-            title: "Erro ao carregar perfil",
-            description: error.message || "Ocorreu um erro ao carregar seu perfil.",
-            variant: "destructive",
-          });
+        } catch (error) {
+          console.error("Erro ao verificar perfil:", error);
+          navigate("/products"); // Fallback para rota padrão
         }
       }
     });
@@ -70,28 +56,6 @@ const Login = () => {
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
-
-  // Redirecionar se já estiver logado
-  useEffect(() => {
-    if (session?.user) {
-      navigate("/products");
-    }
-  }, [session, navigate]);
-
-  if (isSessionLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const handleTabChange = () => {
-    const registerTab = document.querySelector('[value="register"]') as HTMLButtonElement;
-    if (registerTab) {
-      registerTab.click();
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -135,17 +99,6 @@ const Login = () => {
                 providers={[]}
                 view="sign_in"
               />
-              <div className="mt-4 text-center">
-                <p className="text-sm text-gray-600">
-                  Não tem uma conta ainda?{" "}
-                  <button
-                    onClick={handleTabChange}
-                    className="text-primary hover:underline"
-                  >
-                    Cadastre-se aqui
-                  </button>
-                </p>
-              </div>
             </TabsContent>
 
             <TabsContent value="register">
