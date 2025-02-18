@@ -65,17 +65,17 @@ export type Database = {
       }
       dental_specialties: {
         Row: {
-          created_at: string
+          created_at: string | null
           id: string
           name: string
         }
         Insert: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           name: string
         }
         Update: {
-          created_at?: string
+          created_at?: string | null
           id?: string
           name?: string
         }
