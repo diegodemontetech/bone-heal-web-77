@@ -3,9 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-} from "@/components/ui/form";
+import { Form } from "@/components/ui/form";
 import { useEffect, useState } from "react";
 import { RegistrationFormFields } from "./RegistrationFormFields";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +58,6 @@ export default function RegistrationForm() {
   const { data: specialties, isLoading: loadingSpecialties } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
-      console.log('Buscando especialidades...');
       const { data, error } = await supabase
         .from('dental_specialties')
         .select('*')
@@ -71,7 +68,6 @@ export default function RegistrationForm() {
         throw error;
       }
 
-      console.log('Especialidades encontradas:', data);
       return data || [];
     },
   });
@@ -107,18 +103,6 @@ export default function RegistrationForm() {
         options: {
           data: {
             full_name: values.fullName,
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        console.log('Usuário criado, atualizando perfil...');
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: values.fullName,
             cro: values.cro,
             specialty: values.specialty,
             address: values.address,
@@ -129,11 +113,11 @@ export default function RegistrationForm() {
             phone: values.phone,
             cnpj: values.cnpj,
             receive_news: values.receiveNews,
-          })
-          .eq('id', authData.user.id);
+          }
+        }
+      });
 
-        if (profileError) throw profileError;
-      }
+      if (authError) throw authError;
 
       toast.success('Cadastro realizado com sucesso! Verifique seu email.');
       navigate('/login');
