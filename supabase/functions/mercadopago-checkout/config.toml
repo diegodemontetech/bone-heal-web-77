@@ -1,4 +1,2 @@
 
 project_id = "kurpshcdafxbyqnzxvxu"
-[secrets]
-MP_ACCESS_TOKEN = "YOUR_MERCADO_PAGO_ACCESS_TOKEN"

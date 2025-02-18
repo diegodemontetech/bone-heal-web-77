@@ -1,16 +1,27 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { corsHeaders } from "../_shared/cors.ts"
 import MercadoPago from 'https://esm.sh/mercadopago@1.5.16'
 
-const handler = async (req: Request) => {
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
     const { orderId, items, shipping_cost, buyer } = await req.json()
+
+    if (!orderId || !items || !buyer) {
+      throw new Error("Dados incompletos para criar preferência de pagamento")
+    }
+
+    console.log("Criando preferência para pedido:", orderId)
 
     // Configurar MercadoPago
     const mercadopago = new MercadoPago(Deno.env.get('MP_ACCESS_TOKEN'))
@@ -47,7 +58,11 @@ const handler = async (req: Request) => {
       notification_url: `${req.headers.get("origin")}/api/mercadopago-webhook`,
     }
 
+    console.log("Preferência configurada:", preference)
+
     const response = await mercadopago.preferences.create(preference)
+
+    console.log("Preferência criada com sucesso:", response.body.id)
     
     return new Response(
       JSON.stringify({
@@ -61,15 +76,15 @@ const handler = async (req: Request) => {
       },
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Erro ao criar preferência:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'Erro ao processar pagamento' 
+      }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     )
   }
-}
-
-serve(handler)
+})
