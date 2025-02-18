@@ -23,6 +23,12 @@ interface RegistrationFormFieldsProps {
 }
 
 export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFieldsProps) => {
+  const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Remove todos os caracteres não numéricos e limita a 8 dígitos
+    const formattedZipCode = e.target.value.replace(/\D/g, '').substring(0, 8);
+    form.setValue('zipCode', formattedZipCode);
+  };
+
   return (
     <>
       <FormField
@@ -174,21 +180,17 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
           <FormItem>
             <FormLabel>CEP</FormLabel>
             <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="phone"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Telefone</FormLabel>
-            <FormControl>
-              <Input {...field} />
+              <Input 
+                {...field} 
+                onChange={handleZipCodeChange}
+                onBlur={(e) => {
+                  // Limpa o valor se não for um CEP válido
+                  if (e.target.value.length !== 8) {
+                    form.setValue('zipCode', '');
+                  }
+                  field.onBlur();
+                }}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
