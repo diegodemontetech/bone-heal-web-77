@@ -18,29 +18,34 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: session } = useQuery({
+  const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting session:", error);
+        throw error;
+      }
       return session;
     },
   });
 
-  const { data: profile, isLoading } = useQuery({
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
         .maybeSingle();
-
+      
       if (error) {
         console.error("Error fetching profile:", error);
         throw error;
       }
-
+      
       return data;
     },
     enabled: !!session?.user?.id,
@@ -80,8 +85,6 @@ const Login = () => {
             variant: "destructive",
           });
         }
-      } else if (event === "SIGNED_OUT") {
-        console.log("User signed out");
       }
     });
 
@@ -90,32 +93,24 @@ const Login = () => {
     };
   }, [navigate, toast]);
 
+  // Redirecionar se já estiver logado
   useEffect(() => {
-    if (session && !isLoading && profile) {
+    if (session && profile && !isSessionLoading && !isProfileLoading) {
       if (profile.is_admin) {
         navigate("/admin");
       } else {
         navigate("/products");
       }
     }
-  }, [session, profile, isLoading, navigate]);
+  }, [session, profile, isSessionLoading, isProfileLoading, navigate]);
 
-  if (isLoading) {
+  if (isSessionLoading || (session && isProfileLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  const handleError = (error: any) => {
-    console.error("Auth error:", error);
-    toast({
-      title: "Erro ao fazer login",
-      description: "Email ou senha incorretos. Por favor, tente novamente.",
-      variant: "destructive",
-    });
-  };
 
   const handleTabChange = () => {
     const registerTab = document.querySelector('[value="register"]') as HTMLButtonElement;
