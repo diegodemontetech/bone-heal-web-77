@@ -54,6 +54,7 @@ const formSchema = z.object({
 
 export default function RegistrationForm() {
   const [specialties, setSpecialties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -78,19 +79,22 @@ export default function RegistrationForm() {
 
   useEffect(() => {
     const fetchSpecialties = async () => {
-      const { data, error } = await supabase
-        .from('dental_specialties')
-        .select('*');
+      try {
+        const { data, error } = await supabase
+          .from('dental_specialties')
+          .select('*');
 
-      if (error) {
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          console.log('Especialidades carregadas:', data);
+          setSpecialties(data);
+        }
+      } catch (error) {
         console.error('Erro ao buscar especialidades:', error);
         toast.error('Erro ao carregar especialidades');
-        return;
-      }
-
-      if (data) {
-        console.log('Especialidades carregadas:', data);
-        setSpecialties(data);
       }
     };
 
@@ -99,7 +103,10 @@ export default function RegistrationForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const { error } = await supabase.auth.signUp({
+      setLoading(true);
+
+      // Primeiro criar o usuário no Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -109,13 +116,37 @@ export default function RegistrationForm() {
         }
       });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // Depois atualizar o perfil com os dados adicionais
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            full_name: values.fullName,
+            cro: values.cro,
+            specialty: values.specialty,
+            address: values.address,
+            city: values.city,
+            state: values.state,
+            neighborhood: values.neighborhood,
+            zip_code: values.zipCode,
+            phone: values.phone,
+            cnpj: values.cnpj,
+            receive_news: values.receiveNews,
+          })
+          .eq('id', authData.user.id);
+
+        if (profileError) throw profileError;
+      }
 
       toast.success('Cadastro realizado com sucesso! Verifique seu email.');
       navigate('/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no cadastro:', error);
-      toast.error('Erro ao realizar cadastro');
+      toast.error(error.message || 'Erro ao realizar cadastro');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -123,8 +154,8 @@ export default function RegistrationForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <RegistrationFormFields form={form} specialties={specialties} />
-        <Button type="submit" className="w-full">
-          Cadastrar
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Cadastrando..." : "Cadastrar"}
         </Button>
       </form>
     </Form>

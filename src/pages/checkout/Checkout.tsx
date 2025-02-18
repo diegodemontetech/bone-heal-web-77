@@ -154,6 +154,9 @@ const Checkout = () => {
           amount: total + shippingFee,
           payment_method: paymentMethod,
           status: "pending",
+          mercadopago_payment_id: null,
+          mercadopago_status: null,
+          mercadopago_payment_type: null,
           external_id: preference.id
         });
 
@@ -167,7 +170,7 @@ const Checkout = () => {
       window.location.href = preference.init_point;
     } catch (error: any) {
       console.error("Erro no checkout:", error);
-      toast.error("Erro ao processar pagamento");
+      toast.error(error.message || "Erro ao processar pagamento");
     } finally {
       setLoading(false);
     }
