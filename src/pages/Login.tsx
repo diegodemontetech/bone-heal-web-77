@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
@@ -89,6 +90,18 @@ const Login = () => {
           title: "Logout realizado com sucesso",
           description: "Você foi desconectado da sua conta.",
         });
+      } else if (event === "USER_UPDATED") {
+        console.log("User updated");
+      } else if (event === "PASSWORD_RECOVERY") {
+        toast({
+          title: "Recuperação de senha",
+          description: "Verifique seu email para redefinir sua senha.",
+        });
+      } else if (event === "SIGNED_UP") {
+        toast({
+          title: "Cadastro realizado",
+          description: "Verifique seu email para confirmar sua conta.",
+        });
       }
     });
 
@@ -164,14 +177,6 @@ const Login = () => {
                 }}
                 providers={[]}
                 view="sign_in"
-                onError={(error) => {
-                  console.error("Auth error:", error);
-                  toast({
-                    title: "Erro ao fazer login",
-                    description: "Verifique suas credenciais e tente novamente.",
-                    variant: "destructive",
-                  });
-                }}
               />
               <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600">
