@@ -149,8 +149,26 @@ const Login = () => {
                 }}
                 providers={[]}
                 view="sign_in"
-                redirectTo={window.location.origin + "/products"}
+                onError={(error) => {
+                  console.error("Auth error:", error);
+                  toast({
+                    title: "Erro ao fazer login",
+                    description: "Email ou senha incorretos. Por favor, tente novamente.",
+                    variant: "destructive",
+                  });
+                }}
               />
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-600">
+                  Não tem uma conta ainda?{" "}
+                  <button
+                    onClick={() => document.querySelector('[value="register"]')?.click()}
+                    className="text-primary hover:underline"
+                  >
+                    Cadastre-se aqui
+                  </button>
+                </p>
+              </div>
             </TabsContent>
 
             <TabsContent value="register">
