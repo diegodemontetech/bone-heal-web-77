@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
@@ -17,39 +18,16 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Simplificar a verificação de sessão
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error getting session:", error);
-        throw error;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
       return session;
     },
   });
 
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["profile", session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-      
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
-
+  // Remover a query de perfil separada e incluir na verificação de auth
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session);
@@ -60,22 +38,23 @@ const Login = () => {
         try {
           const { data: profile, error } = await supabase
             .from("profiles")
-            .select("*")
+            .select("is_admin")
             .eq("id", session.user.id)
-            .maybeSingle();
+            .single();
 
           if (error) throw error;
 
+          // Redirecionar imediatamente com base no perfil
           if (profile?.is_admin) {
             navigate("/admin");
-            return;
+          } else {
+            navigate("/products");
           }
 
           toast({
             title: "Login realizado com sucesso!",
-            description: "Bem-vindo à área do dentista.",
+            description: profile?.is_admin ? "Bem-vindo à área administrativa." : "Bem-vindo à área do dentista.",
           });
-          navigate("/products");
         } catch (error: any) {
           console.error("Error after sign in:", error);
           toast({
@@ -84,18 +63,6 @@ const Login = () => {
             variant: "destructive",
           });
         }
-      } else if (event === "SIGNED_OUT") {
-        toast({
-          title: "Logout realizado com sucesso",
-          description: "Você foi desconectado da sua conta.",
-        });
-      } else if (event === "USER_UPDATED") {
-        console.log("User updated");
-      } else if (event === "USER_DELETED") {
-        toast({
-          title: "Conta deletada",
-          description: "Sua conta foi removida com sucesso.",
-        });
       }
     });
 
@@ -104,17 +71,14 @@ const Login = () => {
     };
   }, [navigate, toast]);
 
+  // Redirecionar se já estiver logado
   useEffect(() => {
-    if (session && profile && !isSessionLoading && !isProfileLoading) {
-      if (profile.is_admin) {
-        navigate("/admin");
-      } else {
-        navigate("/products");
-      }
+    if (session?.user) {
+      navigate("/products");
     }
-  }, [session, profile, isSessionLoading, isProfileLoading, navigate]);
+  }, [session, navigate]);
 
-  if (isSessionLoading || (session && isProfileLoading)) {
+  if (isSessionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
