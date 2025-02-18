@@ -14,8 +14,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
     currency: "BRL",
   }).format(product.price || 0);
 
-  // Garantir que temos um slug válido
-  const productUrl = product.slug ? `/products/${product.slug}` : "#";
+  // Validar e sanitizar o slug
+  const productUrl = product.slug && product.slug.trim() 
+    ? `/products/${encodeURIComponent(product.slug.trim())}` 
+    : "/products";
 
   return (
     <Card className="relative group">
