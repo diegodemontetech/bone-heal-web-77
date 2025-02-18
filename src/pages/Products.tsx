@@ -22,6 +22,7 @@ export default function Products() {
       let query = supabase
         .from("products")
         .select("*")
+        .eq('active', true) // Apenas produtos ativos
         .order(filters.sortBy.split("-")[0], {
           ascending: filters.sortBy.split("-")[1] === "asc",
         });
@@ -43,7 +44,6 @@ export default function Products() {
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
-          {/* Sidebar with filters */}
           <aside className="w-full md:w-64 shrink-0">
             <ProductFilters 
               onFilterChange={handleFilterChange} 
@@ -51,7 +51,6 @@ export default function Products() {
             />
           </aside>
 
-          {/* Main content */}
           <div className="flex-1">
             {isLoading ? (
               <div className="flex items-center justify-center h-96">

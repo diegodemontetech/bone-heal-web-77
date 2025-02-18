@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 import ProductForm from "@/components/admin/ProductForm";
 
 const AdminProducts = () => {
@@ -25,21 +25,38 @@ const AdminProducts = () => {
   const { data: products, refetch, isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
-      console.log("Buscando produtos...");
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .order("created_at", { ascending: false });
       
-      if (error) {
-        console.error("Erro ao buscar produtos:", error);
-        throw error;
-      }
-
-      console.log("Produtos encontrados:", data);
+      if (error) throw error;
       return data;
     },
   });
+
+  const handleToggleActive = async (id: string, currentActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ active: !currentActive })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: `Produto ${!currentActive ? "ativado" : "desativado"} com sucesso`,
+      });
+      
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao alterar status do produto",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase
@@ -128,19 +145,20 @@ const AdminProducts = () => {
                 <TableHead>Estoque</TableHead>
                 <TableHead>Última Atualização</TableHead>
                 <TableHead>Status Omie</TableHead>
+                <TableHead>Ativo</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : products?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                     Nenhum produto encontrado
                   </TableCell>
                 </TableRow>
@@ -168,6 +186,12 @@ const AdminProducts = () => {
                       }`}>
                         {product.omie_sync ? "Sincronizado" : "Pendente"}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={product.active}
+                        onCheckedChange={() => handleToggleActive(product.id, product.active)}
+                      />
                     </TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
