@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
@@ -92,15 +91,10 @@ const Login = () => {
         });
       } else if (event === "USER_UPDATED") {
         console.log("User updated");
-      } else if (event === "PASSWORD_RECOVERY") {
+      } else if (event === "USER_DELETED") {
         toast({
-          title: "Recuperação de senha",
-          description: "Verifique seu email para redefinir sua senha.",
-        });
-      } else if (event === "SIGNED_UP") {
-        toast({
-          title: "Cadastro realizado",
-          description: "Verifique seu email para confirmar sua conta.",
+          title: "Conta deletada",
+          description: "Sua conta foi removida com sucesso.",
         });
       }
     });
@@ -110,7 +104,6 @@ const Login = () => {
     };
   }, [navigate, toast]);
 
-  // Redirecionar se já estiver logado
   useEffect(() => {
     if (session && profile && !isSessionLoading && !isProfileLoading) {
       if (profile.is_admin) {
