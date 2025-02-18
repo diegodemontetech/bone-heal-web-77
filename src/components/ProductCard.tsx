@@ -15,7 +15,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   }).format(product.price || 0);
 
   // Garantir que o slug é válido e criar URL absoluta
-  const productUrl = `/products/${product.slug || ''}`;
+  const productUrl = product.slug ? `/products/${product.slug}` : "/products";
 
   return (
     <Card className="relative group">

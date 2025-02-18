@@ -31,6 +31,7 @@ const ProductDetail = () => {
         .from("products")
         .select("*")
         .eq("slug", slug)
+        .eq("active", true)
         .maybeSingle();
 
       if (error) {
