@@ -11,6 +11,7 @@ import { RegistrationFormFields } from "./RegistrationFormFields";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -53,9 +54,27 @@ const formSchema = z.object({
 });
 
 export default function RegistrationForm() {
-  const [specialties, setSpecialties] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const { data: specialties, isLoading: loadingSpecialties } = useQuery({
+    queryKey: ['dental-specialties'],
+    queryFn: async () => {
+      console.log('Buscando especialidades...');
+      const { data, error } = await supabase
+        .from('dental_specialties')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        console.error('Erro ao buscar especialidades:', error);
+        throw error;
+      }
+
+      console.log('Especialidades encontradas:', data);
+      return data || [];
+    },
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,40 +96,11 @@ export default function RegistrationForm() {
     },
   });
 
-  useEffect(() => {
-    const fetchSpecialties = async () => {
-      try {
-        console.log('Iniciando busca de especialidades...');
-        const { data, error } = await supabase
-          .from('dental_specialties')
-          .select('*');
-
-        if (error) {
-          console.error('Erro ao buscar especialidades:', error);
-          throw error;
-        }
-
-        if (data) {
-          console.log('Especialidades carregadas:', data);
-          setSpecialties(data);
-        } else {
-          console.log('Nenhuma especialidade encontrada');
-        }
-      } catch (error) {
-        console.error('Erro ao buscar especialidades:', error);
-        toast.error('Erro ao carregar especialidades');
-      }
-    };
-
-    fetchSpecialties();
-  }, []);
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
       console.log('Iniciando cadastro com valores:', values);
 
-      // Primeiro criar o usuário no Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -123,7 +113,6 @@ export default function RegistrationForm() {
 
       if (authError) throw authError;
 
-      // Depois atualizar o perfil com os dados adicionais
       if (authData.user) {
         console.log('Usuário criado, atualizando perfil...');
         const { error: profileError } = await supabase
@@ -156,10 +145,17 @@ export default function RegistrationForm() {
     }
   }
 
+  if (loadingSpecialties) {
+    return <div>Carregando especialidades...</div>;
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <RegistrationFormFields form={form} specialties={specialties} />
+        <RegistrationFormFields 
+          form={form} 
+          specialties={specialties || []} 
+        />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Cadastrando..." : "Cadastrar"}
         </Button>

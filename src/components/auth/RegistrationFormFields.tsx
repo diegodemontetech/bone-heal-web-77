@@ -19,7 +19,11 @@ import { UseFormReturn } from "react-hook-form";
 
 interface RegistrationFormFieldsProps {
   form: UseFormReturn<any>;
-  specialties: any[];
+  specialties: Array<{
+    id: string;
+    name: string;
+    created_at: string | null;
+  }>;
 }
 
 export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFieldsProps) => {
@@ -28,8 +32,7 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
     form.setValue('zipCode', formattedZipCode);
   };
 
-  // Adicionar log para debug
-  console.log('Renderizando RegistrationFormFields com specialties:', specialties);
+  console.log('Renderizando campos com especialidades:', specialties);
 
   return (
     <>
