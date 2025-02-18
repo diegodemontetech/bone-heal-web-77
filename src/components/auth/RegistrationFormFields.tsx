@@ -29,6 +29,8 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
     form.setValue('zipCode', formattedZipCode);
   };
 
+  console.log('Especialidades no RegistrationFormFields:', specialties);
+
   return (
     <>
       <FormField
@@ -209,14 +211,28 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
                   <SelectValue placeholder="Selecione uma especialidade" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent className="bg-white">
-                {specialties?.map((specialty) => (
+              <SelectContent>
+                {specialties && specialties.map((specialty) => (
                   <SelectItem key={specialty.id} value={specialty.name}>
                     {specialty.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="phone"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Telefone</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}
