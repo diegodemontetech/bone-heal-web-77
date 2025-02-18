@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
@@ -16,37 +16,64 @@ import WhatsAppWidget from "@/components/WhatsAppWidget";
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar sessão existente
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        navigate("/products");
-      }
-    };
-
-    checkSession();
-
-    // Monitorar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        try {
+    const checkExistingSession = async () => {
+      try {
+        setIsLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("is_admin")
             .eq("id", session.user.id)
             .single();
 
+          if (profile?.is_admin) {
+            navigate("/admin");
+          } else {
+            navigate("/products");
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkExistingSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
+
+      if (event === "SIGNED_IN" && session?.user) {
+        try {
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", session.user.id)
+            .single();
+
+          if (error) throw error;
+
           const destination = profile?.is_admin ? "/admin" : "/products";
-          navigate(destination);
           
           toast({
             title: "Login realizado com sucesso!",
             description: profile?.is_admin ? "Bem-vindo à área administrativa." : "Bem-vindo à área do dentista.",
           });
-        } catch (error) {
+
+          navigate(destination);
+        } catch (error: any) {
           console.error("Erro ao verificar perfil:", error);
+          toast({
+            title: "Erro ao carregar perfil",
+            description: "Ocorreu um erro ao carregar seu perfil. Redirecionando para a área padrão.",
+            variant: "destructive",
+          });
           navigate("/products"); // Fallback para rota padrão
         }
       }
@@ -56,6 +83,14 @@ const Login = () => {
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
