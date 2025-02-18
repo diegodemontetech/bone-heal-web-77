@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -24,32 +25,41 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
 
   useEffect(() => {
-    if (!session?.user) {
-      navigate("/login");
-      return;
-    }
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          toast.error("Por favor, faça login para continuar");
+          navigate("/login");
+          return;
+        }
 
-    const getProfile = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
+        // Carregar perfil
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
 
-      if (error) {
-        toast.error("Erro ao carregar perfil");
-        return;
-      }
+        if (profileError) {
+          console.error("Erro ao carregar perfil:", profileError);
+          return;
+        }
 
-      setProfile(data);
-      if (data.zip_code) {
-        setZipCode(data.zip_code);
-        calculateShipping(data.zip_code);
+        setProfile(profileData);
+        if (profileData.zip_code) {
+          setZipCode(profileData.zip_code);
+          calculateShipping(profileData.zip_code);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
+        navigate("/login");
       }
     };
 
-    getProfile();
-  }, [session, navigate]);
+    checkAuth();
+  }, [navigate]);
 
   const calculateShipping = async (zip: string) => {
     if (!zip || zip.length !== 8 || cartItems.length === 0) return;
@@ -72,35 +82,37 @@ const Checkout = () => {
 
       if (shippingError) throw shippingError;
 
-      if (!shippingRate) {
-        throw new Error("Não foi possível calcular o frete para este CEP");
-      }
-
       setShippingFee(shippingRate.rate);
       toast.success(`Frete calculado: entrega em ${shippingRate.delivery_days} dias úteis`);
     } catch (error) {
-      console.error("Error calculating shipping:", error);
-      toast.error("Erro ao calcular frete");
+      console.error("Erro ao calcular frete:", error);
+      toast.error("Erro ao calcular frete. Por favor, tente novamente.");
     } finally {
       setIsCalculatingShipping(false);
     }
   };
 
   const handleCheckout = async () => {
+    if (!session?.user) {
+      toast.error("Por favor, faça login para continuar");
+      navigate("/login");
+      return;
+    }
+
+    if (!zipCode) {
+      toast.error("Por favor, informe o CEP para entrega");
+      return;
+    }
+
     try {
       setLoading(true);
 
-      if (!zipCode) {
-        toast.error("Por favor, informe o CEP para entrega");
-        return;
-      }
-
-      // Criar pedido com status 'pending'
+      // Criar pedido
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
-          user_id: session?.user?.id,
-          items: cartItems.map((item) => ({
+          user_id: session.user.id,
+          items: cartItems.map(item => ({
             product_id: item.id,
             quantity: item.quantity,
             price: item.price,
@@ -115,18 +127,15 @@ const Checkout = () => {
         .select()
         .single();
 
-      if (orderError) {
-        console.error("Erro ao criar pedido:", orderError);
-        throw orderError;
-      }
+      if (orderError) throw orderError;
 
-      // Criar preferência de pagamento no Mercado Pago
+      // Criar preferência de pagamento
       const { data: mpPreference, error: preferenceError } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
           body: {
             orderId: order.id,
-            items: cartItems.map((item) => ({
+            items: cartItems.map(item => ({
               id: item.id,
               title: item.name,
               quantity: item.quantity,
@@ -134,27 +143,23 @@ const Checkout = () => {
             })),
             shipping_cost: shippingFee,
             buyer: {
-              name: profile?.full_name || session?.user?.email,
-              email: session?.user?.email,
+              name: profile?.full_name || session.user.email,
+              email: session.user.email,
             },
           },
         }
       );
 
-      if (preferenceError) {
-        console.error("Erro ao criar preferência:", preferenceError);
-        throw preferenceError;
-      }
+      if (preferenceError) throw preferenceError;
 
-      // Inicializar o Mercado Pago
+      // Inicializar Mercado Pago
       // @ts-ignore
       const mp = new MercadoPago(mpPreference.public_key, {
         locale: 'pt-BR'
       });
 
       // Criar botão de pagamento
-      // @ts-ignore
-      const checkout = mp.checkout({
+      mp.checkout({
         preference: {
           id: mpPreference.id
         },
@@ -164,19 +169,14 @@ const Checkout = () => {
         }
       });
 
-      // Atualizar pedido com o ID da preferência
-      const { error: updateOrderError } = await supabase
+      // Atualizar pedido com ID da preferência
+      await supabase
         .from("orders")
         .update({ mp_preference_id: mpPreference.id })
         .eq("id", order.id);
 
-      if (updateOrderError) {
-        console.error("Erro ao atualizar pedido:", updateOrderError);
-        throw updateOrderError;
-      }
-
       // Criar registro de pagamento
-      const { error: paymentError } = await supabase
+      await supabase
         .from("payments")
         .insert({
           order_id: order.id,
@@ -186,18 +186,11 @@ const Checkout = () => {
           external_id: mpPreference.id
         });
 
-      if (paymentError) {
-        console.error("Erro ao criar pagamento:", paymentError);
-        throw paymentError;
-      }
-
-      // Limpar carrinho
       clear();
       
-      // O checkout será renderizado no elemento com id 'payment-form'
     } catch (error: any) {
       console.error("Erro no checkout:", error);
-      toast.error(error.message || "Erro ao processar pagamento");
+      toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -302,13 +295,18 @@ const Checkout = () => {
               onClick={handleCheckout}
               disabled={loading || !zipCode}
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? "Processando..." : "Finalizar Compra"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                "Finalizar Compra"
+              )}
             </Button>
           </CardContent>
         </Card>
       </div>
-      {/* Adicionar div para renderizar o formulário de pagamento */}
       <div id="payment-form" className="mt-6"></div>
     </div>
   );
