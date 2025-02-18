@@ -99,20 +99,7 @@ export default function RegistrationForm() {
       setLoading(true);
       setError(null);
 
-      // Primeiro, verifica se o email já está registrado
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', values.email)
-        .maybeSingle();
-
-      if (existingUser) {
-        setError("Este email já está cadastrado. Por favor, faça login.");
-        return;
-      }
-
-      // Tenta criar o usuário
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -137,7 +124,7 @@ export default function RegistrationForm() {
         throw signUpError;
       }
 
-      console.log('Registro realizado com sucesso:', data);
+      console.log('Registro realizado com sucesso:', signUpData);
       
       toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
       navigate('/login');
