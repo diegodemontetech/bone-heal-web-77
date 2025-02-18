@@ -14,13 +14,12 @@ const ProductCard = ({ product }: ProductCardProps) => {
     currency: "BRL",
   }).format(product.price || 0);
 
-  // Garantir que temos um slug válido e sanitizado
-  const sanitizedSlug = product.slug?.trim().replace(/\s+/g, '-').toLowerCase();
-  const productUrl = sanitizedSlug ? `/products/${sanitizedSlug}` : "#";
+  // Usar o slug original do produto sem modificações
+  const productUrl = product.slug ? `/products/${encodeURIComponent(product.slug)}` : "/products";
 
-  if (!sanitizedSlug) {
+  // Se não tiver slug, logar o erro mas ainda mostrar o card
+  if (!product.slug) {
     console.warn('Produto sem slug:', product);
-    return null;
   }
 
   return (
