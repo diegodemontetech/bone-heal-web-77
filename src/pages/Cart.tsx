@@ -35,12 +35,7 @@ const Cart = () => {
       // Primeiro, vamos obter o estado do CEP usando a API dos Correios
       const { data: correiosData, error: correiosError } = await supabase.functions.invoke("correios-shipping", {
         body: {
-          zipCodeOrigin: "04180112",
           zipCodeDestination: zipCode,
-          weight: 1,
-          length: 20,
-          width: 20,
-          height: 20,
         },
       });
 
@@ -128,7 +123,7 @@ const Cart = () => {
       if (paymentError) throw paymentError;
 
       // Redirecionar para checkout
-      window.location.href = `/checkout/${order.id}`;
+      window.location.href = `/checkout?order_id=${order.id}`;
       
     } catch (error) {
       console.error("Erro no checkout:", error);
