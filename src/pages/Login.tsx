@@ -85,6 +85,11 @@ const Login = () => {
             variant: "destructive",
           });
         }
+      } else if (event === "SIGNED_OUT") {
+        toast({
+          title: "Logout realizado com sucesso",
+          description: "Você foi desconectado da sua conta.",
+        });
       }
     });
 
@@ -155,11 +160,22 @@ const Login = () => {
                       loading_button_label: 'Entrando...',
                       email_input_placeholder: 'Seu email',
                       password_input_placeholder: 'Sua senha',
+                      email_input_error: 'Email inválido',
+                      password_input_error: 'Senha inválida',
+                      general_error: 'Email ou senha incorretos',
                     },
                   },
                 }}
                 providers={[]}
                 view="sign_in"
+                onError={(error) => {
+                  console.error("Auth error:", error);
+                  toast({
+                    title: "Erro ao fazer login",
+                    description: "Verifique suas credenciais e tente novamente.",
+                    variant: "destructive",
+                  });
+                }}
               />
               <div className="mt-4 text-center">
                 <p className="text-sm text-gray-600">
@@ -178,6 +194,12 @@ const Login = () => {
               <RegistrationForm />
             </TabsContent>
           </Tabs>
+
+          <Alert className="mt-4">
+            <AlertDescription>
+              Se você acabou de se registrar, verifique seu email para confirmar sua conta antes de fazer login.
+            </AlertDescription>
+          </Alert>
         </div>
       </div>
       <Footer />
