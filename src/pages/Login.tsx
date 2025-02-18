@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
@@ -47,6 +48,8 @@ const Login = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
+      
       if (event === "SIGNED_IN") {
         if (!session?.user?.id) return;
 
@@ -77,6 +80,8 @@ const Login = () => {
             variant: "destructive",
           });
         }
+      } else if (event === "SIGNED_OUT") {
+        console.log("User signed out");
       }
     });
 
@@ -85,7 +90,6 @@ const Login = () => {
     };
   }, [navigate, toast]);
 
-  // Redirect if already logged in
   useEffect(() => {
     if (session && !isLoading && profile) {
       if (profile.is_admin) {
@@ -140,11 +144,15 @@ const Login = () => {
                       loading_button_label: 'Entrando...',
                       email_input_placeholder: 'Seu email',
                       password_input_placeholder: 'Sua senha',
+                      email_input_error: 'Email inválido',
+                      password_input_error: 'Senha inválida',
+                      invalid_credentials: 'Email ou senha incorretos',
                     },
                   },
                 }}
                 providers={[]}
                 view="sign_in"
+                redirectTo={window.location.origin + "/products"}
               />
             </TabsContent>
 
