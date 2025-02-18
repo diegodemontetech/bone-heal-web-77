@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { RegistrationFormFields } from "./RegistrationFormFields";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -95,9 +95,8 @@ export default function RegistrationForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
-      console.log('Iniciando cadastro com valores:', values);
 
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const userData = {
         email: values.email,
         password: values.password,
         options: {
@@ -110,15 +109,21 @@ export default function RegistrationForm() {
             state: values.state,
             neighborhood: values.neighborhood,
             zip_code: values.zipCode,
-            phone: values.phone,
-            cnpj: values.cnpj,
+            phone: values.phone || '',
+            cnpj: values.cnpj || '',
             receive_news: values.receiveNews,
           }
         }
-      });
+      };
 
-      if (authError) throw authError;
+      console.log('Enviando dados para registro:', userData);
 
+      const { data, error } = await supabase.auth.signUp(userData);
+
+      if (error) throw error;
+
+      console.log('Registro realizado com sucesso:', data);
+      
       toast.success('Cadastro realizado com sucesso! Verifique seu email.');
       navigate('/login');
     } catch (error: any) {
