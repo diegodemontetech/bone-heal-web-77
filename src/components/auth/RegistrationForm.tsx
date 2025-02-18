@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -53,6 +54,7 @@ const formSchema = z.object({
 
 export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const { data: specialties, isLoading: loadingSpecialties } = useQuery({
@@ -95,8 +97,22 @@ export default function RegistrationForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
+      setError(null);
 
-      const { data, error } = await supabase.auth.signUp({
+      // Primeiro, verifica se o email já está registrado
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', values.email)
+        .maybeSingle();
+
+      if (existingUser) {
+        setError("Este email já está cadastrado. Por favor, faça login.");
+        return;
+      }
+
+      // Tenta criar o usuário
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -116,12 +132,9 @@ export default function RegistrationForm() {
         }
       });
 
-      if (error) {
-        if (error.message.includes("User already registered")) {
-          toast.error("Este email já está cadastrado. Por favor, faça login.");
-          return;
-        }
-        throw error;
+      if (signUpError) {
+        console.error('Erro no signUp:', signUpError);
+        throw signUpError;
       }
 
       console.log('Registro realizado com sucesso:', data);
@@ -130,6 +143,7 @@ export default function RegistrationForm() {
       navigate('/login');
     } catch (error: any) {
       console.error('Erro no cadastro:', error);
+      setError(error.message || 'Erro ao realizar cadastro. Por favor, tente novamente.');
       toast.error(error.message || 'Erro ao realizar cadastro. Por favor, tente novamente.');
     } finally {
       setLoading(false);
@@ -142,6 +156,11 @@ export default function RegistrationForm() {
 
   return (
     <Form {...form}>
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <RegistrationFormFields 
           form={form} 
