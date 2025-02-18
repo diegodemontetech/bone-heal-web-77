@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useCart } from "@/hooks/use-cart";
@@ -7,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShoppingBag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const session = useSession();
+  const navigate = useNavigate();
   const { cartItems } = useCart();
   const [zipCode, setZipCode] = useState("");
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
@@ -132,6 +133,35 @@ const Cart = () => {
       });
     }
   };
+
+  if (!cartItems.length) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-md mx-auto bg-white rounded-lg shadow-sm p-8 text-center">
+            <div className="mb-6">
+              <ShoppingBag className="w-16 h-16 mx-auto text-gray-400" />
+            </div>
+            <h2 className="text-2xl font-semibold mb-4">Seu carrinho está vazio</h2>
+            <p className="text-gray-600 mb-8">
+              Que tal explorar nossos produtos e encontrar algo especial?
+            </p>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={() => navigate("/products")}
+            >
+              Ver Produtos
+            </Button>
+            <p className="mt-4 text-sm text-gray-500">
+              Ou volte para a <Button variant="link" className="p-0" onClick={() => navigate("/")}>página inicial</Button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
