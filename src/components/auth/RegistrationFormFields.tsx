@@ -24,12 +24,12 @@ interface RegistrationFormFieldsProps {
 
 export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFieldsProps) => {
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Remove todos os caracteres não numéricos e limita a 8 dígitos
     const formattedZipCode = e.target.value.replace(/\D/g, '').substring(0, 8);
     form.setValue('zipCode', formattedZipCode);
   };
 
-  console.log('Especialidades no RegistrationFormFields:', specialties);
+  // Adicionar log para debug
+  console.log('Renderizando RegistrationFormFields com specialties:', specialties);
 
   return (
     <>
@@ -119,6 +119,31 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
 
       <FormField
         control={form.control}
+        name="specialty"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Especialidade</FormLabel>
+            <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma especialidade" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {specialties && specialties.map((specialty) => (
+                  <SelectItem key={specialty.id} value={specialty.name}>
+                    {specialty.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
         name="address"
         render={({ field }) => (
           <FormItem>
@@ -185,40 +210,9 @@ export const RegistrationFormFields = ({ form, specialties }: RegistrationFormFi
               <Input 
                 {...field} 
                 onChange={handleZipCodeChange}
-                onBlur={(e) => {
-                  // Limpa o valor se não for um CEP válido
-                  if (e.target.value.length !== 8) {
-                    form.setValue('zipCode', '');
-                  }
-                  field.onBlur();
-                }}
+                maxLength={8}
               />
             </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="specialty"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Especialidade</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma especialidade" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {specialties && specialties.map((specialty) => (
-                  <SelectItem key={specialty.id} value={specialty.name}>
-                    {specialty.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <FormMessage />
           </FormItem>
         )}

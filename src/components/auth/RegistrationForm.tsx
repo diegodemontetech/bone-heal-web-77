@@ -80,17 +80,21 @@ export default function RegistrationForm() {
   useEffect(() => {
     const fetchSpecialties = async () => {
       try {
+        console.log('Iniciando busca de especialidades...');
         const { data, error } = await supabase
           .from('dental_specialties')
           .select('*');
 
         if (error) {
+          console.error('Erro ao buscar especialidades:', error);
           throw error;
         }
 
         if (data) {
           console.log('Especialidades carregadas:', data);
           setSpecialties(data);
+        } else {
+          console.log('Nenhuma especialidade encontrada');
         }
       } catch (error) {
         console.error('Erro ao buscar especialidades:', error);
@@ -104,6 +108,7 @@ export default function RegistrationForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setLoading(true);
+      console.log('Iniciando cadastro com valores:', values);
 
       // Primeiro criar o usuário no Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -120,6 +125,7 @@ export default function RegistrationForm() {
 
       // Depois atualizar o perfil com os dados adicionais
       if (authData.user) {
+        console.log('Usuário criado, atualizando perfil...');
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
