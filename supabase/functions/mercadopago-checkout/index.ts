@@ -13,9 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, payment_method, total_amount })
+    const requestData = await req.json()
+    console.log("Dados brutos recebidos:", requestData)
 
+    const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = requestData
+
+    // Validações iniciais
     if (!items?.length) {
       throw new Error("Nenhum item fornecido")
     }
@@ -24,12 +27,17 @@ serve(async (req) => {
       throw new Error("Email do comprador não fornecido")
     }
 
+    if (total_amount === undefined || total_amount === null) {
+      throw new Error("Valor total não fornecido")
+    }
+
     // Garantir que o valor é um número válido
-    const amount = Number(parseFloat(total_amount.toString()).toFixed(2))
-    console.log("Valor formatado:", amount)
+    const amount = Math.round(Number(total_amount) * 100) / 100
+    console.log("Valor original:", total_amount)
+    console.log("Valor processado:", amount)
 
     if (isNaN(amount) || amount <= 0) {
-      throw new Error(`Valor total inválido: ${total_amount}`)
+      throw new Error(`Valor total inválido: ${total_amount} (processado: ${amount})`)
     }
 
     const client = new MercadoPagoConfig({ 
@@ -47,9 +55,9 @@ serve(async (req) => {
         description: `Pedido ${orderId}`,
       };
 
-      console.log("Dados do pagamento PIX:", paymentData);
+      console.log("Dados do pagamento PIX:", JSON.stringify(paymentData, null, 2));
       const result = await payment.create(paymentData);
-      console.log("Resposta PIX:", result);
+      console.log("Resposta PIX:", JSON.stringify(result, null, 2));
 
       return new Response(
         JSON.stringify({
@@ -76,11 +84,16 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("Erro detalhado:", error);
+    
+    // Melhorar o formato do erro retornado
+    const errorResponse = {
+      error: error.message,
+      details: typeof error === 'object' ? JSON.stringify(error) : error.toString(),
+      raw_error: error,
+    };
+    
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.toString(),
-      }),
+      JSON.stringify(errorResponse),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
