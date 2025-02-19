@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -94,6 +93,20 @@ const Checkout = () => {
     }
   };
 
+  useEffect(() => {
+    // Adicionar script do Mercado Pago
+    const script = document.createElement('script');
+    script.src = "https://sdk.mercadopago.com/js/v2";
+    script.type = "text/javascript";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      // Limpar script ao desmontar
+      document.body.removeChild(script);
+    };
+  }, []);
+
   const handleCheckout = async () => {
     if (!session?.user) {
       toast.error("Por favor, faça login para continuar");
@@ -113,7 +126,6 @@ const Checkout = () => {
       let order;
       if (!orderId) {
         console.log("Criando novo pedido...");
-        // Criar pedido apenas se não existir
         const { data: newOrder, error: orderError } = await supabase
           .from("orders")
           .insert({
@@ -141,7 +153,6 @@ const Checkout = () => {
         order = newOrder;
       } else {
         console.log("Usando pedido existente:", orderId);
-        // Usar pedido existente
         const { data: existingOrder, error: orderError } = await supabase
           .from("orders")
           .select("*")
@@ -219,12 +230,87 @@ const Checkout = () => {
         throw paymentError;
       }
 
-      // Redirecionar para página de pagamento do Mercado Pago
-      console.log("Redirecionando para Mercado Pago...");
-      window.location.href = mpPreference.init_point;
-      
-      clear(); // Limpar carrinho após sucesso
-      
+      // Inicializar checkout do Mercado Pago
+      console.log("Iniciando checkout do Mercado Pago...");
+      // @ts-ignore
+      const mp = new MercadoPago("APP_USR-711c6c25-bab3-4517-8ecf-c258c5ee4691", {
+        locale: 'pt-BR'
+      });
+
+      const cardForm = mp.cardForm({
+        amount: String(order.total_amount),
+        iframe: true,
+        form: {
+          id: "form-checkout",
+          cardNumber: {
+            id: "form-checkout__cardNumber",
+            placeholder: "Número do cartão",
+          },
+          expirationDate: {
+            id: "form-checkout__expirationDate",
+            placeholder: "MM/YY",
+          },
+          securityCode: {
+            id: "form-checkout__securityCode",
+            placeholder: "Código de segurança",
+          },
+          cardholderName: {
+            id: "form-checkout__cardholderName",
+            placeholder: "Titular do cartão",
+          },
+          issuer: {
+            id: "form-checkout__issuer",
+            placeholder: "Banco emissor",
+          },
+          installments: {
+            id: "form-checkout__installments",
+            placeholder: "Parcelas",
+          },
+        },
+        callbacks: {
+          onFormMounted: (error: any) => {
+            if (error) {
+              console.error("Erro ao montar formulário:", error);
+              return;
+            }
+            console.log("Formulário montado com sucesso");
+          },
+          onSubmit: async (event: any) => {
+            event.preventDefault();
+            setLoading(true);
+
+            const {
+              paymentMethodId,
+              issuerId,
+              cardholderEmail: email,
+              amount,
+              token,
+              installments,
+              identificationNumber,
+              identificationType,
+            } = cardForm.getCardFormData();
+
+            try {
+              // Processar pagamento
+              // Implementar lógica de processamento do pagamento
+              clear(); // Limpar carrinho após sucesso
+              navigate("/checkout/success");
+            } catch (error) {
+              console.error("Erro ao processar pagamento:", error);
+              toast.error("Erro ao processar pagamento");
+              setLoading(false);
+            }
+          },
+          onFetching: (resource: any) => {
+            console.log("Buscando recurso:", resource);
+            setLoading(true);
+            return () => {
+              setLoading(false);
+            };
+          },
+        },
+      });
+
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
@@ -303,6 +389,7 @@ const Checkout = () => {
                 <p className="text-sm text-muted-foreground">
                   Você será redirecionado para a página segura do Mercado Pago para finalizar o pagamento.
                 </p>
+                <form id="form-checkout"></form>
               </TabsContent>
               <TabsContent value="pix">
                 <p className="text-sm text-muted-foreground">

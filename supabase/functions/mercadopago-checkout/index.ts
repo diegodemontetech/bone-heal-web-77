@@ -35,7 +35,7 @@ serve(async (req) => {
 
     console.log("Criando preferência...")
 
-    // Criar preferência
+    // Criar preferência para checkout transparente
     const preference = {
       items: items.map((item: any) => ({
         id: item.id,
@@ -48,6 +48,11 @@ serve(async (req) => {
         cost: Number(shipping_cost),
         mode: "not_specified",
       },
+      payment_methods: {
+        excluded_payment_methods: [],
+        excluded_payment_types: [],
+        installments: 12
+      },
       back_urls: {
         success: `${req.headers.get("origin")}/checkout/success`,
         failure: `${req.headers.get("origin")}/checkout/failure`,
@@ -59,7 +64,8 @@ serve(async (req) => {
       payer: {
         name: buyer.name,
         email: buyer.email
-      }
+      },
+      binary_mode: true
     }
 
     console.log("Preferência criada:", preference)
@@ -68,9 +74,16 @@ serve(async (req) => {
     const response = await mercadopago.preferences.create(preference)
     console.log("Resposta MP:", response)
 
-    // Retornar resposta
+    if (!response.body) {
+      throw new Error("Resposta inválida do Mercado Pago")
+    }
+
+    // Retornar resposta com dados para checkout transparente
     return new Response(
-      JSON.stringify(response.body),
+      JSON.stringify({
+        ...response.body,
+        client_id: "609050106721186", // Seu client_id do Mercado Pago
+      }),
       { 
         headers: { 
           ...corsHeaders,
