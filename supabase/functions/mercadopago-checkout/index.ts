@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json()
-    console.log("Dados brutos recebidos:", requestData)
+    console.log("Dados brutos recebidos:", JSON.stringify(requestData, null, 2))
 
     const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = requestData
 
@@ -27,18 +27,16 @@ serve(async (req) => {
       throw new Error("Email do comprador não fornecido")
     }
 
-    if (total_amount === undefined || total_amount === null) {
-      throw new Error("Valor total não fornecido")
+    // Garantir que o valor é um número válido e maior que zero
+    const parsedAmount = typeof total_amount === 'string' ? parseFloat(total_amount) : Number(total_amount)
+    
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      throw new Error(`Valor total inválido: ${total_amount}`)
     }
 
-    // Garantir que o valor é um número válido
-    const amount = Math.round(Number(total_amount) * 100) / 100
-    console.log("Valor original:", total_amount)
-    console.log("Valor processado:", amount)
-
-    if (isNaN(amount) || amount <= 0) {
-      throw new Error(`Valor total inválido: ${total_amount} (processado: ${amount})`)
-    }
+    // Formatar para duas casas decimais
+    const amount = Number(parsedAmount.toFixed(2))
+    console.log("Valor a ser processado:", amount)
 
     const client = new MercadoPagoConfig({ 
       accessToken: Deno.env.get('MP_ACCESS_TOKEN')!,
@@ -48,27 +46,34 @@ serve(async (req) => {
       const payment = new Payment(client);
       const paymentData = {
         transaction_amount: amount,
+        description: `Pedido ${orderId}`,
         payment_method_id: 'pix',
         payer: {
           email: buyer.email,
+          first_name: buyer.name || buyer.email.split('@')[0],
         },
-        description: `Pedido ${orderId}`,
       };
 
       console.log("Dados do pagamento PIX:", JSON.stringify(paymentData, null, 2));
-      const result = await payment.create(paymentData);
-      console.log("Resposta PIX:", JSON.stringify(result, null, 2));
+      
+      try {
+        const result = await payment.create(paymentData);
+        console.log("Resposta PIX:", JSON.stringify(result, null, 2));
 
-      return new Response(
-        JSON.stringify({
-          qr_code: result.point_of_interaction?.transaction_data?.qr_code,
-          qr_code_base64: result.point_of_interaction?.transaction_data?.qr_code_base64,
-          payment_id: result.id,
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
+        return new Response(
+          JSON.stringify({
+            qr_code: result.point_of_interaction?.transaction_data?.qr_code,
+            qr_code_base64: result.point_of_interaction?.transaction_data?.qr_code_base64,
+            payment_id: result.id,
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      } catch (mpError: any) {
+        console.error("Erro do Mercado Pago:", JSON.stringify(mpError, null, 2));
+        throw new Error(`Erro do Mercado Pago: ${mpError.message}`);
+      }
     } else {
       // Para cartão, retornamos os dados para integração transparente
       return new Response(
@@ -83,17 +88,13 @@ serve(async (req) => {
       )
     }
   } catch (error) {
-    console.error("Erro detalhado:", error);
-    
-    // Melhorar o formato do erro retornado
-    const errorResponse = {
-      error: error.message,
-      details: typeof error === 'object' ? JSON.stringify(error) : error.toString(),
-      raw_error: error,
-    };
+    console.error("Erro detalhado:", JSON.stringify(error, null, 2));
     
     return new Response(
-      JSON.stringify(errorResponse),
+      JSON.stringify({
+        error: error.message,
+        details: typeof error === 'object' ? JSON.stringify(error) : error.toString(),
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
