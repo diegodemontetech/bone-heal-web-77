@@ -195,52 +195,54 @@ const Checkout = () => {
 
       const orderId = crypto.randomUUID();
       
-      // Garantindo que todos os valores são números válidos
-      const subtotal = Number(cartItems.reduce((acc, item) => 
+      // Calculando valores garantindo números válidos
+      const subtotal = cartItems.reduce((acc, item) => 
         acc + (Number(item.price) * item.quantity), 0
-      ).toFixed(2));
-
-      const shippingCost = Number(shippingFee.toFixed(2));
-      const discountValue = Number(discount.toFixed(2));
+      );
+      const shippingCost = Number(shippingFee) || 0;
+      const discountValue = Number(discount) || 0;
+      
+      // Garantindo duas casas decimais e conversão para número
       const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
 
-      // Log detalhado dos valores
-      console.log("Valores do checkout:", {
+      if (isNaN(total) || total <= 0) {
+        throw new Error(`Valor total inválido: ${total}`);
+      }
+
+      console.log("Valores calculados:", {
         subtotal,
         shippingCost,
         discountValue,
         total,
-        items: cartItems.map(item => ({
-          id: item.id,
-          title: item.name,
-          quantity: item.quantity,
-          price: Number(item.price),
-        }))
+        items: cartItems
       });
 
       // Primeiro salva o pedido
       await saveOrder(orderId);
 
-      // Chamada para o Mercado Pago com valores validados
+      const payload = {
+        orderId,
+        items: cartItems.map(item => ({
+          id: item.id,
+          title: item.name,
+          quantity: Number(item.quantity),
+          price: Number(Number(item.price).toFixed(2)),
+        })),
+        shipping_cost: shippingCost,
+        buyer: {
+          name: session.user.email?.split('@')[0] || 'Cliente',
+          email: session.user.email,
+        },
+        payment_method: paymentMethod,
+        total_amount: total
+      };
+
+      console.log("Payload do checkout:", payload);
+
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
-          body: {
-            orderId,
-            items: cartItems.map(item => ({
-              id: item.id,
-              title: item.name,
-              quantity: Number(item.quantity),
-              price: Number(Number(item.price).toFixed(2)),
-            })),
-            shipping_cost: shippingCost,
-            buyer: {
-              name: session.user.email?.split('@')[0] || 'Cliente',
-              email: session.user.email,
-            },
-            payment_method: paymentMethod,
-            total_amount: total
-          },
+          body: payload,
         }
       );
 
