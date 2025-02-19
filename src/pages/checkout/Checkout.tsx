@@ -149,7 +149,7 @@ const Checkout = () => {
   const saveOrder = async (orderId: string) => {
     try {
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-      const total_amount = subtotal + shippingFee - discount;
+      const total_amount = Math.max(0, subtotal + shippingFee - discount); // Garante que o total não seja negativo
 
       const { error } = await supabase
         .from('orders')
@@ -174,6 +174,14 @@ const Checkout = () => {
         });
 
       if (error) throw error;
+
+      // Se tiver cupom aplicado, incrementa o número de usos
+      if (appliedVoucher) {
+        await supabase
+          .from('vouchers')
+          .update({ current_uses: (appliedVoucher.current_uses || 0) + 1 })
+          .eq('id', appliedVoucher.id);
+      }
     } catch (error) {
       console.error("Erro ao salvar pedido:", error);
       throw error;
@@ -203,11 +211,7 @@ const Checkout = () => {
       );
       const shippingCost = Number(shippingFee) || 0;
       const discountValue = Number(discount) || 0;
-      const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
-
-      if (isNaN(total) || total <= 0) {
-        throw new Error(`Valor total inválido: ${total}`);
-      }
+      const total = Math.max(0, Number((subtotal + shippingCost - discountValue).toFixed(2))); // Garante total mínimo de 0
 
       console.log("Valores calculados:", {
         subtotal,
@@ -216,6 +220,11 @@ const Checkout = () => {
         total,
         items: cartItems
       });
+
+      if (total <= 0) {
+        toast.error("O valor total do pedido deve ser maior que zero");
+        return;
+      }
 
       await saveOrder(orderId);
 
@@ -230,6 +239,7 @@ const Checkout = () => {
               quantity: Number(item.quantity)
             })),
             shipping_cost: shippingCost,
+            discount: discountValue, // Adiciona o desconto
             buyer: {
               name: session.user.email?.split('@')[0] || 'Cliente',
               email: session.user.email,
@@ -239,12 +249,18 @@ const Checkout = () => {
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na função do Mercado Pago:", error);
+        throw error;
+      }
 
       if (!data?.init_point) {
         throw new Error("URL de checkout não gerada");
       }
 
+      // Limpa o carrinho antes de redirecionar
+      clear();
+      
       // Redireciona para o Checkout do Mercado Pago
       window.location.href = data.init_point;
       
