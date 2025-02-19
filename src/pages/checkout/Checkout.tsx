@@ -154,15 +154,21 @@ const Checkout = () => {
       setLoading(true);
       console.log("Iniciando checkout...");
 
-      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-      const total = subtotal + shippingFee - discount;
+      // Garantir que os valores são números com 2 casas decimais
+      const subtotal = Number(cartItems.reduce((acc, item) => 
+        acc + (Number(item.price) * item.quantity), 0
+      ).toFixed(2));
+
+      const shippingCost = Number(shippingFee.toFixed(2));
+      const discountValue = Number(discount.toFixed(2));
+      const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
 
       // Log para debug
       console.log("Dados do checkout:", {
         cartItems,
         subtotal,
-        shippingFee,
-        discount,
+        shippingCost,
+        discountValue,
         total
       });
 
@@ -175,16 +181,16 @@ const Checkout = () => {
               id: item.id,
               title: item.name,
               quantity: item.quantity,
-              price: Number(item.price), // Garantir que o preço é um número
+              price: Number(Number(item.price).toFixed(2)),
             })),
-            shipping_cost: Number(shippingFee), // Garantir que o frete é um número
+            shipping_cost: shippingCost,
             buyer: {
               name: session.user.email,
               email: session.user.email,
             },
             payment_method: paymentMethod,
             voucher_id: appliedVoucher?.id,
-            total_amount: Number(total), // Garantir que o total é um número
+            total_amount: total,
           },
         }
       );
