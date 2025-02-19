@@ -20,13 +20,36 @@ serve(async (req) => {
       throw new Error("Token do Mercado Pago não configurado")
     }
 
-    const preference = {
-      items: items.map(item => ({
-        title: item.title,
-        unit_price: Number(item.price),
-        quantity: Number(item.quantity),
+    // Preparar os itens incluindo o desconto, se houver
+    let preferenceItems = items.map(item => ({
+      title: item.title,
+      unit_price: Number(item.price),
+      quantity: Number(item.quantity),
+      currency_id: "BRL",
+    }));
+
+    // Se houver desconto, adiciona como um item
+    if (discount > 0) {
+      preferenceItems.push({
+        title: "Desconto",
+        unit_price: -Number(discount),
+        quantity: 1,
         currency_id: "BRL",
-      })),
+      });
+    }
+
+    // Se houver frete, adiciona como um item
+    if (shipping_cost > 0) {
+      preferenceItems.push({
+        title: "Frete",
+        unit_price: Number(shipping_cost),
+        quantity: 1,
+        currency_id: "BRL",
+      });
+    }
+
+    const preference = {
+      items: preferenceItems,
       payer: {
         email: buyer.email,
         name: buyer.name
@@ -44,28 +67,7 @@ serve(async (req) => {
       },
       external_reference: orderId,
       auto_return: "approved",
-      statement_descriptor: "WORKSHOP",
-      shipments: shipping_cost > 0 ? {
-        cost: shipping_cost,
-        mode: "not_specified",
-      } : undefined,
-      // Adiciona o desconto como um item negativo se houver desconto
-      ...(discount > 0 && {
-        items: [
-          ...items.map(item => ({
-            title: item.title,
-            unit_price: Number(item.price),
-            quantity: Number(item.quantity),
-            currency_id: "BRL",
-          })),
-          {
-            title: "Desconto",
-            unit_price: -Number(discount),
-            quantity: 1,
-            currency_id: "BRL",
-          }
-        ]
-      })
+      statement_descriptor: "WORKSHOP"
     }
 
     console.log("Preferência a ser enviada:", preference)
