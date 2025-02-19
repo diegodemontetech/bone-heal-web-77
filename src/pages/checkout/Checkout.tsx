@@ -8,14 +8,7 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import DeliveryInformation from "@/components/checkout/DeliveryInformation";
-import PaymentMethods from "@/components/checkout/PaymentMethods";
 import OrderTotal from "@/components/checkout/OrderTotal";
-
-declare global {
-  interface Window {
-    MercadoPago: any;
-  }
-}
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
@@ -25,9 +18,6 @@ const Checkout = () => {
   const [zipCode, setZipCode] = useState("");
   const [shippingFee, setShippingFee] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
-  const [pixQrCode, setPixQrCode] = useState<string>("");
-  const [pixCode, setPixCode] = useState<string>("");
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
@@ -65,7 +55,7 @@ const Checkout = () => {
       const { data: shippingRate, error } = await supabase
         .from('shipping_rates')
         .select('rate')
-        .eq('state', 'SP') // Temporariamente fixo em SP
+        .eq('state', 'SP')
         .single();
 
       if (error) throw error;
@@ -164,13 +154,10 @@ const Checkout = () => {
           shipping_address: {
             zip_code: zipCode
           },
-          payment_method: paymentMethod
+          payment_method: 'mercadopago'
         });
 
-      if (error) {
-        console.error("Erro detalhado ao salvar pedido:", error);
-        throw error;
-      }
+      if (error) throw error;
     } catch (error) {
       console.error("Erro ao salvar pedido:", error);
       throw error;
@@ -195,14 +182,11 @@ const Checkout = () => {
 
       const orderId = crypto.randomUUID();
       
-      // Calculando valores garantindo números válidos
       const subtotal = cartItems.reduce((acc, item) => 
         acc + (Number(item.price) * item.quantity), 0
       );
       const shippingCost = Number(shippingFee) || 0;
       const discountValue = Number(discount) || 0;
-      
-      // Garantindo duas casas decimais e conversão para número
       const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
 
       if (isNaN(total) || total <= 0) {
@@ -217,155 +201,40 @@ const Checkout = () => {
         items: cartItems
       });
 
-      // Primeiro salva o pedido
       await saveOrder(orderId);
-
-      const payload = {
-        orderId,
-        items: cartItems.map(item => ({
-          id: item.id,
-          title: item.name,
-          quantity: Number(item.quantity),
-          price: Number(Number(item.price).toFixed(2)),
-        })),
-        shipping_cost: shippingCost,
-        buyer: {
-          name: session.user.email?.split('@')[0] || 'Cliente',
-          email: session.user.email,
-        },
-        payment_method: paymentMethod,
-        total_amount: total
-      };
-
-      console.log("Payload do checkout:", payload);
 
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
-          body: payload,
+          body: {
+            orderId,
+            items: cartItems.map(item => ({
+              id: item.id,
+              title: item.name,
+              quantity: Number(item.quantity),
+              price: Number(Number(item.price).toFixed(2)),
+            })),
+            shipping_cost: shippingCost,
+            buyer: {
+              name: session.user.email?.split('@')[0] || 'Cliente',
+              email: session.user.email,
+            },
+            total_amount: total
+          },
         }
       );
 
-      if (error) {
-        console.error("Erro detalhado na resposta do checkout:", error);
-        throw error;
+      if (error) throw error;
+
+      if (!data?.init_point) {
+        throw new Error("URL de checkout não gerada");
       }
 
-      console.log("Resposta do checkout:", data);
-
-      if (paymentMethod === "pix") {
-        if (!data.qr_code || !data.qr_code_base64) {
-          throw new Error("QR Code não gerado corretamente");
-        }
-        setPixQrCode(data.qr_code_base64);
-        setPixCode(data.qr_code);
-        toast.success("QR Code PIX gerado com sucesso!");
-        clear();
-      } else if (paymentMethod === "credit" && data.public_key) {
-        // Remove qualquer script anterior do Mercado Pago
-        const existingScript = document.getElementById('mercadopago-script');
-        if (existingScript) {
-          existingScript.remove();
-        }
-
-        // Cria e adiciona o novo script
-        const script = document.createElement('script');
-        script.id = 'mercadopago-script';
-        script.src = "https://sdk.mercadopago.com/js/v2";
-        script.type = "text/javascript";
-
-        script.addEventListener('load', () => {
-          try {
-            const mp = new window.MercadoPago(data.public_key, {
-              locale: 'pt-BR'
-            });
-
-            // Remove formulário anterior se existir
-            const existingForm = document.getElementById('form-checkout');
-            if (existingForm) {
-              existingForm.remove();
-            }
-
-            // Cria o novo formulário
-            const formContainer = document.createElement('div');
-            formContainer.innerHTML = `
-              <form id="form-checkout">
-                <div id="form-checkout__cardNumber"></div>
-                <div id="form-checkout__expirationDate"></div>
-                <div id="form-checkout__securityCode"></div>
-                <div id="form-checkout__cardholderName"></div>
-                <div id="form-checkout__issuer"></div>
-                <div id="form-checkout__installments"></div>
-              </form>
-            `;
-            document.body.appendChild(formContainer);
-
-            const cardForm = mp.cardForm({
-              amount: data.amount.toString(),
-              iframe: true,
-              form: {
-                id: "form-checkout",
-                cardNumber: {
-                  id: "form-checkout__cardNumber",
-                  placeholder: "Número do cartão",
-                },
-                expirationDate: {
-                  id: "form-checkout__expirationDate",
-                  placeholder: "MM/YY",
-                },
-                securityCode: {
-                  id: "form-checkout__securityCode",
-                  placeholder: "CVV",
-                },
-                cardholderName: {
-                  id: "form-checkout__cardholderName",
-                  placeholder: "Titular do cartão",
-                },
-                issuer: {
-                  id: "form-checkout__issuer",
-                  placeholder: "Banco emissor",
-                },
-                installments: {
-                  id: "form-checkout__installments",
-                  placeholder: "Parcelas",
-                },
-              },
-              callbacks: {
-                onFormMounted: error => {
-                  if (error) {
-                    console.error("Form mounted handling error:", error);
-                    toast.error("Erro ao carregar formulário de pagamento");
-                  }
-                },
-                onSubmit: event => {
-                  event.preventDefault();
-                  const formData = cardForm.getCardFormData();
-                  console.log("Dados do cartão:", formData);
-                },
-                onError: error => {
-                  console.error("Card form error:", error);
-                  toast.error("Erro no processamento do cartão");
-                },
-                onFetching: (resource) => {
-                  console.log("Fetching resource:", resource);
-                }
-              },
-            });
-          } catch (error) {
-            console.error("Erro ao inicializar Mercado Pago:", error);
-            toast.error("Erro ao inicializar formulário de pagamento");
-          }
-        });
-
-        script.addEventListener('error', (error) => {
-          console.error("Erro ao carregar script do Mercado Pago:", error);
-          toast.error("Erro ao carregar script de pagamento");
-        });
-
-        document.body.appendChild(script);
-      }
+      // Redireciona para o Checkout do Mercado Pago
+      window.location.href = data.init_point;
+      
     } catch (error: any) {
-      console.error("Erro detalhado no checkout:", error);
+      console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
     } finally {
       setLoading(false);
@@ -404,14 +273,6 @@ const Checkout = () => {
               setVoucherCode("");
               setDiscount(0);
             }}
-          />
-
-          <PaymentMethods
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            loading={loading}
-            pixQrCode={pixQrCode}
-            pixCode={pixCode}
           />
         </div>
 
