@@ -43,12 +43,18 @@ serve(async (req) => {
       payer: {
         email: buyer.email
       },
+      payment_methods: {
+        default_payment_method_id: "pix",
+        excluded_payment_types: [], // Permite todos os tipos de pagamento
+        installments: 12 // Máximo de parcelas para cartão
+      },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
         failure: `${Deno.env.get('APP_URL')}/checkout/failure`
       },
       external_reference: orderId,
-      auto_return: "approved"
+      auto_return: "approved",
+      binary_mode: false // Permite pagamentos pendentes (como PIX)
     }
 
     console.log("Enviando para MP:", JSON.stringify(preference, null, 2))
