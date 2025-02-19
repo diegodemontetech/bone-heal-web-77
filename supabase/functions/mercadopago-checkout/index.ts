@@ -16,12 +16,6 @@ serve(async (req) => {
     const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = await req.json()
     console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, payment_method, total_amount })
 
-    // Verificar token do MP primeiro
-    const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
-    if (!mpAccessToken) {
-      throw new Error("MP_ACCESS_TOKEN não configurado no ambiente")
-    }
-
     // Validar dados básicos
     if (!items?.length) {
       throw new Error("Nenhum item fornecido")
@@ -31,23 +25,23 @@ serve(async (req) => {
       throw new Error("Email do comprador não fornecido")
     }
 
-    // Validar e converter valor total
-    const amount = Number(total_amount)
-    if (isNaN(amount) || amount <= 0) {
+    // Garantir que o valor é um número e está no formato certo
+    const amount = parseFloat(total_amount.toString()).toFixed(2)
+    console.log("Valor formatado:", amount)
+
+    if (isNaN(Number(amount)) || Number(amount) <= 0) {
       throw new Error(`Valor total inválido: ${total_amount}`)
     }
 
     // Configurar cliente do MP
     const client = new MercadoPagoConfig({ 
-      accessToken: mpAccessToken,
+      accessToken: Deno.env.get('MP_ACCESS_TOKEN')!,
     });
-
-    console.log("Iniciando pagamento com valor:", amount)
 
     if (payment_method === 'pix') {
       const payment = new Payment(client);
       const paymentData = {
-        transaction_amount: amount,
+        transaction_amount: Number(amount),
         payment_method_id: 'pix',
         payer: {
           email: buyer.email,
@@ -55,7 +49,7 @@ serve(async (req) => {
         description: `Pedido ${orderId}`,
       };
 
-      console.log("Criando pagamento PIX:", paymentData);
+      console.log("Dados do pagamento PIX:", paymentData);
       const result = await payment.create(paymentData);
       console.log("Resposta PIX:", result);
 
@@ -83,7 +77,7 @@ serve(async (req) => {
           id: orderId,
           title: `Pedido ${orderId}`,
           quantity: 1,
-          unit_price: amount,
+          unit_price: Number(amount),
           currency_id: 'BRL',
         }],
         payer: {
@@ -108,7 +102,7 @@ serve(async (req) => {
         },
       };
 
-      console.log("Criando preferência:", preferenceData);
+      console.log("Dados da preferência:", preferenceData);
       const result = await preference.create(preferenceData);
       console.log("Resposta preferência:", result);
 
