@@ -62,6 +62,7 @@ const Checkout = () => {
 
       if (shippingRate) {
         setShippingFee(shippingRate.rate);
+        toast.success("Frete calculado com sucesso!");
       }
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
@@ -209,10 +210,9 @@ const Checkout = () => {
           body: {
             orderId,
             items: cartItems.map(item => ({
-              id: item.id,
               title: item.name,
-              quantity: Number(item.quantity),
               price: Number(Number(item.price).toFixed(2)),
+              quantity: Number(item.quantity)
             })),
             shipping_cost: shippingCost,
             buyer: {
