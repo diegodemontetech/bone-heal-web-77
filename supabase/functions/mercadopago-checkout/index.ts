@@ -44,6 +44,32 @@ serve(async (req) => {
 
     if (payment_method === 'pix') {
       const payment = new Payment(client);
+      
+      // Criar dados adicionais para o pagamento
+      const additional_info = {
+        items: items.map(item => ({
+          id: item.id,
+          title: item.name,
+          description: `Pedido ${orderId}`,
+          quantity: item.quantity,
+          unit_price: Number(item.price),
+        })),
+        payer: {
+          first_name: buyer.name || buyer.email.split('@')[0],
+          last_name: '',
+          phone: {
+            area_code: '',
+            number: '',
+          },
+          address: {
+            zip_code: '',
+            street_name: '',
+            street_number: 0,
+          }
+        }
+      };
+
+      // Preparar dados do pagamento conforme documentação
       const paymentData = {
         transaction_amount: amount,
         description: `Pedido ${orderId}`,
@@ -51,13 +77,23 @@ serve(async (req) => {
         payer: {
           email: buyer.email,
           first_name: buyer.name || buyer.email.split('@')[0],
+          identification: {
+            type: 'CPF',
+            number: '00000000000'
+          },
         },
+        additional_info,
+      };
+
+      // Adicionar header de idempotência
+      const headers = {
+        'X-Idempotency-Key': orderId,
       };
 
       console.log("Dados do pagamento PIX:", JSON.stringify(paymentData, null, 2));
       
       try {
-        const result = await payment.create(paymentData);
+        const result = await payment.create(paymentData, { headers });
         console.log("Resposta PIX:", JSON.stringify(result, null, 2));
 
         return new Response(
