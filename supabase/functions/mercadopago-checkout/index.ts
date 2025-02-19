@@ -20,25 +20,24 @@ serve(async (req) => {
       throw new Error("Token do Mercado Pago não configurado")
     }
 
-    // Preparar os itens incluindo o desconto, se houver
-    let preferenceItems = items.map(item => ({
-      title: item.title,
-      unit_price: Number(item.price),
-      quantity: Number(item.quantity),
+    // Garantir que os valores estejam no formato correto
+    const preferenceItems = items.map(item => ({
+      title: String(item.title),
+      unit_price: Math.max(0, Number(item.price)), // Garante número positivo
+      quantity: Math.max(1, Number(item.quantity)), // Mínimo de 1
       currency_id: "BRL",
     }));
 
-    // Se houver desconto, adiciona como um item
-    if (discount > 0) {
-      preferenceItems.push({
-        title: "Desconto",
-        unit_price: -Number(discount),
-        quantity: 1,
-        currency_id: "BRL",
-      });
+    // Certificar que temos pelo menos um item
+    if (preferenceItems.length === 0) {
+      throw new Error("Pedido deve ter pelo menos um item")
     }
 
-    // Se houver frete, adiciona como um item
+    let totalItemsAmount = preferenceItems.reduce((acc, item) => 
+      acc + (item.unit_price * item.quantity), 0
+    );
+
+    // Adiciona frete como item se houver
     if (shipping_cost > 0) {
       preferenceItems.push({
         title: "Frete",
@@ -46,6 +45,27 @@ serve(async (req) => {
         quantity: 1,
         currency_id: "BRL",
       });
+      totalItemsAmount += shipping_cost;
+    }
+
+    // Adiciona desconto como item negativo se houver
+    if (discount > 0) {
+      const discountValue = Math.min(discount, totalItemsAmount); // Não permite desconto maior que o total
+      preferenceItems.push({
+        title: "Desconto",
+        unit_price: -Number(discountValue),
+        quantity: 1,
+        currency_id: "BRL",
+      });
+    }
+
+    // Valida se o total final é maior que zero
+    const finalAmount = preferenceItems.reduce((acc, item) => 
+      acc + (item.unit_price * item.quantity), 0
+    );
+
+    if (finalAmount <= 0) {
+      throw new Error("O valor total do pedido deve ser maior que zero");
     }
 
     const preference = {
@@ -55,9 +75,9 @@ serve(async (req) => {
         name: buyer.name
       },
       payment_methods: {
-        excluded_payment_types: [], // Removido a exclusão do boleto para permitir PIX
+        excluded_payment_types: [], // Permite todos os métodos
         installments: 12,
-        default_payment_method_id: "pix", // Define PIX como método padrão
+        default_payment_method_id: "pix"
       },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
@@ -67,7 +87,7 @@ serve(async (req) => {
       external_reference: orderId,
       auto_return: "approved",
       statement_descriptor: "WORKSHOP",
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook` // Adiciona URL de notificação
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     }
 
     console.log("Preferência a ser enviada:", preference)
