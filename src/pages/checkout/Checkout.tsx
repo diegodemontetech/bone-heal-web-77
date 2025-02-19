@@ -3,16 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, CreditCard, QrCode, Tag } from "lucide-react";
 import { toast } from "sonner";
-import OrderSummary from "@/components/orders/OrderSummary";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DeliveryInformation from "@/components/checkout/DeliveryInformation";
+import PaymentMethods from "@/components/checkout/PaymentMethods";
+import OrderTotal from "@/components/checkout/OrderTotal";
 
-// Declaração do tipo global do MercadoPago
 declare global {
   interface Window {
     MercadoPago: any;
@@ -115,7 +112,6 @@ const Checkout = () => {
         return;
       }
 
-      // Validar regras específicas
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       
       if (voucher.min_amount && subtotal < voucher.min_amount) {
@@ -123,7 +119,6 @@ const Checkout = () => {
         return;
       }
 
-      // Calcular desconto
       let discountValue = 0;
       if (voucher.discount_type === 'percentage') {
         discountValue = (subtotal * voucher.discount_value) / 100;
@@ -193,7 +188,7 @@ const Checkout = () => {
               email: session.user.email,
             },
             payment_method: paymentMethod,
-            total_amount: total // Garantindo que o total está sendo enviado corretamente
+            total_amount: total
           },
         }
       );
@@ -286,17 +281,13 @@ const Checkout = () => {
   if (!cartItems.length) {
     return (
       <div className="container mx-auto p-4">
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-gray-500">Seu carrinho está vazio</p>
-            <Button
-              className="mt-4 mx-auto block"
-              onClick={() => navigate("/products")}
-            >
-              Continuar comprando
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
+          <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500 mb-4">Seu carrinho está vazio</p>
+          <Button onClick={() => navigate("/products")}>
+            Continuar comprando
+          </Button>
+        </div>
       </div>
     );
   }
@@ -304,160 +295,41 @@ const Checkout = () => {
   return (
     <div className="container mx-auto p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações de Entrega</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="zipCode">CEP</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="zipCode"
-                  placeholder="00000-000"
-                  value={zipCode}
-                  onChange={(e) => {
-                    const newZip = e.target.value.replace(/\D/g, "");
-                    setZipCode(newZip);
-                    if (newZip.length === 8) {
-                      calculateShipping(newZip);
-                    }
-                  }}
-                  maxLength={8}
-                />
-              </div>
-            </div>
+        <div className="space-y-6">
+          <DeliveryInformation
+            zipCode={zipCode}
+            setZipCode={setZipCode}
+            calculateShipping={calculateShipping}
+            voucherCode={voucherCode}
+            setVoucherCode={setVoucherCode}
+            voucherLoading={voucherLoading}
+            appliedVoucher={appliedVoucher}
+            applyVoucher={applyVoucher}
+            removeVoucher={() => {
+              setAppliedVoucher(null);
+              setVoucherCode("");
+              setDiscount(0);
+            }}
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor="voucher">Cupom de Desconto</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="voucher"
-                  placeholder="Digite seu cupom"
-                  value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
-                  disabled={!!appliedVoucher}
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={applyVoucher}
-                  disabled={voucherLoading || !!appliedVoucher}
-                >
-                  {voucherLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Tag className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              {appliedVoucher && (
-                <div className="flex items-center justify-between text-sm text-green-600">
-                  <span>Cupom aplicado: {appliedVoucher.code}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setAppliedVoucher(null);
-                      setVoucherCode("");
-                      setDiscount(0);
-                    }}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              )}
-            </div>
+          <PaymentMethods
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            loading={loading}
+            pixQrCode={pixQrCode}
+            pixCode={pixCode}
+          />
+        </div>
 
-            <Tabs defaultValue="credit" onValueChange={(v) => setPaymentMethod(v as "credit" | "pix")}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="credit">
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Cartão
-                </TabsTrigger>
-                <TabsTrigger value="pix">
-                  <QrCode className="w-4 h-4 mr-2" />
-                  PIX
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="credit">
-                <p className="text-sm text-muted-foreground space-y-2">
-                  <span className="block">Você será redirecionado para a página segura do Mercado Pago para inserir os dados do seu cartão.</span>
-                  <span className="block text-green-600">✓ Ambiente seguro</span>
-                  <span className="block text-green-600">✓ Pagamento processado pelo Mercado Pago</span>
-                  <span className="block text-green-600">✓ Parcelamento em até 12x</span>
-                </p>
-              </TabsContent>
-              <TabsContent value="pix" className="pt-4">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                    <Loader2 className="w-8 h-8 animate-spin" />
-                    <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
-                  </div>
-                ) : pixQrCode ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <img 
-                        src={`data:image/png;base64,${pixQrCode}`}
-                        alt="QR Code PIX"
-                        className="max-w-[200px]"
-                      />
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                      <p className="text-sm font-medium mb-2">Código PIX:</p>
-                      <p className="text-xs break-all select-all">{pixCode}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      O QR Code será gerado após clicar em "Finalizar Compra".
-                    </p>
-                    <p className="text-sm text-green-600">
-                      ✓ Pagamento instantâneo
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Resumo do Pedido</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OrderSummary
-              items={cartItems}
-              subtotal={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)}
-              shippingFee={shippingFee}
-              discount={discount}
-              total={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee - discount}
-            />
-
-            <Button
-              className="w-full mt-6"
-              size="lg"
-              onClick={handleCheckout}
-              disabled={loading || !zipCode || !session}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                "Finalizar Compra"
-              )}
-            </Button>
-
-            {!session && (
-              <p className="text-sm text-red-500 text-center mt-2">
-                Faça login para finalizar a compra
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <OrderTotal
+          cartItems={cartItems}
+          shippingFee={shippingFee}
+          discount={discount}
+          loading={loading}
+          isLoggedIn={!!session}
+          hasZipCode={!!zipCode}
+          onCheckout={handleCheckout}
+        />
       </div>
     </div>
   );
