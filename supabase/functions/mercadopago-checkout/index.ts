@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { MercadoPagoConfig, Preference } from "https://esm.sh/mercadopago@2.0.6";
+import mercadopago from "https://esm.sh/mercadopago@1.5.16"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,11 +16,10 @@ serve(async (req) => {
     const { orderId, items, shipping_cost, buyer } = await req.json()
     console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer })
 
-    const client = new MercadoPagoConfig({ 
-      accessToken: Deno.env.get('MP_ACCESS_TOKEN')!,
+    // Configurar o SDK com o token de acesso
+    mercadopago.configure({
+      access_token: Deno.env.get('MP_ACCESS_TOKEN')!
     });
-
-    const preference = new Preference(client);
 
     // Formatando os itens conforme documentação
     const formattedItems = items.map(item => ({
@@ -32,7 +31,7 @@ serve(async (req) => {
 
     console.log("Itens formatados:", formattedItems);
 
-    const preferenceData = {
+    const preference = {
       items: formattedItems,
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
@@ -43,22 +42,19 @@ serve(async (req) => {
       auto_return: "approved"
     };
 
-    console.log("Dados da preferência:", preferenceData);
+    console.log("Dados da preferência:", preference);
 
-    const result = await preference.create({
-      body: preferenceData
-    });
-
+    const result = await mercadopago.preferences.create(preference);
     console.log("Resultado da preferência:", result);
 
-    if (!result.init_point) {
+    if (!result.body.init_point) {
       throw new Error("URL de checkout não gerada");
     }
 
     return new Response(
       JSON.stringify({
-        init_point: result.init_point,
-        preference_id: result.id
+        init_point: result.body.init_point,
+        preference_id: result.body.id
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
