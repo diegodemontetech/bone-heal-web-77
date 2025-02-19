@@ -20,7 +20,6 @@ serve(async (req) => {
       throw new Error("Token do Mercado Pago não configurado")
     }
 
-    // Cria a preferência diretamente via API REST do Mercado Pago
     const preference = {
       items: items.map(item => ({
         title: item.title,
@@ -33,6 +32,7 @@ serve(async (req) => {
         name: buyer.name
       },
       payment_methods: {
+        default_payment_method_id: "pix",
         excluded_payment_types: [
           { id: "ticket" }
         ],
