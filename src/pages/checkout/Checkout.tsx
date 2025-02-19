@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,9 @@ import OrderSummary from "@/components/orders/OrderSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Checkout = () => {
-  const { cartItems, total, clear } = useCart();
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get('order_id');
+  const { cartItems, clear } = useCart();
   const session = useSession();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -106,28 +108,45 @@ const Checkout = () => {
 
     try {
       setLoading(true);
+      console.log("Iniciando checkout...");
 
-      // Criar pedido
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: session.user.id,
-          items: cartItems.map(item => ({
-            product_id: item.id,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          shipping_address: { zip_code: zipCode },
-          subtotal: total,
-          shipping_fee: shippingFee,
-          total_amount: total + shippingFee,
-          status: "pending",
-          payment_method: paymentMethod,
-        })
-        .select()
-        .single();
+      let order;
+      if (!orderId) {
+        // Criar pedido apenas se não existir
+        const { data: newOrder, error: orderError } = await supabase
+          .from("orders")
+          .insert({
+            user_id: session.user.id,
+            items: cartItems.map(item => ({
+              product_id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+            shipping_address: { zip_code: zipCode },
+            subtotal: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0),
+            shipping_fee: shippingFee,
+            total_amount: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee,
+            status: "pending",
+            payment_method: paymentMethod,
+          })
+          .select()
+          .single();
 
-      if (orderError) throw orderError;
+        if (orderError) throw orderError;
+        order = newOrder;
+      } else {
+        // Usar pedido existente
+        const { data: existingOrder, error: orderError } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("id", orderId)
+          .single();
+
+        if (orderError) throw orderError;
+        order = existingOrder;
+      }
+
+      console.log("Pedido criado/recuperado:", order);
 
       // Criar preferência de pagamento
       const { data: mpPreference, error: preferenceError } = await supabase.functions.invoke(
@@ -135,9 +154,9 @@ const Checkout = () => {
         {
           body: {
             orderId: order.id,
-            items: cartItems.map(item => ({
-              id: item.id,
-              title: item.name,
+            items: order.items.map((item: any) => ({
+              id: item.product_id,
+              title: "Produto", // Você pode buscar o nome do produto se necessário
               quantity: item.quantity,
               unit_price: Number(item.price),
             })),
@@ -150,24 +169,12 @@ const Checkout = () => {
         }
       );
 
-      if (preferenceError) throw preferenceError;
+      if (preferenceError) {
+        console.error("Erro na preferência:", preferenceError);
+        throw preferenceError;
+      }
 
-      // Inicializar Mercado Pago
-      // @ts-ignore
-      const mp = new MercadoPago(mpPreference.public_key, {
-        locale: 'pt-BR'
-      });
-
-      // Criar botão de pagamento
-      mp.checkout({
-        preference: {
-          id: mpPreference.id
-        },
-        render: {
-          container: '#payment-form',
-          label: 'Pagar',
-        }
-      });
+      console.log("Preferência MP criada:", mpPreference);
 
       // Atualizar pedido com ID da preferência
       await supabase
@@ -180,13 +187,16 @@ const Checkout = () => {
         .from("payments")
         .insert({
           order_id: order.id,
-          amount: total + shippingFee,
+          amount: order.total_amount,
           payment_method: paymentMethod,
           status: "pending",
           external_id: mpPreference.id
         });
 
-      clear();
+      // Redirecionar para página de pagamento do Mercado Pago
+      window.location.href = mpPreference.init_point;
+      
+      clear(); // Limpar carrinho após sucesso
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
@@ -196,7 +206,7 @@ const Checkout = () => {
     }
   };
 
-  if (!cartItems.length) {
+  if (!cartItems.length && !orderId) {
     return (
       <div className="container mx-auto p-4">
         <Card>
@@ -284,9 +294,9 @@ const Checkout = () => {
           <CardContent>
             <OrderSummary
               items={cartItems}
-              subtotal={total}
+              subtotal={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)}
               shippingFee={shippingFee}
-              total={total + shippingFee}
+              total={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee}
             />
 
             <Button
@@ -307,7 +317,6 @@ const Checkout = () => {
           </CardContent>
         </Card>
       </div>
-      <div id="payment-form" className="mt-6"></div>
     </div>
   );
 };
