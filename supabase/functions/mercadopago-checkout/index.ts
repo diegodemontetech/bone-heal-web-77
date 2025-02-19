@@ -8,7 +8,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -17,49 +16,57 @@ serve(async (req) => {
     const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = await req.json()
     console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, payment_method, total_amount })
 
-    // Validar dados recebidos
+    // Verificar token do MP primeiro
+    const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
+    if (!mpAccessToken) {
+      throw new Error("MP_ACCESS_TOKEN não configurado no ambiente")
+    }
+
+    // Validar dados básicos
     if (!items?.length) {
-      throw new Error("Nenhum item fornecido");
+      throw new Error("Nenhum item fornecido")
     }
 
     if (!buyer?.email) {
-      throw new Error("Email do comprador não fornecido");
+      throw new Error("Email do comprador não fornecido")
     }
 
-    // Configurar Mercado Pago
-    const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
-    if (!mpAccessToken) {
-      throw new Error("Token do Mercado Pago não configurado")
-    }
-
-    const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
-    console.log("MP Client configurado")
-
-    // Garantir que o valor total é um número válido
-    const amount = Number(total_amount);
+    // Validar e converter valor total
+    const amount = Number(total_amount)
     if (isNaN(amount) || amount <= 0) {
-      throw new Error(`Valor total inválido: ${total_amount}`);
+      throw new Error(`Valor total inválido: ${total_amount}`)
     }
 
-    console.log("Valor final a ser cobrado:", amount);
+    // Configurar cliente do MP
+    const client = new MercadoPagoConfig({ 
+      accessToken: mpAccessToken,
+    });
+
+    console.log("Iniciando pagamento com valor:", amount)
 
     if (payment_method === 'pix') {
       const payment = new Payment(client);
-      const result = await payment.create({
+      const paymentData = {
         transaction_amount: amount,
         payment_method_id: 'pix',
         payer: {
           email: buyer.email,
         },
         description: `Pedido ${orderId}`,
-      });
+      };
 
-      console.log("Resposta do MP (PIX):", result);
+      console.log("Criando pagamento PIX:", paymentData);
+      const result = await payment.create(paymentData);
+      console.log("Resposta PIX:", result);
+
+      if (!result.point_of_interaction?.transaction_data?.qr_code) {
+        throw new Error("QR Code não gerado pelo Mercado Pago");
+      }
 
       return new Response(
         JSON.stringify({
-          qr_code: result.point_of_interaction?.transaction_data?.qr_code,
-          qr_code_base64: result.point_of_interaction?.transaction_data?.qr_code_base64,
+          qr_code: result.point_of_interaction.transaction_data.qr_code,
+          qr_code_base64: result.point_of_interaction.transaction_data.qr_code_base64,
           payment_id: result.id,
         }),
         { 
@@ -71,7 +78,7 @@ serve(async (req) => {
       )
     } else {
       const preference = new Preference(client);
-      const result = await preference.create({
+      const preferenceData = {
         items: [{
           id: orderId,
           title: `Pedido ${orderId}`,
@@ -99,9 +106,11 @@ serve(async (req) => {
         shipments: {
           cost: shipping_cost,
         },
-      });
+      };
 
-      console.log("Resposta do MP (Cartão):", result);
+      console.log("Criando preferência:", preferenceData);
+      const result = await preference.create(preferenceData);
+      console.log("Resposta preferência:", result);
 
       return new Response(
         JSON.stringify({
@@ -122,8 +131,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.toString(),
-        stack: error.stack
+        details: JSON.stringify(error),
       }),
       { 
         status: 500,
