@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -76,64 +77,6 @@ const Checkout = () => {
     }
   };
 
-  const handleCheckout = async () => {
-    if (!session?.user) {
-      toast.error("Por favor, faça login para continuar");
-      navigate("/login");
-      return;
-    }
-
-    if (!zipCode) {
-      toast.error("Por favor, informe o CEP para entrega");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log("Iniciando checkout...");
-
-      const { data, error } = await supabase.functions.invoke(
-        "mercadopago-checkout",
-        {
-          body: {
-            orderId: "test-123",
-            items: cartItems.map(item => ({
-              id: item.id,
-              title: item.name,
-              quantity: item.quantity,
-              unit_price: item.price,
-            })),
-            shipping_cost: shippingFee,
-            buyer: {
-              name: session.user.email,
-              email: session.user.email,
-            },
-            payment_method: paymentMethod,
-          },
-        }
-      );
-
-      if (error) throw error;
-
-      console.log("Resposta:", data);
-
-      if (paymentMethod === "pix") {
-        setPixQrCode(data.qr_code_base64);
-        setPixCode(data.qr_code);
-        toast.success("QR Code PIX gerado com sucesso!");
-      } else {
-        // Redirecionamento para checkout do cartão
-        window.location.href = data.init_point;
-      }
-      
-    } catch (error: any) {
-      console.error("Erro no checkout:", error);
-      toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const applyVoucher = async () => {
     if (!voucherCode) {
       toast.error("Digite um cupom válido");
@@ -192,6 +135,64 @@ const Checkout = () => {
       toast.error("Erro ao aplicar cupom");
     } finally {
       setVoucherLoading(false);
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!session?.user) {
+      toast.error("Por favor, faça login para continuar");
+      navigate("/login");
+      return;
+    }
+
+    if (!zipCode) {
+      toast.error("Por favor, informe o CEP para entrega");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log("Iniciando checkout...");
+
+      const { data, error } = await supabase.functions.invoke(
+        "mercadopago-checkout",
+        {
+          body: {
+            orderId: "test-123",
+            items: cartItems.map(item => ({
+              id: item.id,
+              title: item.name,
+              quantity: item.quantity,
+              unit_price: item.price,
+            })),
+            shipping_cost: shippingFee,
+            buyer: {
+              name: session.user.email,
+              email: session.user.email,
+            },
+            payment_method: paymentMethod,
+          },
+        }
+      );
+
+      if (error) throw error;
+
+      console.log("Resposta:", data);
+
+      if (paymentMethod === "pix") {
+        setPixQrCode(data.qr_code_base64);
+        setPixCode(data.qr_code);
+        toast.success("QR Code PIX gerado com sucesso!");
+      } else {
+        // Redirecionamento para checkout do cartão
+        window.location.href = data.init_point;
+      }
+      
+    } catch (error: any) {
+      console.error("Erro no checkout:", error);
+      toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
+    } finally {
+      setLoading(false);
     }
   };
 
