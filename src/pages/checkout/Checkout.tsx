@@ -157,6 +157,15 @@ const Checkout = () => {
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const total = subtotal + shippingFee - discount;
 
+      // Log para debug
+      console.log("Dados do checkout:", {
+        cartItems,
+        subtotal,
+        shippingFee,
+        discount,
+        total
+      });
+
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
@@ -166,21 +175,24 @@ const Checkout = () => {
               id: item.id,
               title: item.name,
               quantity: item.quantity,
-              unit_price: item.price,
+              price: Number(item.price), // Garantir que o preço é um número
             })),
-            shipping_cost: shippingFee,
+            shipping_cost: Number(shippingFee), // Garantir que o frete é um número
             buyer: {
               name: session.user.email,
               email: session.user.email,
             },
             payment_method: paymentMethod,
             voucher_id: appliedVoucher?.id,
-            total_amount: total,
+            total_amount: Number(total), // Garantir que o total é um número
           },
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na resposta do checkout:", error);
+        throw error;
+      }
 
       console.log("Resposta do checkout:", data);
 
