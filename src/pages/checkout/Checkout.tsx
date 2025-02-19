@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -139,6 +140,35 @@ const Checkout = () => {
     }
   };
 
+  const saveOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .insert({
+          id: orderId,
+          user_id: session?.user?.id,
+          items: cartItems.map(item => ({
+            product_id: item.id,
+            quantity: item.quantity,
+            price: item.price
+          })),
+          shipping_fee: shippingFee,
+          discount: discount,
+          total: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee - discount,
+          status: 'pending',
+          shipping_address: {
+            zip_code: zipCode
+          },
+          payment_method: paymentMethod
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Erro ao salvar pedido:", error);
+      throw error;
+    }
+  };
+
   const handleCheckout = async () => {
     if (!session?.user) {
       toast.error("Por favor, faça login para continuar");
@@ -155,6 +185,7 @@ const Checkout = () => {
       setLoading(true);
       console.log("Iniciando checkout...");
 
+      const orderId = crypto.randomUUID();
       const subtotal = Number(cartItems.reduce((acc, item) => 
         acc + (Number(item.price) * item.quantity), 0
       ).toFixed(2));
@@ -164,6 +195,7 @@ const Checkout = () => {
       const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
 
       console.log("Dados do checkout:", {
+        orderId,
         cartItems,
         subtotal,
         shippingCost,
@@ -171,11 +203,15 @@ const Checkout = () => {
         total
       });
 
+      // Primeiro salva o pedido
+      await saveOrder(orderId);
+
+      // Depois processa o pagamento
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
           body: {
-            orderId: crypto.randomUUID(),
+            orderId,
             items: cartItems.map(item => ({
               id: item.id,
               title: item.name,
@@ -270,6 +306,10 @@ const Checkout = () => {
         document.body.appendChild(script);
       }
       
+      // Limpa o carrinho após sucesso
+      if (data.payment_id) {
+        clear();
+      }
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
