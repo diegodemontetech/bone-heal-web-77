@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,99 +14,14 @@ import OrderSummary from "@/components/orders/OrderSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Checkout = () => {
-  const [searchParams] = useSearchParams();
-  const orderId = searchParams.get('order_id');
   const { cartItems, clear } = useCart();
   const session = useSession();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null);
   const [zipCode, setZipCode] = useState("");
   const [shippingFee, setShippingFee] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session?.user) {
-          toast.error("Por favor, faça login para continuar");
-          navigate("/login");
-          return;
-        }
-
-        // Carregar perfil
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        if (profileError) {
-          console.error("Erro ao carregar perfil:", profileError);
-          return;
-        }
-
-        setProfile(profileData);
-        if (profileData.zip_code) {
-          setZipCode(profileData.zip_code);
-          calculateShipping(profileData.zip_code);
-        }
-      } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        navigate("/login");
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  const calculateShipping = async (zip: string) => {
-    if (!zip || zip.length !== 8 || cartItems.length === 0) return;
-
-    setIsCalculatingShipping(true);
-    try {
-      const { data: correiosData, error: correiosError } = await supabase.functions.invoke("correios-shipping", {
-        body: {
-          zipCodeDestination: zip,
-        },
-      });
-
-      if (correiosError) throw correiosError;
-
-      const { data: shippingRate, error: shippingError } = await supabase
-        .from('shipping_rates')
-        .select('rate, delivery_days')
-        .eq('state', correiosData.state)
-        .single();
-
-      if (shippingError) throw shippingError;
-
-      setShippingFee(shippingRate.rate);
-      toast.success(`Frete calculado: entrega em ${shippingRate.delivery_days} dias úteis`);
-    } catch (error) {
-      console.error("Erro ao calcular frete:", error);
-      toast.error("Erro ao calcular frete. Por favor, tente novamente.");
-    } finally {
-      setIsCalculatingShipping(false);
-    }
-  };
-
-  useEffect(() => {
-    // Adicionar script do Mercado Pago
-    const script = document.createElement('script');
-    script.src = "https://sdk.mercadopago.com/js/v2";
-    script.type = "text/javascript";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      // Limpar script ao desmontar
-      document.body.removeChild(script);
-    };
-  }, []);
 
   const handleCheckout = async () => {
     if (!session?.user) {
@@ -121,204 +37,46 @@ const Checkout = () => {
 
     try {
       setLoading(true);
-      console.log("Iniciando checkout...");
+      console.log("Iniciando checkout simplificado...");
 
-      let order;
-      if (!orderId) {
-        console.log("Criando novo pedido...");
-        const { data: newOrder, error: orderError } = await supabase
-          .from("orders")
-          .insert({
-            user_id: session.user.id,
-            items: cartItems.map(item => ({
-              product_id: item.id,
-              quantity: item.quantity,
-              price: item.price,
-              name: item.name
-            })),
-            shipping_address: { zip_code: zipCode },
-            subtotal: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0),
-            shipping_fee: shippingFee,
-            total_amount: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee,
-            status: "pending",
-            payment_method: paymentMethod,
-          })
-          .select()
-          .single();
-
-        if (orderError) {
-          console.error("Erro ao criar pedido:", orderError);
-          throw orderError;
-        }
-        order = newOrder;
-      } else {
-        console.log("Usando pedido existente:", orderId);
-        const { data: existingOrder, error: orderError } = await supabase
-          .from("orders")
-          .select("*")
-          .eq("id", orderId)
-          .single();
-
-        if (orderError) {
-          console.error("Erro ao buscar pedido:", orderError);
-          throw orderError;
-        }
-        order = existingOrder;
-      }
-
-      console.log("Pedido criado/recuperado:", order);
-
-      // Criar preferência de pagamento
-      console.log("Criando preferência de pagamento...");
-      const { data: mpPreference, error: preferenceError } = await supabase.functions.invoke(
+      // Teste simples da função edge
+      const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
           body: {
-            orderId: order.id,
-            items: order.items.map((item: any) => ({
-              id: item.product_id,
-              title: item.name || "Produto",
+            orderId: "test-123",
+            items: cartItems.map(item => ({
+              id: item.id,
+              title: item.name,
               quantity: item.quantity,
-              unit_price: Number(item.price),
+              unit_price: item.price,
             })),
             shipping_cost: shippingFee,
             buyer: {
-              name: profile?.full_name || session.user.email,
+              name: session.user.email,
               email: session.user.email,
             },
           },
         }
       );
 
-      if (preferenceError) {
-        console.error("Erro na preferência:", preferenceError);
-        throw preferenceError;
+      if (error) {
+        console.error("Erro no teste:", error);
+        throw error;
       }
 
-      if (!mpPreference?.init_point) {
-        throw new Error("Não foi possível obter o link de pagamento");
-      }
-
-      console.log("Preferência MP criada:", mpPreference);
-
-      // Atualizar pedido com ID da preferência
-      console.log("Atualizando pedido com ID da preferência...");
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({ mp_preference_id: mpPreference.id })
-        .eq("id", order.id);
-
-      if (updateError) {
-        console.error("Erro ao atualizar pedido:", updateError);
-        throw updateError;
-      }
-
-      // Criar registro de pagamento
-      console.log("Criando registro de pagamento...");
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .insert({
-          order_id: order.id,
-          amount: order.total_amount,
-          payment_method: paymentMethod,
-          status: "pending",
-          external_id: mpPreference.id
-        });
-
-      if (paymentError) {
-        console.error("Erro ao criar pagamento:", paymentError);
-        throw paymentError;
-      }
-
-      // Inicializar checkout do Mercado Pago
-      console.log("Iniciando checkout do Mercado Pago...");
-      // @ts-ignore
-      const mp = new MercadoPago("APP_USR-711c6c25-bab3-4517-8ecf-c258c5ee4691", {
-        locale: 'pt-BR'
-      });
-
-      const cardForm = mp.cardForm({
-        amount: String(order.total_amount),
-        iframe: true,
-        form: {
-          id: "form-checkout",
-          cardNumber: {
-            id: "form-checkout__cardNumber",
-            placeholder: "Número do cartão",
-          },
-          expirationDate: {
-            id: "form-checkout__expirationDate",
-            placeholder: "MM/YY",
-          },
-          securityCode: {
-            id: "form-checkout__securityCode",
-            placeholder: "Código de segurança",
-          },
-          cardholderName: {
-            id: "form-checkout__cardholderName",
-            placeholder: "Titular do cartão",
-          },
-          issuer: {
-            id: "form-checkout__issuer",
-            placeholder: "Banco emissor",
-          },
-          installments: {
-            id: "form-checkout__installments",
-            placeholder: "Parcelas",
-          },
-        },
-        callbacks: {
-          onFormMounted: (error: any) => {
-            if (error) {
-              console.error("Erro ao montar formulário:", error);
-              return;
-            }
-            console.log("Formulário montado com sucesso");
-          },
-          onSubmit: async (event: any) => {
-            event.preventDefault();
-            setLoading(true);
-
-            const {
-              paymentMethodId,
-              issuerId,
-              cardholderEmail: email,
-              amount,
-              token,
-              installments,
-              identificationNumber,
-              identificationType,
-            } = cardForm.getCardFormData();
-
-            try {
-              // Processar pagamento
-              // Implementar lógica de processamento do pagamento
-              clear(); // Limpar carrinho após sucesso
-              navigate("/checkout/success");
-            } catch (error) {
-              console.error("Erro ao processar pagamento:", error);
-              toast.error("Erro ao processar pagamento");
-              setLoading(false);
-            }
-          },
-          onFetching: (resource: any) => {
-            console.log("Buscando recurso:", resource);
-            setLoading(true);
-            return () => {
-              setLoading(false);
-            };
-          },
-        },
-      });
-
+      console.log("Resposta do teste:", data);
+      toast.success("Teste da função edge realizado com sucesso!");
+      
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
+    } finally {
       setLoading(false);
     }
   };
 
-  if (!cartItems.length && !orderId) {
+  if (!cartItems.length) {
     return (
       <div className="container mx-auto p-4">
         <Card>
@@ -351,26 +109,9 @@ const Checkout = () => {
                   id="zipCode"
                   placeholder="00000-000"
                   value={zipCode}
-                  onChange={(e) => {
-                    const zip = e.target.value.replace(/\D/g, "");
-                    setZipCode(zip);
-                    if (zip.length === 8) {
-                      calculateShipping(zip);
-                    }
-                  }}
+                  onChange={(e) => setZipCode(e.target.value.replace(/\D/g, ""))}
                   maxLength={8}
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => calculateShipping(zipCode)}
-                  disabled={zipCode.length !== 8 || isCalculatingShipping}
-                >
-                  {isCalculatingShipping ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Calcular"
-                  )}
-                </Button>
               </div>
             </div>
 
@@ -387,13 +128,12 @@ const Checkout = () => {
               </TabsList>
               <TabsContent value="credit">
                 <p className="text-sm text-muted-foreground">
-                  Você será redirecionado para a página segura do Mercado Pago para finalizar o pagamento.
+                  Você será redirecionado para a página segura do Mercado Pago.
                 </p>
-                <form id="form-checkout"></form>
               </TabsContent>
               <TabsContent value="pix">
                 <p className="text-sm text-muted-foreground">
-                  Você receberá um QR Code para pagamento após confirmar o pedido.
+                  Você receberá um QR Code para pagamento.
                 </p>
               </TabsContent>
             </Tabs>
