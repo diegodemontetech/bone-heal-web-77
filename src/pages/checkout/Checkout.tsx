@@ -275,14 +275,13 @@ const Checkout = () => {
         document.body.appendChild(script);
       }
       
+    } catch (error: any) {
+      console.error("Erro no checkout:", error);
+      toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
+    } finally {
+      setLoading(false);
     }
-  } catch (error: any) {
-    console.error("Erro no checkout:", error);
-    toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (!cartItems.length) {
     return (
