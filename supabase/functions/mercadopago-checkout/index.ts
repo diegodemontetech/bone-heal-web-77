@@ -30,6 +30,10 @@ serve(async (req) => {
       throw new Error("Email do comprador não fornecido");
     }
 
+    if (!total_amount || typeof total_amount !== 'number' || total_amount <= 0) {
+      throw new Error("Valor total inválido");
+    }
+
     // Configurar Mercado Pago
     const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
     if (!mpAccessToken) {
@@ -39,23 +43,14 @@ serve(async (req) => {
     const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
     console.log("MP Client configurado")
 
-    // Calcular valor total
-    const itemsTotal = items.reduce((total: number, item: any) => 
-      total + (item.price * item.quantity), 0
-    );
-    
-    const finalAmount = total_amount || (itemsTotal + shipping_cost);
-    console.log("Valor final:", finalAmount);
-
-    if (!finalAmount || finalAmount <= 0) {
-      throw new Error("Valor total inválido");
-    }
+    // Usar total_amount diretamente, já validado acima
+    console.log("Valor final a ser cobrado:", total_amount);
 
     if (payment_method === 'pix') {
       // Criar pagamento PIX
       const payment = new Payment(client);
       const result = await payment.create({
-        transaction_amount: finalAmount,
+        transaction_amount: total_amount,
         payment_method_id: 'pix',
         payer: {
           email: buyer.email,
@@ -86,13 +81,13 @@ serve(async (req) => {
       // Criar preferência para cartão
       const preference = new Preference(client);
       const result = await preference.create({
-        items: items.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          quantity: item.quantity,
-          unit_price: item.price,
+        items: [{
+          id: orderId,
+          title: `Pedido ${orderId}`,
+          quantity: 1,
+          unit_price: total_amount,
           currency_id: 'BRL',
-        })),
+        }],
         payer: {
           email: buyer.email,
         },
