@@ -1,4 +1,4 @@
-<lov-code>
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -195,7 +195,6 @@ const Checkout = () => {
         if (!data.init_point) {
           throw new Error("Link de pagamento não gerado corretamente");
         }
-        // Usar window.location.href para redirecionar
         window.location.href = data.init_point;
       }
       
@@ -368,4 +367,23 @@ const Checkout = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processando
+                  Processando...
+                </>
+              ) : (
+                "Finalizar Compra"
+              )}
+            </Button>
+
+            {!session && (
+              <p className="text-sm text-red-500 text-center mt-2">
+                Faça login para finalizar a compra
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;
