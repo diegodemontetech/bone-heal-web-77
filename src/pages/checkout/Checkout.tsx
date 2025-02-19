@@ -63,7 +63,6 @@ const Checkout = () => {
       if (shippingRate) {
         setShippingFee(shippingRate.rate);
         
-        // Se já existe um cupom aplicado, recalcula o desconto
         if (appliedVoucher) {
           applyVoucherDiscount(appliedVoucher, shippingRate.rate);
         }
@@ -149,9 +148,9 @@ const Checkout = () => {
   const saveOrder = async (orderId: string) => {
     try {
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-      const total_amount = Math.max(0, subtotal + shippingFee - discount); // Garante que o total não seja negativo
+      const total_amount = Math.max(0, subtotal + shippingFee - discount);
 
-      const { error } = await supabase
+      const { error: orderError } = await supabase
         .from('orders')
         .insert({
           id: orderId,
@@ -173,9 +172,20 @@ const Checkout = () => {
           payment_method: 'mercadopago'
         });
 
-      if (error) throw error;
+      if (orderError) throw orderError;
 
-      // Se tiver cupom aplicado, incrementa o número de usos
+      // Criar registro de pagamento
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          order_id: orderId,
+          status: 'pending',
+          amount: total_amount,
+          payment_method: 'mercadopago'
+        });
+
+      if (paymentError) throw paymentError;
+
       if (appliedVoucher) {
         await supabase
           .from('vouchers')
@@ -211,7 +221,7 @@ const Checkout = () => {
       );
       const shippingCost = Number(shippingFee) || 0;
       const discountValue = Number(discount) || 0;
-      const total = Math.max(0, Number((subtotal + shippingCost - discountValue).toFixed(2))); // Garante total mínimo de 0
+      const total = Math.max(0, Number((subtotal + shippingCost - discountValue).toFixed(2)));
 
       console.log("Valores calculados:", {
         subtotal,
@@ -239,7 +249,7 @@ const Checkout = () => {
               quantity: Number(item.quantity)
             })),
             shipping_cost: shippingCost,
-            discount: discountValue, // Adiciona o desconto
+            discount: discountValue,
             buyer: {
               name: session.user.email?.split('@')[0] || 'Cliente',
               email: session.user.email,
@@ -258,10 +268,7 @@ const Checkout = () => {
         throw new Error("URL de checkout não gerada");
       }
 
-      // Limpa o carrinho antes de redirecionar
       clear();
-      
-      // Redireciona para o Checkout do Mercado Pago
       window.location.href = data.init_point;
       
     } catch (error: any) {
