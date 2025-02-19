@@ -24,34 +24,23 @@ serve(async (req) => {
 
     // Formatando os itens conforme documentação
     const formattedItems = items.map(item => ({
-      id: item.id,
       title: item.title,
       quantity: Number(item.quantity),
       unit_price: Number(item.price),
-      currency_id: "BRL",
-      description: `${item.title} - Quantidade: ${item.quantity}`
+      currency_id: "BRL"
     }));
 
     console.log("Itens formatados:", formattedItems);
 
     const preferenceData = {
       items: formattedItems,
-      payer: {
-        email: buyer.email,
-        name: buyer.name
-      },
-      shipments: {
-        cost: Number(shipping_cost),
-        mode: "not_specified"
-      },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
         failure: `${Deno.env.get('APP_URL')}/checkout/failure`,
         pending: `${Deno.env.get('APP_URL')}/checkout/pending`
       },
       external_reference: orderId,
-      auto_return: "approved",
-      statement_descriptor: "Workshop Lovable"
+      auto_return: "approved"
     };
 
     console.log("Dados da preferência:", preferenceData);
