@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -171,20 +170,23 @@ const Checkout = () => {
               email: session.user.email,
             },
             payment_method: paymentMethod,
+            voucher_id: appliedVoucher?.id,
           },
         }
       );
 
       if (error) throw error;
 
-      console.log("Resposta:", data);
+      console.log("Resposta do checkout:", data);
 
       if (paymentMethod === "pix") {
+        if (!data.qr_code_base64 || !data.qr_code) {
+          throw new Error("QR Code não gerado corretamente");
+        }
         setPixQrCode(data.qr_code_base64);
         setPixCode(data.qr_code);
         toast.success("QR Code PIX gerado com sucesso!");
       } else {
-        // Redirecionamento para checkout do cartão
         window.location.href = data.init_point;
       }
       
@@ -297,21 +299,28 @@ const Checkout = () => {
                   Você será redirecionado para a página segura do Mercado Pago.
                 </p>
               </TabsContent>
-              <TabsContent value="pix">
-                {pixQrCode ? (
+              <TabsContent value="pix" className="pt-4">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
+                  </div>
+                ) : pixQrCode ? (
                   <div className="space-y-4">
-                    <img 
-                      src={`data:image/png;base64,${pixQrCode}`}
-                      alt="QR Code PIX"
-                      className="mx-auto"
-                    />
+                    <div className="flex justify-center">
+                      <img 
+                        src={`data:image/png;base64,${pixQrCode}`}
+                        alt="QR Code PIX"
+                        className="max-w-[200px]"
+                      />
+                    </div>
                     <div className="p-4 bg-muted rounded-lg">
                       <p className="text-sm font-medium mb-2">Código PIX:</p>
-                      <p className="text-xs break-all">{pixCode}</p>
+                      <p className="text-xs break-all select-all">{pixCode}</p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground text-center py-8">
                     O QR Code será gerado após clicar em "Finalizar Compra".
                   </p>
                 )}
