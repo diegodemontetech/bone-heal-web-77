@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, CreditCard, QrCode } from "lucide-react";
+import { Loader2, CreditCard, QrCode, Tag } from "lucide-react";
 import { toast } from "sonner";
 import OrderSummary from "@/components/orders/OrderSummary";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +23,10 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
   const [pixQrCode, setPixQrCode] = useState<string>("");
   const [pixCode, setPixCode] = useState<string>("");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [discount, setDiscount] = useState(0);
 
   // Carregar CEP do perfil quando logado
   useEffect(() => {
@@ -131,6 +134,67 @@ const Checkout = () => {
     }
   };
 
+  const applyVoucher = async () => {
+    if (!voucherCode) {
+      toast.error("Digite um cupom válido");
+      return;
+    }
+
+    setVoucherLoading(true);
+    try {
+      const { data: voucher, error } = await supabase
+        .from('vouchers')
+        .select('*')
+        .eq('code', voucherCode.toUpperCase())
+        .single();
+
+      if (error) throw error;
+
+      if (!voucher) {
+        toast.error("Cupom não encontrado");
+        return;
+      }
+
+      const now = new Date();
+      if (voucher.valid_until && new Date(voucher.valid_until) < now) {
+        toast.error("Cupom expirado");
+        return;
+      }
+
+      if (voucher.max_uses && voucher.current_uses >= voucher.max_uses) {
+        toast.error("Cupom esgotado");
+        return;
+      }
+
+      // Validar regras específicas
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      
+      if (voucher.min_amount && subtotal < voucher.min_amount) {
+        toast.error(`Valor mínimo para este cupom: R$ ${voucher.min_amount}`);
+        return;
+      }
+
+      // Calcular desconto
+      let discountValue = 0;
+      if (voucher.discount_type === 'percentage') {
+        discountValue = (subtotal * voucher.discount_value) / 100;
+      } else if (voucher.discount_type === 'fixed') {
+        discountValue = voucher.discount_value;
+      } else if (voucher.discount_type === 'shipping') {
+        discountValue = shippingFee;
+      }
+
+      setDiscount(discountValue);
+      setAppliedVoucher(voucher);
+      toast.success("Cupom aplicado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao aplicar cupom:", error);
+      toast.error("Erro ao aplicar cupom");
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+
   if (!cartItems.length) {
     return (
       <div className="container mx-auto p-4">
@@ -174,6 +238,46 @@ const Checkout = () => {
                   maxLength={8}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="voucher">Cupom de Desconto</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="voucher"
+                  placeholder="Digite seu cupom"
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value)}
+                  disabled={!!appliedVoucher}
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={applyVoucher}
+                  disabled={voucherLoading || !!appliedVoucher}
+                >
+                  {voucherLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Tag className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              {appliedVoucher && (
+                <div className="flex items-center justify-between text-sm text-green-600">
+                  <span>Cupom aplicado: {appliedVoucher.code}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setAppliedVoucher(null);
+                      setVoucherCode("");
+                      setDiscount(0);
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              )}
             </div>
 
             <Tabs defaultValue="credit" onValueChange={(v) => setPaymentMethod(v as "credit" | "pix")}>
@@ -224,7 +328,8 @@ const Checkout = () => {
               items={cartItems}
               subtotal={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0)}
               shippingFee={shippingFee}
-              total={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee}
+              discount={discount}
+              total={cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee - discount}
             />
 
             <Button
