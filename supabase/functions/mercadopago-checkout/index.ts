@@ -22,20 +22,27 @@ serve(async (req) => {
 
     const preference = new Preference(client);
 
+    // Formatando os itens conforme documentação
+    const formattedItems = items.map(item => ({
+      id: item.id,
+      title: item.title,
+      quantity: Number(item.quantity),
+      unit_price: Number(item.price),
+      currency_id: "BRL",
+      description: `${item.title} - Quantidade: ${item.quantity}`
+    }));
+
+    console.log("Itens formatados:", formattedItems);
+
     const preferenceData = {
-      items: items.map(item => ({
-        id: item.id,
-        title: item.title,
-        quantity: Number(item.quantity),
-        unit_price: Number(item.price),
-        currency_id: "BRL"
-      })),
+      items: formattedItems,
       payer: {
         email: buyer.email,
         name: buyer.name
       },
       shipments: {
-        cost: Number(shipping_cost)
+        cost: Number(shipping_cost),
+        mode: "not_specified"
       },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
@@ -44,16 +51,20 @@ serve(async (req) => {
       },
       external_reference: orderId,
       auto_return: "approved",
-      notification_url: `${Deno.env.get('APP_URL')}/api/webhooks/mercadopago`
+      statement_descriptor: "Workshop Lovable"
     };
 
-    console.log("Preference data:", preferenceData);
+    console.log("Dados da preferência:", preferenceData);
 
     const result = await preference.create({
       body: preferenceData
     });
 
-    console.log("Preference result:", result);
+    console.log("Resultado da preferência:", result);
+
+    if (!result.init_point) {
+      throw new Error("URL de checkout não gerada");
+    }
 
     return new Response(
       JSON.stringify({
