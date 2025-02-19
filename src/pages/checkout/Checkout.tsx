@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -22,6 +22,56 @@ const Checkout = () => {
   const [shippingFee, setShippingFee] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"credit" | "pix">("credit");
+  const [pixQrCode, setPixQrCode] = useState<string>("");
+  const [pixCode, setPixCode] = useState<string>("");
+
+  // Carregar CEP do perfil quando logado
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('zip_code')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.zip_code) {
+          setZipCode(profile.zip_code);
+          calculateShipping(profile.zip_code);
+        }
+      }
+    };
+
+    loadUserProfile();
+  }, [session]);
+
+  const calculateShipping = async (zip: string) => {
+    if (!zip || zip.length !== 8) {
+      toast.error("Por favor, insira um CEP válido");
+      return;
+    }
+
+    setIsCalculatingShipping(true);
+    
+    try {
+      const { data: shippingRate, error } = await supabase
+        .from('shipping_rates')
+        .select('rate')
+        .eq('state', 'SP') // Temporariamente fixo em SP
+        .single();
+
+      if (error) throw error;
+
+      if (shippingRate) {
+        setShippingFee(shippingRate.rate);
+      }
+    } catch (error) {
+      console.error("Erro ao calcular frete:", error);
+      toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
+    } finally {
+      setIsCalculatingShipping(false);
+    }
+  };
 
   const handleCheckout = async () => {
     if (!session?.user) {
@@ -37,9 +87,8 @@ const Checkout = () => {
 
     try {
       setLoading(true);
-      console.log("Iniciando checkout simplificado...");
+      console.log("Iniciando checkout...");
 
-      // Teste simples da função edge
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
@@ -56,17 +105,23 @@ const Checkout = () => {
               name: session.user.email,
               email: session.user.email,
             },
+            payment_method: paymentMethod,
           },
         }
       );
 
-      if (error) {
-        console.error("Erro no teste:", error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log("Resposta do teste:", data);
-      toast.success("Teste da função edge realizado com sucesso!");
+      console.log("Resposta:", data);
+
+      if (paymentMethod === "pix") {
+        setPixQrCode(data.qr_code_base64);
+        setPixCode(data.qr_code);
+        toast.success("QR Code PIX gerado com sucesso!");
+      } else {
+        // Redirecionamento para checkout do cartão
+        window.location.href = data.init_point;
+      }
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
@@ -109,7 +164,13 @@ const Checkout = () => {
                   id="zipCode"
                   placeholder="00000-000"
                   value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value.replace(/\D/g, ""))}
+                  onChange={(e) => {
+                    const newZip = e.target.value.replace(/\D/g, "");
+                    setZipCode(newZip);
+                    if (newZip.length === 8) {
+                      calculateShipping(newZip);
+                    }
+                  }}
                   maxLength={8}
                 />
               </div>
@@ -132,9 +193,23 @@ const Checkout = () => {
                 </p>
               </TabsContent>
               <TabsContent value="pix">
-                <p className="text-sm text-muted-foreground">
-                  Você receberá um QR Code para pagamento.
-                </p>
+                {pixQrCode ? (
+                  <div className="space-y-4">
+                    <img 
+                      src={`data:image/png;base64,${pixQrCode}`}
+                      alt="QR Code PIX"
+                      className="mx-auto"
+                    />
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-sm font-medium mb-2">Código PIX:</p>
+                      <p className="text-xs break-all">{pixCode}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    O QR Code será gerado após clicar em "Finalizar Compra".
+                  </p>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -156,7 +231,7 @@ const Checkout = () => {
               className="w-full mt-6"
               size="lg"
               onClick={handleCheckout}
-              disabled={loading || !zipCode}
+              disabled={loading || !zipCode || !session}
             >
               {loading ? (
                 <>
@@ -167,6 +242,12 @@ const Checkout = () => {
                 "Finalizar Compra"
               )}
             </Button>
+
+            {!session && (
+              <p className="text-sm text-red-500 text-center mt-2">
+                Faça login para finalizar a compra
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
