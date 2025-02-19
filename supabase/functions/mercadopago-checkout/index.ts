@@ -68,7 +68,7 @@ serve(async (req) => {
         additional_info: {
           items: items.map(item => ({
             id: item.id,
-            title: item.name,
+            title: item.title,
             quantity: Number(item.quantity),
             unit_price: Number(item.price)
           }))
@@ -132,3 +132,4 @@ serve(async (req) => {
     )
   }
 })
+
