@@ -22,9 +22,11 @@ serve(async (req) => {
 
     // Garantir que os valores estejam no formato correto
     const preferenceItems = items.map(item => ({
-      title: String(item.title),
-      unit_price: Math.max(0, Number(item.price)), // Garante número positivo
-      quantity: Math.max(1, Number(item.quantity)), // Mínimo de 1
+      id: item.id,
+      title: String(item.title || '').slice(0, 256), // Limitar tamanho do título
+      description: `Quantidade: ${item.quantity}`,
+      unit_price: Number(Number(item.price).toFixed(2)), // Arredondar para 2 casas decimais
+      quantity: Math.max(1, Number(item.quantity)),
       currency_id: "BRL",
     }));
 
@@ -41,7 +43,8 @@ serve(async (req) => {
     if (shipping_cost > 0) {
       preferenceItems.push({
         title: "Frete",
-        unit_price: Number(shipping_cost),
+        description: "Taxa de entrega",
+        unit_price: Number(Number(shipping_cost).toFixed(2)),
         quantity: 1,
         currency_id: "BRL",
       });
@@ -50,34 +53,25 @@ serve(async (req) => {
 
     // Adiciona desconto como item negativo se houver
     if (discount > 0) {
-      const discountValue = Math.min(discount, totalItemsAmount); // Não permite desconto maior que o total
+      const discountValue = Math.min(discount, totalItemsAmount);
       preferenceItems.push({
         title: "Desconto",
-        unit_price: -Number(discountValue),
+        description: "Desconto aplicado",
+        unit_price: -Number(Number(discountValue).toFixed(2)),
         quantity: 1,
         currency_id: "BRL",
       });
-    }
-
-    // Valida se o total final é maior que zero
-    const finalAmount = preferenceItems.reduce((acc, item) => 
-      acc + (item.unit_price * item.quantity), 0
-    );
-
-    if (finalAmount <= 0) {
-      throw new Error("O valor total do pedido deve ser maior que zero");
     }
 
     const preference = {
       items: preferenceItems,
       payer: {
         email: buyer.email,
-        name: buyer.name
+        name: buyer.name || 'Cliente'
       },
       payment_methods: {
-        excluded_payment_types: [], // Permite todos os métodos
-        installments: 12,
-        default_payment_method_id: "pix"
+        excluded_payment_types: [],
+        installments: 12
       },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
@@ -90,7 +84,7 @@ serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     }
 
-    console.log("Preferência a ser enviada:", preference)
+    console.log("Preferência a ser enviada:", JSON.stringify(preference, null, 2))
 
     const response = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
@@ -104,19 +98,17 @@ serve(async (req) => {
       }
     )
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error("Erro do Mercado Pago:", errorData)
-      throw new Error(`Erro do Mercado Pago: ${JSON.stringify(errorData)}`)
-    }
+    const responseData = await response.json()
+    console.log("Resposta do Mercado Pago:", responseData)
 
-    const result = await response.json()
-    console.log("Resposta do Mercado Pago:", result)
+    if (!response.ok) {
+      throw new Error(`Erro do Mercado Pago: ${JSON.stringify(responseData)}`)
+    }
 
     return new Response(
       JSON.stringify({
-        init_point: result.init_point,
-        preference_id: result.id
+        init_point: responseData.init_point,
+        preference_id: responseData.id
       }),
       { 
         headers: { 
