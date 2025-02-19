@@ -1,2 +1,5 @@
 
 project_id = "kurpshcdafxbyqnzxvxu"
+
+[global.config]
+APP_URL = "https://workshop.lovable.dev"

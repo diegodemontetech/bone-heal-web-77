@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer, total_amount } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, total_amount })
+    const { orderId, items, shipping_cost, buyer } = await req.json()
+    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer })
 
     const client = new MercadoPagoConfig({ 
       accessToken: Deno.env.get('MP_ACCESS_TOKEN')!,
@@ -35,19 +35,24 @@ serve(async (req) => {
         name: buyer.name
       },
       shipments: {
-        cost: shipping_cost
+        cost: Number(shipping_cost)
       },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
         failure: `${Deno.env.get('APP_URL')}/checkout/failure`,
+        pending: `${Deno.env.get('APP_URL')}/checkout/pending`
       },
       external_reference: orderId,
       auto_return: "approved",
+      notification_url: `${Deno.env.get('APP_URL')}/api/webhooks/mercadopago`
     };
 
     console.log("Preference data:", preferenceData);
 
-    const result = await preference.create(preferenceData);
+    const result = await preference.create({
+      body: preferenceData
+    });
+
     console.log("Preference result:", result);
 
     return new Response(
@@ -60,7 +65,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error("Erro na função:", error);
+    console.error("Erro detalhado na função:", error);
     
     return new Response(
       JSON.stringify({
