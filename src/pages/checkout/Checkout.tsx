@@ -142,6 +142,9 @@ const Checkout = () => {
 
   const saveOrder = async (orderId: string) => {
     try {
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const total_amount = subtotal + shippingFee - discount;
+
       const { error } = await supabase
         .from('orders')
         .insert({
@@ -150,11 +153,13 @@ const Checkout = () => {
           items: cartItems.map(item => ({
             product_id: item.id,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            name: item.name
           })),
           shipping_fee: shippingFee,
           discount: discount,
-          total: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee - discount,
+          subtotal: subtotal,
+          total_amount: total_amount,
           status: 'pending',
           shipping_address: {
             zip_code: zipCode
@@ -162,7 +167,10 @@ const Checkout = () => {
           payment_method: paymentMethod
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro detalhado ao salvar pedido:", error);
+        throw error;
+      }
     } catch (error) {
       console.error("Erro ao salvar pedido:", error);
       throw error;
