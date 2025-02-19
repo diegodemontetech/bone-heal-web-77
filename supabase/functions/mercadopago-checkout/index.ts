@@ -14,10 +14,10 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json()
-    console.log("Dados brutos recebidos:", JSON.stringify(requestData, null, 2))
+    console.log("Dados recebidos:", JSON.stringify(requestData, null, 2))
 
+    // Extrair e validar dados
     const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = requestData
-    console.log("Valor total recebido:", total_amount, typeof total_amount)
 
     if (!items?.length) {
       throw new Error("Nenhum item fornecido")
@@ -27,16 +27,8 @@ serve(async (req) => {
       throw new Error("Email do comprador não fornecido")
     }
 
-    if (total_amount === undefined || total_amount === null) {
+    if (!total_amount) {
       throw new Error("Valor total não fornecido")
-    }
-
-    // Garantir número com 2 casas decimais
-    const amount = Number((Math.round(Number(total_amount) * 100) / 100).toFixed(2))
-    console.log("Valor processado:", amount, typeof amount)
-
-    if (isNaN(amount) || amount <= 0) {
-      throw new Error(`Valor total inválido: ${total_amount} (processado: ${amount})`)
     }
 
     const client = new MercadoPagoConfig({ 
@@ -46,25 +38,40 @@ serve(async (req) => {
     if (payment_method === 'pix') {
       const payment = new Payment(client);
 
-      // Objeto de pagamento simplificado para teste
-      const paymentData = {
-        transaction_amount: amount,
+      // Criar payload do pagamento
+      const paymentPayload = {
+        transaction_amount: Number(total_amount),
         description: `Pedido ${orderId}`,
         payment_method_id: "pix",
         payer: {
           email: buyer.email,
+          first_name: buyer.name || buyer.email.split('@')[0],
+          last_name: "Teste",
+          identification: {
+            type: "CPF",
+            number: "19119119100"
+          },
+        },
+        additional_info: {
+          items: items.map(item => ({
+            id: item.id,
+            title: item.name,
+            quantity: item.quantity,
+            unit_price: Number(item.price)
+          }))
         }
       };
 
-      console.log("Dados do pagamento PIX:", JSON.stringify(paymentData, null, 2));
-      
-      try {
-        const headers = {
-          'X-Idempotency-Key': orderId
-        };
+      console.log("Payload do pagamento:", JSON.stringify(paymentPayload, null, 2));
 
-        const result = await payment.create(paymentData, { headers });
-        console.log("Resposta PIX:", JSON.stringify(result, null, 2));
+      try {
+        const result = await payment.create(paymentPayload, {
+          headers: {
+            'X-Idempotency-Key': orderId
+          }
+        });
+
+        console.log("Resposta do MP:", JSON.stringify(result, null, 2));
 
         return new Response(
           JSON.stringify({
@@ -77,13 +84,13 @@ serve(async (req) => {
           }
         )
       } catch (mpError: any) {
-        console.error("Erro detalhado do MP:", JSON.stringify(mpError, null, 2));
-        throw new Error(`Erro do Mercado Pago: ${mpError.message}`);
+        console.error("Erro do MP:", mpError);
+        throw new Error(mpError.message);
       }
     } else {
       return new Response(
         JSON.stringify({
-          amount: amount,
+          amount: total_amount,
           public_key: Deno.env.get('MP_PUBLIC_KEY'),
           description: `Pedido ${orderId}`,
         }),
@@ -92,13 +99,13 @@ serve(async (req) => {
         }
       )
     }
-  } catch (error) {
-    console.error("Erro detalhado:", error);
+  } catch (error: any) {
+    console.error("Erro na função:", error);
     
     return new Response(
       JSON.stringify({
         error: error.message,
-        details: typeof error === 'object' ? JSON.stringify(error) : error.toString(),
+        details: error.cause || error.stack || '',
       }),
       { 
         status: 500,
