@@ -62,6 +62,12 @@ const Checkout = () => {
 
       if (shippingRate) {
         setShippingFee(shippingRate.rate);
+        
+        // Se já existe um cupom aplicado, recalcula o desconto
+        if (appliedVoucher) {
+          applyVoucherDiscount(appliedVoucher, shippingRate.rate);
+        }
+        
         toast.success("Frete calculado com sucesso!");
       }
     } catch (error) {
@@ -70,6 +76,24 @@ const Checkout = () => {
     } finally {
       setIsCalculatingShipping(false);
     }
+  };
+
+  const applyVoucherDiscount = (voucher: any, currentShippingFee: number) => {
+    const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    let discountValue = 0;
+
+    if (voucher.discount_type === 'percentage') {
+      if (voucher.discount_value === 100) {
+        // Se for 100%, aplica o desconto total no frete
+        discountValue = currentShippingFee;
+      } else {
+        discountValue = (subtotal * voucher.discount_value) / 100;
+      }
+    } else if (voucher.discount_type === 'fixed') {
+      discountValue = voucher.discount_value;
+    }
+
+    setDiscount(discountValue);
   };
 
   const applyVoucher = async () => {
@@ -111,16 +135,7 @@ const Checkout = () => {
         return;
       }
 
-      let discountValue = 0;
-      if (voucher.discount_type === 'percentage') {
-        discountValue = (subtotal * voucher.discount_value) / 100;
-      } else if (voucher.discount_type === 'fixed') {
-        discountValue = voucher.discount_value;
-      } else if (voucher.discount_type === 'shipping') {
-        discountValue = shippingFee;
-      }
-
-      setDiscount(discountValue);
+      applyVoucherDiscount(voucher, shippingFee);
       setAppliedVoucher(voucher);
       toast.success("Cupom aplicado com sucesso!");
     } catch (error) {
