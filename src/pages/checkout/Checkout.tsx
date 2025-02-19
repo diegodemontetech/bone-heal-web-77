@@ -239,7 +239,7 @@ const Checkout = () => {
               email: session.user.email,
             },
             payment_method: paymentMethod,
-            total_amount: total // Garantindo que é um número válido
+            total_amount: total
           },
         }
       );
@@ -258,75 +258,109 @@ const Checkout = () => {
         setPixQrCode(data.qr_code_base64);
         setPixCode(data.qr_code);
         toast.success("QR Code PIX gerado com sucesso!");
-
-        // Limpa o carrinho após geração do PIX
         clear();
-      } else {
-        // Integração transparente de cartão
+      } else if (paymentMethod === "credit" && data.public_key) {
+        // Remove qualquer script anterior do Mercado Pago
+        const existingScript = document.getElementById('mercadopago-script');
+        if (existingScript) {
+          existingScript.remove();
+        }
+
+        // Cria e adiciona o novo script
         const script = document.createElement('script');
+        script.id = 'mercadopago-script';
         script.src = "https://sdk.mercadopago.com/js/v2";
         script.type = "text/javascript";
-        script.onload = () => {
-          const mp = new window.MercadoPago(data.public_key, {
-            locale: 'pt-BR'
-          });
 
-          const cardForm = mp.cardForm({
-            amount: data.amount.toString(),
-            iframe: true,
-            form: {
-              id: "form-checkout",
-              cardNumber: {
-                id: "form-checkout__cardNumber",
-                placeholder: "Número do cartão",
+        script.addEventListener('load', () => {
+          try {
+            const mp = new window.MercadoPago(data.public_key, {
+              locale: 'pt-BR'
+            });
+
+            // Remove formulário anterior se existir
+            const existingForm = document.getElementById('form-checkout');
+            if (existingForm) {
+              existingForm.remove();
+            }
+
+            // Cria o novo formulário
+            const formContainer = document.createElement('div');
+            formContainer.innerHTML = `
+              <form id="form-checkout">
+                <div id="form-checkout__cardNumber"></div>
+                <div id="form-checkout__expirationDate"></div>
+                <div id="form-checkout__securityCode"></div>
+                <div id="form-checkout__cardholderName"></div>
+                <div id="form-checkout__issuer"></div>
+                <div id="form-checkout__installments"></div>
+              </form>
+            `;
+            document.body.appendChild(formContainer);
+
+            const cardForm = mp.cardForm({
+              amount: data.amount.toString(),
+              iframe: true,
+              form: {
+                id: "form-checkout",
+                cardNumber: {
+                  id: "form-checkout__cardNumber",
+                  placeholder: "Número do cartão",
+                },
+                expirationDate: {
+                  id: "form-checkout__expirationDate",
+                  placeholder: "MM/YY",
+                },
+                securityCode: {
+                  id: "form-checkout__securityCode",
+                  placeholder: "CVV",
+                },
+                cardholderName: {
+                  id: "form-checkout__cardholderName",
+                  placeholder: "Titular do cartão",
+                },
+                issuer: {
+                  id: "form-checkout__issuer",
+                  placeholder: "Banco emissor",
+                },
+                installments: {
+                  id: "form-checkout__installments",
+                  placeholder: "Parcelas",
+                },
               },
-              expirationDate: {
-                id: "form-checkout__expirationDate",
-                placeholder: "MM/YY",
-              },
-              securityCode: {
-                id: "form-checkout__securityCode",
-                placeholder: "CVV",
-              },
-              cardholderName: {
-                id: "form-checkout__cardholderName",
-                placeholder: "Titular do cartão",
-              },
-              issuer: {
-                id: "form-checkout__issuer",
-                placeholder: "Banco emissor",
-              },
-              installments: {
-                id: "form-checkout__installments",
-                placeholder: "Parcelas",
-              },
-            },
-            callbacks: {
-              onFormMounted: error => {
-                if (error) {
-                  console.error("Form mounted handling error:", error);
-                  toast.error("Erro ao carregar formulário de pagamento");
+              callbacks: {
+                onFormMounted: error => {
+                  if (error) {
+                    console.error("Form mounted handling error:", error);
+                    toast.error("Erro ao carregar formulário de pagamento");
+                  }
+                },
+                onSubmit: event => {
+                  event.preventDefault();
+                  const formData = cardForm.getCardFormData();
+                  console.log("Dados do cartão:", formData);
+                },
+                onError: error => {
+                  console.error("Card form error:", error);
+                  toast.error("Erro no processamento do cartão");
+                },
+                onFetching: (resource) => {
+                  console.log("Fetching resource:", resource);
                 }
               },
-              onSubmit: event => {
-                event.preventDefault();
-                const formData = cardForm.getCardFormData();
-                console.log("Dados do cartão:", formData);
-                // Processamento do pagamento...
-              },
-              onError: error => {
-                console.error("Card form error:", error);
-                toast.error("Erro no processamento do cartão");
-              }
-            },
-          });
-        };
+            });
+          } catch (error) {
+            console.error("Erro ao inicializar Mercado Pago:", error);
+            toast.error("Erro ao inicializar formulário de pagamento");
+          }
+        });
+
+        script.addEventListener('error', (error) => {
+          console.error("Erro ao carregar script do Mercado Pago:", error);
+          toast.error("Erro ao carregar script de pagamento");
+        });
+
         document.body.appendChild(script);
-      }
-      
-      // Limpa o carrinho após sucesso
-      if (data.payment_id) {
-        clear();
       }
     } catch (error: any) {
       console.error("Erro detalhado no checkout:", error);
