@@ -1,3 +1,4 @@
+<lov-code>
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -153,11 +154,14 @@ const Checkout = () => {
       setLoading(true);
       console.log("Iniciando checkout...");
 
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const total = subtotal + shippingFee - discount;
+
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
           body: {
-            orderId: "test-123",
+            orderId: crypto.randomUUID(),
             items: cartItems.map(item => ({
               id: item.id,
               title: item.name,
@@ -171,6 +175,7 @@ const Checkout = () => {
             },
             payment_method: paymentMethod,
             voucher_id: appliedVoucher?.id,
+            total_amount: total,
           },
         }
       );
@@ -180,13 +185,17 @@ const Checkout = () => {
       console.log("Resposta do checkout:", data);
 
       if (paymentMethod === "pix") {
-        if (!data.qr_code_base64 || !data.qr_code) {
+        if (!data.qr_code || !data.qr_code_base64) {
           throw new Error("QR Code não gerado corretamente");
         }
         setPixQrCode(data.qr_code_base64);
         setPixCode(data.qr_code);
         toast.success("QR Code PIX gerado com sucesso!");
       } else {
+        if (!data.init_point) {
+          throw new Error("Link de pagamento não gerado corretamente");
+        }
+        // Usar window.location.href para redirecionar
         window.location.href = data.init_point;
       }
       
@@ -295,8 +304,11 @@ const Checkout = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="credit">
-                <p className="text-sm text-muted-foreground">
-                  Você será redirecionado para a página segura do Mercado Pago.
+                <p className="text-sm text-muted-foreground space-y-2">
+                  <span className="block">Você será redirecionado para a página segura do Mercado Pago para inserir os dados do seu cartão.</span>
+                  <span className="block text-green-600">✓ Ambiente seguro</span>
+                  <span className="block text-green-600">✓ Pagamento processado pelo Mercado Pago</span>
+                  <span className="block text-green-600">✓ Parcelamento em até 12x</span>
                 </p>
               </TabsContent>
               <TabsContent value="pix" className="pt-4">
@@ -320,9 +332,14 @@ const Checkout = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    O QR Code será gerado após clicar em "Finalizar Compra".
-                  </p>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      O QR Code será gerado após clicar em "Finalizar Compra".
+                    </p>
+                    <p className="text-sm text-green-600">
+                      ✓ Pagamento instantâneo
+                    </p>
+                  </div>
                 )}
               </TabsContent>
             </Tabs>
@@ -351,23 +368,4 @@ const Checkout = () => {
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                "Finalizar Compra"
-              )}
-            </Button>
-
-            {!session && (
-              <p className="text-sm text-red-500 text-center mt-2">
-                Faça login para finalizar a compra
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-};
-
-export default Checkout;
+                  Processando
