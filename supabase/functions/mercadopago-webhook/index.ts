@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
-import mercadopago from 'npm:mercadopago'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,76 +13,100 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
+    const body = await req.json()
+    console.log('Webhook recebido:', body)
 
-    if (!supabaseUrl || !supabaseKey || !mpAccessToken) {
-      throw new Error('Missing environment variables')
+    // Se não for uma notificação de pagamento, ignora
+    if (body.type !== 'payment') {
+      return new Response(JSON.stringify({ message: 'Notificação não relacionada a pagamento' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      })
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    const data = await req.json()
-    
-    console.log('Received Mercado Pago webhook:', data)
+    const access_token = Deno.env.get('MP_ACCESS_TOKEN')
+    if (!access_token) {
+      throw new Error('Token do Mercado Pago não configurado')
+    }
 
-    if (data.type === 'payment') {
-      mercadopago.configure({
-        access_token: mpAccessToken
-      })
-
-      const paymentInfo = await mercadopago.payment.findById(data.data.id)
-      const payment = paymentInfo.body
-
-      // Atualizar o pagamento no banco de dados
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({
-          status: payment.status === 'approved' ? 'paid' : payment.status,
-          mercadopago_status: payment.status,
-          mercadopago_payment_type: payment.payment_type_id,
-          paid_at: payment.status === 'approved' ? new Date().toISOString() : null
-        })
-        .eq('mercadopago_payment_id', payment.id)
-
-      if (updateError) throw updateError
-
-      // Se o pagamento foi aprovado, criar pedido no Omie
-      if (payment.status === 'approved') {
-        const { data: orderData } = await supabase
-          .from('orders')
-          .select('*, payments(*)')
-          .eq('payments.mercadopago_payment_id', payment.id)
-          .single()
-
-        if (orderData) {
-          // Criar pedido no Omie
-          const { error: omieError } = await supabase.functions.invoke('omie-integration', {
-            body: {
-              action: 'create_order',
-              order: {
-                ...orderData,
-                payment_confirmed: true,
-                payment_method: payment.payment_type_id
-              }
-            }
-          })
-
-          if (omieError) throw omieError
-        }
+    // Busca os detalhes do pagamento
+    const paymentResponse = await fetch(
+      `https://api.mercadopago.com/v1/payments/${body.data.id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+        },
       }
+    )
+
+    if (!paymentResponse.ok) {
+      throw new Error('Erro ao buscar detalhes do pagamento')
+    }
+
+    const paymentData = await paymentResponse.json()
+    console.log('Dados do pagamento:', paymentData)
+
+    // Inicializa cliente do Supabase
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const orderId = paymentData.external_reference
+    const status = paymentData.status
+
+    // Atualiza o status do pagamento
+    const { error: updateError } = await supabase
+      .from('payments')
+      .update({
+        status: status === 'approved' ? 'paid' : status,
+        mercadopago_status: status,
+        mercadopago_payment_id: paymentData.id,
+        mercadopago_payment_type: paymentData.payment_type_id,
+        paid_at: status === 'approved' ? new Date().toISOString() : null
+      })
+      .eq('order_id', orderId)
+
+    if (updateError) {
+      throw updateError
+    }
+
+    // Se o pagamento foi aprovado, atualiza o pedido
+    if (status === 'approved') {
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({
+          status: 'paid',
+          payment_method: paymentData.payment_type_id
+        })
+        .eq('id', orderId)
+
+      if (orderError) {
+        throw orderError
+      }
+
+      // Chama a função para sincronizar com o Omie
+      await supabase.functions.invoke('omie-integration', {
+        body: { action: 'sync_order', order_id: orderId }
+      })
     }
 
     return new Response(
       JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
     )
-
   } catch (error) {
-    console.error('Error processing Mercado Pago webhook:', error)
+    console.error('Erro no webhook:', error)
+    
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
     )
   }
 })

@@ -55,10 +55,9 @@ serve(async (req) => {
         name: buyer.name
       },
       payment_methods: {
-        excluded_payment_types: [
-          { id: "ticket" }
-        ],
-        installments: 12
+        excluded_payment_types: [], // Removido a exclusão do boleto para permitir PIX
+        installments: 12,
+        default_payment_method_id: "pix", // Define PIX como método padrão
       },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
@@ -67,7 +66,8 @@ serve(async (req) => {
       },
       external_reference: orderId,
       auto_return: "approved",
-      statement_descriptor: "WORKSHOP"
+      statement_descriptor: "WORKSHOP",
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook` // Adiciona URL de notificação
     }
 
     console.log("Preferência a ser enviada:", preference)
