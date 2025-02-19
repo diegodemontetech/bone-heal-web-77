@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -14,6 +15,7 @@ const ProductsPreview = () => {
       const { data: products, error } = await supabase
         .from("products")
         .select("*")
+        .eq('active', true)
         .limit(3);
       
       if (error) {
