@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer, total_amount } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, total_amount })
+    const { orderId, items, shipping_cost, discount, buyer, total_amount } = await req.json()
+    console.log("Dados recebidos:", { orderId, items, shipping_cost, discount, buyer, total_amount })
 
     const access_token = Deno.env.get('MP_ACCESS_TOKEN')
     if (!access_token) {
@@ -32,7 +32,6 @@ serve(async (req) => {
         name: buyer.name
       },
       payment_methods: {
-        default_payment_method_id: "pix",
         excluded_payment_types: [
           { id: "ticket" }
         ],
@@ -46,10 +45,27 @@ serve(async (req) => {
       external_reference: orderId,
       auto_return: "approved",
       statement_descriptor: "WORKSHOP",
-      shipments: {
+      shipments: shipping_cost > 0 ? {
         cost: shipping_cost,
         mode: "not_specified",
-      }
+      } : undefined,
+      // Adiciona o desconto como um item negativo se houver desconto
+      ...(discount > 0 && {
+        items: [
+          ...items.map(item => ({
+            title: item.title,
+            unit_price: Number(item.price),
+            quantity: Number(item.quantity),
+            currency_id: "BRL",
+          })),
+          {
+            title: "Desconto",
+            unit_price: -Number(discount),
+            quantity: 1,
+            currency_id: "BRL",
+          }
+        ]
+      })
     }
 
     console.log("Preferência a ser enviada:", preference)
@@ -69,7 +85,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorData = await response.json()
       console.error("Erro do Mercado Pago:", errorData)
-      throw new Error(`Erro do Mercado Pago: ${errorData.message}`)
+      throw new Error(`Erro do Mercado Pago: ${JSON.stringify(errorData)}`)
     }
 
     const result = await response.json()
@@ -96,7 +112,7 @@ serve(async (req) => {
         details: error.stack
       }),
       { 
-        status: 500,
+        status: 400,
         headers: { 
           ...corsHeaders, 
           'Content-Type': 'application/json' 
