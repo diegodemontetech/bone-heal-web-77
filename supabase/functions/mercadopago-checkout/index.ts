@@ -14,8 +14,21 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer, payment_method, voucher_id } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, payment_method, voucher_id })
+    const { orderId, items, shipping_cost, buyer, payment_method, total_amount } = await req.json()
+    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, payment_method, total_amount })
+
+    // Validar dados recebidos
+    if (!items?.length) {
+      throw new Error("Nenhum item fornecido");
+    }
+
+    if (typeof shipping_cost !== 'number') {
+      throw new Error("Frete inválido");
+    }
+
+    if (!buyer?.email) {
+      throw new Error("Email do comprador não fornecido");
+    }
 
     // Configurar Mercado Pago
     const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
@@ -26,12 +39,23 @@ serve(async (req) => {
     const client = new MercadoPagoConfig({ accessToken: mpAccessToken });
     console.log("MP Client configurado")
 
+    // Calcular valor total
+    const itemsTotal = items.reduce((total: number, item: any) => 
+      total + (item.price * item.quantity), 0
+    );
+    
+    const finalAmount = total_amount || (itemsTotal + shipping_cost);
+    console.log("Valor final:", finalAmount);
+
+    if (!finalAmount || finalAmount <= 0) {
+      throw new Error("Valor total inválido");
+    }
+
     if (payment_method === 'pix') {
       // Criar pagamento PIX
       const payment = new Payment(client);
       const result = await payment.create({
-        transaction_amount: items.reduce((total: number, item: any) => 
-          total + (item.unit_price * item.quantity), 0) + shipping_cost,
+        transaction_amount: finalAmount,
         payment_method_id: 'pix',
         payer: {
           email: buyer.email,
@@ -66,7 +90,7 @@ serve(async (req) => {
           id: item.id,
           title: item.title,
           quantity: item.quantity,
-          unit_price: item.unit_price,
+          unit_price: item.price,
           currency_id: 'BRL',
         })),
         payer: {
