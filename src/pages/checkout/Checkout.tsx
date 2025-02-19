@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -194,7 +193,7 @@ const Checkout = () => {
               email: session.user.email,
             },
             payment_method: paymentMethod,
-            total_amount: total,
+            total_amount: total // Garantindo que o total está sendo enviado corretamente
           },
         }
       );
@@ -276,13 +275,14 @@ const Checkout = () => {
         document.body.appendChild(script);
       }
       
-    } catch (error: any) {
-      console.error("Erro no checkout:", error);
-      toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error: any) {
+    console.error("Erro no checkout:", error);
+    toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!cartItems.length) {
     return (
