@@ -1,49 +1,40 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import MercadoPago from 'https://esm.sh/mercadopago@1.5.16'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const mercadopago = require("mercadopago");
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     const { orderId, items, shipping_cost, buyer } = await req.json()
+    
+    console.log("Recebido pedido:", { orderId, items, shipping_cost, buyer });
 
-    if (!orderId || !items || !buyer) {
-      throw new Error("Dados incompletos para criar preferência de pagamento")
-    }
+    // Configurar credenciais
+    mercadopago.configure({
+      access_token: Deno.env.get('MP_ACCESS_TOKEN')
+    });
 
-    console.log("Criando preferência para pedido:", orderId)
+    console.log("Criando preferência de pagamento...");
 
-    // Configurar MercadoPago
-    const mercadopago = new MercadoPago(Deno.env.get('MP_ACCESS_TOKEN'))
-
-    // Criar preferência para checkout transparente
     const preference = {
       items: items.map((item: any) => ({
         id: item.id,
         title: item.title,
         quantity: item.quantity,
-        unit_price: Number(item.unit_price),
-        currency_id: 'BRL',
+        unit_price: item.unit_price,
+        currency_id: "BRL"
       })),
-      payer: {
-        email: buyer.email,
-        name: buyer.name,
-      },
-      payment_methods: {
-        excluded_payment_methods: [],
-        excluded_payment_types: [],
-        installments: 12,
-      },
       shipments: {
         cost: shipping_cost,
         mode: "not_specified",
@@ -51,39 +42,41 @@ serve(async (req) => {
       back_urls: {
         success: `${req.headers.get("origin")}/checkout/success?order_id=${orderId}`,
         failure: `${req.headers.get("origin")}/checkout/failure?order_id=${orderId}`,
-        pending: `${req.headers.get("origin")}/checkout/pending?order_id=${orderId}`,
+        pending: `${req.headers.get("origin")}/checkout/pending?order_id=${orderId}`
       },
       auto_return: "approved",
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       external_reference: orderId,
-      notification_url: `${req.headers.get("origin")}/api/mercadopago-webhook`,
-    }
+      payer: {
+        name: buyer.name,
+        email: buyer.email
+      }
+    };
 
-    console.log("Preferência configurada:", preference)
+    console.log("Preferência criada:", preference);
 
-    const response = await mercadopago.preferences.create(preference)
+    const response = await mercadopago.preferences.create(preference);
+    console.log("Resposta do Mercado Pago:", response);
 
-    console.log("Preferência criada com sucesso:", response.body.id)
-    
     return new Response(
-      JSON.stringify({
-        id: response.body.id,
-        init_point: response.body.init_point,
-        sandbox_init_point: response.body.sandbox_init_point,
-        public_key: Deno.env.get('MP_PUBLIC_KEY'),
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      JSON.stringify(response.body),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       },
     )
   } catch (error) {
-    console.error('Erro ao criar preferência:', error)
+    console.error("Erro ao processar pagamento:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Erro ao processar pagamento' 
-      }),
-      {
+      JSON.stringify({ error: error.message }),
+      { 
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       },
     )
   }

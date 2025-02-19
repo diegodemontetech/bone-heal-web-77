@@ -112,6 +112,7 @@ const Checkout = () => {
 
       let order;
       if (!orderId) {
+        console.log("Criando novo pedido...");
         // Criar pedido apenas se não existir
         const { data: newOrder, error: orderError } = await supabase
           .from("orders")
@@ -121,6 +122,7 @@ const Checkout = () => {
               product_id: item.id,
               quantity: item.quantity,
               price: item.price,
+              name: item.name
             })),
             shipping_address: { zip_code: zipCode },
             subtotal: cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0),
@@ -132,9 +134,13 @@ const Checkout = () => {
           .select()
           .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+          console.error("Erro ao criar pedido:", orderError);
+          throw orderError;
+        }
         order = newOrder;
       } else {
+        console.log("Usando pedido existente:", orderId);
         // Usar pedido existente
         const { data: existingOrder, error: orderError } = await supabase
           .from("orders")
@@ -142,13 +148,17 @@ const Checkout = () => {
           .eq("id", orderId)
           .single();
 
-        if (orderError) throw orderError;
+        if (orderError) {
+          console.error("Erro ao buscar pedido:", orderError);
+          throw orderError;
+        }
         order = existingOrder;
       }
 
       console.log("Pedido criado/recuperado:", order);
 
       // Criar preferência de pagamento
+      console.log("Criando preferência de pagamento...");
       const { data: mpPreference, error: preferenceError } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
@@ -156,7 +166,7 @@ const Checkout = () => {
             orderId: order.id,
             items: order.items.map((item: any) => ({
               id: item.product_id,
-              title: "Produto", // Você pode buscar o nome do produto se necessário
+              title: item.name || "Produto",
               quantity: item.quantity,
               unit_price: Number(item.price),
             })),
@@ -174,16 +184,27 @@ const Checkout = () => {
         throw preferenceError;
       }
 
+      if (!mpPreference?.init_point) {
+        throw new Error("Não foi possível obter o link de pagamento");
+      }
+
       console.log("Preferência MP criada:", mpPreference);
 
       // Atualizar pedido com ID da preferência
-      await supabase
+      console.log("Atualizando pedido com ID da preferência...");
+      const { error: updateError } = await supabase
         .from("orders")
         .update({ mp_preference_id: mpPreference.id })
         .eq("id", order.id);
 
+      if (updateError) {
+        console.error("Erro ao atualizar pedido:", updateError);
+        throw updateError;
+      }
+
       // Criar registro de pagamento
-      await supabase
+      console.log("Criando registro de pagamento...");
+      const { error: paymentError } = await supabase
         .from("payments")
         .insert({
           order_id: order.id,
@@ -193,7 +214,13 @@ const Checkout = () => {
           external_id: mpPreference.id
         });
 
+      if (paymentError) {
+        console.error("Erro ao criar pagamento:", paymentError);
+        throw paymentError;
+      }
+
       // Redirecionar para página de pagamento do Mercado Pago
+      console.log("Redirecionando para Mercado Pago...");
       window.location.href = mpPreference.init_point;
       
       clear(); // Limpar carrinho após sucesso
@@ -201,7 +228,6 @@ const Checkout = () => {
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
-    } finally {
       setLoading(false);
     }
   };
