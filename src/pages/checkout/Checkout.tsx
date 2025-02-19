@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -154,7 +153,6 @@ const Checkout = () => {
       setLoading(true);
       console.log("Iniciando checkout...");
 
-      // Garantir que os valores são números com 2 casas decimais
       const subtotal = Number(cartItems.reduce((acc, item) => 
         acc + (Number(item.price) * item.quantity), 0
       ).toFixed(2));
@@ -163,7 +161,6 @@ const Checkout = () => {
       const discountValue = Number(discount.toFixed(2));
       const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
 
-      // Log para debug
       console.log("Dados do checkout:", {
         cartItems,
         subtotal,
@@ -189,7 +186,6 @@ const Checkout = () => {
               email: session.user.email,
             },
             payment_method: paymentMethod,
-            voucher_id: appliedVoucher?.id,
             total_amount: total,
           },
         }
@@ -210,10 +206,70 @@ const Checkout = () => {
         setPixCode(data.qr_code);
         toast.success("QR Code PIX gerado com sucesso!");
       } else {
-        if (!data.init_point) {
-          throw new Error("Link de pagamento não gerado corretamente");
-        }
-        window.location.href = data.init_point;
+        // Integração transparente de cartão
+        const mp = new MercadoPago(data.public_key, {
+          locale: 'pt-BR'
+        });
+
+        const cardForm = mp.cardForm({
+          amount: data.amount.toString(),
+          iframe: true,
+          form: {
+            id: "form-checkout",
+            cardNumber: {
+              id: "form-checkout__cardNumber",
+              placeholder: "Número do cartão",
+            },
+            expirationDate: {
+              id: "form-checkout__expirationDate",
+              placeholder: "MM/YY",
+            },
+            securityCode: {
+              id: "form-checkout__securityCode",
+              placeholder: "CVV",
+            },
+            cardholderName: {
+              id: "form-checkout__cardholderName",
+              placeholder: "Titular do cartão",
+            },
+            issuer: {
+              id: "form-checkout__issuer",
+              placeholder: "Banco emissor",
+            },
+            installments: {
+              id: "form-checkout__installments",
+              placeholder: "Parcelas",
+            },
+          },
+          callbacks: {
+            onFormMounted: error => {
+              if (error) {
+                console.error("Form mounted handling error:", error);
+                toast.error("Erro ao carregar formulário de pagamento");
+              }
+            },
+            onSubmit: event => {
+              event.preventDefault();
+              // Aqui você processa o pagamento com o token gerado
+              const {
+                paymentMethodId,
+                issuerId,
+                cardholderEmail,
+                amount,
+                token,
+                installments,
+                identificationNumber,
+                identificationType,
+              } = cardForm.getCardFormData();
+
+              // Processamento do pagamento...
+            },
+            onError: error => {
+              console.error("Card form error:", error);
+              toast.error("Erro no processamento do cartão");
+            }
+          },
+        });
       }
       
     } catch (error: any) {
