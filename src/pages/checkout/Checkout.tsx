@@ -194,6 +194,8 @@ const Checkout = () => {
       console.log("Iniciando checkout...");
 
       const orderId = crypto.randomUUID();
+      
+      // Garantindo que todos os valores são números válidos
       const subtotal = Number(cartItems.reduce((acc, item) => 
         acc + (Number(item.price) * item.quantity), 0
       ).toFixed(2));
@@ -202,19 +204,24 @@ const Checkout = () => {
       const discountValue = Number(discount.toFixed(2));
       const total = Number((subtotal + shippingCost - discountValue).toFixed(2));
 
-      console.log("Dados do checkout:", {
-        orderId,
-        cartItems,
+      // Log detalhado dos valores
+      console.log("Valores do checkout:", {
         subtotal,
         shippingCost,
         discountValue,
-        total
+        total,
+        items: cartItems.map(item => ({
+          id: item.id,
+          title: item.name,
+          quantity: item.quantity,
+          price: Number(item.price),
+        }))
       });
 
       // Primeiro salva o pedido
       await saveOrder(orderId);
 
-      // Depois processa o pagamento
+      // Chamada para o Mercado Pago com valores validados
       const { data, error } = await supabase.functions.invoke(
         "mercadopago-checkout",
         {
@@ -223,22 +230,22 @@ const Checkout = () => {
             items: cartItems.map(item => ({
               id: item.id,
               title: item.name,
-              quantity: item.quantity,
+              quantity: Number(item.quantity),
               price: Number(Number(item.price).toFixed(2)),
             })),
             shipping_cost: shippingCost,
             buyer: {
-              name: session.user.email,
+              name: session.user.email?.split('@')[0] || 'Cliente',
               email: session.user.email,
             },
             payment_method: paymentMethod,
-            total_amount: total
+            total_amount: total // Garantindo que é um número válido
           },
         }
       );
 
       if (error) {
-        console.error("Erro na resposta do checkout:", error);
+        console.error("Erro detalhado na resposta do checkout:", error);
         throw error;
       }
 
@@ -251,6 +258,9 @@ const Checkout = () => {
         setPixQrCode(data.qr_code_base64);
         setPixCode(data.qr_code);
         toast.success("QR Code PIX gerado com sucesso!");
+
+        // Limpa o carrinho após geração do PIX
+        clear();
       } else {
         // Integração transparente de cartão
         const script = document.createElement('script');
@@ -319,7 +329,7 @@ const Checkout = () => {
         clear();
       }
     } catch (error: any) {
-      console.error("Erro no checkout:", error);
+      console.error("Erro detalhado no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
     } finally {
       setLoading(false);
