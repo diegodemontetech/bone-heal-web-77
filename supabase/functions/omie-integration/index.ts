@@ -39,7 +39,7 @@ serve(async (req) => {
 
     // Parse do JSON e log dos dados recebidos
     const requestData = JSON.parse(rawBody);
-    console.log('Dados recebidos:', requestData);
+    console.log('Dados recebidos:', JSON.stringify(requestData, null, 2));
 
     const { action, order_id, order_data } = requestData;
 
@@ -47,9 +47,13 @@ serve(async (req) => {
       throw new Error('Ação ou ID do pedido não fornecido');
     }
 
-    if (!order_data || !order_data.profiles) {
-      console.error('Dados do pedido inválidos:', order_data);
-      throw new Error('Dados do pedido inválidos ou incompletos');
+    if (!order_data) {
+      throw new Error(`Dados do pedido não fornecidos para o pedido ${order_id}`);
+    }
+
+    if (!order_data.profiles) {
+      console.error('Estrutura completa dos dados:', JSON.stringify(order_data, null, 2));
+      throw new Error('Dados do cliente não encontrados no pedido');
     }
 
     // Validar dados obrigatórios do cliente
@@ -57,6 +61,7 @@ serve(async (req) => {
     const missingFields = requiredFields.filter(field => !order_data.profiles[field]);
     
     if (missingFields.length > 0) {
+      console.error('Dados do cliente:', order_data.profiles);
       throw new Error(`Campos obrigatórios faltando: ${missingFields.join(', ')}`);
     }
 
@@ -66,13 +71,15 @@ serve(async (req) => {
     }
 
     // Verificar se há itens no pedido
-    if (!order_data.items || order_data.items.length === 0) {
-      throw new Error('Pedido não possui itens');
+    if (!order_data.items || !Array.isArray(order_data.items) || order_data.items.length === 0) {
+      console.error('Items do pedido:', order_data.items);
+      throw new Error('Pedido não possui itens ou formato inválido');
     }
 
     // Verificar se todos os produtos têm código do Omie
     const invalidProducts = order_data.items.filter(item => !item.omie_code);
     if (invalidProducts.length > 0) {
+      console.error('Produtos inválidos:', invalidProducts);
       throw new Error(`Produtos sem código Omie: ${invalidProducts.map(p => p.name || p.product_id).join(', ')}`);
     }
 
@@ -97,7 +104,7 @@ serve(async (req) => {
       }
     };
 
-    console.log('Dados preparados para envio ao Omie:', omieOrderData);
+    console.log('Dados preparados para envio ao Omie:', JSON.stringify(omieOrderData, null, 2));
 
     // Enviar para o Omie
     const response = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {

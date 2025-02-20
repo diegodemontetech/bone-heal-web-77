@@ -123,19 +123,7 @@ const Orders = () => {
         .from('orders')
         .select(`
           *,
-          profiles:user_id (
-            id,
-            full_name,
-            phone,
-            zip_code,
-            cpf,
-            cnpj,
-            address,
-            city,
-            state,
-            neighborhood,
-            omie_code
-          )
+          profiles:user_id (*)
         `)
         .eq('id', orderId)
         .single();
@@ -146,25 +134,50 @@ const Orders = () => {
 
       console.log('Dados completos do pedido:', order);
 
+      // Verificar se os dados do cliente existem
+      if (!order.profiles) {
+        throw new Error('Dados do cliente não encontrados');
+      }
+
       // Buscar detalhes dos produtos para cada item do pedido
       const items = await Promise.all(
         order.items.map(async (item: any) => {
           const { data: product } = await supabase
             .from('products')
-            .select('omie_code')
+            .select('*')
             .eq('id', item.product_id)
             .single();
           
+          if (!product) {
+            throw new Error(`Produto não encontrado: ${item.product_id}`);
+          }
+          
           return {
             ...item,
-            omie_code: product?.omie_code
+            omie_code: product.omie_code,
+            name: product.name,
+            price: product.price
           };
         })
       );
 
+      // Estruturar dados para o Omie
       const orderData = {
-        ...order,
-        items
+        id: order.id,
+        items: items,
+        shipping_fee: order.shipping_fee,
+        total_amount: order.total_amount,
+        profiles: {
+          ...order.profiles,
+          full_name: order.profiles.full_name,
+          cpf: order.profiles.cpf,
+          cnpj: order.profiles.cnpj,
+          address: order.profiles.address,
+          city: order.profiles.city,
+          state: order.profiles.state,
+          zip_code: order.profiles.zip_code,
+          omie_code: order.profiles.omie_code
+        }
       };
 
       console.log('Dados do pedido preparados para sincronização:', orderData);
@@ -180,6 +193,8 @@ const Orders = () => {
           }
         }
       );
+
+      console.log('Resposta da integração:', responseData);
 
       if (integrationError) {
         console.error('Erro na integração:', integrationError);
