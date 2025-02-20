@@ -123,8 +123,14 @@ const Orders = () => {
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .select(`
-          *,
+          id,
+          status,
+          items,
+          shipping_fee,
+          total_amount,
+          shipping_address,
           profiles:user_id (
+            id,
             full_name,
             phone,
             zip_code,
@@ -133,20 +139,33 @@ const Orders = () => {
             address,
             city,
             state,
-            neighborhood
+            neighborhood,
+            omie_code
           )
         `)
         .eq('id', orderId)
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        throw new Error(`Erro ao buscar dados do pedido: ${orderError.message}`);
+      }
       
+      if (!order) {
+        throw new Error('Pedido não encontrado');
+      }
+
       if (!order.profiles) {
         throw new Error('Dados do cliente incompletos');
       }
 
+      console.log('Enviando dados para sincronização:', {
+        action: 'sync_order',
+        order_id: orderId,
+        order_data: order
+      });
+
       // Chama a função de integração
-      const { error } = await supabase.functions.invoke('omie-integration', {
+      const { data: responseData, error } = await supabase.functions.invoke('omie-integration', {
         body: { 
           action: 'sync_order',
           order_id: orderId,
@@ -154,7 +173,14 @@ const Orders = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na resposta da função:', error);
+        throw error;
+      }
+
+      if (!responseData?.success) {
+        throw new Error(responseData?.error || 'Erro desconhecido na sincronização');
+      }
 
       toast.dismiss();
       toast.success('Pedido sincronizado com sucesso');
