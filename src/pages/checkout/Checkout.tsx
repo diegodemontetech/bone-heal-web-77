@@ -80,7 +80,11 @@ const Checkout = () => {
         if (pacRate) {
           setShippingFee(pacRate.rate);
           calculateDeliveryDate(pacRate.delivery_days);
-          setSelectedShippingRate(pacRate);
+          // Corrigindo aqui: adicionando a propriedade name ao selectedShippingRate
+          setSelectedShippingRate({
+            ...pacRate,
+            name: 'Convencional'
+          });
         }
         
         setAvailableShippingRates(shippingRates.map(rate => ({
