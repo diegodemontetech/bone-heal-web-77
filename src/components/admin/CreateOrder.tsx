@@ -78,6 +78,16 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return;
       }
 
+      // Verificar se todos os produtos têm código Omie
+      const productsWithoutOmieCode = selectedProducts.filter(
+        product => !product.omie_code
+      );
+
+      if (productsWithoutOmieCode.length > 0) {
+        toast.error("Alguns produtos não estão sincronizados com o Omie");
+        return;
+      }
+
       setLoading(true);
 
       const orderItems = selectedProducts.map(product => ({
@@ -85,7 +95,8 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         name: product.name,
         quantity: product.quantity,
         price: product.price,
-        omie_code: product.omie_code
+        omie_code: product.omie_code || null, // Garante que sempre teremos um valor, mesmo que null
+        omie_product_id: product.omie_product_id || null // Inclui o ID do produto no Omie
       }));
 
       const total = calculateTotal();
@@ -158,10 +169,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   useEffect(() => {
     if (products.length > 0 && selectedProducts.length === 0) {
-      setSelectedProducts([{
-        ...products[0],
-        quantity: 1
-      }]);
+      const activeProduct = products.find(p => p.active && p.omie_code);
+      if (activeProduct) {
+        setSelectedProducts([{
+          ...activeProduct,
+          quantity: 1
+        }]);
+      }
     }
   }, [products]);
 
