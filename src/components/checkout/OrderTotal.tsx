@@ -5,6 +5,7 @@ import OrderSummary from "@/components/orders/OrderSummary";
 import { Loader2 } from "lucide-react";
 import { CartItem } from "@/hooks/use-cart";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface OrderTotalProps {
   cartItems: CartItem[];
@@ -46,7 +47,7 @@ const OrderTotal = ({
 
         {deliveryDate && (
           <p className="text-sm text-gray-600 mt-4">
-            Previsão de entrega: {format(deliveryDate, "dd 'de' MMMM")}
+            Receba até {format(deliveryDate, "dd 'de' MMMM", { locale: ptBR })}
           </p>
         )}
 
@@ -67,8 +68,8 @@ const OrderTotal = ({
         </Button>
 
         {!isLoggedIn && (
-          <p className="text-sm text-red-500 text-center mt-2">
-            Faça login para finalizar a compra
+          <p className="text-sm text-muted-foreground text-center mt-2">
+            Entre em sua conta para finalizar a compra
           </p>
         )}
       </CardContent>

@@ -51,7 +51,6 @@ const Checkout = () => {
 
   const calculateShipping = async (zip: string) => {
     if (!zip || zip.length !== 8) {
-      toast.error("Por favor, insira um CEP válido");
       return;
     }
 
@@ -73,12 +72,9 @@ const Checkout = () => {
         if (appliedVoucher) {
           applyVoucherDiscount(appliedVoucher, shippingRate.rate);
         }
-        
-        toast.success("Frete calculado com sucesso!");
       }
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
-      toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
     } finally {
       setIsCalculatingShipping(false);
     }
@@ -103,10 +99,7 @@ const Checkout = () => {
   };
 
   const applyVoucher = async () => {
-    if (!voucherCode) {
-      toast.error("Digite um cupom válido");
-      return;
-    }
+    if (!voucherCode) return;
 
     setVoucherLoading(true);
     try {
@@ -116,37 +109,33 @@ const Checkout = () => {
         .eq('code', voucherCode.toUpperCase())
         .single();
 
-      if (error) throw error;
-
-      if (!voucher) {
-        toast.error("Cupom não encontrado");
+      if (error || !voucher) {
+        setVoucherCode("");
         return;
       }
 
       const now = new Date();
       if (voucher.valid_until && new Date(voucher.valid_until) < now) {
-        toast.error("Cupom expirado");
+        setVoucherCode("");
         return;
       }
 
       if (voucher.max_uses && voucher.current_uses >= voucher.max_uses) {
-        toast.error("Cupom esgotado");
+        setVoucherCode("");
         return;
       }
 
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       
       if (voucher.min_amount && subtotal < voucher.min_amount) {
-        toast.error(`Valor mínimo para este cupom: R$ ${voucher.min_amount}`);
+        setVoucherCode("");
         return;
       }
 
       applyVoucherDiscount(voucher, shippingFee);
       setAppliedVoucher(voucher);
-      toast.success("Cupom aplicado com sucesso!");
     } catch (error) {
       console.error("Erro ao aplicar cupom:", error);
-      toast.error("Erro ao aplicar cupom");
     } finally {
       setVoucherLoading(false);
     }
@@ -232,16 +221,22 @@ const Checkout = () => {
   };
 
   const openCheckoutPopup = (url: string, orderId: string) => {
-    const width = 900;
-    const height = 600;
-    const left = (window.innerWidth - width) / 2;
-    const top = (window.innerHeight - height) / 2;
+    const width = Math.min(900, window.innerWidth - 20);
+    const height = Math.min(600, window.innerHeight - 20);
+    const left = Math.max(0, (window.innerWidth - width) / 2);
+    const top = Math.max(0, (window.innerHeight - height) / 2);
 
     const popup = window.open(
       url,
       'MercadoPago',
-      `width=${width},height=${height},top=${top},left=${left}`
+      `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`
     );
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      // Popup bloqueado, redirecionar na mesma janela
+      window.location.href = url;
+      return;
+    }
 
     // Iniciar monitoramento do status do pagamento
     listenToPaymentStatus(orderId);
@@ -257,25 +252,19 @@ const Checkout = () => {
 
   const handleCheckout = async () => {
     if (!cartItems.length) {
-      toast.error("Seu carrinho está vazio");
       navigate("/products");
       return;
     }
 
     if (!session?.user) {
-      toast.error("Por favor, faça login para continuar");
       navigate("/login");
       return;
     }
 
-    if (!zipCode) {
-      toast.error("Por favor, informe o CEP para entrega");
-      return;
-    }
+    if (!zipCode) return;
 
     try {
       setLoading(true);
-      console.log("Iniciando checkout...");
 
       const orderId = crypto.randomUUID();
       
@@ -286,18 +275,7 @@ const Checkout = () => {
       const discountValue = Number(discount) || 0;
       const total = Math.max(0, Number((subtotal + shippingCost - discountValue).toFixed(2)));
 
-      console.log("Valores calculados:", {
-        subtotal,
-        shippingCost,
-        discountValue,
-        total,
-        items: cartItems
-      });
-
-      if (total <= 0) {
-        toast.error("O valor total do pedido deve ser maior que zero");
-        return;
-      }
+      if (total <= 0) return;
 
       await saveOrder(orderId);
 
@@ -322,10 +300,7 @@ const Checkout = () => {
         }
       );
 
-      if (error) {
-        console.error("Erro na função do Mercado Pago:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data?.init_point) {
         throw new Error("URL de checkout não gerada");
@@ -336,7 +311,6 @@ const Checkout = () => {
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
-      toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
       setLoading(false);
     }
   };
