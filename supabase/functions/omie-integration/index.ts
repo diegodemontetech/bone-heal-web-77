@@ -7,41 +7,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface OmieOrderData {
-  cabecalho: {
-    codigo_cliente: number;
-    etapa: string;
-    codigo_parcela: string;
-    data_previsao: string;
-  };
-  det: Array<{
-    produto: {
-      codigo_produto: string;
-      quantidade: number;
-      valor_unitario: number;
-    };
-  }>;
-  frete: {
-    modalidade: string;
-    valor_frete: number;
-  };
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { action, order_id, order_data } = await req.json();
-    console.log('Recebido pedido para sincronização:', { action, order_id, order_data });
+    // Log do request body completo
+    const rawBody = await req.text();
+    console.log('Raw request body:', rawBody);
+
+    // Parse do JSON e log dos dados recebidos
+    const requestData = JSON.parse(rawBody);
+    console.log('Parsed request data:', requestData);
+
+    const { action, order_id, order_data } = requestData;
+    console.log('Dados extraídos:', { action, order_id, order_data });
+
+    if (!requestData) {
+      throw new Error('Nenhum dado recebido na requisição');
+    }
 
     if (!order_data) {
-      throw new Error('Dados do pedido não fornecidos');
+      throw new Error('Dados do pedido não fornecidos. Request data: ' + JSON.stringify(requestData));
     }
 
     if (!order_data.profiles) {
-      throw new Error('Dados do cliente não encontrados');
+      throw new Error('Dados do cliente não encontrados. Order data: ' + JSON.stringify(order_data));
     }
 
     // Validar dados obrigatórios do cliente
@@ -66,7 +58,7 @@ serve(async (req) => {
     }
 
     // Preparar dados para o Omie
-    const omieOrderData: OmieOrderData = {
+    const omieOrderData = {
       cabecalho: {
         codigo_cliente: parseInt(order_data.profiles.omie_code || '0'),
         etapa: '10', // Pedido
@@ -102,13 +94,21 @@ serve(async (req) => {
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Erro na resposta do Omie:', errorData);
-      throw new Error(`Erro ao sincronizar com Omie: ${errorData.faultstring || 'Erro desconhecido'}`);
+    const responseText = await response.text();
+    console.log('Resposta bruta do Omie:', responseText);
+
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error(`Erro ao parsear resposta do Omie: ${responseText}`);
     }
 
-    const responseData = await response.json();
+    if (!response.ok) {
+      console.error('Erro na resposta do Omie:', responseData);
+      throw new Error(`Erro ao sincronizar com Omie: ${responseData.faultstring || 'Erro desconhecido'}`);
+    }
+
     console.log('Resposta do Omie:', responseData);
 
     // Atualizar status do pedido no Supabase
