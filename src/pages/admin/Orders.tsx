@@ -114,27 +114,54 @@ const Orders = () => {
     }
   };
 
-  const syncClientWithOmie = async (profileData: any) => {
+  const checkAndSyncClient = async (profile: any) => {
     try {
+      console.log('Verificando cliente:', profile);
+      
+      if (!profile) {
+        throw new Error('Dados do cliente não encontrados');
+      }
+
+      // Se já tem código Omie, retorna
+      if (profile.omie_code) {
+        console.log('Cliente já possui código Omie:', profile.omie_code);
+        return profile.omie_code;
+      }
+
+      console.log('Cliente não possui código Omie, iniciando sincronização...');
+      
+      // Sincronizar com Omie
       const { data: response, error } = await supabase.functions.invoke(
         'omie-integration',
         {
           body: {
             action: 'sync_client',
-            profile_data: profileData
+            profile_data: profile
           }
         }
       );
 
       if (error) throw error;
-      if (!response?.success) {
+      
+      if (!response?.success || !response?.omie_code) {
         throw new Error(response?.error || 'Erro ao sincronizar cliente');
       }
 
+      // Atualizar o código Omie do cliente no banco
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ omie_code: response.omie_code })
+        .eq('id', profile.id);
+
+      if (updateError) {
+        throw new Error(`Erro ao atualizar código Omie do cliente: ${updateError.message}`);
+      }
+
+      console.log('Cliente sincronizado com sucesso, código Omie:', response.omie_code);
       return response.omie_code;
     } catch (error: any) {
-      console.error('Erro ao sincronizar cliente:', error);
-      throw new Error(`Erro ao sincronizar cliente: ${error.message}`);
+      console.error('Erro ao verificar/sincronizar cliente:', error);
+      throw error;
     }
   };
 
@@ -142,7 +169,7 @@ const Orders = () => {
     try {
       toast.loading('Sincronizando pedido com Omie...');
       
-      // Buscar dados do pedido com todos os detalhes necessários
+      // 1. Buscar dados do pedido com todos os detalhes necessários
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .select(`
@@ -156,40 +183,32 @@ const Orders = () => {
         throw new Error(`Erro ao buscar pedido: ${orderError?.message || 'Pedido não encontrado'}`);
       }
 
-      console.log('Dados completos do pedido:', order);
+      console.log('Dados do pedido encontrados:', order);
 
-      // Verificar se os dados do cliente existem
+      // 2. Verificar e sincronizar cliente
       if (!order.profiles) {
-        throw new Error('Dados do cliente não encontrados');
+        throw new Error('Perfil do cliente não encontrado para o pedido');
       }
 
-      // Se o cliente não tiver código Omie, sincronizar primeiro
-      if (!order.profiles.omie_code) {
-        console.log('Cliente sem código Omie, sincronizando...');
-        const omieCode = await syncClientWithOmie(order.profiles);
-        order.profiles.omie_code = omieCode;
-        
-        // Atualizar o código Omie do cliente no banco
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ omie_code: omieCode })
-          .eq('id', order.profiles.id);
+      console.log('Verificando cliente antes da sincronização do pedido...');
+      const omieCode = await checkAndSyncClient(order.profiles);
+      console.log('Código Omie do cliente confirmado:', omieCode);
 
-        if (updateError) {
-          throw new Error(`Erro ao atualizar código Omie do cliente: ${updateError.message}`);
-        }
+      // 3. Verificar e preparar produtos
+      console.log('Verificando produtos do pedido...');
+      if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+        throw new Error('Pedido não possui itens');
       }
 
-      // Buscar detalhes dos produtos
       const items = await Promise.all(
         order.items.map(async (item: any) => {
-          const { data: product } = await supabase
+          const { data: product, error: productError } = await supabase
             .from('products')
             .select('*')
             .eq('id', item.product_id)
             .single();
           
-          if (!product) {
+          if (productError || !product) {
             throw new Error(`Produto não encontrado: ${item.product_id}`);
           }
           
@@ -206,28 +225,23 @@ const Orders = () => {
         })
       );
 
-      // Estruturar dados para o Omie
+      console.log('Produtos verificados e preparados:', items);
+
+      // 4. Preparar dados completos para sincronização
       const orderData = {
         id: order.id,
         items: items,
-        shipping_fee: order.shipping_fee,
+        shipping_fee: order.shipping_fee || 0,
         total_amount: order.total_amount,
         profiles: {
           ...order.profiles,
-          full_name: order.profiles.full_name,
-          cpf: order.profiles.cpf,
-          cnpj: order.profiles.cnpj,
-          address: order.profiles.address,
-          city: order.profiles.city,
-          state: order.profiles.state,
-          zip_code: order.profiles.zip_code,
-          omie_code: order.profiles.omie_code
+          omie_code: omieCode
         }
       };
 
-      console.log('Dados do pedido preparados para sincronização:', orderData);
+      console.log('Dados completos preparados para sincronização:', orderData);
 
-      // Chamar a função de integração
+      // 5. Enviar para sincronização
       const { data: responseData, error: integrationError } = await supabase.functions.invoke(
         'omie-integration',
         {
@@ -239,7 +253,7 @@ const Orders = () => {
         }
       );
 
-      console.log('Resposta da integração:', responseData);
+      console.log('Resposta da sincronização:', responseData);
 
       if (integrationError) {
         throw new Error(`Erro na integração: ${integrationError.message}`);
@@ -249,7 +263,7 @@ const Orders = () => {
         throw new Error(responseData?.error || 'Erro desconhecido na sincronização');
       }
 
-      // Atualizar o pedido com o status de sincronização
+      // 6. Atualizar status do pedido
       const { error: updateError } = await supabase
         .from('orders')
         .update({
