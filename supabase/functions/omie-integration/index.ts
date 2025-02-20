@@ -26,7 +26,7 @@ serve(async (req) => {
       throw new Error('Missing required order data');
     }
 
-    // Primeiro, vamos cadastrar/atualizar o cliente no Omie
+    // Primeiro, vamos cadastrar/atualizar o cliente no Omie com as configurações necessárias
     const clientPayload = {
       call: "UpsertCliente",
       app_key: Deno.env.get("OMIE_APP_KEY"),
@@ -44,7 +44,17 @@ serve(async (req) => {
         cidade: order_data.profiles.city,
         cep: order_data.profiles.zip_code,
         codigo_pais: "1058",
-        email: order_data.profiles.email || "cliente@exemplo.com"
+        email: order_data.profiles.email || "cliente@exemplo.com",
+        // Campos adicionais para habilitar faturamento
+        inativo: "N",  // Cliente ativo
+        pessoa_fisica: order_data.profiles.cpf ? "S" : "N",
+        contribuinte: "2", // 2 = Contribuinte ICMS,
+        tags: ["ecommerce", "cliente_ativo"],
+        recomendacoes: {
+          tipo_distribuicao: "1", // Permite pedido e NF
+          regime_tributario: "1", // Simples Nacional
+          gerar_boletos: "N"
+        }
       }]
     };
 
@@ -76,7 +86,6 @@ serve(async (req) => {
       .eq('id', order_data.profiles.id);
 
     // Gerar um código de pedido com no máximo 15 caracteres
-    // Usando os últimos 5 dígitos do timestamp para garantir unicidade
     const timestamp = Date.now().toString().slice(-5);
     const codigoPedido = `W${timestamp}`; // W + 5 dígitos = 6 caracteres no total
     
@@ -98,7 +107,8 @@ serve(async (req) => {
           codigo_pedido: codigoPedido,
           codigo_pedido_integracao: order_id,
           data_previsao: new Date().toISOString().split('T')[0],
-          etapa: "10"
+          etapa: "10",
+          origem_pedido: "API"
         },
         det: items.map(item => ({
           produto: {
