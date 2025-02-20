@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,8 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
+      console.log("Fetching products..."); // Debug log
+
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -45,6 +48,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return [];
       }
       
+      console.log("Products fetched:", data); // Debug log para ver os produtos retornados
       return data || [];
     },
   });
@@ -181,7 +185,11 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           ...specificProduct,
           quantity: 1
         }]);
+      } else {
+        console.log("No specific product found with SKU 7630401"); // Debug log
       }
+    } else if (products.length === 0) {
+      console.log("No products returned from query"); // Debug log
     }
   }, [products]);
 
