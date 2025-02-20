@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -5,8 +6,6 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { format, addDays } from "date-fns";
 import DeliveryInformation from "@/components/checkout/DeliveryInformation";
 import OrderTotal from "@/components/checkout/OrderTotal";
 
@@ -22,6 +21,7 @@ const Checkout = () => {
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [discount, setDiscount] = useState(0);
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
+  const [zipCode, setZipCode] = useState<string>("");
 
   // Carregar perfil do usuário e calcular frete
   useEffect(() => {
@@ -34,6 +34,7 @@ const Checkout = () => {
           .single();
 
         if (profile?.zip_code) {
+          setZipCode(profile.zip_code);
           calculateShipping(profile.zip_code);
         }
       }
@@ -43,7 +44,8 @@ const Checkout = () => {
   }, [session]);
 
   const calculateDeliveryDate = (shippingDays: number) => {
-    const date = addDays(new Date(), shippingDays);
+    const date = new Date();
+    date.setDate(date.getDate() + shippingDays);
     setDeliveryDate(date);
   };
 
@@ -84,7 +86,6 @@ const Checkout = () => {
 
     if (voucher.discount_type === 'percentage') {
       if (voucher.discount_value === 100) {
-        // Se for 100%, aplica o desconto total no frete
         discountValue = currentShippingFee;
       } else {
         discountValue = (subtotal * voucher.discount_value) / 100;
@@ -206,7 +207,6 @@ const Checkout = () => {
         (payload) => {
           const status = payload.new.status;
           if (status === 'paid') {
-            toast.success('Pagamento confirmado! Seu pedido está sendo processado.');
             navigate(`/orders`);
           }
         }
@@ -231,15 +231,12 @@ const Checkout = () => {
     );
 
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-      // Popup bloqueado, redirecionar na mesma janela
       window.location.href = url;
       return;
     }
 
-    // Iniciar monitoramento do status do pagamento
     listenToPaymentStatus(orderId);
 
-    // Verificar se o popup foi fechado
     const checkPopup = setInterval(() => {
       if (!popup || popup.closed) {
         clearInterval(checkPopup);
@@ -258,6 +255,8 @@ const Checkout = () => {
       navigate("/login");
       return;
     }
+
+    if (!zipCode) return;
 
     try {
       setLoading(true);
@@ -328,7 +327,6 @@ const Checkout = () => {
   return (
     <div className="container mx-auto p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Cupom de desconto */}
         <div className="space-y-6">
           <DeliveryInformation
             voucherCode={voucherCode}
@@ -342,24 +340,15 @@ const Checkout = () => {
               setDiscount(0);
             }}
           />
-          
-          {deliveryDate && (
-            <div className="bg-white p-4 rounded-lg shadow">
-              <p className="text-sm text-gray-600">
-                Previsão de entrega: {format(deliveryDate, "dd 'de' MMMM")}
-              </p>
-            </div>
-          )}
         </div>
 
-        {/* Resumo e pagamento */}
         <OrderTotal
           cartItems={cartItems}
           shippingFee={shippingFee}
           discount={discount}
           loading={loading}
           isLoggedIn={!!session}
-          hasZipCode={true}
+          hasZipCode={!!zipCode}
           onCheckout={handleCheckout}
           deliveryDate={deliveryDate}
         />
