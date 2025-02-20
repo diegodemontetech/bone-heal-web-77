@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -100,13 +99,12 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 
           {isInCart && (
             <div className="flex gap-4">
-              <Link to="/cart" className="flex-1">
+              <Link to="/products" className="flex-1">
                 <Button 
-                  variant="secondary" 
+                  variant="outline" 
                   className="w-full"
                 >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Ver Carrinho
+                  Continuar Comprando
                 </Button>
               </Link>
               <Link to="/checkout" className="flex-1">
@@ -115,7 +113,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
                   className="w-full"
                 >
                   <CreditCard className="w-5 h-5 mr-2" />
-                  Finalizar Compra
+                  Ir para Pagamento
                 </Button>
               </Link>
             </div>

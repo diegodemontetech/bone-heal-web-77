@@ -15,7 +15,6 @@ const Checkout = () => {
   const session = useSession();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [zipCode, setZipCode] = useState("");
   const [shippingFee, setShippingFee] = useState(0);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [voucherCode, setVoucherCode] = useState("");
@@ -24,7 +23,7 @@ const Checkout = () => {
   const [discount, setDiscount] = useState(0);
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
 
-  // Carregar CEP do perfil quando logado
+  // Carregar perfil do usuário e calcular frete
   useEffect(() => {
     const loadUserProfile = async () => {
       if (session?.user) {
@@ -35,7 +34,6 @@ const Checkout = () => {
           .single();
 
         if (profile?.zip_code) {
-          setZipCode(profile.zip_code);
           calculateShipping(profile.zip_code);
         }
       }
@@ -261,8 +259,6 @@ const Checkout = () => {
       return;
     }
 
-    if (!zipCode) return;
-
     try {
       setLoading(true);
 
@@ -332,11 +328,9 @@ const Checkout = () => {
   return (
     <div className="container mx-auto p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Cupom de desconto */}
         <div className="space-y-6">
           <DeliveryInformation
-            zipCode={zipCode}
-            setZipCode={setZipCode}
-            calculateShipping={calculateShipping}
             voucherCode={voucherCode}
             setVoucherCode={setVoucherCode}
             voucherLoading={voucherLoading}
@@ -358,13 +352,14 @@ const Checkout = () => {
           )}
         </div>
 
+        {/* Resumo e pagamento */}
         <OrderTotal
           cartItems={cartItems}
           shippingFee={shippingFee}
           discount={discount}
           loading={loading}
           isLoggedIn={!!session}
-          hasZipCode={!!zipCode}
+          hasZipCode={true}
           onCheckout={handleCheckout}
           deliveryDate={deliveryDate}
         />
