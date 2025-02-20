@@ -43,6 +43,9 @@ serve(async (req) => {
       email: order_data.profiles.email
     };
 
+    // Gerar um código de pedido único para o Omie (usando timestamp)
+    const codigoPedido = `WEB${Date.now()}`;
+
     // Preparar os itens do pedido
     const items = order_data.items.map((item: any, index: number) => ({
       item_pedido: index + 1,
@@ -60,9 +63,10 @@ serve(async (req) => {
       param: [{
         cabecalho: {
           codigo_cliente: parseInt(clienteData.codigo_cliente_omie),
+          codigo_pedido: codigoPedido, // Adicionado código do pedido
+          codigo_pedido_integracao: order_id,
           data_previsao: new Date().toISOString().split('T')[0],
-          etapa: "10",
-          codigo_pedido_integracao: order_id
+          etapa: "10"
         },
         det: items.map(item => ({
           produto: {
@@ -98,8 +102,8 @@ serve(async (req) => {
     const omieData = await omieResponse.json();
     console.log("Omie API response:", omieData);
 
-    if (!omieResponse.ok) {
-      throw new Error(`Omie API error: ${JSON.stringify(omieData)}`);
+    if (omieData.faultstring) {
+      throw new Error(`Erro na API do Omie: ${omieData.faultstring}`);
     }
 
     // Atualizar o pedido no Supabase com o ID do Omie
@@ -111,7 +115,7 @@ serve(async (req) => {
     const { error: updateError } = await supabase
       .from('orders')
       .update({
-        omie_order_id: omieData.pedido_id,
+        omie_order_id: omieData.pedido_id || codigoPedido,
         omie_status: 'sincronizado',
         omie_last_update: new Date().toISOString()
       })
@@ -124,7 +128,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        omie_order_id: omieData.pedido_id,
+        omie_order_id: omieData.pedido_id || codigoPedido,
         message: 'Order synchronized successfully'
       }),
       {
@@ -143,7 +147,7 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 // Mantendo 200 para evitar o erro de non-2xx
+        status: 200
       }
     );
   }
