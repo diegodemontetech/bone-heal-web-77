@@ -1,48 +1,42 @@
+
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Product } from "@/types/product";
+import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
-import { ShoppingCart, CreditCard } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, CreditCard } from "lucide-react";
 
 interface ProductInfoProps {
-  product: Product;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    description?: string;
+    image?: string;
+  };
 }
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addItem, cartItems } = useCart();
   const session = useSession();
-  const navigate = useNavigate();
+
+  const isInCart = cartItems.some(item => item.id === product.id);
+
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity >= 1) {
+      setQuantity(newQuantity);
+    }
+  };
 
   const handleAddToCart = () => {
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price || 0,
-      image: product.main_image || "",
-    });
-
-    toast.success("Produto adicionado ao carrinho", {
-      description: `${quantity}x ${product.name}`,
-      action: {
-        label: "Ver carrinho",
-        onClick: () => navigate("/cart")
-      }
+      price: product.price,
+      image: product.image || '',
     });
   };
-
-  const handleQuantityChange = (value: number) => {
-    if (value >= 1) {
-      setQuantity(value);
-    }
-  };
-
-  const isInCart = cartItems.some(item => item.id === product.id);
-
-  if (!product) return null;
 
   return (
     <div className="lg:col-span-5 mt-10 lg:mt-0">
@@ -50,22 +44,16 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         {product.name}
       </h1>
 
-      {session && product.price && (
-        <div className="mt-4">
-          <p className="text-3xl tracking-tight text-gray-900">
-            R$ {product.price.toFixed(2)}
-          </p>
-        </div>
-      )}
+      <div className="mt-4">
+        <h2 className="sr-only">Product information</h2>
+        <p className="text-3xl tracking-tight text-gray-900">
+          R$ {product.price.toFixed(2)}
+        </p>
+      </div>
 
-      {product.description && (
-        <div className="mt-6">
-          <h3 className="sr-only">Descrição</h3>
-          <div className="space-y-6 text-base text-gray-700">
-            {product.description}
-          </div>
-        </div>
-      )}
+      <div className="mt-4">
+        <p className="text-base text-gray-900">{product.description}</p>
+      </div>
 
       {session && (
         <div className="mt-10 space-y-4">
