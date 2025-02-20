@@ -5,23 +5,18 @@ import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Buscar sessão atual
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error getting session:", error);
-        throw error;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
       return session;
     },
   });
@@ -54,9 +49,6 @@ const AdminLogin = () => {
       async (event, currentSession) => {
         console.log("Auth state changed:", event, currentSession);
         
-        // Atualizar o cache do React Query quando a sessão mudar
-        queryClient.setQueryData(["session"], currentSession);
-        
         if (event === "SIGNED_IN" && currentSession) {
           try {
             const { data: profile, error } = await supabase
@@ -66,9 +58,6 @@ const AdminLogin = () => {
               .maybeSingle();
 
             if (error) throw error;
-
-            // Atualizar o cache do perfil
-            queryClient.setQueryData(["profile", currentSession.user.id], profile);
 
             if (profile?.is_admin) {
               navigate("/admin");
@@ -95,16 +84,16 @@ const AdminLogin = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast, queryClient]);
+  }, [navigate, toast]);
 
   // Redirecionar se já estiver logado como admin
   useEffect(() => {
-    if (profile?.is_admin) {
+    if (!isSessionLoading && !isProfileLoading && profile?.is_admin) {
       navigate("/admin");
     }
-  }, [profile, navigate]);
+  }, [profile, isSessionLoading, isProfileLoading, navigate]);
 
-  // Mostrar loading enquanto carrega
+  // Mostrar loading enquanto verifica sessão e perfil
   if (isSessionLoading || (session && isProfileLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -113,7 +102,7 @@ const AdminLogin = () => {
     );
   }
 
-  // Se não estiver logado, mostrar formulário de login
+  // Se não estiver logado como admin, mostrar formulário de login
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">

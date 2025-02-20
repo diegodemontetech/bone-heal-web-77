@@ -75,7 +75,7 @@ const Admin = () => {
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
@@ -150,9 +150,9 @@ const Admin = () => {
     }
   }, [session, isSessionLoading, navigate]);
 
-  // Redirect to home if not admin
+  // Redirect to home if explicitly not admin
   useEffect(() => {
-    if (!isProfileLoading && profile && !profile.is_admin) {
+    if (!isProfileLoading && profile && profile.is_admin === false) {
       navigate("/");
     }
   }, [profile, isProfileLoading, navigate]);
