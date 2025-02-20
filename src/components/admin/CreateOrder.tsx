@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Adicionado useEffect aqui
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
