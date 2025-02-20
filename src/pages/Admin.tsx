@@ -1,24 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Loader2, 
   TrendingUp, 
-  Package, 
   ShoppingCart, 
   Users, 
   MessageSquare,
   DollarSign,
   Calendar,
   PhoneCall,
-  Truck,
   Star,
   Activity
 } from "lucide-react";
-import { useState } from "react";
 
 // Moved types to the top for better organization
 interface OrderItem {
@@ -55,15 +51,19 @@ interface DashboardStats {
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const [adminData, setAdminData] = useState<DashboardStats | null>(null);
 
+  // Single check for admin status
   useEffect(() => {
-    const checkAdmin = async () => {
+    let isSubscribed = true;
+
+    const checkAdminAccess = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (!session) {
+          console.log("No session found, redirecting to login");
           navigate("/admin/login");
           return;
         }
@@ -75,82 +75,70 @@ const Admin = () => {
           .maybeSingle();
 
         if (!profile?.is_admin) {
+          console.log("User is not admin, redirecting to home");
           navigate("/");
           return;
         }
 
-        setIsAdmin(true);
-        setIsLoading(false);
+        // Fetch dashboard data only if user is admin
+        const [orders, leads, users] = await Promise.all([
+          supabase.from("orders").select("*"),
+          supabase.from("contact_leads").select("*"),
+          supabase.from("profiles").select("*")
+        ]);
+
+        if (!isSubscribed) return;
+
+        const lastMonth = new Date();
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+        const recentLeads = leads.data?.filter(lead => 
+          new Date(lead.created_at) > lastMonth
+        ) || [];
+
+        const pendingOrders = orders.data?.filter(order => 
+          order.status === 'pending'
+        ) || [];
+
+        const totalRevenue = orders.data?.reduce((sum, order) => 
+          sum + Number(order.total_amount), 0
+        ) || 0;
+
+        const stats: DashboardStats = {
+          totalOrders: orders.data?.length || 0,
+          totalRevenue,
+          totalLeads: leads.data?.length || 0,
+          averageOrderValue: orders.data?.length ? totalRevenue / orders.data.length : 0,
+          leadConversionRate: orders.data?.length && leads.data?.length ? 
+            (orders.data.length / leads.data.length) * 100 : 0,
+          topProducts: [],
+          leadsBySource: [
+            { source: "WhatsApp", count: leads.data?.filter(l => l.source === "whatsapp_widget").length || 0 },
+            { source: "Formulário", count: leads.data?.filter(l => l.source === "form").length || 0 }
+          ],
+          monthlyRevenue: [],
+          stateData: [],
+          recentLeadCount: recentLeads.length,
+          pendingOrdersCount: pendingOrders.length,
+          activeUsersCount: users.data?.length || 0
+        };
+
+        setAdminData(stats);
+        setIsChecking(false);
       } catch (error) {
-        console.error("Error checking admin status:", error);
+        console.error("Error checking admin access:", error);
         navigate("/admin/login");
       }
     };
 
-    checkAdmin();
+    checkAdminAccess();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [navigate]);
 
-  // Fetch dashboard stats
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
-    queryKey: ["dashboardStats"],
-    queryFn: async () => {
-      if (!isAdmin) return null;
-
-      // Fetch orders
-      const { data: orders } = await supabase
-        .from("orders")
-        .select("*");
-
-      // Fetch leads
-      const { data: leads } = await supabase
-        .from("contact_leads")
-        .select("*");
-
-      // Fetch users
-      const { data: users } = await supabase
-        .from("profiles")
-        .select("*");
-
-      const lastMonth = new Date();
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-
-      const recentLeads = leads?.filter(lead => 
-        new Date(lead.created_at) > lastMonth
-      ) || [];
-
-      const pendingOrders = orders?.filter(order => 
-        order.status === 'pending'
-      ) || [];
-
-      const totalRevenue = orders?.reduce((sum, order) => 
-        sum + Number(order.total_amount), 0
-      ) || 0;
-
-      const stats: DashboardStats = {
-        totalOrders: orders?.length || 0,
-        totalRevenue,
-        totalLeads: leads?.length || 0,
-        averageOrderValue: orders?.length ? totalRevenue / orders.length : 0,
-        leadConversionRate: orders?.length && leads?.length ? 
-          (orders.length / leads.length) * 100 : 0,
-        topProducts: [], // Calculated from orders items
-        leadsBySource: [
-          { source: "WhatsApp", count: leads?.filter(l => l.source === "whatsapp_widget").length || 0 },
-          { source: "Formulário", count: leads?.filter(l => l.source === "form").length || 0 }
-        ],
-        monthlyRevenue: [], // Calculated from orders
-        stateData: [], // Calculated from orders shipping_address
-        recentLeadCount: recentLeads.length,
-        pendingOrdersCount: pendingOrders.length,
-        activeUsersCount: users?.length || 0
-      };
-
-      return stats;
-    },
-    enabled: isAdmin,
-  });
-
-  if (isLoading || isStatsLoading) {
+  if (isChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -158,7 +146,7 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!adminData) {
     return null;
   }
 
@@ -175,9 +163,9 @@ const Admin = () => {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">R$ {stats?.totalRevenue.toFixed(2)}</div>
+              <div className="text-2xl font-bold">R$ {adminData.totalRevenue.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
-                {stats?.totalOrders} pedidos
+                {adminData.totalOrders} pedidos
               </p>
             </CardContent>
           </Card>
@@ -188,7 +176,7 @@ const Admin = () => {
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.recentLeadCount}</div>
+              <div className="text-2xl font-bold">{adminData.recentLeadCount}</div>
               <p className="text-xs text-muted-foreground">
                 Últimos 30 dias
               </p>
@@ -202,7 +190,7 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats?.leadConversionRate.toFixed(1)}%
+                {adminData.leadConversionRate.toFixed(1)}%
               </div>
               <p className="text-xs text-muted-foreground">
                 Leads → Vendas
@@ -216,7 +204,7 @@ const Admin = () => {
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.pendingOrdersCount}</div>
+              <div className="text-2xl font-bold">{adminData.pendingOrdersCount}</div>
               <p className="text-xs text-muted-foreground">
                 Aguardando processamento
               </p>
@@ -233,7 +221,7 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                R$ {stats?.averageOrderValue.toFixed(2)}
+                R$ {adminData.averageOrderValue.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">
                 Por pedido
@@ -247,7 +235,7 @@ const Admin = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalLeads}</div>
+              <div className="text-2xl font-bold">{adminData.totalLeads}</div>
               <p className="text-xs text-muted-foreground">
                 Desde o início
               </p>
@@ -260,7 +248,7 @@ const Admin = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.activeUsersCount}</div>
+              <div className="text-2xl font-bold">{adminData.activeUsersCount}</div>
               <p className="text-xs text-muted-foreground">
                 Cadastrados
               </p>
@@ -274,7 +262,7 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats?.leadsBySource.find(s => s.source === "WhatsApp")?.count || 0}
+                {adminData.leadsBySource.find(s => s.source === "WhatsApp")?.count || 0}
               </div>
               <p className="text-xs text-muted-foreground">
                 Via widget

@@ -10,47 +10,58 @@ import { Loader2 } from "lucide-react";
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isChecking, setIsChecking] = useState(true);
 
+  // Single check for existing session
   useEffect(() => {
-    const checkAuth = async () => {
+    let isSubscribed = true;
+
+    const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session?.user?.id) {
+        if (!session) {
+          if (isSubscribed) setIsChecking(false);
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profile?.is_admin && isSubscribed) {
+          navigate("/admin");
+        } else {
+          setIsChecking(false);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        if (isSubscribed) setIsChecking(false);
+      }
+    };
+
+    checkSession();
+
+    // Cleanup function
+    return () => {
+      isSubscribed = false;
+    };
+  }, [navigate]);
+
+  // Auth state change listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event);
+      
+      if (event === "SIGNED_IN" && session) {
+        try {
           const { data: profile } = await supabase
             .from("profiles")
             .select("is_admin")
             .eq("id", session.user.id)
             .maybeSingle();
-
-          if (profile?.is_admin) {
-            navigate("/admin");
-            return;
-          }
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error checking auth:", error);
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [navigate]);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        try {
-          const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", session.user.id)
-            .maybeSingle();
-
-          if (error) throw error;
 
           if (profile?.is_admin) {
             navigate("/admin");
@@ -78,7 +89,7 @@ const AdminLogin = () => {
     };
   }, [navigate, toast]);
 
-  if (isLoading) {
+  if (isChecking) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
