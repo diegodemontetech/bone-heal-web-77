@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +37,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         .from("products")
         .select("*")
         .eq('active', true)
+        .eq('omie_code', '7630401') // Filtrando pelo SKU específico
         .order("name");
 
       if (error) {
@@ -172,15 +172,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   useEffect(() => {
     if (products.length > 0 && selectedProducts.length === 0) {
-      // Procurar por um produto que tenha TODOS os dados do Omie
-      const syncedProduct = products.find(p => 
-        p.active && p.omie_code && p.omie_product_id
-      );
+      // Procurar pelo produto específico
+      const specificProduct = products[0]; // Como filtramos pelo SKU, será o único produto
       
-      if (syncedProduct) {
-        console.log("Selected synced product:", syncedProduct); // Debug log
+      if (specificProduct) {
+        console.log("Selected specific product:", specificProduct);
         setSelectedProducts([{
-          ...syncedProduct,
+          ...specificProduct,
           quantity: 1
         }]);
       }
