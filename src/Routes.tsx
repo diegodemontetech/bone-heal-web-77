@@ -17,7 +17,7 @@ import Orders from "@/pages/Orders";
 import OrderDetails from "@/pages/orders/OrderDetails";
 import Admin from "@/pages/Admin";
 import AdminLogin from "@/pages/AdminLogin";
-import Products as AdminProducts from "@/pages/admin/Products";
+import AdminProducts from "@/pages/admin/Products";
 import Security from "@/pages/admin/Security";
 import EmailTemplates from "@/pages/admin/EmailTemplates";
 import Sync from "@/pages/admin/Sync";
