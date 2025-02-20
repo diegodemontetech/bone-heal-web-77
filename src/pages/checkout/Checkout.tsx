@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -8,6 +7,13 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DeliveryInformation from "@/components/checkout/DeliveryInformation";
 import OrderTotal from "@/components/checkout/OrderTotal";
+
+interface ShippingRate {
+  rate: number;
+  delivery_days: number;
+  service_type: string;
+  name: string;
+}
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
@@ -22,6 +28,9 @@ const Checkout = () => {
   const [discount, setDiscount] = useState(0);
   const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
   const [zipCode, setZipCode] = useState<string>("");
+  const [availableShippingRates, setAvailableShippingRates] = useState<ShippingRate[]>([]);
+  const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingRate | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>("credit");
 
   // Carregar perfil do usuário e calcular frete
   useEffect(() => {
@@ -57,21 +66,27 @@ const Checkout = () => {
     setIsCalculatingShipping(true);
     
     try {
-      const { data: shippingRate, error } = await supabase
+      const { data: shippingRates, error } = await supabase
         .from('shipping_rates')
-        .select('rate, delivery_days')
-        .eq('state', 'SP')
-        .single();
+        .select('rate, delivery_days, service_type')
+        .in('service_type', ['PAC', 'SEDEX'])
+        .eq('state', 'SP');
 
       if (error) throw error;
 
-      if (shippingRate) {
-        setShippingFee(shippingRate.rate);
-        calculateDeliveryDate(shippingRate.delivery_days);
-        
-        if (appliedVoucher) {
-          applyVoucherDiscount(appliedVoucher, shippingRate.rate);
+      if (shippingRates?.length) {
+        // Inicialmente seleciona o PAC como padrão
+        const pacRate = shippingRates.find(rate => rate.service_type === 'PAC');
+        if (pacRate) {
+          setShippingFee(pacRate.rate);
+          calculateDeliveryDate(pacRate.delivery_days);
+          setSelectedShippingRate(pacRate);
         }
+        
+        setAvailableShippingRates(shippingRates.map(rate => ({
+          ...rate,
+          name: rate.service_type === 'PAC' ? 'Convencional' : 'Express'
+        })));
       }
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
@@ -274,40 +289,25 @@ const Checkout = () => {
 
       await saveOrder(orderId);
 
-      const { data, error } = await supabase.functions.invoke(
-        "mercadopago-checkout",
-        {
-          body: {
-            orderId,
-            items: cartItems.map(item => ({
-              title: item.name,
-              price: Number(Number(item.price).toFixed(2)),
-              quantity: Number(item.quantity)
-            })),
-            shipping_cost: shippingCost,
-            discount: discountValue,
-            buyer: {
-              name: session.user.email?.split('@')[0] || 'Cliente',
-              email: session.user.email,
-            },
-            total_amount: total
-          },
+      // Redireciona para a página do pedido
+      navigate(`/orders/${orderId}`, {
+        state: { 
+          showPaymentButton: true,
+          paymentMethod,
+          orderTotal: total
         }
-      );
-
-      if (error) throw error;
-
-      if (!data?.init_point) {
-        throw new Error("URL de checkout não gerada");
-      }
-
-      clear();
-      openCheckoutPopup(data.init_point, orderId);
+      });
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       setLoading(false);
     }
+  };
+
+  const handleShippingRateChange = (rate: ShippingRate) => {
+    setShippingFee(rate.rate);
+    calculateDeliveryDate(rate.delivery_days);
+    setSelectedShippingRate(rate);
   };
 
   if (!cartItems.length) {
@@ -339,6 +339,9 @@ const Checkout = () => {
               setVoucherCode("");
               setDiscount(0);
             }}
+            shippingRates={availableShippingRates}
+            selectedShippingRate={selectedShippingRate}
+            onShippingRateChange={handleShippingRateChange}
           />
         </div>
 
