@@ -228,18 +228,21 @@ const Orders = () => {
       console.log('Produtos verificados e preparados:', items);
 
       // 4. Preparar dados completos para sincronização
-      const orderData = {
-        id: order.id,
-        items: items,
-        shipping_fee: order.shipping_fee || 0,
-        total_amount: order.total_amount,
-        profiles: {
-          ...order.profiles,
-          omie_code: omieCode
+      const orderDataToSync = {
+        order_id: orderId,
+        order_data: {
+          id: order.id,
+          items: items,
+          shipping_fee: order.shipping_fee || 0,
+          total_amount: order.total_amount,
+          profiles: {
+            ...order.profiles,
+            omie_code: omieCode
+          }
         }
       };
 
-      console.log('Dados completos preparados para sincronização:', orderData);
+      console.log('Dados completos preparados para sincronização:', orderDataToSync);
 
       // 5. Enviar para sincronização
       const { data: responseData, error: integrationError } = await supabase.functions.invoke(
@@ -247,8 +250,7 @@ const Orders = () => {
         {
           body: {
             action: 'sync_order',
-            order_id: orderId,
-            order_data: orderData
+            ...orderDataToSync // Enviando order_id e order_data na estrutura correta
           }
         }
       );
