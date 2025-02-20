@@ -27,7 +27,7 @@ interface CreateOrderProps {
 }
 
 const TEST_CUSTOMER = {
-  id: "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3", // Usando o ID do seu usuário admin
+  id: "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3",
   full_name: "Cliente Teste",
   omie_code: "12345678",
   cpf: "12345678900",
@@ -120,7 +120,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
             items: orderItems,
             payer: {
               name: selectedCustomer.full_name,
-              email: "test_user_123@testuser.com", // Email de teste
+              email: "test_user_123@testuser.com",
               identification: {
                 type: "CPF",
                 number: selectedCustomer.cpf
