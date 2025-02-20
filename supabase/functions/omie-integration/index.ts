@@ -26,69 +26,66 @@ serve(async (req) => {
       throw new Error('Missing required order data');
     }
 
-    // Primeiro, vamos cadastrar/atualizar o cliente no Omie com as configurações necessárias
-    const clientPayload = {
-      call: "UpsertCliente",
+    const existingClientPayload = {
+      call: "ConsultarCliente",
       app_key: Deno.env.get("OMIE_APP_KEY"),
       app_secret: Deno.env.get("OMIE_APP_SECRET"),
       param: [{
-        codigo_cliente_integracao: order_data.profiles.id,
-        razao_social: order_data.profiles.full_name,
-        cnpj_cpf: order_data.profiles.cpf || order_data.profiles.cnpj,
-        nome_fantasia: order_data.profiles.full_name,
-        telefone1_numero: order_data.profiles.phone,
-        endereco: order_data.profiles.address,
-        endereco_numero: "S/N",
-        bairro: order_data.profiles.neighborhood || "Centro",
-        estado: order_data.profiles.state,
-        cidade: order_data.profiles.city,
-        cep: order_data.profiles.zip_code,
-        codigo_pais: "1058",
-        email: order_data.profiles.email || "cliente@exemplo.com",
-        // Campos adicionais para habilitar faturamento
-        inativo: "N",  // Cliente ativo
-        pessoa_fisica: order_data.profiles.cpf ? "S" : "N",
-        contribuinte: "2", // 2 = Contribuinte ICMS,
-        tags: ["ecommerce", "cliente_ativo"],
-        recomendacoes: {
-          tipo_distribuicao: "1", // Permite pedido e NF
-          regime_tributario: "1", // Simples Nacional
-          gerar_boletos: "N"
-        }
+        codigo_cliente_omie: order_data.profiles.omie_code
       }]
     };
 
-    console.log("Sending client request to Omie:", JSON.stringify(clientPayload, null, 2));
+    console.log("Consultando cliente existente:", order_data.profiles.omie_code);
 
-    const clientResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+    const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(clientPayload)
+      body: JSON.stringify(existingClientPayload)
     });
 
-    const clientData = await clientResponse.json();
-    console.log("Omie client API response:", clientData);
+    const clienteExistente = await consultaResponse.json();
+    console.log("Cliente existente:", clienteExistente);
 
-    if (clientData.faultstring) {
-      throw new Error(`Erro ao cadastrar cliente no Omie: ${clientData.faultstring}`);
+    if (!clienteExistente.faultstring) {
+      // Atualizar o cliente existente com as configurações necessárias
+      const updatePayload = {
+        call: "AlterarCliente",
+        app_key: Deno.env.get("OMIE_APP_KEY"),
+        app_secret: Deno.env.get("OMIE_APP_SECRET"),
+        param: [{
+          ...clienteExistente,
+          inativo: "N",
+          pessoa_fisica: clienteExistente.cnpj_cpf?.length === 11 ? "S" : "N",
+          contribuinte: "2",
+          tags: ["ecommerce", "cliente_ativo"],
+          recomendacoes: {
+            tipo_distribuicao: "1",
+            regime_tributario: "1",
+            gerar_boletos: "N"
+          }
+        }]
+      };
+
+      console.log("Atualizando cliente:", JSON.stringify(updatePayload, null, 2));
+
+      const updateResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload)
+      });
+
+      const updateResult = await updateResponse.json();
+      console.log("Resultado da atualização:", updateResult);
+
+      if (updateResult.faultstring) {
+        throw new Error(`Erro ao atualizar cliente: ${updateResult.faultstring}`);
+      }
     }
-
-    // Atualizar o código Omie do cliente no Supabase
-    const codigoClienteOmie = clientData.codigo_cliente_omie;
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    await supabase
-      .from('profiles')
-      .update({ omie_code: codigoClienteOmie.toString() })
-      .eq('id', order_data.profiles.id);
 
     // Gerar um código de pedido com no máximo 15 caracteres
     const timestamp = Date.now().toString().slice(-5);
     const codigoPedido = `W${timestamp}`; // W + 5 dígitos = 6 caracteres no total
-    
+
     const items = order_data.items.map((item: any, index: number) => ({
       item_pedido: index + 1,
       codigo_produto: item.omie_code,
@@ -103,7 +100,7 @@ serve(async (req) => {
       app_secret: Deno.env.get("OMIE_APP_SECRET"),
       param: [{
         cabecalho: {
-          codigo_cliente: codigoClienteOmie,
+          codigo_cliente: parseInt(order_data.profiles.omie_code),
           codigo_pedido: codigoPedido,
           codigo_pedido_integracao: order_id,
           data_previsao: new Date().toISOString().split('T')[0],
@@ -130,7 +127,7 @@ serve(async (req) => {
       }]
     };
 
-    console.log("Sending order request to Omie:", JSON.stringify(pedidoPayload, null, 2));
+    console.log("Enviando pedido para Omie:", JSON.stringify(pedidoPayload, null, 2));
 
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
       method: 'POST',
@@ -139,11 +136,16 @@ serve(async (req) => {
     });
 
     const omieData = await omieResponse.json();
-    console.log("Omie order API response:", omieData);
+    console.log("Resposta da API do Omie:", omieData);
 
     if (omieData.faultstring) {
       throw new Error(`Erro na API do Omie: ${omieData.faultstring}`);
     }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     await supabase
       .from('orders')
