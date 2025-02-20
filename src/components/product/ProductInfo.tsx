@@ -10,7 +10,7 @@ interface ProductInfoProps {
   product: {
     id: string;
     name: string;
-    price: number;
+    price?: number;
     description?: string;
     image?: string;
   };
@@ -22,6 +22,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const session = useSession();
 
   const isInCart = cartItems.some(item => item.id === product.id);
+  const price = product.price || 0;
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1) {
@@ -30,10 +31,12 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   };
 
   const handleAddToCart = () => {
+    if (!price) return;
+    
     addItem({
       id: product.id,
       name: product.name,
-      price: product.price,
+      price: price,
       image: product.image || '',
     });
   };
@@ -47,7 +50,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       <div className="mt-4">
         <h2 className="sr-only">Product information</h2>
         <p className="text-3xl tracking-tight text-gray-900">
-          R$ {product.price.toFixed(2)}
+          R$ {price.toFixed(2)}
         </p>
       </div>
 
@@ -55,7 +58,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         <p className="text-base text-gray-900">{product.description}</p>
       </div>
 
-      {session && (
+      {session && price > 0 && (
         <div className="mt-10 space-y-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
