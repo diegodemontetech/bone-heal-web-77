@@ -71,9 +71,24 @@ serve(async (req) => {
       throw updateError
     }
 
-    // Se o pagamento foi aprovado, atualiza o pedido
+    // Se o pagamento foi aprovado, atualiza o pedido e integra com OMIE
     if (status === 'approved') {
-      const { error: orderError } = await supabase
+      // Busca dados do pedido e cliente
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          profiles:user_id (
+            *
+          )
+        `)
+        .eq('id', orderId)
+        .single()
+
+      if (orderError) throw orderError
+
+      // Atualiza status do pedido
+      const { error: orderUpdateError } = await supabase
         .from('orders')
         .update({
           status: 'paid',
@@ -81,14 +96,74 @@ serve(async (req) => {
         })
         .eq('id', orderId)
 
-      if (orderError) {
-        throw orderError
-      }
+      if (orderUpdateError) throw orderUpdateError
 
-      // Chama a função para sincronizar com o Omie
-      await supabase.functions.invoke('omie-integration', {
-        body: { action: 'sync_order', order_id: orderId }
-      })
+      // Integração com OMIE
+      if (orderData) {
+        try {
+          // Primeiro verifica/cadastra cliente no OMIE
+          const customerResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/omie-customer`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              },
+              body: JSON.stringify({
+                user_id: orderData.user_id,
+                profile: orderData.profiles
+              })
+            }
+          )
+
+          if (!customerResponse.ok) {
+            throw new Error('Erro ao processar cliente no OMIE')
+          }
+
+          const customerData = await customerResponse.json()
+          console.log('Cliente processado no OMIE:', customerData)
+
+          // Depois cria pedido no OMIE
+          const omieResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/omie-integration`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              },
+              body: JSON.stringify({
+                action: 'sync_order',
+                order_id: orderId,
+                payment_data: {
+                  method: paymentData.payment_type_id,
+                  transaction_id: paymentData.id,
+                  paid_amount: paymentData.transaction_amount
+                }
+              })
+            }
+          )
+
+          if (!omieResponse.ok) {
+            throw new Error('Erro ao sincronizar com OMIE')
+          }
+
+          console.log('Pedido sincronizado com OMIE com sucesso')
+        } catch (omieError) {
+          console.error('Erro na integração com OMIE:', omieError)
+          
+          // Registra erro na sincronização
+          await supabase
+            .from('orders')
+            .update({
+              omie_sync_errors: orderData.omie_sync_errors ? 
+                [...orderData.omie_sync_errors, omieError.message] : 
+                [omieError.message]
+            })
+            .eq('id', orderId)
+        }
+      }
     }
 
     return new Response(
