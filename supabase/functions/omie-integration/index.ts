@@ -60,7 +60,6 @@ serve(async (req) => {
           tags: ["ecommerce", "cliente_ativo"],
           recomendacoes: {
             tipo_distribuicao: "1",
-            regime_tributario: "1",
             gerar_boletos: "N"
           }
         }]
