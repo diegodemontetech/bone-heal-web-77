@@ -56,7 +56,7 @@ serve(async (req) => {
           ...clienteExistente,
           inativo: "N",
           pessoa_fisica: clienteExistente.cnpj_cpf?.length === 11 ? "S" : "N",
-          contribuinte: "2",
+          contribuinte: "N", // N = Não contribuinte
           tipo_atividade: "1", // 1 = Comercial
           tags: ["ecommerce", "cliente_ativo"],
           recomendacoes: {
