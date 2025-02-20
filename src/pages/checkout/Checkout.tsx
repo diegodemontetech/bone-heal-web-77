@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
@@ -7,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { format, addDays } from "date-fns";
 import DeliveryInformation from "@/components/checkout/DeliveryInformation";
 import OrderTotal from "@/components/checkout/OrderTotal";
 
@@ -22,6 +22,7 @@ const Checkout = () => {
   const [voucherLoading, setVoucherLoading] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [discount, setDiscount] = useState(0);
+  const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
 
   // Carregar CEP do perfil quando logado
   useEffect(() => {
@@ -43,6 +44,11 @@ const Checkout = () => {
     loadUserProfile();
   }, [session]);
 
+  const calculateDeliveryDate = (shippingDays: number) => {
+    const date = addDays(new Date(), shippingDays);
+    setDeliveryDate(date);
+  };
+
   const calculateShipping = async (zip: string) => {
     if (!zip || zip.length !== 8) {
       toast.error("Por favor, insira um CEP válido");
@@ -54,7 +60,7 @@ const Checkout = () => {
     try {
       const { data: shippingRate, error } = await supabase
         .from('shipping_rates')
-        .select('rate')
+        .select('rate, delivery_days')
         .eq('state', 'SP')
         .single();
 
@@ -62,6 +68,7 @@ const Checkout = () => {
 
       if (shippingRate) {
         setShippingFee(shippingRate.rate);
+        calculateDeliveryDate(shippingRate.delivery_days);
         
         if (appliedVoucher) {
           applyVoucherDiscount(appliedVoucher, shippingRate.rate);
@@ -198,7 +205,63 @@ const Checkout = () => {
     }
   };
 
+  const listenToPaymentStatus = async (orderId: string) => {
+    const channel = supabase
+      .channel('payment-status')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `id=eq.${orderId}`,
+        },
+        (payload) => {
+          const status = payload.new.status;
+          if (status === 'paid') {
+            toast.success('Pagamento confirmado! Seu pedido está sendo processado.');
+            navigate(`/orders`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const openCheckoutPopup = (url: string, orderId: string) => {
+    const width = 900;
+    const height = 600;
+    const left = (window.innerWidth - width) / 2;
+    const top = (window.innerHeight - height) / 2;
+
+    const popup = window.open(
+      url,
+      'MercadoPago',
+      `width=${width},height=${height},top=${top},left=${left}`
+    );
+
+    // Iniciar monitoramento do status do pagamento
+    listenToPaymentStatus(orderId);
+
+    // Verificar se o popup foi fechado
+    const checkPopup = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(checkPopup);
+        setLoading(false);
+      }
+    }, 1000);
+  };
+
   const handleCheckout = async () => {
+    if (!cartItems.length) {
+      toast.error("Seu carrinho está vazio");
+      navigate("/products");
+      return;
+    }
+
     if (!session?.user) {
       toast.error("Por favor, faça login para continuar");
       navigate("/login");
@@ -269,12 +332,11 @@ const Checkout = () => {
       }
 
       clear();
-      window.location.href = data.init_point;
+      openCheckoutPopup(data.init_point, orderId);
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
       toast.error("Erro ao processar pagamento. Por favor, tente novamente.");
-    } finally {
       setLoading(false);
     }
   };
@@ -312,6 +374,14 @@ const Checkout = () => {
               setDiscount(0);
             }}
           />
+          
+          {deliveryDate && (
+            <div className="bg-white p-4 rounded-lg shadow">
+              <p className="text-sm text-gray-600">
+                Previsão de entrega: {format(deliveryDate, "dd 'de' MMMM")}
+              </p>
+            </div>
+          )}
         </div>
 
         <OrderTotal
@@ -322,6 +392,7 @@ const Checkout = () => {
           isLoggedIn={!!session}
           hasZipCode={!!zipCode}
           onCheckout={handleCheckout}
+          deliveryDate={deliveryDate}
         />
       </div>
     </div>

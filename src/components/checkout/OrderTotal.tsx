@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import OrderSummary from "@/components/orders/OrderSummary";
 import { Loader2 } from "lucide-react";
 import { CartItem } from "@/hooks/use-cart";
+import { format } from "date-fns";
 
 interface OrderTotalProps {
   cartItems: CartItem[];
@@ -13,6 +14,7 @@ interface OrderTotalProps {
   isLoggedIn: boolean;
   hasZipCode: boolean;
   onCheckout: () => void;
+  deliveryDate: Date | null;
 }
 
 const OrderTotal = ({
@@ -23,6 +25,7 @@ const OrderTotal = ({
   isLoggedIn,
   hasZipCode,
   onCheckout,
+  deliveryDate,
 }: OrderTotalProps) => {
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const total = subtotal + shippingFee - discount;
@@ -40,6 +43,12 @@ const OrderTotal = ({
           discount={discount}
           total={total}
         />
+
+        {deliveryDate && (
+          <p className="text-sm text-gray-600 mt-4">
+            Previsão de entrega: {format(deliveryDate, "dd 'de' MMMM")}
+          </p>
+        )}
 
         <Button
           className="w-full mt-6"
