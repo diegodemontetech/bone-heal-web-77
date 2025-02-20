@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -55,8 +56,8 @@ interface DashboardStats {
 const Admin = () => {
   const navigate = useNavigate();
 
-  // Fetch session and profile data
-  const { data: session } = useQuery({
+  // Fetch session data
+  const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: ["session"],
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,10 +65,12 @@ const Admin = () => {
     },
   });
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  // Fetch profile data if we have a session
+  const { data: profile, isLoading: isProfileLoading } = useQuery({
     queryKey: ["profile", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return null;
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -80,10 +83,12 @@ const Admin = () => {
     enabled: !!session?.user?.id,
   });
 
-  // Fetch dashboard statistics
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  // Fetch dashboard stats if user is admin
+  const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: async () => {
+      if (!profile?.is_admin) return null;
+
       // Fetch orders
       const { data: orders } = await supabase
         .from("orders")
@@ -138,13 +143,22 @@ const Admin = () => {
     enabled: !!profile?.is_admin,
   });
 
+  // Redirect to login if no session
   useEffect(() => {
-    if (!session) {
+    if (!isSessionLoading && !session) {
       navigate("/admin/login");
     }
-  }, [session, navigate]);
+  }, [session, isSessionLoading, navigate]);
 
-  if (profileLoading || statsLoading) {
+  // Redirect to home if not admin
+  useEffect(() => {
+    if (!isProfileLoading && profile && !profile.is_admin) {
+      navigate("/");
+    }
+  }, [profile, isProfileLoading, navigate]);
+
+  // Show loading state while checking authentication and admin status
+  if (isSessionLoading || isProfileLoading || (profile?.is_admin && isStatsLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -152,6 +166,7 @@ const Admin = () => {
     );
   }
 
+  // Don't render anything if not admin
   if (!profile?.is_admin) {
     return null;
   }
