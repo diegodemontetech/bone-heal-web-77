@@ -1,100 +1,84 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Buscar sessão atual
-  const { data: session, isLoading: isSessionLoading } = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
-    },
-  });
-
-  // Buscar perfil se houver sessão
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["profile", session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error fetching profile:", error);
-        throw error;
-      }
-      
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
-
-  // Monitorar mudanças na autenticação
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession);
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (event === "SIGNED_IN" && currentSession) {
-          try {
-            const { data: profile, error } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", currentSession.user.id)
-              .maybeSingle();
+        if (session?.user?.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", session.user.id)
+            .maybeSingle();
 
-            if (error) throw error;
-
-            if (profile?.is_admin) {
-              navigate("/admin");
-            } else {
-              toast({
-                title: "Acesso negado",
-                description: "Você não tem permissão para acessar a área administrativa.",
-                variant: "destructive",
-              });
-              await supabase.auth.signOut();
-            }
-          } catch (error: any) {
-            console.error("Error checking admin status:", error);
-            toast({
-              title: "Erro",
-              description: "Ocorreu um erro ao verificar suas permissões.",
-              variant: "destructive",
-            });
+          if (profile?.is_admin) {
+            navigate("/admin");
+            return;
           }
         }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        setIsLoading(false);
       }
-    );
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        try {
+          const { data: profile, error } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          if (profile?.is_admin) {
+            navigate("/admin");
+          } else {
+            toast({
+              title: "Acesso negado",
+              description: "Você não tem permissão para acessar a área administrativa.",
+              variant: "destructive",
+            });
+            await supabase.auth.signOut();
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          toast({
+            title: "Erro",
+            description: "Ocorreu um erro ao verificar suas permissões.",
+            variant: "destructive",
+          });
+        }
+      }
+    });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [navigate, toast]);
 
-  // Redirecionar se já estiver logado como admin
-  useEffect(() => {
-    if (!isSessionLoading && !isProfileLoading && profile?.is_admin) {
-      navigate("/admin");
-    }
-  }, [profile, isSessionLoading, isProfileLoading, navigate]);
-
-  // Mostrar loading enquanto verifica sessão e perfil
-  if (isSessionLoading || (session && isProfileLoading)) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -102,7 +86,6 @@ const AdminLogin = () => {
     );
   }
 
-  // Se não estiver logado como admin, mostrar formulário de login
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">

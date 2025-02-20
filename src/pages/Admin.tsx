@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +18,7 @@ import {
   Star,
   Activity
 } from "lucide-react";
+import { useState } from "react";
 
 // Moved types to the top for better organization
 interface OrderItem {
@@ -55,39 +55,46 @@ interface DashboardStats {
 
 const Admin = () => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  // Fetch session data
-  const { data: session, isLoading: isSessionLoading } = useQuery({
-    queryKey: ["session"],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session;
-    },
-  });
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate("/admin/login");
+          return;
+        }
 
-  // Fetch profile data if we have a session
-  const { data: profile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ["profile", session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .maybeSingle();
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
+        if (!profile?.is_admin) {
+          navigate("/");
+          return;
+        }
 
-  // Fetch dashboard stats if user is admin
+        setIsAdmin(true);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error checking admin status:", error);
+        navigate("/admin/login");
+      }
+    };
+
+    checkAdmin();
+  }, [navigate]);
+
+  // Fetch dashboard stats
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["dashboardStats"],
     queryFn: async () => {
-      if (!profile?.is_admin) return null;
+      if (!isAdmin) return null;
 
       // Fetch orders
       const { data: orders } = await supabase
@@ -140,25 +147,10 @@ const Admin = () => {
 
       return stats;
     },
-    enabled: !!profile?.is_admin,
+    enabled: isAdmin,
   });
 
-  // Redirect to login if no session
-  useEffect(() => {
-    if (!isSessionLoading && !session) {
-      navigate("/admin/login");
-    }
-  }, [session, isSessionLoading, navigate]);
-
-  // Redirect to home if explicitly not admin
-  useEffect(() => {
-    if (!isProfileLoading && profile && profile.is_admin === false) {
-      navigate("/");
-    }
-  }, [profile, isProfileLoading, navigate]);
-
-  // Show loading state while checking authentication and admin status
-  if (isSessionLoading || isProfileLoading || (profile?.is_admin && isStatsLoading)) {
+  if (isLoading || isStatsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -166,8 +158,7 @@ const Admin = () => {
     );
   }
 
-  // Don't render anything if not admin
-  if (!profile?.is_admin) {
+  if (!isAdmin) {
     return null;
   }
 
