@@ -75,8 +75,10 @@ serve(async (req) => {
       .update({ omie_code: codigoClienteOmie.toString() })
       .eq('id', order_data.profiles.id);
 
-    // Agora vamos criar o pedido
-    const codigoPedido = `WEB${Date.now()}`;
+    // Gerar um código de pedido com no máximo 15 caracteres
+    // Usando os últimos 5 dígitos do timestamp para garantir unicidade
+    const timestamp = Date.now().toString().slice(-5);
+    const codigoPedido = `W${timestamp}`; // W + 5 dígitos = 6 caracteres no total
     
     const items = order_data.items.map((item: any, index: number) => ({
       item_pedido: index + 1,
