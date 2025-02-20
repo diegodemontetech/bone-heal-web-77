@@ -1,1 +1,5 @@
+
 project_id = "kurpshcdafxbyqnzxvxu"
+name = "omie-integration"
+version = "1"
+serve = "index.ts"
