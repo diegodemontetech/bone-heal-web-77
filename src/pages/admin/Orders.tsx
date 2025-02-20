@@ -228,7 +228,8 @@ const Orders = () => {
       console.log('Produtos verificados e preparados:', items);
 
       // 4. Preparar dados completos para sincronização
-      const orderDataToSync = {
+      const payload = {
+        action: 'sync_order',
         order_id: orderId,
         order_data: {
           id: order.id,
@@ -242,16 +243,13 @@ const Orders = () => {
         }
       };
 
-      console.log('Dados completos preparados para sincronização:', orderDataToSync);
+      console.log('Payload completo para sincronização:', payload);
 
       // 5. Enviar para sincronização
       const { data: responseData, error: integrationError } = await supabase.functions.invoke(
         'omie-integration',
         {
-          body: {
-            action: 'sync_order',
-            ...orderDataToSync // Enviando order_id e order_data na estrutura correta
-          }
+          body: payload
         }
       );
 
