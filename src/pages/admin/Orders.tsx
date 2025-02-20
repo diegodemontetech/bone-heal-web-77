@@ -114,11 +114,35 @@ const Orders = () => {
     }
   };
 
+  const syncClientWithOmie = async (profileData: any) => {
+    try {
+      const { data: response, error } = await supabase.functions.invoke(
+        'omie-integration',
+        {
+          body: {
+            action: 'sync_client',
+            profile_data: profileData
+          }
+        }
+      );
+
+      if (error) throw error;
+      if (!response?.success) {
+        throw new Error(response?.error || 'Erro ao sincronizar cliente');
+      }
+
+      return response.omie_code;
+    } catch (error: any) {
+      console.error('Erro ao sincronizar cliente:', error);
+      throw new Error(`Erro ao sincronizar cliente: ${error.message}`);
+    }
+  };
+
   const syncOrderWithOmie = async (orderId: string) => {
     try {
       toast.loading('Sincronizando pedido com Omie...');
       
-      // Buscar dados do pedido com todos os detalhes necessários em uma única query
+      // Buscar dados do pedido com todos os detalhes necessários
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .select(`
@@ -139,7 +163,24 @@ const Orders = () => {
         throw new Error('Dados do cliente não encontrados');
       }
 
-      // Buscar detalhes dos produtos para cada item do pedido
+      // Se o cliente não tiver código Omie, sincronizar primeiro
+      if (!order.profiles.omie_code) {
+        console.log('Cliente sem código Omie, sincronizando...');
+        const omieCode = await syncClientWithOmie(order.profiles);
+        order.profiles.omie_code = omieCode;
+        
+        // Atualizar o código Omie do cliente no banco
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ omie_code: omieCode })
+          .eq('id', order.profiles.id);
+
+        if (updateError) {
+          throw new Error(`Erro ao atualizar código Omie do cliente: ${updateError.message}`);
+        }
+      }
+
+      // Buscar detalhes dos produtos
       const items = await Promise.all(
         order.items.map(async (item: any) => {
           const { data: product } = await supabase
@@ -150,6 +191,10 @@ const Orders = () => {
           
           if (!product) {
             throw new Error(`Produto não encontrado: ${item.product_id}`);
+          }
+          
+          if (!product.omie_code) {
+            throw new Error(`Produto ${product.name} não possui código Omie`);
           }
           
           return {
@@ -197,7 +242,6 @@ const Orders = () => {
       console.log('Resposta da integração:', responseData);
 
       if (integrationError) {
-        console.error('Erro na integração:', integrationError);
         throw new Error(`Erro na integração: ${integrationError.message}`);
       }
 
