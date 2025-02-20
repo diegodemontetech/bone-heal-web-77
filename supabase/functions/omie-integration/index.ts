@@ -18,10 +18,19 @@ serve(async (req) => {
     console.log('Raw request body:', rawBody);
 
     // Parse do JSON e log dos dados recebidos
-    const requestData = JSON.parse(rawBody);
-    console.log('Dados recebidos:', JSON.stringify(requestData, null, 2));
+    let requestData;
+    try {
+      requestData = JSON.parse(rawBody);
+      console.log('Request data parsed:', requestData);
+    } catch (e) {
+      console.error('Erro ao parsear JSON:', e);
+      throw new Error(`Erro ao parsear JSON do request: ${e.message}`);
+    }
 
     const { action } = requestData;
+
+    console.log('Action recebida:', action);
+    console.log('Dados completos:', JSON.stringify(requestData, null, 2));
 
     if (action === 'sync_client') {
       return await handleClientSync(requestData);
@@ -128,6 +137,8 @@ async function handleClientSync(requestData: any) {
 
 async function handleOrderSync(requestData: any) {
   console.log('Iniciando sincronização de pedido...');
+  console.log('Dados recebidos em handleOrderSync:', JSON.stringify(requestData, null, 2));
+
   const { order_id, order_data } = requestData;
 
   if (!order_id) {
@@ -135,11 +146,13 @@ async function handleOrderSync(requestData: any) {
   }
 
   if (!order_data) {
-    console.error('Dados do pedido ausentes para:', order_id);
+    console.error('Dados do pedido ausentes. Payload completo:', requestData);
     throw new Error('Dados do pedido não fornecidos');
   }
 
-  console.log('Validando dados do pedido:', order_data);
+  console.log('Dados do pedido:', order_data);
+  console.log('Perfil do cliente:', order_data.profiles);
+  console.log('Items do pedido:', order_data.items);
 
   if (!order_data.profiles) {
     console.error('Dados do cliente ausentes no pedido:', order_id);
@@ -184,7 +197,7 @@ async function handleOrderSync(requestData: any) {
     }
   };
 
-  console.log('Dados preparados para Omie:', omieOrderData);
+  console.log('Dados preparados para Omie:', JSON.stringify(omieOrderData, null, 2));
 
   try {
     // Enviar para o Omie
