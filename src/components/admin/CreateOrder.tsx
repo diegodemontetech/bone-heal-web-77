@@ -20,39 +20,29 @@ import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 
 interface CreateOrderProps {
   onCancel: () => void;
 }
 
+const TEST_CUSTOMER = {
+  id: "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3", // Usando o ID do seu usuário admin
+  full_name: "Cliente Teste",
+  omie_code: "12345678",
+  cpf: "12345678900",
+  address: "Rua Teste, 123",
+  city: "São Paulo",
+  state: "SP",
+  zip_code: "01234567",
+  phone: "11999999999"
+};
+
 const CreateOrder = ({ onCancel }: CreateOrderProps) => {
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(TEST_CUSTOMER);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Buscar clientes
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ["customers", search],
-    queryFn: async () => {
-      if (!search) return [];
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .ilike("full_name", `%${search}%`)
-        .limit(10);
-
-      if (error) {
-        console.error("Error fetching customers:", error);
-        return [];
-      }
-      
-      return data || [];
-    },
-    enabled: !!search,
-  });
+  const navigate = useNavigate();
 
   // Buscar produtos
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
@@ -78,14 +68,9 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   };
 
-  // Criar pedido
+  // Criar pedido e redirecionar para pagamento
   const handleCreateOrder = async () => {
     try {
-      if (!selectedCustomer) {
-        toast.error("Selecione um cliente");
-        return;
-      }
-
       if (selectedProducts.length === 0) {
         toast.error("Adicione pelo menos um produto");
         return;
@@ -98,22 +83,74 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         product_id: product.id,
         name: product.name,
         quantity: product.quantity,
-        price: product.price
+        price: product.price,
+        omie_code: product.omie_code
       }));
 
+      const total = calculateTotal();
+
       // Criar pedido
-      const { error: orderError } = await supabase.from("orders").insert({
-        user_id: selectedCustomer.id,
-        items: orderItems,
-        total_amount: calculateTotal(),
-        status: "pending",
-        omie_status: "novo"
-      });
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          user_id: selectedCustomer.id,
+          items: orderItems,
+          total_amount: total,
+          subtotal: total,
+          status: "pending",
+          omie_status: "novo",
+          shipping_address: {
+            address: selectedCustomer.address,
+            city: selectedCustomer.city,
+            state: selectedCustomer.state,
+            zip_code: selectedCustomer.zip_code
+          }
+        })
+        .select()
+        .single();
 
       if (orderError) throw orderError;
 
+      // Criar preferência de pagamento no Mercado Pago
+      const { data: prefData, error: prefError } = await supabase.functions.invoke(
+        'mercadopago-checkout',
+        {
+          body: {
+            order_id: order.id,
+            items: orderItems,
+            payer: {
+              name: selectedCustomer.full_name,
+              email: "test_user_123@testuser.com", // Email de teste
+              identification: {
+                type: "CPF",
+                number: selectedCustomer.cpf
+              }
+            }
+          }
+        }
+      );
+
+      if (prefError) throw prefError;
+
+      // Atualizar pedido com ID da preferência
+      await supabase
+        .from("orders")
+        .update({
+          mp_preference_id: prefData.preferenceId
+        })
+        .eq("id", order.id);
+
       toast.success("Pedido criado com sucesso!");
-      onCancel();
+      
+      // Redirecionar para página do pedido com link de pagamento
+      navigate(`/orders/${order.id}`, { 
+        state: { 
+          showPaymentButton: true,
+          paymentMethod: "credit_card",
+          orderTotal: total
+        }
+      });
+      
     } catch (error: any) {
       console.error("Error creating order:", error);
       toast.error("Erro ao criar pedido");
@@ -121,6 +158,16 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       setLoading(false);
     }
   };
+
+  // Auto-selecionar primeiro produto ao carregar
+  useEffect(() => {
+    if (products.length > 0 && selectedProducts.length === 0) {
+      setSelectedProducts([{
+        ...products[0],
+        quantity: 1
+      }]);
+    }
+  }, [products]);
 
   return (
     <div className="container max-w-4xl mx-auto">
@@ -130,59 +177,14 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           <CardContent className="p-6 space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">Cliente</label>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="w-full justify-between"
-                  >
-                    {selectedCustomer
-                      ? selectedCustomer.full_name
-                      : "Selecione um cliente..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
-                  <Command>
-                    <CommandInput
-                      placeholder="Buscar cliente..."
-                      value={search}
-                      onValueChange={setSearch}
-                    />
-                    <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      {isLoadingCustomers ? (
-                        <div className="flex justify-center p-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        </div>
-                      ) : (
-                        customers.map((customer) => (
-                          <CommandItem
-                            key={customer.id}
-                            value={customer.id}
-                            onSelect={() => {
-                              setSelectedCustomer(customer);
-                              setOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedCustomer?.id === customer.id
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                            />
-                            {customer.full_name}
-                          </CommandItem>
-                        ))
-                      )}
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <div className="p-3 border rounded bg-gray-50">
+                <p className="font-medium">{TEST_CUSTOMER.full_name}</p>
+                <p className="text-sm text-gray-600">{TEST_CUSTOMER.phone}</p>
+                <p className="text-sm text-gray-600">{TEST_CUSTOMER.address}</p>
+                <p className="text-sm text-gray-600">
+                  {TEST_CUSTOMER.city} - {TEST_CUSTOMER.state}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -267,7 +269,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                 <Button
                   className="w-full"
                   onClick={handleCreateOrder}
-                  disabled={loading || !selectedCustomer || selectedProducts.length === 0}
+                  disabled={loading || selectedProducts.length === 0}
                 >
                   {loading ? (
                     <>
