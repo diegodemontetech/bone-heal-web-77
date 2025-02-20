@@ -16,11 +16,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import OrderSummary from "@/components/orders/OrderSummary";
 
 interface CreateOrderProps {
   onCancel: () => void;
@@ -31,8 +30,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
-  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  const [shippingFee, setShippingFee] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   // Buscar clientes
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
@@ -63,6 +61,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       const { data, error } = await supabase
         .from("products")
         .select("*")
+        .eq('active', true)
         .order("name");
 
       if (error) {
@@ -76,39 +75,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   // Calcular total
   const calculateTotal = () => {
-    const subtotal = selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    return subtotal + shippingFee;
-  };
-
-  const calculateSubtotal = () => {
     return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  };
-
-  // Calcular frete quando cliente ou produtos são alterados
-  const calculateShipping = async () => {
-    if (!selectedCustomer?.zip_code || selectedProducts.length === 0) return;
-
-    setIsCalculatingShipping(true);
-    try {
-      const { data: shipping, error } = await supabase.functions.invoke(
-        "omie-integration",
-        {
-          body: {
-            action: "calculate_shipping",
-            zip_code: selectedCustomer.zip_code,
-            items: selectedProducts,
-          },
-        }
-      );
-
-      if (error) throw error;
-      setShippingFee(shipping?.value || 0);
-    } catch (error) {
-      console.error("Error calculating shipping:", error);
-      toast.error("Erro ao calcular frete");
-    } finally {
-      setIsCalculatingShipping(false);
-    }
   };
 
   // Criar pedido
@@ -124,14 +91,23 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return;
       }
 
+      setLoading(true);
+
+      // Preparar itens do pedido
+      const orderItems = selectedProducts.map(product => ({
+        product_id: product.id,
+        name: product.name,
+        quantity: product.quantity,
+        price: product.price
+      }));
+
       // Criar pedido
       const { error: orderError } = await supabase.from("orders").insert({
         user_id: selectedCustomer.id,
-        items: selectedProducts,
-        subtotal: calculateSubtotal(),
-        shipping_fee: shippingFee,
+        items: orderItems,
         total_amount: calculateTotal(),
         status: "pending",
+        omie_status: "novo"
       });
 
       if (orderError) throw orderError;
@@ -141,6 +117,8 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     } catch (error: any) {
       console.error("Error creating order:", error);
       toast.error("Erro ao criar pedido");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -187,7 +165,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                             onSelect={() => {
                               setSelectedCustomer(customer);
                               setOpen(false);
-                              calculateShipping();
                             }}
                           >
                             <Check
@@ -224,7 +201,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                       <div>
                         <h3 className="font-medium">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {formatCurrency(product.price)}
+                          R$ {product.price.toFixed(2)}
                         </p>
                       </div>
                       <Input
@@ -232,7 +209,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                         min="0"
                         className="w-20"
                         value={
-                          selectedProducts.find((p) => p.product_id === product.id)
+                          selectedProducts.find((p) => p.id === product.id)
                             ?.quantity || 0
                         }
                         onChange={(e) => {
@@ -240,11 +217,11 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                           if (quantity > 0) {
                             setSelectedProducts((prev) => {
                               const existing = prev.find(
-                                (p) => p.product_id === product.id
+                                (p) => p.id === product.id
                               );
                               if (existing) {
                                 return prev.map((p) =>
-                                  p.product_id === product.id
+                                  p.id === product.id
                                     ? { ...p, quantity }
                                     : p
                                 );
@@ -252,19 +229,15 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                               return [
                                 ...prev,
                                 {
-                                  product_id: product.id,
-                                  name: product.name,
-                                  price: product.price,
+                                  ...product,
                                   quantity,
                                 },
                               ];
                             });
-                            calculateShipping();
                           } else {
                             setSelectedProducts((prev) =>
-                              prev.filter((p) => p.product_id !== product.id)
+                              prev.filter((p) => p.id !== product.id)
                             );
-                            calculateShipping();
                           }
                         }}
                       />
@@ -280,35 +253,40 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         <Card>
           <CardContent className="p-6">
             <h2 className="text-lg font-semibold mb-4">Resumo do Pedido</h2>
-            <OrderSummary
-              items={selectedProducts}
-              subtotal={calculateSubtotal()}
-              shippingFee={shippingFee}
-              total={calculateTotal()}
-            />
-
-            {isCalculatingShipping && (
-              <div className="flex items-center justify-center py-2">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                <span className="text-sm">Calculando frete...</span>
+            <div className="space-y-4">
+              <div className="border-t pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Total</span>
+                  <span className="font-bold">
+                    R$ {calculateTotal().toFixed(2)}
+                  </span>
+                </div>
               </div>
-            )}
 
-            <div className="mt-6 space-y-4">
-              <Button
-                className="w-full"
-                onClick={handleCreateOrder}
-                disabled={!selectedCustomer || selectedProducts.length === 0}
-              >
-                Criar Pedido
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={onCancel}
-              >
-                Cancelar
-              </Button>
+              <div className="space-y-4">
+                <Button
+                  className="w-full"
+                  onClick={handleCreateOrder}
+                  disabled={loading || !selectedCustomer || selectedProducts.length === 0}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Criando Pedido...
+                    </>
+                  ) : (
+                    'Criar Pedido'
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={onCancel}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -8,18 +9,16 @@ import AdminLayout from "@/components/admin/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Package, Truck, CheckCircle2, AlertCircle, DollarSign } from "lucide-react";
-import { format, addDays, isAfter } from "date-fns";
+import { Plus, Calendar, Package, Truck, CheckCircle2, AlertCircle } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import CreateOrder from "@/components/admin/CreateOrder";
 
 const COLUMNS = [
-  { id: 'pending', title: 'Pendente', icon: Calendar },
-  { id: 'paid', title: 'Pago', icon: DollarSign },
-  { id: 'invoiced', title: 'Faturado', icon: Package },
-  { id: 'shipped', title: 'Enviado', icon: Truck },
-  { id: 'delivered', title: 'Entregue', icon: CheckCircle2 },
-  { id: 'canceled', title: 'Cancelado', icon: AlertCircle }
+  { id: 'novo', title: 'Novo', icon: Calendar },
+  { id: 'sincronizando', title: 'Sincronizando', icon: Package },
+  { id: 'sincronizado', title: 'Sincronizado', icon: CheckCircle2 },
+  { id: 'cancelado', title: 'Cancelado', icon: AlertCircle }
 ];
 
 const Orders = () => {
@@ -56,7 +55,8 @@ const Orders = () => {
           profiles:user_id (
             full_name,
             phone,
-            zip_code
+            zip_code,
+            omie_code
           )
         `)
         .order("created_at", { ascending: false });
@@ -67,33 +67,9 @@ const Orders = () => {
     enabled: !!profile?.is_admin,
   });
 
-  // Verificar pedidos pendentes antigos
-  useEffect(() => {
-    const checkPendingOrders = async () => {
-      if (!orders) return;
-
-      const fiveDaysAgo = addDays(new Date(), -5);
-      
-      orders.forEach(async (order) => {
-        if (
-          order.status === 'pending' && 
-          isAfter(new Date(), addDays(new Date(order.created_at), 5))
-        ) {
-          await handleUpdateOrderStatus(order.id, 'canceled');
-          toast.info(`Pedido ${order.id.slice(0,8)} cancelado por falta de pagamento`);
-        }
-      });
-    };
-
-    checkPendingOrders();
-    const interval = setInterval(checkPendingOrders, 1000 * 60 * 60); // Checar a cada hora
-    
-    return () => clearInterval(interval);
-  }, [orders]);
-
   useEffect(() => {
     if (!profileLoading && !profile?.is_admin) {
-      navigate("/orders");
+      navigate("/");
     }
   }, [profileLoading, profile, navigate]);
 
@@ -101,7 +77,7 @@ const Orders = () => {
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ status: newStatus })
+        .update({ omie_status: newStatus })
         .eq('id', orderId);
 
       if (error) throw error;
@@ -114,62 +90,10 @@ const Orders = () => {
     }
   };
 
-  const checkAndSyncClient = async (profile: any) => {
-    try {
-      console.log('Verificando cliente:', profile);
-      
-      if (!profile) {
-        throw new Error('Dados do cliente não encontrados');
-      }
-
-      // Se já tem código Omie, retorna
-      if (profile.omie_code) {
-        console.log('Cliente já possui código Omie:', profile.omie_code);
-        return profile.omie_code;
-      }
-
-      console.log('Cliente não possui código Omie, iniciando sincronização...');
-      
-      // Sincronizar com Omie
-      const { data: response, error } = await supabase.functions.invoke(
-        'omie-integration',
-        {
-          body: {
-            action: 'sync_client',
-            profile_data: profile
-          }
-        }
-      );
-
-      if (error) throw error;
-      
-      if (!response?.success || !response?.omie_code) {
-        throw new Error(response?.error || 'Erro ao sincronizar cliente');
-      }
-
-      // Atualizar o código Omie do cliente no banco
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ omie_code: response.omie_code })
-        .eq('id', profile.id);
-
-      if (updateError) {
-        throw new Error(`Erro ao atualizar código Omie do cliente: ${updateError.message}`);
-      }
-
-      console.log('Cliente sincronizado com sucesso, código Omie:', response.omie_code);
-      return response.omie_code;
-    } catch (error: any) {
-      console.error('Erro ao verificar/sincronizar cliente:', error);
-      throw error;
-    }
-  };
-
   const syncOrderWithOmie = async (orderId: string) => {
     try {
       toast.loading('Sincronizando pedido com Omie...');
       
-      // 1. Buscar dados do pedido com todos os detalhes necessários
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .select(`
@@ -185,21 +109,15 @@ const Orders = () => {
 
       console.log('Dados do pedido encontrados:', order);
 
-      // 2. Verificar e sincronizar cliente
       if (!order.profiles) {
         throw new Error('Perfil do cliente não encontrado para o pedido');
       }
 
-      console.log('Verificando cliente antes da sincronização do pedido...');
-      const omieCode = await checkAndSyncClient(order.profiles);
-      console.log('Código Omie do cliente confirmado:', omieCode);
-
-      // 3. Verificar e preparar produtos
-      console.log('Verificando produtos do pedido...');
       if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
         throw new Error('Pedido não possui itens');
       }
 
+      // Buscar dados completos dos produtos
       const items = await Promise.all(
         order.items.map(async (item: any) => {
           const { data: product, error: productError } = await supabase
@@ -225,35 +143,26 @@ const Orders = () => {
         })
       );
 
-      console.log('Produtos verificados e preparados:', items);
-
-      // 4. Preparar dados completos para sincronização
+      // Preparar payload para a edge function
       const payload = {
         action: 'sync_order',
         order_id: orderId,
         order_data: {
           id: order.id,
           items: items,
-          shipping_fee: order.shipping_fee || 0,
           total_amount: order.total_amount,
-          profiles: {
-            ...order.profiles,
-            omie_code: omieCode
-          }
+          profiles: order.profiles
         }
       };
 
-      console.log('Payload completo para sincronização:', payload);
+      console.log('Payload para sincronização:', payload);
 
-      // 5. Enviar para sincronização
       const { data: responseData, error: integrationError } = await supabase.functions.invoke(
         'omie-integration',
         {
           body: payload
         }
       );
-
-      console.log('Resposta da sincronização:', responseData);
 
       if (integrationError) {
         throw new Error(`Erro na integração: ${integrationError.message}`);
@@ -263,14 +172,13 @@ const Orders = () => {
         throw new Error(responseData?.error || 'Erro desconhecido na sincronização');
       }
 
-      // 6. Atualizar status do pedido
+      // Atualizar status do pedido
       const { error: updateError } = await supabase
         .from('orders')
         .update({
-          status: 'invoiced',
           omie_status: 'sincronizado',
-          omie_last_update: new Date().toISOString(),
-          omie_order_id: responseData.omie_order_id
+          omie_order_id: responseData.omie_order_id,
+          omie_last_update: new Date().toISOString()
         })
         .eq('id', orderId);
 
@@ -294,28 +202,23 @@ const Orders = () => {
     const { draggableId, destination } = result;
     const newStatus = destination.droppableId;
 
-    if (newStatus === 'invoiced') {
+    if (newStatus === 'sincronizando') {
       await syncOrderWithOmie(draggableId);
+    } else {
+      await handleUpdateOrderStatus(draggableId, newStatus);
     }
-
-    await handleUpdateOrderStatus(draggableId, newStatus);
   };
 
   const getOrdersByStatus = (status: string) => {
-    return orders?.filter(order => 
-      status === 'pending' ? ['pending', 'awaiting_payment'].includes(order.status)
-      : order.status === status
-    ) || [];
+    return orders?.filter(order => order.omie_status === status) || [];
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 border-yellow-200';
-      case 'paid': return 'bg-green-100 border-green-200';
-      case 'invoiced': return 'bg-blue-100 border-blue-200';
-      case 'shipped': return 'bg-purple-100 border-purple-200';
-      case 'delivered': return 'bg-emerald-100 border-emerald-200';
-      case 'canceled': return 'bg-red-100 border-red-200';
+      case 'novo': return 'bg-yellow-100 border-yellow-200';
+      case 'sincronizando': return 'bg-blue-100 border-blue-200';
+      case 'sincronizado': return 'bg-green-100 border-green-200';
+      case 'cancelado': return 'bg-red-100 border-red-200';
       default: return 'bg-gray-100 border-gray-200';
     }
   };
@@ -351,7 +254,7 @@ const Orders = () => {
 
               <TabsContent value="kanban">
                 <DragDropContext onDragEnd={onDragEnd}>
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {COLUMNS.map(column => (
                       <div key={column.id} className="flex flex-col">
                         <div className="flex items-center gap-2 mb-3 p-2 bg-gray-100 rounded">
@@ -380,7 +283,7 @@ const Orders = () => {
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
                                       {...provided.dragHandleProps}
-                                      className={`p-3 mb-2 rounded border ${getStatusColor(order.status)} hover:shadow-md transition-shadow`}
+                                      className={`p-3 mb-2 rounded border ${getStatusColor(order.omie_status)} hover:shadow-md transition-shadow`}
                                     >
                                       <p className="font-medium">
                                         Pedido #{order.id.slice(0, 8)}
