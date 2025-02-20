@@ -43,16 +43,13 @@ serve(async (req) => {
 
     const { action, order_id, order_data } = requestData;
 
-    if (!requestData) {
-      throw new Error('Nenhum dado recebido na requisição');
+    if (!action || !order_id) {
+      throw new Error('Ação ou ID do pedido não fornecido');
     }
 
-    if (!order_data) {
-      throw new Error('Dados do pedido não fornecidos. Request data: ' + JSON.stringify(requestData));
-    }
-
-    if (!order_data.profiles) {
-      throw new Error('Dados do cliente não encontrados. Order data: ' + JSON.stringify(order_data));
+    if (!order_data || !order_data.profiles) {
+      console.error('Dados do pedido inválidos:', order_data);
+      throw new Error('Dados do pedido inválidos ou incompletos');
     }
 
     // Validar dados obrigatórios do cliente
@@ -76,7 +73,7 @@ serve(async (req) => {
     // Verificar se todos os produtos têm código do Omie
     const invalidProducts = order_data.items.filter(item => !item.omie_code);
     if (invalidProducts.length > 0) {
-      throw new Error(`Produtos sem código Omie: ${invalidProducts.map(p => p.name).join(', ')}`);
+      throw new Error(`Produtos sem código Omie: ${invalidProducts.map(p => p.name || p.product_id).join(', ')}`);
     }
 
     // Preparar dados para o Omie
