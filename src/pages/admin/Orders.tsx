@@ -108,9 +108,61 @@ const Orders = () => {
       if (error) throw error;
       
       refetch();
+      toast.success('Status atualizado com sucesso');
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar status do pedido');
+    }
+  };
+
+  const syncOrderWithOmie = async (orderId: string) => {
+    try {
+      toast.loading('Sincronizando pedido com Omie...');
+      
+      // Primeiro, verifica se o pedido existe e tem todos os dados necessários
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          profiles:user_id (
+            full_name,
+            phone,
+            zip_code,
+            cpf,
+            cnpj,
+            address,
+            city,
+            state,
+            neighborhood
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) throw orderError;
+      
+      if (!order.profiles) {
+        throw new Error('Dados do cliente incompletos');
+      }
+
+      // Chama a função de integração
+      const { error } = await supabase.functions.invoke('omie-integration', {
+        body: { 
+          action: 'sync_order',
+          order_id: orderId,
+          order_data: order
+        }
+      });
+
+      if (error) throw error;
+
+      toast.dismiss();
+      toast.success('Pedido sincronizado com sucesso');
+      refetch();
+    } catch (error: any) {
+      console.error('Erro ao sincronizar pedido:', error);
+      toast.dismiss();
+      toast.error(`Erro ao sincronizar pedido: ${error.message}`);
     }
   };
 
@@ -119,6 +171,10 @@ const Orders = () => {
 
     const { draggableId, destination } = result;
     const newStatus = destination.droppableId;
+
+    if (newStatus === 'invoiced') {
+      await syncOrderWithOmie(draggableId);
+    }
 
     await handleUpdateOrderStatus(draggableId, newStatus);
   };
