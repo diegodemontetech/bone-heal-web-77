@@ -10,7 +10,6 @@ const corsHeaders = {
 console.log("Omie Integration Function Started");
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,26 +26,58 @@ serve(async (req) => {
       throw new Error('Missing required order data');
     }
 
-    // Preparar os dados do cliente
-    const clienteData = {
-      codigo_cliente_omie: order_data.profiles.omie_code,
-      razao_social: order_data.profiles.full_name,
-      cnpj_cpf: order_data.profiles.cpf || order_data.profiles.cnpj,
-      telefone1_numero: order_data.profiles.phone,
-      endereco: order_data.profiles.address,
-      endereco_numero: "S/N",
-      bairro: order_data.profiles.neighborhood || "Centro",
-      estado: order_data.profiles.state,
-      cidade: order_data.profiles.city,
-      cep: order_data.profiles.zip_code,
-      codigo_pais: "1058",
-      email: order_data.profiles.email
+    // Primeiro, vamos cadastrar/atualizar o cliente no Omie
+    const clientPayload = {
+      call: "UpsertCliente",
+      app_key: Deno.env.get("OMIE_APP_KEY"),
+      app_secret: Deno.env.get("OMIE_APP_SECRET"),
+      param: [{
+        codigo_cliente_integracao: order_data.profiles.id,
+        razao_social: order_data.profiles.full_name,
+        cnpj_cpf: order_data.profiles.cpf || order_data.profiles.cnpj,
+        nome_fantasia: order_data.profiles.full_name,
+        telefone1_numero: order_data.profiles.phone,
+        endereco: order_data.profiles.address,
+        endereco_numero: "S/N",
+        bairro: order_data.profiles.neighborhood || "Centro",
+        estado: order_data.profiles.state,
+        cidade: order_data.profiles.city,
+        cep: order_data.profiles.zip_code,
+        codigo_pais: "1058",
+        email: order_data.profiles.email || "cliente@exemplo.com"
+      }]
     };
 
-    // Gerar um código de pedido único para o Omie (usando timestamp)
-    const codigoPedido = `WEB${Date.now()}`;
+    console.log("Sending client request to Omie:", JSON.stringify(clientPayload, null, 2));
 
-    // Preparar os itens do pedido
+    const clientResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(clientPayload)
+    });
+
+    const clientData = await clientResponse.json();
+    console.log("Omie client API response:", clientData);
+
+    if (clientData.faultstring) {
+      throw new Error(`Erro ao cadastrar cliente no Omie: ${clientData.faultstring}`);
+    }
+
+    // Atualizar o código Omie do cliente no Supabase
+    const codigoClienteOmie = clientData.codigo_cliente_omie;
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    await supabase
+      .from('profiles')
+      .update({ omie_code: codigoClienteOmie.toString() })
+      .eq('id', order_data.profiles.id);
+
+    // Agora vamos criar o pedido
+    const codigoPedido = `WEB${Date.now()}`;
+    
     const items = order_data.items.map((item: any, index: number) => ({
       item_pedido: index + 1,
       codigo_produto: item.omie_code,
@@ -55,15 +86,14 @@ serve(async (req) => {
       codigo_item_integracao: `${order_id}_${item.product_id}`
     }));
 
-    // Montar o payload do pedido para o Omie
     const pedidoPayload = {
       call: "IncluirPedido",
       app_key: Deno.env.get("OMIE_APP_KEY"),
       app_secret: Deno.env.get("OMIE_APP_SECRET"),
       param: [{
         cabecalho: {
-          codigo_cliente: parseInt(clienteData.codigo_cliente_omie),
-          codigo_pedido: codigoPedido, // Adicionado código do pedido
+          codigo_cliente: codigoClienteOmie,
+          codigo_pedido: codigoPedido,
           codigo_pedido_integracao: order_id,
           data_previsao: new Date().toISOString().split('T')[0],
           etapa: "10"
@@ -88,31 +118,22 @@ serve(async (req) => {
       }]
     };
 
-    console.log("Sending request to Omie:", JSON.stringify(pedidoPayload, null, 2));
+    console.log("Sending order request to Omie:", JSON.stringify(pedidoPayload, null, 2));
 
-    // Fazer a requisição para a API do Omie
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pedidoPayload)
     });
 
     const omieData = await omieResponse.json();
-    console.log("Omie API response:", omieData);
+    console.log("Omie order API response:", omieData);
 
     if (omieData.faultstring) {
       throw new Error(`Erro na API do Omie: ${omieData.faultstring}`);
     }
 
-    // Atualizar o pedido no Supabase com o ID do Omie
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { error: updateError } = await supabase
+    await supabase
       .from('orders')
       .update({
         omie_order_id: omieData.pedido_id || codigoPedido,
@@ -121,34 +142,23 @@ serve(async (req) => {
       })
       .eq('id', order_id);
 
-    if (updateError) {
-      throw new Error(`Error updating order: ${updateError.message}`);
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
         omie_order_id: omieData.pedido_id || codigoPedido,
         message: 'Order synchronized successfully'
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error("Error in omie-integration function:", error);
-    
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
