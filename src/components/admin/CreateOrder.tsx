@@ -78,13 +78,14 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return;
       }
 
-      // Verificar se todos os produtos têm código Omie
-      const productsWithoutOmieCode = selectedProducts.filter(
-        product => !product.omie_code
+      // Verificação mais rigorosa dos produtos
+      const invalidProducts = selectedProducts.filter(
+        product => !product.omie_code || !product.omie_product_id
       );
 
-      if (productsWithoutOmieCode.length > 0) {
-        toast.error("Alguns produtos não estão sincronizados com o Omie");
+      if (invalidProducts.length > 0) {
+        const productNames = invalidProducts.map(p => p.name).join(", ");
+        toast.error(`Os seguintes produtos não estão sincronizados com o Omie: ${productNames}`);
         return;
       }
 
@@ -95,11 +96,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         name: product.name,
         quantity: product.quantity,
         price: product.price,
-        omie_code: product.omie_code || null, // Garante que sempre teremos um valor, mesmo que null
-        omie_product_id: product.omie_product_id || null // Inclui o ID do produto no Omie
+        omie_code: product.omie_code,
+        omie_product_id: product.omie_product_id
       }));
 
       const total = calculateTotal();
+
+      console.log("Creating order with items:", orderItems); // Debug log
 
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -169,10 +172,15 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   useEffect(() => {
     if (products.length > 0 && selectedProducts.length === 0) {
-      const activeProduct = products.find(p => p.active && p.omie_code);
-      if (activeProduct) {
+      // Procurar por um produto que tenha TODOS os dados do Omie
+      const syncedProduct = products.find(p => 
+        p.active && p.omie_code && p.omie_product_id
+      );
+      
+      if (syncedProduct) {
+        console.log("Selected synced product:", syncedProduct); // Debug log
         setSelectedProducts([{
-          ...activeProduct,
+          ...syncedProduct,
           quantity: 1
         }]);
       }
