@@ -33,7 +33,7 @@ serve(async (req) => {
     for (const omieProduct of omieProducts) {
       try {
         if (!omieProduct.codigo) {
-          console.error('Produto Omie sem código:', omieProduct);
+          console.error('Produto Omie inválido:', omieProduct);
           errorCount++;
           continue;
         }
@@ -41,13 +41,15 @@ serve(async (req) => {
         console.log(`\nProcessando produto Omie:`, {
           codigo: omieProduct.codigo,
           descricao: omieProduct.descricao,
-          valor: omieProduct.valor_unitario,
+          valor_unitario: omieProduct.valor_unitario,
           inativo: omieProduct.inativo
         });
         
         const productData = {
           name: omieProduct.descricao,
-          price: parseFloat(omieProduct.valor_unitario),
+          price: typeof omieProduct.valor_unitario === 'string' ? 
+            parseFloat(omieProduct.valor_unitario.replace(',', '.')) : 
+            omieProduct.valor_unitario,
           omie_code: omieProduct.codigo,
           active: omieProduct.inativo === "N",
           omie_sync: true,
@@ -78,8 +80,10 @@ serve(async (req) => {
             activeNovo: productData.active
           });
 
-          // Só atualiza se houver mudança no preço ou no status de ativo
-          if (existingProduct.price !== productData.price || existingProduct.active !== productData.active) {
+          // Comparando os valores com uma margem de erro pequena para números decimais
+          const priceChanged = Math.abs(existingProduct.price - productData.price) > 0.01;
+          
+          if (priceChanged || existingProduct.active !== productData.active) {
             const { error: updateError } = await supabase
               .from('products')
               .update({
@@ -200,4 +204,3 @@ async function listOmieProducts() {
 
   return data.produtos_cadastro;
 }
-
