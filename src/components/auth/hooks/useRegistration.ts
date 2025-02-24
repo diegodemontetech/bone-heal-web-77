@@ -25,63 +25,72 @@ export const useRegistration = () => {
   });
 
   const handleRegistration = async (data: FormData) => {
-    console.log('Iniciando registro com dados:', data);
+    try {
+      console.log('Iniciando registro com dados:', data);
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
+      // 1. Criar usuário auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+            pessoa_tipo: data.pessoa_tipo,
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('Erro de autenticação:', authError);
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user) {
+        throw new Error("Não foi possível criar a conta");
+      }
+
+      // 2. Criar perfil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert([{
+          id: authData.user.id,
           full_name: data.fullName,
           pessoa_tipo: data.pessoa_tipo,
-        }
+          razao_social: data.razao_social,
+          nome_fantasia: data.nome_fantasia,
+          cpf: data.cpf,
+          cnpj: data.cnpj,
+          address: data.address,
+          address_number: data.address_number,
+          complement: data.complement,
+          neighborhood: data.neighborhood,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zip_code,
+          phone: data.phone,
+          specialty: data.specialty,
+          cro: data.cro,
+          email: data.email
+        }], {
+          onConflict: 'id'
+        });
+
+      if (profileError) {
+        console.error('Erro ao criar perfil:', profileError);
+        // Tentar fazer logout se houver erro na criação do perfil
+        await supabase.auth.signOut();
+        throw new Error("Erro ao criar perfil: " + profileError.message);
       }
-    });
 
-    if (authError) {
-      console.error('Erro de autenticação:', authError);
-      throw new Error(authError.message);
+      console.log('Registro concluído com sucesso');
+      toast.success("Cadastro realizado com sucesso!");
+      navigate('/');
+
+    } catch (error) {
+      console.error('Erro no processo de registro:', error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao registrar usuário');
+      throw error; // Re-throw para que o componente possa tratar o erro
     }
-
-    if (!authData.user) {
-      console.error('Nenhum dado de usuário retornado');
-      throw new Error("Não foi possível criar a conta");
-    }
-
-    console.log('Usuário criado com sucesso, criando perfil...');
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([{
-        id: authData.user.id,
-        full_name: data.fullName,
-        pessoa_tipo: data.pessoa_tipo,
-        razao_social: data.razao_social,
-        nome_fantasia: data.nome_fantasia,
-        cpf: data.cpf,
-        cnpj: data.cnpj,
-        address: data.address,
-        address_number: data.address_number,
-        complement: data.complement,
-        neighborhood: data.neighborhood,
-        city: data.city,
-        state: data.state,
-        zip_code: data.zip_code,
-        phone: data.phone,
-        specialty: data.specialty,
-        cro: data.cro,
-        email: data.email
-      }]);
-
-    if (profileError) {
-      console.error('Erro ao criar perfil:', profileError);
-      await supabase.auth.signOut();
-      throw new Error("Erro ao criar perfil: " + profileError.message);
-    }
-
-    console.log('Registro concluído com sucesso');
-    toast.success("Cadastro realizado com sucesso!");
-    navigate('/');
   };
 
   return {
