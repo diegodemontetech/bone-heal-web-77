@@ -41,17 +41,39 @@ serve(async (req) => {
       .single();
 
     if (orderError || !order) {
-      console.error("Error fetching order:", orderError);
       throw new Error(`Error fetching order: ${orderError?.message || 'Order not found'}`);
     }
 
     console.log("Retrieved order data:", JSON.stringify(order, null, 2));
 
-    if (!order.items || !order.profiles) {
-      throw new Error('Missing required order data: items or profile information');
+    if (!order.profiles) {
+      throw new Error('Profile information not found for order');
     }
 
-    // Verificar cliente existente
+    if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
+      throw new Error('Order does not have any items');
+    }
+
+    // Ensure all required address fields are present
+    if (!order.profiles.address || !order.profiles.city || !order.profiles.state || !order.profiles.zip_code || !order.profiles.neighborhood) {
+      throw new Error('Missing required address information');
+    }
+
+    // Format address fields
+    const formattedAddress = {
+      endereco: order.profiles.address.trim(),
+      endereco_numero: "S/N",
+      complemento: "",
+      bairro: order.profiles.neighborhood.trim(),
+      estado: order.profiles.state.trim().toUpperCase(),
+      cidade: order.profiles.city.trim().toUpperCase(),
+      cep: order.profiles.zip_code.replace(/\D/g, ''),
+      codigo_pais: "1058", // Brasil
+      cidade_ibge: "",
+      estado_ibge: ""
+    };
+
+    // Check existing client
     const existingClientPayload = {
       call: "ConsultarCliente",
       app_key: Deno.env.get("OMIE_APP_KEY"),
@@ -73,7 +95,7 @@ serve(async (req) => {
     console.log("Existing client response:", JSON.stringify(clienteExistente, null, 2));
 
     if (!clienteExistente.faultstring) {
-      // Following the exact structure from documentation for client update
+      // Update existing client with complete address information
       const updatePayload = {
         call: "AlterarCliente",
         app_key: Deno.env.get("OMIE_APP_KEY"),
@@ -86,16 +108,13 @@ serve(async (req) => {
           cnpj_cpf: order.profiles.cnpj || order.profiles.cpf,
           telefone1_ddd: order.profiles.phone?.substring(0, 2) || "",
           telefone1_numero: order.profiles.phone?.substring(2) || "",
-          endereco: order.profiles.address || "",
-          endereco_numero: "S/N",
-          bairro: order.profiles.neighborhood || "",
-          estado: order.profiles.state || "",
-          cidade: `${order.profiles.city?.toUpperCase() || ""} (${order.profiles.state || ""})`,
+          ...formattedAddress,
           codigo_cliente_omie: parseInt(order.profiles.omie_code),
           inativo: "N",
           bloqueado: "N",
           exterior: "N",
           pessoa_fisica: order.profiles.cpf ? "S" : "N",
+          contribuinte: "2",
           optante_simples_nacional: "N",
           tags: ["ecommerce", "cliente_ativo"]
         }]
@@ -216,4 +235,3 @@ serve(async (req) => {
     );
   }
 });
-
