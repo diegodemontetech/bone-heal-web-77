@@ -149,7 +149,7 @@ export default function RegistrationForm() {
         </Alert>
       )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <RegistrationFormFields specialties={specialties || []} />
+        <RegistrationFormFields specialties={specialties || []} form={form} />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Cadastrando..." : "Cadastrar"}
         </Button>
