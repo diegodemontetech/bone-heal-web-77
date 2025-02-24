@@ -29,30 +29,26 @@ const Login = () => {
     },
   });
 
-  // Check if profile exists
+  // Simplified profile check that won't cause recursion
   const checkProfile = async (userId: string) => {
-    console.log('Checking profile for user:', userId);
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name')
         .eq('id', userId)
         .maybeSingle();
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
-        throw new Error('Erro ao buscar perfil');
+        // Não vamos bloquear o login por erro no perfil
+        return null;
       }
 
-      if (!profile) {
-        throw new Error('Perfil não encontrado. Por favor, registre-se primeiro.');
-      }
-
-      console.log('Profile found:', profile);
       return profile;
     } catch (error) {
       console.error('Profile check error:', error);
-      throw error;
+      // Não vamos bloquear o login por erro no perfil
+      return null;
     }
   };
 
@@ -68,7 +64,6 @@ const Login = () => {
       });
 
       if (signInError) {
-        console.error('Sign in error:', signInError);
         throw signInError;
       }
       
@@ -76,9 +71,7 @@ const Login = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      console.log('User authenticated successfully:', data.user.id);
-      
-      // Check if profile exists
+      // Tentar buscar o perfil, mas não bloquear o login se falhar
       await checkProfile(data.user.id);
       
       console.log('Login successful, navigating to home');
@@ -87,28 +80,27 @@ const Login = () => {
 
     } catch (error: any) {
       console.error('Login error:', error);
-      setError(error.message || 'Falha ao fazer login');
-      toast.error(error.message || 'Falha ao fazer login');
+      let errorMessage = 'Falha ao fazer login';
+      
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = 'Email ou senha inválidos';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Por favor, confirme seu email antes de fazer login';
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Check if already logged in
+  // Simplified session check
   React.useEffect(() => {
-    console.log('Checking existing session...');
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Current session:', session);
       if (session?.user) {
-        try {
-          await checkProfile(session.user.id);
-          console.log('Session valid, navigating to home');
-          navigate('/');
-        } catch (error) {
-          console.error('Session profile check error:', error);
-          // If there's an error with the profile, we'll let the user stay on the login page
-        }
+        navigate('/');
       }
     };
 
@@ -210,13 +202,15 @@ const Login = () => {
               <p className="text-sm text-gray-600 mb-4">
                 Crie sua conta agora e tenha acesso a todos os nossos produtos e serviços
               </p>
-              <Link
-                to="/register"
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-purple-600 text-sm font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-              >
-                <UserPlus className="h-4 w-4" />
-                Criar conta
-              </Link>
+              <div>
+                <Link
+                  to="/register"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-purple-600 text-sm font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Criar conta
+                </Link>
+              </div>
             </div>
           </div>
         </div>
