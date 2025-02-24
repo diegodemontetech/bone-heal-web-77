@@ -20,6 +20,7 @@ const formSchema = z.object({
   fullName: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
   cnpj: z.string().min(1, "CPF/CNPJ é obrigatório"),
   address: z.string().min(2, "Endereço deve ter no mínimo 2 caracteres"),
+  omie_city_code: z.string().min(1, "Código da cidade é obrigatório"),
   
   // Optional fields without validation
   cro: z.string().optional(),
@@ -30,20 +31,21 @@ const formSchema = z.object({
   zipCode: z.string().optional(),
   phone: z.string().optional(),
   receiveNews: z.boolean().optional().default(false),
-  
-  // Hidden fields that will be populated during form submission
-  omie_city_code: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const defaultValues: Required<FormData> = {
+const defaultValues: FormData = {
   email: "",
   password: "",
   confirmPassword: "",
   fullName: "",
   cnpj: "",
   address: "",
+  omie_city_code: "",
   cro: "",
   specialty: "",
   city: "",
@@ -52,7 +54,6 @@ const defaultValues: Required<FormData> = {
   zipCode: "",
   phone: "",
   receiveNews: false,
-  omie_city_code: "",
 };
 
 export default function RegistrationForm() {
@@ -88,7 +89,7 @@ export default function RegistrationForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues as FormData,
+    defaultValues,
   });
 
   async function onSubmit(values: FormData) {
@@ -112,7 +113,7 @@ export default function RegistrationForm() {
             zip_code: values.zipCode || '',
             phone: values.phone || '',
             receive_news: values.receiveNews,
-            omie_city_code: values.omie_city_code || '',
+            omie_city_code: values.omie_city_code,
           }
         }
       });
