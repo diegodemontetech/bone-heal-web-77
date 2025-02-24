@@ -75,7 +75,7 @@ const Profile = () => {
     if (!profile?.crm) {
       toast({
         title: "Erro",
-        description: "CRM é obrigatório",
+        description: "CRO Responsável é obrigatório",
         variant: "destructive",
       });
       return;
@@ -155,7 +155,7 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="crm">CRM</Label>
+                <Label htmlFor="crm">CRO Responsável</Label>
                 <Input
                   id="crm"
                   value={profile?.crm || ""}
