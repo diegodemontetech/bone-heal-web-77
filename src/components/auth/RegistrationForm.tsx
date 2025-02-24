@@ -52,7 +52,6 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
-// Define the type explicitly based on the schema
 type FormData = z.infer<typeof formSchema>;
 
 export default function RegistrationForm() {
@@ -97,7 +96,6 @@ export default function RegistrationForm() {
     },
   });
 
-  // Explicitly type the useForm hook with FormData
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -115,7 +113,7 @@ export default function RegistrationForm() {
       zipCode: "",
       phone: "",
       receiveNews: false,
-    } as FormData, // Cast defaultValues to FormData type
+    } satisfies FormData, // Use satisfies instead of type assertion
   });
 
   async function onSubmit(values: FormData) {
