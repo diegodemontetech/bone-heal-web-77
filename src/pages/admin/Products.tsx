@@ -143,7 +143,6 @@ const AdminProducts = () => {
                 <TableHead>Nome</TableHead>
                 <TableHead>Código Omie</TableHead>
                 <TableHead>Preço</TableHead>
-                <TableHead>Estoque</TableHead>
                 <TableHead>Última Atualização</TableHead>
                 <TableHead>Status Omie</TableHead>
                 <TableHead>Ativo</TableHead>
@@ -153,13 +152,13 @@ const AdminProducts = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
               ) : products?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                     Nenhum produto encontrado. Clique em "Novo Produto" para adicionar.
                   </TableCell>
                 </TableRow>
@@ -173,7 +172,6 @@ const AdminProducts = () => {
                         ? `R$ ${product.price.toFixed(2)}`
                         : "Não definido"}
                     </TableCell>
-                    <TableCell>{product.stock || 0}</TableCell>
                     <TableCell>
                       {product.omie_last_update 
                         ? new Date(product.omie_last_update).toLocaleString()
