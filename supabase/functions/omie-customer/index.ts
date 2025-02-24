@@ -1,84 +1,75 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Handle CORS preflight requests
-function handleOptions() {
-  return new Response(null, {
-    headers: corsHeaders
-  })
+const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY')
+const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET')
+
+interface OmieCustomerRequest {
+  profile_id: string
 }
 
-async function handleRequest(req: Request) {
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
   try {
-    const { profile_id } = await req.json()
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    if (!profile_id) {
-      throw new Error('Profile ID is required')
-    }
-
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase environment variables')
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
-
-    // Fetch profile data
-    const { data: profile, error: profileError } = await supabase
+    // Get the profile ID from the request
+    const { profile_id }: OmieCustomerRequest = await req.json()
+    
+    // Fetch the profile data
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('*')
       .eq('id', profile_id)
       .single()
 
-    if (profileError) {
-      throw profileError
-    }
-
-    if (!profile) {
+    if (profileError || !profile) {
       throw new Error('Profile not found')
     }
 
-    // OMIE API credentials
-    const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY')
-    const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET')
-
-    if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
-      throw new Error('Missing OMIE credentials')
-    }
-
-    // Prepare customer data for OMIE
+    // Prepare Omie customer data
     const customerData = {
-      call: 'IncluirCliente',
+      call: "IncluirCliente",
       app_key: OMIE_APP_KEY,
       app_secret: OMIE_APP_SECRET,
       param: [{
+        codigo_cliente_integracao: profile.id,
         razao_social: profile.full_name,
         cnpj_cpf: profile.cnpj || profile.cpf,
+        nome_fantasia: profile.full_name,
+        telefone1_numero: profile.phone?.replace(/\D/g, '') || "",
         email: profile.email,
-        telefone1_ddd: profile.phone?.substring(0, 2) || '',
-        telefone1_numero: profile.phone?.substring(2) || '',
-        endereco: profile.address,
-        endereco_numero: 'S/N',
-        bairro: profile.neighborhood,
+        endereco: profile.address || "",
+        endereco_numero: profile.endereco_numero || "S/N",
+        complemento: profile.complemento || "",
+        bairro: profile.neighborhood || "",
         estado: profile.state,
         cidade: profile.city,
-        cep: profile.zip_code,
-        codigo_cliente_integracao: profile.id,
-        inscricao_estadual: profile.cro || '',
+        cep: profile.zip_code?.replace(/\D/g, '') || "",
+        contribuinte: profile.contribuinte || "2",
+        pessoa_fisica: profile.pessoa_fisica ? "S" : "N",
+        optante_simples_nacional: profile.optante_simples_nacional ? "S" : "N",
+        inativo: profile.inativo ? "S" : "N",
+        bloqueado: profile.bloqueado ? "S" : "N",
+        exterior: profile.exterior ? "S" : "N",
+        tipo_atividade: profile.tipo_atividade || "0",
       }]
     }
 
-    console.log('Sending customer data to OMIE:', JSON.stringify(customerData))
-
-    // Send request to OMIE API
+    // Send request to Omie API
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
       headers: {
@@ -87,61 +78,54 @@ async function handleRequest(req: Request) {
       body: JSON.stringify(customerData)
     })
 
-    const omieData = await omieResponse.json()
+    const omieResult = await omieResponse.json()
+
+    // Log the result
+    console.log('Omie API Response:', omieResult)
 
     if (!omieResponse.ok) {
-      throw new Error(`OMIE API error: ${JSON.stringify(omieData)}`)
+      throw new Error('Failed to create customer in Omie')
     }
 
-    console.log('OMIE response:', omieData)
-
-    // Update profile with OMIE code
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        omie_code: omieData.codigo_cliente_omie?.toString(),
-        omie_sync: true
-      })
-      .eq('id', profile_id)
-
-    if (updateError) {
-      throw updateError
+    // Update the profile with Omie code
+    if (omieResult.codigo_cliente_omie) {
+      await supabaseClient
+        .from('profiles')
+        .update({ 
+          omie_code: omieResult.codigo_cliente_omie.toString(),
+          omie_sync: true 
+        })
+        .eq('id', profile_id)
     }
 
     return new Response(
       JSON.stringify({ 
-        message: 'Customer successfully created in OMIE',
-        omie_code: omieData.codigo_cliente_omie 
+        success: true, 
+        omie_code: omieResult.codigo_cliente_omie,
+        message: 'Customer created successfully in Omie'
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        } 
       }
     )
 
   } catch (error) {
     console.error('Error:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
         status: 400
       }
     )
   }
-}
-
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return handleOptions()
-  }
-
-  if (req.method === 'POST') {
-    return handleRequest(req)
-  }
-
-  return new Response('Method not allowed', {
-    headers: corsHeaders,
-    status: 405
-  })
 })
