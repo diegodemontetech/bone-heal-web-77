@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export interface FormData {
   cpf: string;
   cnpj: string;
   address: string;
-  complemento: string; // Add this field to the interface
+  complemento: string;
   omie_city_code: string;
   cro: string;
   specialty: string;
@@ -70,7 +71,11 @@ export default function RegistrationForm() {
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching specialties:', error);
+        throw error;
+      }
+      console.log('Specialties fetched:', data);
       return data || [];
     }
   });
@@ -105,7 +110,7 @@ export default function RegistrationForm() {
       setLoading(true);
       setError(null);
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      const signUpData = {
         email: values.email,
         password: values.password,
         options: {
@@ -116,6 +121,7 @@ export default function RegistrationForm() {
             razao_social: values.razao_social,
             nome_fantasia: values.nome_fantasia,
             address: values.address,
+            complemento: values.complemento,
             cro: values.cro,
             specialty: values.specialty,
             city: values.city,
@@ -128,10 +134,17 @@ export default function RegistrationForm() {
             pessoa_fisica: values.pessoa_tipo === 'fisica'
           }
         }
-      });
+      };
 
-      if (signUpError) throw signUpError;
-      
+      console.log('Attempting signup with data:', signUpData);
+      const { error: signUpError, data } = await supabase.auth.signUp(signUpData);
+
+      if (signUpError) {
+        console.error('Signup error:', signUpError);
+        throw signUpError;
+      }
+
+      console.log('Signup successful:', data);
       toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
       navigate('/login');
     } catch (error: any) {

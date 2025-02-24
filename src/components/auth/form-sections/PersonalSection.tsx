@@ -28,8 +28,10 @@ interface PersonalSectionProps {
 export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => {
   const pessoaTipo = form.watch('pessoa_tipo');
 
+  console.log('Rendering PersonalSection with specialties:', specialties);
+
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="pessoa_tipo"
@@ -148,15 +150,15 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
         name="specialty"
         rules={{ required: "Especialidade é obrigatória" }}
         render={({ field }) => (
-          <FormItem>
+          <FormItem className="z-50">
             <FormLabel>Especialidade</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Selecione uma especialidade" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 {specialties && specialties.map((specialty) => (
                   <SelectItem key={specialty.id} value={specialty.name}>
                     {specialty.name}
@@ -168,6 +170,21 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
           </FormItem>
         )}
       />
-    </>
+
+      <FormField
+        control={form.control}
+        name="cro"
+        rules={{ required: "CRO é obrigatório" }}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>CRO</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   );
 };
