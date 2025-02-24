@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import RegistrationFormFields from "./RegistrationFormFields";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 const formSchema = z.object({
   pessoa_tipo: z.enum(['fisica', 'juridica'], {
@@ -63,15 +64,16 @@ const formSchema = z.object({
 export type FormData = z.infer<typeof formSchema>;
 
 const RegistrationForm = () => {
+  const navigate = useNavigate();
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       pessoa_tipo: "fisica",
     },
-    mode: "onChange", // Enable real-time validation
+    mode: "onChange",
   });
 
-  const { data: specialties, isLoading, error } = useQuery({
+  const { data: specialties, isLoading: specialtiesLoading, error } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
       console.log('Fetching dental specialties...');
@@ -93,9 +95,67 @@ const RegistrationForm = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log('Form data:', data);
-      // ... rest of your submission logic
+      console.log('Starting registration process with data:', data);
+      
+      // 1. Create the user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (authError) {
+        console.error('Authentication error:', authError);
+        if (authError.message.includes('already exists')) {
+          toast.error("Este email já está cadastrado.");
+        } else {
+          toast.error("Erro ao criar conta. Por favor, tente novamente.");
+        }
+        return;
+      }
+
+      if (!authData.user) {
+        console.error('No user data returned');
+        toast.error("Erro ao criar conta. Por favor, tente novamente.");
+        return;
+      }
+
+      // 2. Create the profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user.id,
+            pessoa_tipo: data.pessoa_tipo,
+            full_name: data.fullName,
+            razao_social: data.razao_social,
+            nome_fantasia: data.nome_fantasia,
+            cpf: data.cpf,
+            cnpj: data.cnpj,
+            address: data.address,
+            address_number: data.address_number,
+            complement: data.complement,
+            neighborhood: data.neighborhood,
+            city: data.city,
+            state: data.state,
+            zip_code: data.zip_code,
+            phone: data.phone,
+            specialty_id: data.specialty,
+            cro: data.cro,
+            sync_with_omie: true
+          }
+        ]);
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        toast.error("Erro ao criar perfil. Por favor, tente novamente.");
+        // Try to clean up the auth user if profile creation fails
+        await supabase.auth.signOut();
+        return;
+      }
+
       toast.success("Cadastro realizado com sucesso!");
+      navigate('/');
+
     } catch (err) {
       console.error('Registration error:', err);
       toast.error("Erro ao realizar cadastro. Tente novamente.");
@@ -106,6 +166,8 @@ const RegistrationForm = () => {
     console.error('Error in specialties query:', error);
   }
 
+  const isSubmitting = form.formState.isSubmitting;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -113,9 +175,9 @@ const RegistrationForm = () => {
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isLoading || !form.formState.isValid}
+          disabled={isSubmitting || specialtiesLoading || !form.formState.isValid}
         >
-          {isLoading ? "Carregando..." : "Registrar"}
+          {isSubmitting ? "Registrando..." : specialtiesLoading ? "Carregando..." : "Registrar"}
         </Button>
       </form>
     </Form>
