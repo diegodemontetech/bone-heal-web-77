@@ -75,14 +75,12 @@ export const AddressSection = ({ form }: AddressSectionProps) => {
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
-          name="number"
-          rules={{ required: "Número é obrigatório" }}
+          name="complemento"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Número</FormLabel>
+              <FormLabel>Número / Complemento</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -100,11 +98,7 @@ export const AddressSection = ({ form }: AddressSectionProps) => {
           <FormItem>
             <FormLabel>Estado</FormLabel>
             <Select 
-              onValueChange={(value) => {
-                field.onChange(value);
-                // Reset city when state changes
-                form.setValue('city', '');
-              }} 
+              onValueChange={field.onChange} 
               value={field.value}
             >
               <FormControl>
