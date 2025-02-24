@@ -26,6 +26,11 @@ interface ProfessionalFieldsProps {
 }
 
 export const ProfessionalFields = ({ form, specialties }: ProfessionalFieldsProps) => {
+  console.log('ProfessionalFields rendered with specialties:', {
+    count: specialties?.length || 0,
+    specialtiesList: specialties
+  });
+
   return (
     <>
       <FormField
@@ -35,16 +40,22 @@ export const ProfessionalFields = ({ form, specialties }: ProfessionalFieldsProp
         render={({ field }) => (
           <FormItem>
             <FormLabel>Especialidade</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Select 
+              onValueChange={field.onChange} 
+              defaultValue={field.value}
+            >
               <FormControl>
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Selecione uma especialidade" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent className="bg-white">
+              <SelectContent>
                 {specialties && specialties.length > 0 ? (
                   specialties.map((specialty) => (
-                    <SelectItem key={specialty.id} value={specialty.name || specialty.id}>
+                    <SelectItem 
+                      key={specialty.id} 
+                      value={specialty.id}
+                    >
                       {specialty.name}
                     </SelectItem>
                   ))
@@ -77,3 +88,4 @@ export const ProfessionalFields = ({ form, specialties }: ProfessionalFieldsProp
     </>
   );
 };
+

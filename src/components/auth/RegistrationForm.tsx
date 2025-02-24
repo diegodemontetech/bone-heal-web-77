@@ -1,3 +1,4 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -69,19 +70,22 @@ const RegistrationForm = () => {
     },
   });
 
-  const { data: specialties, isLoading } = useQuery({
+  const { data: specialties, isLoading, error } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
+      console.log('Fetching dental specialties...');
       const { data, error } = await supabase
         .from('dental_specialties')
         .select('*')
         .order('name');
       
       if (error) {
+        console.error('Error fetching specialties:', error);
         toast.error('Erro ao carregar especialidades');
         throw error;
       }
       
+      console.log('Fetched specialties:', data);
       return data;
     }
   });
@@ -90,6 +94,10 @@ const RegistrationForm = () => {
     console.log(data);
     toast.success("Cadastro realizado com sucesso!");
   };
+
+  if (error) {
+    console.error('Error in specialties query:', error);
+  }
 
   return (
     <Form {...form}>
@@ -108,3 +116,4 @@ const RegistrationForm = () => {
 };
 
 export default RegistrationForm;
+
