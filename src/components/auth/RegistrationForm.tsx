@@ -113,7 +113,7 @@ export default function RegistrationForm() {
       zipCode: "",
       phone: "",
       receiveNews: false,
-    } as FormData,
+    },
   });
 
   async function onSubmit(values: FormData) {
