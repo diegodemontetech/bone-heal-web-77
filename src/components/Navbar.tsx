@@ -141,7 +141,7 @@ export default function Navbar() {
         ) : (
           <div className="hidden md:flex gap-2">
             <Link to="/login">
-              <Button variant="outline">Área do Dentista</Button>
+              <Button variant="outline">Entrar</Button>
             </Link>
           </div>
         )}
@@ -211,7 +211,7 @@ export default function Navbar() {
                 </>
               ) : (
                 <Link to="/login" onClick={() => setOpen(false)}>
-                  <Button className="w-full">Área do Dentista</Button>
+                  <Button className="w-full">Entrar</Button>
                 </Link>
               )}
             </div>
