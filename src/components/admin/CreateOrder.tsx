@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,14 +14,27 @@ interface CreateOrderProps {
 
 const TEST_CUSTOMER = {
   id: "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3",
-  full_name: "Cliente Teste",
+  full_name: "Dra. Maria Silva",
+  email: "maria.silva@dentista.com.br",
   omie_code: "12345678",
   cpf: "12345678900",
-  address: "Rua Teste, 123",
+  address: "Avenida Paulista",
+  endereco_numero: "1000",
+  complemento: "Sala 123",
+  neighborhood: "Bela Vista",
   city: "São Paulo",
   state: "SP",
-  zip_code: "01234567",
-  phone: "11999999999"
+  zip_code: "01310100",
+  phone: "11999999999",
+  cidade_ibge: "3550308", // Código IBGE para São Paulo
+  estado_ibge: "35", // Código IBGE para SP
+  pessoa_fisica: true,
+  exterior: false,
+  contribuinte: "2", // Não contribuinte
+  optante_simples_nacional: false,
+  inativo: false,
+  bloqueado: false,
+  tipo_atividade: "0" // Comercial
 };
 
 const CreateOrder = ({ onCancel }: CreateOrderProps) => {
