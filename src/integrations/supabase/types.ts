@@ -900,7 +900,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      payment_method_type: "credit_card" | "pix" | "boleto"
     }
     CompositeTypes: {
       [_ in never]: never
