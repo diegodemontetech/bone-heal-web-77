@@ -34,7 +34,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      console.log("Buscando produtos..."); // Log de debug em português
+      console.log("Buscando produtos..."); 
 
       const { data, error } = await supabase
         .from("products")
@@ -77,6 +77,11 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   const handleCreateOrder = async () => {
     try {
+      if (!selectedCustomer?.id) {
+        toast.error("Cliente não selecionado");
+        return;
+      }
+
       if (selectedProducts.length === 0) {
         toast.error("Adicione pelo menos um produto");
         return;
@@ -107,8 +112,15 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       const total = calculateTotal();
 
       console.log("Criando pedido com itens:", orderItems);
+      console.log("Cliente selecionado:", selectedCustomer);
 
-      // Agora o status inicial é 'aguardando_pagamento' em vez de 'pending'
+      // Garantir que todos os campos necessários estejam presentes
+      if (!selectedCustomer.address || !selectedCustomer.city || 
+          !selectedCustomer.state || !selectedCustomer.zip_code) {
+        toast.error("Dados de endereço do cliente incompletos");
+        return;
+      }
+
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -128,7 +140,12 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("Erro ao criar pedido:", orderError);
+        throw orderError;
+      }
+
+      console.log("Pedido criado:", order);
 
       const { data: prefData, error: prefError } = await supabase.functions.invoke(
         'mercadopago-checkout',
@@ -138,7 +155,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
             items: orderItems,
             payer: {
               name: selectedCustomer.full_name,
-              email: "test_user_123@testuser.com",
+              email: selectedCustomer.email || "test_user_123@testuser.com",
               identification: {
                 type: "CPF",
                 number: selectedCustomer.cpf
@@ -148,7 +165,12 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         }
       );
 
-      if (prefError) throw prefError;
+      if (prefError) {
+        console.error("Erro ao criar preferência MP:", prefError);
+        throw prefError;
+      }
+
+      console.log("Preferência MP criada:", prefData);
 
       await supabase
         .from("orders")
@@ -169,7 +191,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       
     } catch (error: any) {
       console.error("Erro ao criar pedido:", error);
-      toast.error("Erro ao criar pedido");
+      toast.error("Erro ao criar pedido: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
     }
