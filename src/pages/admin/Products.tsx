@@ -119,13 +119,13 @@ const AdminProducts = () => {
     try {
       const { data, error } = await supabase
         .from("products")
-        .insert({
+        .insert([{
           name: "BONE HEAL MEMBRANA REGENERATIVA ODONTOLÓGICA - TAMANHO 30X40 mm",
           slug: "bone-heal-membrana-regenerativa-odontologica-30x40",
           omie_code: "BH30401",
           omie_product_id: "7630401",
           price: 320.00,
-          stock: 0,
+          stock: 10,
           active: true,
           short_description: "Membrana regenerativa odontológica Bone Heal, tamanho 30x40mm",
           description: "Membrana regenerativa odontológica Bone Heal, tamanho 30x40mm. Código NCM: 3006.10.90. EAN: 7898994908401",
@@ -143,7 +143,8 @@ const AdminProducts = () => {
           default_image_url: "public/lovable-uploads/0a6d1a02-a166-4ef7-a719-07474622ee16.png",
           omie_sync: true,
           omie_last_update: new Date().toISOString()
-        });
+        }])
+        .select();
 
       if (error) throw error;
 
@@ -176,10 +177,7 @@ const AdminProducts = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
               {isSyncing ? "Sincronizando..." : "Sincronizar com Omie"}
             </Button>
-            <Button onClick={() => {
-              setEditingProduct(null);
-              setIsFormOpen(true);
-            }}>
+            <Button onClick={handleCreate}>
               <Plus className="w-4 h-4 mr-2" />
               Novo Produto
             </Button>
@@ -210,7 +208,7 @@ const AdminProducts = () => {
               ) : products?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                    Nenhum produto encontrado
+                    Nenhum produto encontrado. Clique em "Novo Produto" para adicionar.
                   </TableCell>
                 </TableRow>
               ) : (
