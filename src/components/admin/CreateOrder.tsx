@@ -27,15 +27,15 @@ const TEST_CUSTOMER = {
   state: "SP",
   zip_code: "01310100",
   phone: "11999999999",
-  cidade_ibge: "3550308", // Código IBGE para São Paulo
-  estado_ibge: "35", // Código IBGE para SP
+  cidade_ibge: "3550308",
+  estado_ibge: "35",
   pessoa_fisica: true,
   exterior: false,
-  contribuinte: "2", // Não contribuinte
+  contribuinte: "2",
   optante_simples_nacional: false,
   inativo: false,
   bloqueado: false,
-  tipo_atividade: "0" // Comercial
+  tipo_atividade: "0"
 };
 
 const CreateOrder = ({ onCancel }: CreateOrderProps) => {
@@ -225,14 +225,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       }
     } else if (products.length === 0) {
       console.log("Nenhum produto retornado da consulta");
-    }
-  }, [products]);
-
-  // Criar pedido automaticamente quando o componente montar
-  useEffect(() => {
-    if (products.length > 0 && !loading) {
-      console.log("Criando pedido automaticamente...");
-      handleCreateOrder();
     }
   }, [products]);
 
