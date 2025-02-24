@@ -24,10 +24,13 @@ export default function Products() {
       let query = supabase
         .from("products")
         .select("*")
-        .eq('active', true)
-        .order(filters.sortBy.split("-")[0], {
-          ascending: filters.sortBy.split("-")[1] === "asc",
-        });
+        .eq("active", true); // Make sure we're explicitly querying for active products
+
+      // Apply sorting
+      if (filters.sortBy) {
+        const [field, direction] = filters.sortBy.split("-");
+        query = query.order(field, { ascending: direction === "asc" });
+      }
 
       const { data, error } = await query;
 
@@ -42,6 +45,7 @@ export default function Products() {
   });
 
   const handleFilterChange = (newFilters: FilterValues) => {
+    console.log("Applying new filters:", newFilters);
     setFilters(newFilters);
   };
 
