@@ -73,7 +73,9 @@ const formSchema = z.object({
     message: "Senha deve ter pelo menos 6 caracteres.",
   }),
   confirmPassword: z.string(),
-  specialty: z.string(),
+  specialty: z.string().min(1, {
+    message: "Selecione uma especialidade.",
+  }),
   cro: z.string().min(3, {
     message: "CRO deve ter pelo menos 3 caracteres.",
   }),
@@ -83,9 +85,9 @@ const formSchema = z.object({
 }).refine(
   (data): data is ValidFormData => {
     if (data.pessoa_tipo === 'fisica') {
-      return !!data.cpf;
+      return !!data.cpf && data.cpf.length > 0;
     }
-    return !!data.cnpj && !!data.razao_social;
+    return !!data.cnpj && !!data.razao_social && data.cnpj.length > 0 && data.razao_social.length > 0;
   },
   {
     message: "Os campos obrigatórios devem ser preenchidos",
@@ -191,13 +193,15 @@ const RegistrationForm = () => {
     }
   };
 
-  // Remove the UUID validation from specialty field
-  // Add debug logs for form state
+  const isValid = form.formState.isValid;
+  const isDirty = form.formState.isDirty;
+  const isSubmitting = form.formState.isSubmitting;
+
   console.log('Form State:', {
     values: form.getValues(),
     errors: form.formState.errors,
-    isValid: form.formState.isValid,
-    isDirty: form.formState.isDirty,
+    isValid: isValid,
+    isDirty: isDirty,
     dirtyFields: form.formState.dirtyFields,
   });
 
@@ -207,9 +211,14 @@ const RegistrationForm = () => {
         <RegistrationFormFields form={form} specialties={specialties || []} />
         <Button 
           type="submit" 
-          className="w-full hover:bg-[#6E1A35]"
+          className={`w-full ${
+            (!isDirty || !isValid || isSubmitting || specialtiesLoading)
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-[#6E1A35]"
+          }`}
+          disabled={!isDirty || !isValid || isSubmitting || specialtiesLoading}
         >
-          {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
+          {isSubmitting ? "Registrando..." : "Registrar"}
         </Button>
       </form>
     </Form>
