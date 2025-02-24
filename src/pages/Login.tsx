@@ -41,11 +41,13 @@ const Login = () => {
 
       if (signInError) throw signInError;
 
-      navigate('/dashboard');
+      toast.success('Login realizado com sucesso!');
+      navigate('/'); // Changed from /dashboard to /
+
     } catch (error: any) {
       console.error('Login error:', error);
-      setError(error.message || 'Failed to sign in');
-      toast.error(error.message || 'Failed to sign in');
+      setError(error.message || 'Falha ao fazer login');
+      toast.error(error.message || 'Falha ao fazer login');
     } finally {
       setLoading(false);
     }
