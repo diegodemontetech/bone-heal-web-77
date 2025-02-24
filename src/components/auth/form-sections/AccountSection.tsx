@@ -19,6 +19,13 @@ export const AccountSection = ({ form }: AccountSectionProps) => {
       <FormField
         control={form.control}
         name="email"
+        rules={{ 
+          required: "E-mail é obrigatório",
+          pattern: {
+            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+            message: "E-mail inválido"
+          }
+        }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Email</FormLabel>
@@ -33,6 +40,13 @@ export const AccountSection = ({ form }: AccountSectionProps) => {
       <FormField
         control={form.control}
         name="password"
+        rules={{ 
+          required: "Senha é obrigatória",
+          minLength: {
+            value: 6,
+            message: "Senha deve ter no mínimo 6 caracteres"
+          }
+        }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Senha</FormLabel>
@@ -47,6 +61,9 @@ export const AccountSection = ({ form }: AccountSectionProps) => {
       <FormField
         control={form.control}
         name="confirmPassword"
+        rules={{ 
+          required: "Confirmação de senha é obrigatória"
+        }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Confirmar Senha</FormLabel>
@@ -60,3 +77,4 @@ export const AccountSection = ({ form }: AccountSectionProps) => {
     </>
   );
 };
+

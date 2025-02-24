@@ -1,8 +1,6 @@
 
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import RegistrationFormFields from "./RegistrationFormFields";
@@ -12,55 +10,49 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-const formSchema = z.object({
-  // Required fields with proper validation
-  email: z.string().min(1, "E-mail é obrigatório").email("E-mail inválido"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
-  fullName: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
-  cnpj: z.string().min(1, "CPF/CNPJ é obrigatório"),
-  address: z.string().min(2, "Endereço deve ter no mínimo 2 caracteres"),
-  omie_city_code: z.string().min(1, "Código da cidade é obrigatório"),
-  
-  // Optional fields without validation
-  cro: z.string().optional(),
-  specialty: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  neighborhood: z.string().optional(),
-  zipCode: z.string().optional(),
-  phone: z.string().optional(),
-  receiveNews: z.boolean().optional().default(false),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
-});
-
-type FormData = z.infer<typeof formSchema>;
-
-// Make sure all required fields have empty string as default
-const defaultValues = {
-  email: "",
-  password: "",
-  confirmPassword: "",
-  fullName: "",
-  cnpj: "",
-  address: "",
-  omie_city_code: "",
-  cro: "",
-  specialty: "",
-  city: "",
-  state: "",
-  neighborhood: "",
-  zipCode: "",
-  phone: "",
-  receiveNews: false,
-} satisfies FormData;
+interface FormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
+  cnpj: string;
+  address: string;
+  omie_city_code: string;
+  // Optional fields
+  cro?: string;
+  specialty?: string;
+  city?: string;
+  state?: string;
+  neighborhood?: string;
+  zipCode?: string;
+  phone?: string;
+  receiveNews?: boolean;
+}
 
 export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const form = useForm<FormData>({
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+      fullName: "",
+      cnpj: "",
+      address: "",
+      omie_city_code: "",
+      cro: "",
+      specialty: "",
+      city: "",
+      state: "",
+      neighborhood: "",
+      zipCode: "",
+      phone: "",
+      receiveNews: false,
+    }
+  });
 
   const { data: specialties, isLoading: loadingSpecialties } = useQuery({
     queryKey: ['dental-specialties'],
@@ -88,12 +80,15 @@ export default function RegistrationForm() {
     }
   });
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues,
-  });
-
   async function onSubmit(values: FormData) {
+    if (values.password !== values.confirmPassword) {
+      form.setError('confirmPassword', {
+        type: 'manual',
+        message: 'As senhas não coincidem'
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
