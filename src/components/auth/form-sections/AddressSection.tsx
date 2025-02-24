@@ -69,7 +69,6 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
             <FormLabel>Estado</FormLabel>
             <Select onValueChange={(value) => {
               field.onChange(value);
-              // Reset city when state changes
               form.setValue('city', '');
               form.setValue('omie_city_code', '');
             }} value={field.value}>
