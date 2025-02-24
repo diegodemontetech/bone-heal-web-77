@@ -42,16 +42,14 @@ const RegistrationForm = () => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <RegistrationFormFields form={form} specialties={specialties || []} />
-        <div>
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={form.formState.isSubmitting}
-            variant="default"
-          >
-            {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
-          </Button>
-        </div>
+        <Button 
+          type="submit" 
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+          variant="default"
+        >
+          {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
+        </Button>
       </form>
     </Form>
   );
