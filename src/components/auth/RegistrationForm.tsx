@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -49,6 +48,7 @@ export default function RegistrationForm() {
       cpf: "",
       cnpj: "",
       address: "",
+      complemento: "",
       omie_city_code: "",
       cro: "",
       specialty: "",
@@ -67,19 +67,6 @@ export default function RegistrationForm() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dental_specialties')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: cities, isLoading: loadingCities } = useQuery({
-    queryKey: ['omie-cities'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('omie_cities')
         .select('*')
         .order('name');
 
@@ -157,26 +144,34 @@ export default function RegistrationForm() {
     }
   }
 
-  if (loadingSpecialties || loadingCities) {
-    return <div>Carregando...</div>;
+  if (loadingSpecialties) {
+    return <div className="flex items-center justify-center p-4">Carregando...</div>;
   }
 
   return (
     <Form {...form}>
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <RegistrationFormFields 
-          specialties={specialties || []} 
-          form={form} 
-        />
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Cadastrando..." : "Cadastrar"}
-        </Button>
-      </form>
+      <div className="space-y-6 max-w-2xl mx-auto">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <div className="bg-white rounded-lg shadow-sm border border-purple-100 p-6">
+            <RegistrationFormFields 
+              specialties={specialties || []} 
+              form={form} 
+            />
+          </div>
+          <Button 
+            type="submit" 
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-full py-6 text-lg font-medium transition-colors"
+            disabled={loading}
+          >
+            {loading ? "Cadastrando..." : "Cadastrar"}
+          </Button>
+        </form>
+      </div>
     </Form>
   );
 }

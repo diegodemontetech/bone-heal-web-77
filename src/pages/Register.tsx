@@ -4,13 +4,20 @@ import RegistrationForm from "@/components/auth/RegistrationForm";
 
 const Register = () => {
   return (
-    <div className="container mx-auto p-4">
-      <Card>
-        <CardContent className="p-6">
-          <h1 className="text-2xl font-bold mb-4">Registro</h1>
-          <RegistrationForm />
-        </CardContent>
-      </Card>
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-purple-900">Registro</h1>
+          <p className="mt-2 text-lg text-purple-600">
+            Crie sua conta para começar
+          </p>
+        </div>
+        <Card className="border-purple-100">
+          <CardContent className="p-6">
+            <RegistrationForm />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
