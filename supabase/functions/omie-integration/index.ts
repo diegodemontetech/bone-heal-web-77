@@ -24,7 +24,7 @@ serve(async (req) => {
       throw new Error('Invalid action');
     }
 
-    // Fetch order data from Supabase since it's not being passed correctly
+    // Fetch order data from Supabase
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -52,6 +52,7 @@ serve(async (req) => {
       throw new Error('Missing required order data: items or profile information');
     }
 
+    // Verificar cliente existente
     const existingClientPayload = {
       call: "ConsultarCliente",
       app_key: Deno.env.get("OMIE_APP_KEY"),
@@ -73,7 +74,7 @@ serve(async (req) => {
     console.log("Existing client response:", JSON.stringify(clienteExistente, null, 2));
 
     if (!clienteExistente.faultstring) {
-      // Update existing client with required settings
+      // Atualizar cliente existente com configurações necessárias
       const updatePayload = {
         call: "AlterarCliente",
         app_key: Deno.env.get("OMIE_APP_KEY"),
@@ -81,11 +82,13 @@ serve(async (req) => {
         param: [{
           ...clienteExistente,
           inativo: "N",
-          pessoa_fisica: clienteExistente.cnpj_cpf?.length === 11 ? "S" : "N",
-          contribuinte: "N", // N = Não contribuinte
-          tipo_atividade: "1", // 1 = Comercial
+          bloqueado: "N",
+          pessoa_fisica: order.profiles.cpf?.length === 11 ? "S" : "N",
+          contribuinte: "2", // 2 = Não contribuinte
+          tipo_atividade: "3", // 3 = Serviços
           tags: ["ecommerce", "cliente_ativo"],
           recomendacoes: {
+            tipo_assinante: "9", // 9 = Outros
             gerar_boletos: "N"
           }
         }]
@@ -107,11 +110,11 @@ serve(async (req) => {
       }
     }
 
-    // Generate order code with maximum of 15 characters
+    // Gerar código do pedido com máximo de 15 caracteres
     const timestamp = Date.now().toString().slice(-5);
     const codigoPedido = `W${timestamp}`;
 
-    // Map order items ensuring all required fields are present
+    // Mapear itens do pedido garantindo que todos os campos necessários estejam presentes
     const items = order.items.map((item: any, index: number) => {
       if (!item.omie_code || !item.omie_product_id) {
         throw new Error(`Missing Omie codes for item: ${item.name}`);
@@ -151,7 +154,7 @@ serve(async (req) => {
           valor_frete: 0
         },
         informacoes_adicionais: {
-          codigo_categoria: "1.01.01",
+          codigo_categoria: "1.01.03",
           codigo_conta_corrente: "2697531662",
           consumidor_final: "S",
           enviar_email: "N"
