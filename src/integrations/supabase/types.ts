@@ -289,6 +289,36 @@ export type Database = {
         }
         Relationships: []
       }
+      omie_cities: {
+        Row: {
+          created_at: string | null
+          ibge_code: string | null
+          id: number
+          name: string
+          omie_code: string
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          ibge_code?: string | null
+          id?: number
+          name: string
+          omie_code: string
+          state: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          ibge_code?: string | null
+          id?: number
+          name?: string
+          omie_code?: string
+          state?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
@@ -588,6 +618,7 @@ export type Database = {
         Row: {
           address: string | null
           bloqueado: boolean | null
+          cidade_codigo: string | null
           cidade_ibge: string | null
           city: string | null
           cnpj: string | null
@@ -606,20 +637,25 @@ export type Database = {
           inativo: boolean | null
           is_admin: boolean | null
           neighborhood: string | null
+          nome_fantasia: string | null
           omie_code: string | null
           omie_sync: boolean | null
           optante_simples_nacional: boolean | null
           pessoa_fisica: boolean | null
           phone: string | null
+          razao_social: string | null
           receive_news: boolean | null
           specialty: string | null
           state: string | null
+          telefone1_ddd: string | null
+          telefone1_numero: string | null
           tipo_atividade: string | null
           zip_code: string | null
         }
         Insert: {
           address?: string | null
           bloqueado?: boolean | null
+          cidade_codigo?: string | null
           cidade_ibge?: string | null
           city?: string | null
           cnpj?: string | null
@@ -638,20 +674,25 @@ export type Database = {
           inativo?: boolean | null
           is_admin?: boolean | null
           neighborhood?: string | null
+          nome_fantasia?: string | null
           omie_code?: string | null
           omie_sync?: boolean | null
           optante_simples_nacional?: boolean | null
           pessoa_fisica?: boolean | null
           phone?: string | null
+          razao_social?: string | null
           receive_news?: boolean | null
           specialty?: string | null
           state?: string | null
+          telefone1_ddd?: string | null
+          telefone1_numero?: string | null
           tipo_atividade?: string | null
           zip_code?: string | null
         }
         Update: {
           address?: string | null
           bloqueado?: boolean | null
+          cidade_codigo?: string | null
           cidade_ibge?: string | null
           city?: string | null
           cnpj?: string | null
@@ -670,14 +711,18 @@ export type Database = {
           inativo?: boolean | null
           is_admin?: boolean | null
           neighborhood?: string | null
+          nome_fantasia?: string | null
           omie_code?: string | null
           omie_sync?: boolean | null
           optante_simples_nacional?: boolean | null
           pessoa_fisica?: boolean | null
           phone?: string | null
+          razao_social?: string | null
           receive_news?: boolean | null
           specialty?: string | null
           state?: string | null
+          telefone1_ddd?: string | null
+          telefone1_numero?: string | null
           tipo_atividade?: string | null
           zip_code?: string | null
         }

@@ -1,16 +1,14 @@
-
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useState } from "react";
-import { RegistrationFormFields } from "./RegistrationFormFields";
+import RegistrationFormFields from "./RegistrationFormFields";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   email: z.string().email({
