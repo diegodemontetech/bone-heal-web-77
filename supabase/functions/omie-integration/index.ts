@@ -1,227 +1,162 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
-import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const omieAppKey = Deno.env.get('OMIE_APP_KEY')!;
-const omieAppSecret = Deno.env.get('OMIE_APP_SECRET')!;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-const OMIE_API_URL = 'https://app.omie.com.br/api/v1';
+console.log("omie-integration function started")
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     const { action, order_id } = await req.json()
-    console.log(`Processing ${action} for order ${order_id}`)
 
-    if (action === 'sync_order') {
-      // Fetch order with detailed customer information
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          user:user_id (
-            id,
-            profiles (
-              *,
-              city_data:ibge_cities!inner(
-                *,
-                state:ibge_states!inner(*)
-              )
-            )
-          )
-        `)
-        .eq('id', order_id)
-        .single()
-
-      if (orderError) throw new Error(`Error fetching order: ${orderError.message}`)
-      if (!order) throw new Error(`Order not found: ${order_id}`)
-      
-      const profile = order.user?.profiles?.[0]
-      if (!profile) throw new Error(`Profile not found for user: ${order.user_id}`)
-      
-      // Get IBGE data
-      const cityData = profile.city_data?.[0]
-      if (!cityData) throw new Error(`City IBGE data not found for profile: ${profile.id}`)
-
-      console.log('Ensuring customer exists in Omie...')
-      const omieCustomer = await ensureCustomerInOmie(profile, cityData)
-      console.log('Customer processed in Omie:', omieCustomer)
-
-      console.log('Creating order in Omie...')
-      const omieOrder = await createOmieOrder(order, omieCustomer)
-      console.log('Order created in Omie:', omieOrder)
-
-      // Update order with Omie details
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({
-          omie_order_id: omieOrder.codigo_pedido,
-          omie_status: 'novo',
-          omie_last_sync_attempt: new Date().toISOString(),
-        })
-        .eq('id', order_id)
-
-      if (updateError) throw new Error(`Error updating order: ${updateError.message}`)
-
-      return new Response(
-        JSON.stringify({ success: true, data: omieOrder }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (action !== 'sync_order') {
+      throw new Error('Invalid action')
     }
 
-    throw new Error(`Unknown action: ${action}`)
+    console.log('Fetching order:', order_id)
+
+    // Fetch order with customer profile in a single query
+    const { data: order, error: orderError } = await supabaseClient
+      .from('orders')
+      .select(`
+        *,
+        customer:profiles(*)
+      `)
+      .eq('id', order_id)
+      .single()
+
+    if (orderError || !order) {
+      throw new Error(`Error fetching order: ${orderError?.message || 'Order not found'}`)
+    }
+
+    console.log('Order fetched:', JSON.stringify(order, null, 2))
+    
+    if (!order.customer) {
+      throw new Error('Customer profile not found for order')
+    }
+
+    // Prepare customer data for Omie
+    const customerData = {
+      codigo_cliente_omie: order.customer.omie_code,
+      razao_social: order.customer.full_name,
+      cnpj_cpf: order.customer.cpf,
+      telefone1_numero: order.customer.phone?.replace(/\D/g, '') || '',
+      endereco: order.shipping_address?.address || order.customer.address || '',
+      endereco_numero: order.customer.endereco_numero || 'S/N',
+      complemento: order.customer.complemento || '',
+      bairro: order.shipping_address?.neighborhood || order.customer.neighborhood || '',
+      estado: order.shipping_address?.state || order.customer.state || '',
+      cidade: order.shipping_address?.city || order.customer.city || '',
+      cep: order.shipping_address?.zip_code || order.customer.zip_code || '',
+      contribuinte: 'N', // Always set as non-contributor
+      pessoa_fisica: 'S', // Always set as individual
+      estado_ibge: order.customer.estado_ibge || '',
+      cidade_ibge: order.customer.cidade_ibge || '',
+    }
+
+    // Prepare items data
+    const items = order.items.map((item: any) => ({
+      codigo_produto: item.omie_code,
+      codigo_produto_integracao: item.omie_product_id,
+      quantidade: item.quantity,
+      valor_unitario: item.price,
+    }))
+
+    // Build Omie request payload
+    const omiePayload = {
+      call: "IncluirPedido",
+      app_key: Deno.env.get('OMIE_APP_KEY'),
+      app_secret: Deno.env.get('OMIE_APP_SECRET'),
+      param: [{
+        cabecalho: {
+          codigo_cliente: customerData.codigo_cliente_omie,
+          data_previsao: new Date().toISOString().split('T')[0],
+          etapa: "10", // Ordem de serviço
+          codigo_parcela: "000",
+        },
+        det: items.map(item => ({
+          produto: {
+            codigo_produto: item.codigo_produto,
+            codigo_produto_integracao: item.codigo_produto_integracao,
+            quantidade: item.quantidade,
+            valor_unitario: item.valor_unitario,
+          }
+        })),
+        cliente_cadastro: customerData
+      }]
+    }
+
+    console.log('Sending request to Omie:', JSON.stringify(omiePayload, null, 2))
+
+    // Send request to Omie API
+    const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(omiePayload)
+    })
+
+    const omieData = await omieResponse.json()
+    
+    if (!omieResponse.ok) {
+      console.error('Omie API error:', omieData)
+      throw new Error(`Omie API error: ${JSON.stringify(omieData)}`)
+    }
+
+    console.log('Omie response:', omieData)
+
+    // Update order with Omie information
+    const { error: updateError } = await supabaseClient
+      .from('orders')
+      .update({
+        omie_order_id: omieData.numero_pedido?.toString(),
+        omie_status: 'sincronizado',
+        omie_last_update: new Date().toISOString()
+      })
+      .eq('id', order_id)
+
+    if (updateError) {
+      throw new Error(`Error updating order: ${updateError.message}`)
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        omie_order_id: omieData.numero_pedido,
+        message: 'Order synchronized successfully'
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error processing request:', error)
+    
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { 
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
+      {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 // Always return 200 to avoid edge function issues
       }
     )
   }
 })
-
-async function ensureCustomerInOmie(profile: any, cityData: any) {
-  try {
-    // Prepare customer data based on person type
-    const isPessoaFisica = !profile.cnpj || profile.cnpj.trim() === '';
-    
-    const customerData = {
-      codigo_cliente_integracao: profile.id,
-      razao_social: profile.full_name,
-      nome_fantasia: profile.full_name,
-      cnpj_cpf: isPessoaFisica ? (profile.cpf || '').replace(/\D/g, '') : (profile.cnpj || '').replace(/\D/g, ''),
-      endereco: profile.address,
-      endereco_numero: profile.endereco_numero || 'S/N',
-      complemento: profile.complemento || '',
-      bairro: profile.neighborhood,
-      estado: profile.state,
-      cidade: profile.city,
-      estado_ibge: cityData.state.ibge_code,
-      cidade_ibge: cityData.ibge_code,
-      cep: (profile.zip_code || '').replace(/\D/g, ''),
-      telefone1: (profile.phone || '').replace(/\D/g, ''),
-      email: profile.email,
-      pessoa_fisica: isPessoaFisica ? "S" : "N",
-      contribuinte: profile.contribuinte || '9',
-      tipo_atividade: profile.tipo_atividade || '0',
-      inativo: profile.inativo ? "S" : "N",
-      bloqueado: profile.bloqueado ? "S" : "N",
-      exterior: profile.exterior ? "S" : "N",
-      optante_simples_nacional: profile.optante_simples_nacional ? "S" : "N"
-    };
-
-    // Try to find existing customer in Omie
-    const findResponse = await fetch(`${OMIE_API_URL}/geral/clientes/`, {
-      method: 'POST',
-      body: JSON.stringify({
-        call: 'ConsultarCliente',
-        app_key: omieAppKey,
-        app_secret: omieAppSecret,
-        param: [{
-          codigo_cliente_integracao: profile.id
-        }]
-      })
-    });
-
-    const findResult = await findResponse.json();
-    
-    if (findResult.faultstring) {
-      // Customer doesn't exist, create new
-      console.log('Creating new customer in Omie...');
-      const createResponse = await fetch(`${OMIE_API_URL}/geral/clientes/`, {
-        method: 'POST',
-        body: JSON.stringify({
-          call: 'IncluirCliente',
-          app_key: omieAppKey,
-          app_secret: omieAppSecret,
-          param: [customerData]
-        })
-      });
-
-      const createResult = await createResponse.json();
-      if (createResult.faultstring) {
-        throw new Error(`Error creating client: ${createResult.faultstring}`);
-      }
-
-      return { ...customerData, codigo_cliente_omie: createResult.codigo_cliente_omie };
-    }
-
-    // Customer exists, update
-    console.log('Updating existing customer in Omie...');
-    const updateResponse = await fetch(`${OMIE_API_URL}/geral/clientes/`, {
-      method: 'POST',
-      body: JSON.stringify({
-        call: 'AlterarCliente',
-        app_key: omieAppKey,
-        app_secret: omieAppSecret,
-        param: [{
-          ...customerData,
-          codigo_cliente_omie: findResult.codigo_cliente_omie
-        }]
-      })
-    });
-
-    const updateResult = await updateResponse.json();
-    if (updateResult.faultstring) {
-      throw new Error(`Error updating client: ${updateResult.faultstring}`);
-    }
-
-    return { ...customerData, codigo_cliente_omie: findResult.codigo_cliente_omie };
-  } catch (error) {
-    console.error('Error in ensureCustomerInOmie:', error);
-    throw error;
-  }
-}
-
-async function createOmieOrder(order: any, customer: any) {
-  try {
-    const orderItems = order.items.map((item: any) => ({
-      codigo_produto: item.omie_code,
-      quantidade: item.quantity,
-      valor_unitario: item.price,
-      tipo_desconto: 'V',
-      desconto: 0
-    }));
-
-    const orderData = {
-      codigo_cliente: customer.codigo_cliente_omie,
-      codigo_pedido_integracao: order.id,
-      data_previsao: new Date().toISOString().split('T')[0],
-      quantidade_itens: orderItems.length,
-      itens_pedido: orderItems,
-      codigo_parcela: '999', // À vista
-      qtde_parcelas: 1,
-    };
-
-    const response = await fetch(`${OMIE_API_URL}/produtos/pedido/`, {
-      method: 'POST',
-      body: JSON.stringify({
-        call: 'IncluirPedido',
-        app_key: omieAppKey,
-        app_secret: omieAppSecret,
-        param: [orderData]
-      })
-    });
-
-    const result = await response.json();
-    if (result.faultstring) {
-      throw new Error(`Error creating order in Omie: ${result.faultstring}`);
-    }
-
-    return result;
-  } catch (error) {
-    console.error('Error in createOmieOrder:', error);
-    throw error;
-  }
-}
