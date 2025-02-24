@@ -15,15 +15,41 @@ serve(async (req) => {
   }
 
   try {
-    const { action, order_id, order_data } = await req.json();
-    console.log("Received request:", { action, order_id, order_data });
+    const requestBody = await req.json();
+    console.log("Received request body:", JSON.stringify(requestBody, null, 2));
 
+    const { action, order_id } = requestBody;
+    
     if (action !== 'sync_order') {
       throw new Error('Invalid action');
     }
 
-    if (!order_data || !order_data.items || !order_data.profiles) {
-      throw new Error('Missing required order data');
+    // Fetch order data from Supabase since it's not being passed correctly
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    console.log("Fetching order data for ID:", order_id);
+
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        profiles:user_id (*)
+      `)
+      .eq('id', order_id)
+      .single();
+
+    if (orderError || !order) {
+      console.error("Error fetching order:", orderError);
+      throw new Error(`Error fetching order: ${orderError?.message || 'Order not found'}`);
+    }
+
+    console.log("Retrieved order data:", JSON.stringify(order, null, 2));
+
+    if (!order.items || !order.profiles) {
+      throw new Error('Missing required order data: items or profile information');
     }
 
     const existingClientPayload = {
@@ -31,11 +57,11 @@ serve(async (req) => {
       app_key: Deno.env.get("OMIE_APP_KEY"),
       app_secret: Deno.env.get("OMIE_APP_SECRET"),
       param: [{
-        codigo_cliente_omie: order_data.profiles.omie_code
+        codigo_cliente_omie: order.profiles.omie_code
       }]
     };
 
-    console.log("Consultando cliente existente:", order_data.profiles.omie_code);
+    console.log("Checking existing client:", order.profiles.omie_code);
 
     const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
@@ -44,10 +70,10 @@ serve(async (req) => {
     });
 
     const clienteExistente = await consultaResponse.json();
-    console.log("Cliente existente:", clienteExistente);
+    console.log("Existing client response:", JSON.stringify(clienteExistente, null, 2));
 
     if (!clienteExistente.faultstring) {
-      // Atualizar o cliente existente com as configurações necessárias
+      // Update existing client with required settings
       const updatePayload = {
         call: "AlterarCliente",
         app_key: Deno.env.get("OMIE_APP_KEY"),
@@ -65,7 +91,7 @@ serve(async (req) => {
         }]
       };
 
-      console.log("Atualizando cliente:", JSON.stringify(updatePayload, null, 2));
+      console.log("Updating client with payload:", JSON.stringify(updatePayload, null, 2));
 
       const updateResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
         method: 'POST',
@@ -74,24 +100,31 @@ serve(async (req) => {
       });
 
       const updateResult = await updateResponse.json();
-      console.log("Resultado da atualização:", updateResult);
+      console.log("Client update result:", JSON.stringify(updateResult, null, 2));
 
       if (updateResult.faultstring) {
-        throw new Error(`Erro ao atualizar cliente: ${updateResult.faultstring}`);
+        throw new Error(`Error updating client: ${updateResult.faultstring}`);
       }
     }
 
-    // Gerar um código de pedido com no máximo 15 caracteres
+    // Generate order code with maximum of 15 characters
     const timestamp = Date.now().toString().slice(-5);
-    const codigoPedido = `W${timestamp}`; // W + 5 dígitos = 6 caracteres no total
+    const codigoPedido = `W${timestamp}`;
 
-    const items = order_data.items.map((item: any, index: number) => ({
-      item_pedido: index + 1,
-      codigo_produto: item.omie_code,
-      quantidade: item.quantity,
-      valor_unitario: item.price,
-      codigo_item_integracao: `${order_id}_${item.product_id}`
-    }));
+    // Map order items ensuring all required fields are present
+    const items = order.items.map((item: any, index: number) => {
+      if (!item.omie_code || !item.omie_product_id) {
+        throw new Error(`Missing Omie codes for item: ${item.name}`);
+      }
+      
+      return {
+        item_pedido: index + 1,
+        codigo_produto: item.omie_code,
+        quantidade: item.quantity,
+        valor_unitario: item.price,
+        codigo_item_integracao: `${order_id}_${item.product_id}`
+      };
+    });
 
     const pedidoPayload = {
       call: "IncluirPedido",
@@ -99,7 +132,7 @@ serve(async (req) => {
       app_secret: Deno.env.get("OMIE_APP_SECRET"),
       param: [{
         cabecalho: {
-          codigo_cliente: parseInt(order_data.profiles.omie_code),
+          codigo_cliente: parseInt(order.profiles.omie_code),
           codigo_pedido: codigoPedido,
           codigo_pedido_integracao: order_id,
           data_previsao: new Date().toISOString().split('T')[0],
@@ -126,7 +159,7 @@ serve(async (req) => {
       }]
     };
 
-    console.log("Enviando pedido para Omie:", JSON.stringify(pedidoPayload, null, 2));
+    console.log("Sending order to Omie:", JSON.stringify(pedidoPayload, null, 2));
 
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
       method: 'POST',
@@ -135,16 +168,11 @@ serve(async (req) => {
     });
 
     const omieData = await omieResponse.json();
-    console.log("Resposta da API do Omie:", omieData);
+    console.log("Omie API response:", JSON.stringify(omieData, null, 2));
 
     if (omieData.faultstring) {
-      throw new Error(`Erro na API do Omie: ${omieData.faultstring}`);
+      throw new Error(`Omie API error: ${omieData.faultstring}`);
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     await supabase
       .from('orders')
@@ -171,7 +199,10 @@ serve(async (req) => {
         success: false,
         error: error.message
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });
