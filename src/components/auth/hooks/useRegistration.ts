@@ -11,24 +11,27 @@ export const useRegistration = () => {
   const { data: specialties = [], isLoading: specialtiesLoading } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
+      console.log('Fetching dental specialties...');
       const { data, error } = await supabase
         .from('dental_specialties')
         .select('*')
         .order('name');
 
       if (error) {
-        console.error('Erro ao carregar especialidades:', error);
+        console.error('Error fetching specialties:', error);
         throw error;
       }
+
+      console.log('Fetched specialties:', data);
       return data || [];
     }
   });
 
   const handleRegistration = async (data: FormData) => {
     try {
-      console.log('Iniciando registro com dados:', data);
+      console.log('Starting registration with data:', data);
 
-      // Prepare user metadata - this will be used by the handle_new_user trigger
+      // Prepare user metadata
       const userMetadata = {
         full_name: data.fullName,
         pessoa_tipo: data.pessoa_tipo,
@@ -58,23 +61,31 @@ export const useRegistration = () => {
       });
 
       if (authError) {
-        console.error('Erro de autenticação:', authError);
-        throw new Error(authError.message);
+        console.error('Auth error:', authError);
+        
+        // Translate common error messages
+        let errorMessage = 'Erro no registro';
+        if (authError.message.includes('User already registered')) {
+          errorMessage = 'Este email já está registrado';
+        } else if (authError.message.includes('Password should be at least')) {
+          errorMessage = 'A senha deve ter pelo menos 6 caracteres';
+        } else if (authError.message.includes('Email not confirmed')) {
+          errorMessage = 'Email ainda não confirmado';
+        }
+        
+        toast.error(errorMessage);
+        throw authError;
       }
 
       if (!authData.user) {
-        throw new Error("Não foi possível criar a conta");
+        throw new Error('Não foi possível criar a conta');
       }
 
-      toast.success("Cadastro realizado com sucesso!");
+      toast.success('Cadastro realizado com sucesso!');
       navigate('/');
 
     } catch (error) {
-      console.error('Erro no processo de registro:', error);
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Erro ao registrar usuário';
-      toast.error(errorMessage);
+      console.error('Registration error:', error);
       throw error;
     }
   };
@@ -85,3 +96,4 @@ export const useRegistration = () => {
     handleRegistration
   };
 };
+

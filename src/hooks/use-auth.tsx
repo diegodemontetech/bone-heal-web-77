@@ -28,6 +28,9 @@ export function useAuth() {
   const { toast } = useToast();
 
   const fetchProfile = async (userId: string) => {
+    console.log('Fetching profile for user:', userId);
+    if (!userId) return null;
+
     const { data, error } = await supabase
       .from("profiles")
       .select("id, is_admin")
@@ -39,15 +42,16 @@ export function useAuth() {
       return null;
     }
 
+    console.log('Fetched profile:', data);
     return data;
   };
 
-  // Handle auth state changes
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
+        console.log('Initializing auth...');
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user && mounted) {
@@ -107,6 +111,7 @@ export function useAuth() {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Attempting sign in...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,

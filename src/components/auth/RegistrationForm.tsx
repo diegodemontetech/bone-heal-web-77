@@ -10,7 +10,7 @@ import { useRegistration } from "./hooks/useRegistration";
 import { toast } from "sonner";
 
 const RegistrationForm = () => {
-  const { specialties, handleRegistration } = useRegistration();
+  const { specialties, specialtiesLoading, handleRegistration } = useRegistration();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -31,6 +31,14 @@ const RegistrationForm = () => {
 
   const isValid = form.formState.isValid;
   const isSubmitting = form.formState.isSubmitting;
+
+  if (specialtiesLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -63,3 +71,4 @@ const RegistrationForm = () => {
 };
 
 export default RegistrationForm;
+

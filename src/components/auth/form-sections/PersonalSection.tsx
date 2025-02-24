@@ -17,6 +17,7 @@ import { UseFormReturn } from "react-hook-form";
 import { PhysicalPersonFields } from "./personal/PhysicalPersonFields";
 import { LegalPersonFields } from "./personal/LegalPersonFields";
 import { ProfessionalFields } from "./personal/ProfessionalFields";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PersonalSectionProps {
   form: UseFormReturn<any>;
@@ -29,12 +30,6 @@ interface PersonalSectionProps {
 
 export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => {
   const pessoaTipo = form.watch('pessoa_tipo');
-
-  console.log('PersonalSection rendered with specialties:', {
-    count: specialties?.length || 0,
-    specialtiesList: specialties,
-    firstSpecialty: specialties?.[0]
-  });
 
   return (
     <div className="space-y-4">
@@ -67,7 +62,8 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
         <LegalPersonFields form={form} />
       )}
 
-      <ProfessionalFields form={form} specialties={specialties} />
+      <ProfessionalFields form={form} specialties={specialties || []} />
     </div>
   );
 };
+
