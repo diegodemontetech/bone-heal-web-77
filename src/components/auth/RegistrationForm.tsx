@@ -59,6 +59,17 @@ const formSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não conferem",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.pessoa_tipo === 'fisica') {
+    return !!data.cpf;
+  } else {
+    return !!data.cnpj && !!data.razao_social;
+  }
+}, {
+  message: data => data.pessoa_tipo === 'fisica' 
+    ? "CPF é obrigatório para pessoa física" 
+    : "CNPJ e Razão Social são obrigatórios para pessoa jurídica",
+  path: ['pessoa_tipo']
 });
 
 export type FormData = z.infer<typeof formSchema>;
@@ -168,6 +179,17 @@ const RegistrationForm = () => {
 
   const isSubmitting = form.formState.isSubmitting;
   const isValid = form.formState.isValid;
+  const isDirty = form.formState.isDirty;
+
+  // Debug logs
+  console.log('Form State:', {
+    isValid,
+    isDirty,
+    errors: form.formState.errors,
+    values: form.getValues(),
+    touchedFields: form.formState.touchedFields,
+    dirtyFields: form.formState.dirtyFields
+  });
 
   return (
     <Form {...form}>
@@ -176,11 +198,11 @@ const RegistrationForm = () => {
         <Button 
           type="submit" 
           className={`w-full transition-colors ${
-            !isValid || isSubmitting || specialtiesLoading
+            !isDirty || !isValid || isSubmitting || specialtiesLoading
               ? "opacity-50 cursor-not-allowed"
               : "hover:bg-[#6E1A35]"
           }`}
-          disabled={isSubmitting || specialtiesLoading || !isValid}
+          disabled={!isDirty || !isValid || isSubmitting || specialtiesLoading}
         >
           {isSubmitting ? "Registrando..." : specialtiesLoading ? "Carregando..." : "Registrar"}
         </Button>
