@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,6 +73,23 @@ export default function RegistrationForm() {
     },
   });
 
+  const { data: cities, isLoading: loadingCities } = useQuery({
+    queryKey: ['omie-cities'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('omie_cities')
+        .select('*')
+        .order('name');
+
+      if (error) {
+        console.error('Erro ao buscar cidades:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+  });
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -137,8 +153,8 @@ export default function RegistrationForm() {
     }
   }
 
-  if (loadingSpecialties) {
-    return <div>Carregando especialidades...</div>;
+  if (loadingSpecialties || loadingCities) {
+    return <div>Carregando...</div>;
   }
 
   return (
@@ -149,7 +165,11 @@ export default function RegistrationForm() {
         </Alert>
       )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <RegistrationFormFields specialties={specialties || []} form={form} />
+        <RegistrationFormFields 
+          specialties={specialties || []} 
+          form={form} 
+          cities={cities || []}
+        />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Cadastrando..." : "Cadastrar"}
         </Button>
