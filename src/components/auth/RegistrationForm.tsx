@@ -10,6 +10,29 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+// Define a type for the valid form data to use in the type predicate
+type ValidFormData = {
+  pessoa_tipo: 'fisica' | 'juridica';
+  fullName: string;
+  razao_social?: string;
+  nome_fantasia?: string;
+  cpf?: string;
+  cnpj?: string;
+  address: string;
+  address_number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zip_code: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  specialty: string;
+  cro: string;
+};
+
 const formSchema = z.object({
   pessoa_tipo: z.enum(['fisica', 'juridica'], {
     required_error: "Você precisa selecionar o tipo de pessoa.",
@@ -59,18 +82,18 @@ const formSchema = z.object({
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não conferem",
   path: ["confirmPassword"],
-}).refine((data) => {
-  if (data.pessoa_tipo === 'fisica') {
-    return !!data.cpf;
-  } else {
+}).refine(
+  (data): data is ValidFormData => {
+    if (data.pessoa_tipo === 'fisica') {
+      return !!data.cpf;
+    }
     return !!data.cnpj && !!data.razao_social;
+  },
+  {
+    message: "Os campos obrigatórios devem ser preenchidos",
+    path: ['pessoa_tipo']
   }
-}, {
-  message: data => data.pessoa_tipo === 'fisica' 
-    ? "CPF é obrigatório para pessoa física" 
-    : "CNPJ e Razão Social são obrigatórios para pessoa jurídica",
-  path: ['pessoa_tipo']
-});
+);
 
 export type FormData = z.infer<typeof formSchema>;
 
