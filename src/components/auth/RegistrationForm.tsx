@@ -15,24 +15,26 @@ const RegistrationForm = () => {
     defaultValues: {
       pessoa_tipo: "fisica",
     },
-    mode: "onChange",
   });
+
+  const onSubmit = async (data: FormData) => {
+    console.log('Form submission attempted with data:', data);
+    await handleRegistration(data);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleRegistration)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <RegistrationFormFields form={form} specialties={specialties || []} />
-        <Button 
-          type="submit" 
-          className={`w-full ${
-            (!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting || specialtiesLoading)
-              ? "opacity-50"
-              : "bg-[#8B1F41] hover:bg-[#6E1A35]"
-          }`}
-          disabled={!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting || specialtiesLoading}
-        >
-          {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
-        </Button>
+        <div>
+          <Button 
+            type="submit" 
+            disabled={!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting || specialtiesLoading}
+            className="w-full"
+          >
+            {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

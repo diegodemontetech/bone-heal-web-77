@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 export const useRegistration = () => {
   const navigate = useNavigate();
   
-  const { data: specialties, isLoading: specialtiesLoading } = useQuery({
+  const { data: specialties = [], isLoading: specialtiesLoading } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -22,12 +22,14 @@ export const useRegistration = () => {
         throw error;
       }
       
-      return data;
+      return data || [];
     }
   });
 
   const handleRegistration = async (data: FormData) => {
     try {
+      console.log('Starting registration process with data:', data);
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -40,6 +42,7 @@ export const useRegistration = () => {
       });
 
       if (authError) {
+        console.error('Auth error:', authError);
         if (authError.message.includes('already exists')) {
           toast.error("Este email já está cadastrado.");
         } else {
@@ -49,6 +52,7 @@ export const useRegistration = () => {
       }
 
       if (!authData.user) {
+        console.error('No user data returned');
         toast.error("Erro ao criar conta. Por favor, tente novamente.");
         return;
       }
@@ -78,7 +82,7 @@ export const useRegistration = () => {
         });
 
       if (profileError) {
-        console.error('Error creating profile:', profileError);
+        console.error('Profile creation error:', profileError);
         toast.error("Erro ao criar perfil. Por favor, tente novamente.");
         await supabase.auth.signOut();
         return;
