@@ -96,24 +96,26 @@ export default function RegistrationForm() {
     },
   });
 
+  const defaultValues: FormData = {
+    email: "",
+    password: "",
+    confirmPassword: "",
+    fullName: "",
+    cnpj: "",
+    cro: "",
+    specialty: "",
+    address: "",
+    city: "",
+    state: "",
+    neighborhood: "",
+    zipCode: "",
+    phone: "",
+    receiveNews: false,
+  };
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      fullName: "",
-      cnpj: "",
-      cro: "",
-      specialty: "",
-      address: "",
-      city: "",
-      state: "",
-      neighborhood: "",
-      zipCode: "",
-      phone: "",
-      receiveNews: false,
-    },
+    defaultValues,
   });
 
   async function onSubmit(values: FormData) {
