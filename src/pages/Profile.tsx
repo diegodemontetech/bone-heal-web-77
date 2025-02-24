@@ -31,12 +31,13 @@ const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-    if (!session) {
-      navigate("/login");
-      return;
-    }
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
 
-    const fetchProfile = async () => {
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -57,11 +58,20 @@ const Profile = () => {
       }
     };
 
-    fetchProfile();
-  }, [session, navigate, toast]);
+    checkAuth();
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!session?.user?.id) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -74,7 +84,7 @@ const Profile = () => {
           phone: profile?.phone,
           address: profile?.address,
         })
-        .eq("id", session?.user?.id);
+        .eq("id", session.user.id);
 
       if (error) throw error;
 
@@ -107,10 +117,10 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
       <div className="container mx-auto p-4 flex-1">
-        <Card>
+        <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Meu Perfil</CardTitle>
           </CardHeader>
@@ -162,7 +172,7 @@ const Profile = () => {
                 />
               </div>
 
-              <Button type="submit" disabled={isSaving}>
+              <Button type="submit" disabled={isSaving} className="w-full">
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
