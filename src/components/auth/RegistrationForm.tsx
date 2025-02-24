@@ -49,8 +49,8 @@ const formSchema = z.object({
     message: "Senha deve ter pelo menos 6 caracteres.",
   }),
   confirmPassword: z.string(),
-  specialty: z.string().min(3, {
-    message: "Especialidade deve ter pelo menos 3 caracteres.",
+  specialty: z.string().uuid({
+    message: "Selecione uma especialidade válida.",
   }),
   cro: z.string().min(3, {
     message: "CRO deve ter pelo menos 3 caracteres.",
@@ -68,6 +68,7 @@ const RegistrationForm = () => {
     defaultValues: {
       pessoa_tipo: "fisica",
     },
+    mode: "onChange", // Enable real-time validation
   });
 
   const { data: specialties, isLoading, error } = useQuery({
@@ -91,8 +92,14 @@ const RegistrationForm = () => {
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log(data);
-    toast.success("Cadastro realizado com sucesso!");
+    try {
+      console.log('Form data:', data);
+      // ... rest of your submission logic
+      toast.success("Cadastro realizado com sucesso!");
+    } catch (err) {
+      console.error('Registration error:', err);
+      toast.error("Erro ao realizar cadastro. Tente novamente.");
+    }
   };
 
   if (error) {
@@ -106,9 +113,9 @@ const RegistrationForm = () => {
         <Button 
           type="submit" 
           className="w-full"
-          disabled={isLoading}
+          disabled={isLoading || !form.formState.isValid}
         >
-          Registrar
+          {isLoading ? "Carregando..." : "Registrar"}
         </Button>
       </form>
     </Form>
@@ -116,4 +123,3 @@ const RegistrationForm = () => {
 };
 
 export default RegistrationForm;
-

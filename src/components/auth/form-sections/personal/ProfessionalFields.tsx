@@ -36,7 +36,6 @@ export const ProfessionalFields = ({ form, specialties }: ProfessionalFieldsProp
       <FormField
         control={form.control}
         name="specialty"
-        rules={{ required: "Especialidade é obrigatória" }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Especialidade</FormLabel>
@@ -74,7 +73,6 @@ export const ProfessionalFields = ({ form, specialties }: ProfessionalFieldsProp
       <FormField
         control={form.control}
         name="cro"
-        rules={{ required: "CRO é obrigatório" }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>CRO</FormLabel>
@@ -88,4 +86,3 @@ export const ProfessionalFields = ({ form, specialties }: ProfessionalFieldsProp
     </>
   );
 };
-
