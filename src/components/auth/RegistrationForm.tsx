@@ -38,7 +38,8 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-const defaultValues: FormData = {
+// Make sure all required fields have empty string as default
+const defaultValues = {
   email: "",
   password: "",
   confirmPassword: "",
@@ -54,7 +55,7 @@ const defaultValues: FormData = {
   zipCode: "",
   phone: "",
   receiveNews: false,
-};
+} satisfies FormData;
 
 export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
