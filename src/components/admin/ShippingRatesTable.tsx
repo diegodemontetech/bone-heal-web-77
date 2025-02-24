@@ -1,79 +1,106 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 
-interface ShippingConfig {
+interface ShippingRate {
   id: string;
-  carrier: string;
-  omie_carrier_code?: string;
-  omie_service_code?: string;
-  active: boolean;
-  settings: Record<string, any>;
+  state: string;
+  service_type: string;
+  rate: number;
+  delivery_days: number;
 }
 
-const ShippingRatesTable = () => {
-  const [newCarrier, setNewCarrier] = useState("");
-  const [newOmieCarrierCode, setNewOmieCarrierCode] = useState("");
-  const [newOmieServiceCode, setNewOmieServiceCode] = useState("");
+const brazilianStates = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
 
-  const { data: shippingConfigs, isLoading, refetch } = useQuery({
-    queryKey: ["shipping-configs"],
+const serviceTypes = [
+  { value: 'PAC', label: 'Convencional' },
+  { value: 'SEDEX', label: 'Express' }
+];
+
+const ShippingRatesTable = () => {
+  const [newState, setNewState] = useState("");
+  const [newServiceType, setNewServiceType] = useState("");
+  const [newRate, setNewRate] = useState("");
+  const [newDeliveryDays, setNewDeliveryDays] = useState("");
+
+  const queryClient = useQueryClient();
+
+  const { data: shippingRates, isLoading } = useQuery({
+    queryKey: ["shipping-rates"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shipping_configs")
+        .from("shipping_rates")
         .select("*")
-        .order("created_at", { ascending: true });
+        .order("state", { ascending: true });
 
       if (error) throw error;
-      return data as ShippingConfig[];
+      return data as ShippingRate[];
     },
   });
 
-  const handleAddCarrier = async () => {
-    try {
-      const { error } = await supabase.from("shipping_configs").insert({
-        carrier: newCarrier,
-        omie_carrier_code: newOmieCarrierCode,
-        omie_service_code: newOmieServiceCode,
-      });
-
-      if (error) throw error;
-
-      toast.success("Transportadora adicionada com sucesso!");
-      setNewCarrier("");
-      setNewOmieCarrierCode("");
-      setNewOmieServiceCode("");
-      refetch();
-    } catch (error) {
-      console.error("Erro ao adicionar transportadora:", error);
-      toast.error("Erro ao adicionar transportadora");
-    }
-  };
-
-  const toggleCarrierStatus = async (id: string, currentStatus: boolean) => {
-    try {
+  const addRateMutation = useMutation({
+    mutationFn: async (newRate: Omit<ShippingRate, "id">) => {
       const { error } = await supabase
-        .from("shipping_configs")
-        .update({ active: !currentStatus })
-        .eq("id", id);
+        .from("shipping_rates")
+        .upsert([newRate], {
+          onConflict: 'state,service_type'
+        });
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
+      toast.success("Taxa de frete atualizada com sucesso!");
+      setNewState("");
+      setNewServiceType("");
+      setNewRate("");
+      setNewDeliveryDays("");
+    },
+    onError: (error) => {
+      console.error("Erro ao adicionar taxa:", error);
+      toast.error("Erro ao atualizar taxa de frete");
+    },
+  });
 
-      toast.success("Status atualizado com sucesso!");
-      refetch();
-    } catch (error) {
-      console.error("Erro ao atualizar status:", error);
-      toast.error("Erro ao atualizar status");
+  const handleAddRate = async () => {
+    if (!newState || !newServiceType || !newRate || !newDeliveryDays) {
+      toast.error("Por favor, preencha todos os campos");
+      return;
     }
+
+    const rate = parseFloat(newRate);
+    const deliveryDays = parseInt(newDeliveryDays);
+
+    if (isNaN(rate) || isNaN(deliveryDays)) {
+      toast.error("Valores inválidos");
+      return;
+    }
+
+    addRateMutation.mutate({
+      state: newState,
+      service_type: newServiceType,
+      rate,
+      delivery_days: deliveryDays
+    });
   };
 
   if (isLoading) {
@@ -88,76 +115,95 @@ const ShippingRatesTable = () => {
     <Card>
       <CardContent className="p-6">
         <div className="space-y-6">
-          {/* Formulário para adicionar nova transportadora */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Formulário para adicionar nova taxa */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="carrier">Nome da Transportadora</Label>
+              <Label htmlFor="state">Estado</Label>
+              <Select value={newState} onValueChange={setNewState}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {brazilianStates.map((state) => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="service_type">Tipo de Serviço</Label>
+              <Select value={newServiceType} onValueChange={setNewServiceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {serviceTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="rate">Valor (R$)</Label>
               <Input
-                id="carrier"
-                value={newCarrier}
-                onChange={(e) => setNewCarrier(e.target.value)}
-                placeholder="Ex: Correios"
+                id="rate"
+                type="number"
+                step="0.01"
+                value={newRate}
+                onChange={(e) => setNewRate(e.target.value)}
+                placeholder="0.00"
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="omie_code">Código Omie</Label>
+              <Label htmlFor="delivery_days">Prazo (dias)</Label>
               <Input
-                id="omie_code"
-                value={newOmieCarrierCode}
-                onChange={(e) => setNewOmieCarrierCode(e.target.value)}
-                placeholder="Ex: COR"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="service_code">Código do Serviço</Label>
-              <Input
-                id="service_code"
-                value={newOmieServiceCode}
-                onChange={(e) => setNewOmieServiceCode(e.target.value)}
-                placeholder="Ex: PAC"
+                id="delivery_days"
+                type="number"
+                value={newDeliveryDays}
+                onChange={(e) => setNewDeliveryDays(e.target.value)}
+                placeholder="1"
               />
             </div>
           </div>
-          <Button onClick={handleAddCarrier} disabled={!newCarrier}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Transportadora
+
+          <Button 
+            onClick={handleAddRate}
+            disabled={addRateMutation.isPending || !newState || !newServiceType || !newRate || !newDeliveryDays}
+          >
+            {addRateMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-2" />
+            )}
+            Adicionar Taxa
           </Button>
 
-          {/* Tabela de transportadoras */}
+          {/* Tabela de taxas */}
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Transportadora</TableHead>
-                <TableHead>Código Omie</TableHead>
-                <TableHead>Código do Serviço</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Serviço</TableHead>
+                <TableHead>Valor</TableHead>
+                <TableHead>Prazo</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shippingConfigs?.map((config) => (
-                <TableRow key={config.id}>
-                  <TableCell>{config.carrier}</TableCell>
-                  <TableCell>{config.omie_carrier_code || "-"}</TableCell>
-                  <TableCell>{config.omie_service_code || "-"}</TableCell>
+              {shippingRates?.map((rate) => (
+                <TableRow key={`${rate.state}-${rate.service_type}`}>
+                  <TableCell>{rate.state}</TableCell>
                   <TableCell>
-                    <Switch
-                      checked={config.active}
-                      onCheckedChange={() => toggleCarrierStatus(config.id, config.active)}
-                    />
+                    {serviceTypes.find(t => t.value === rate.service_type)?.label || rate.service_type}
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        // Sincronizar com Omie
-                        toast.info("Em desenvolvimento");
-                      }}
-                    >
-                      Sincronizar
-                    </Button>
-                  </TableCell>
+                  <TableCell>R$ {rate.rate.toFixed(2)}</TableCell>
+                  <TableCell>{rate.delivery_days} dias</TableCell>
                 </TableRow>
               ))}
             </TableBody>
