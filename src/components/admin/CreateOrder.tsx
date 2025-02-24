@@ -13,6 +13,7 @@ interface CreateOrderProps {
   onCancel: () => void;
 }
 
+// Cliente de teste com todos os campos necessários
 const TEST_CUSTOMER = {
   id: "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3",
   full_name: "Dra. Maria Silva",
@@ -27,8 +28,8 @@ const TEST_CUSTOMER = {
   state: "SP",
   zip_code: "01310100",
   phone: "11999999999",
-  cidade_ibge: "3550308",
-  estado_ibge: "35",
+  cidade_ibge: "3550308", // Código IBGE de São Paulo
+  estado_ibge: "35", // Código IBGE de SP
   pessoa_fisica: true,
   exterior: false,
   contribuinte: "2",
@@ -47,8 +48,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      console.log("Buscando produtos..."); 
-
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -61,7 +60,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return [];
       }
       
-      console.log("Produtos encontrados:", data);
       return data || [];
     },
   });
@@ -129,7 +127,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return;
       }
 
-      // Criar pedido inicial com status 'aguardando_pagamento'
+      // Criar pedido com status inicial
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -138,7 +136,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           total_amount: total,
           subtotal: total,
           status: 'aguardando_pagamento',
-          omie_status: "novo", // Começa como novo no Omie
+          omie_status: "novo",
           shipping_address: {
             address: selectedCustomer.address,
             city: selectedCustomer.city,
@@ -154,7 +152,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         throw orderError;
       }
 
-      // Criar preferência no MercadoPago
+      // Criar preferência do MercadoPago
       const { data: prefData, error: prefError } = await supabase.functions.invoke(
         'mercadopago-checkout',
         {
@@ -178,7 +176,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         throw prefError;
       }
 
-      // Atualizar pedido com ID da preferência do MP
       await supabase
         .from("orders")
         .update({
@@ -188,7 +185,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
       toast.success("Pedido criado com sucesso!");
       
-      // Navegar para a página do pedido
       navigate(`/orders/${order.id}`, { 
         state: { 
           showPaymentButton: true,
@@ -210,16 +206,11 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       const specificProduct = products[0];
       
       if (specificProduct) {
-        console.log("Produto específico selecionado:", specificProduct);
         setSelectedProducts([{
           ...specificProduct,
           quantity: 1
         }]);
-      } else {
-        console.log("Nenhum produto encontrado com o SKU 7630401");
       }
-    } else if (products.length === 0) {
-      console.log("Nenhum produto retornado da consulta");
     }
   }, [products]);
 
