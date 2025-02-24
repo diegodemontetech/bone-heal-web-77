@@ -78,6 +78,7 @@ serve(async (req) => {
         });
 
         const detailData = await detailResponse.json();
+        console.log('Detalhes do produto recebidos:', JSON.stringify(detailData, null, 2));
 
         if (detailData.faultstring) {
           console.error(`Erro ao consultar produto ${produtoResumido.codigo}:`, detailData.faultstring);
@@ -87,8 +88,8 @@ serve(async (req) => {
 
         const product = detailData.produto_servico_cadastro;
         
-        if (!product || !product.codigo || !product.descricao) {
-          console.error('Produto inválido ou sem dados obrigatórios:', detailData);
+        if (!product || !product.codigo) {
+          console.error('Produto inválido ou sem código:', JSON.stringify(product, null, 2));
           errors++;
           continue;
         }
@@ -100,9 +101,26 @@ serve(async (req) => {
           .eq('omie_code', product.codigo)
           .maybeSingle();
 
-        // Tratar o preço do Omie corretamente
-        const omiePrice = parseFloat(product.valor_unitario);
-        console.log(`Produto ${product.codigo} - Preço atual: ${existingProduct?.price}, Preço Omie: ${omiePrice}`);
+        console.log('Produto encontrado no Supabase:', existingProduct);
+
+        // Tratar o preço do Omie com maior precisão
+        const omiePrice = typeof product.valor_unitario === 'string' 
+          ? parseFloat(product.valor_unitario)
+          : product.valor_unitario;
+
+        if (isNaN(omiePrice)) {
+          console.error(`Preço inválido para o produto ${product.codigo}:`, product.valor_unitario);
+          errors++;
+          continue;
+        }
+
+        console.log(`Produto ${product.codigo}:
+          - Preço no Omie (original): ${product.valor_unitario}
+          - Preço no Omie (convertido): ${omiePrice}
+          - Preço atual no Supabase: ${existingProduct?.price}
+          - Status no Omie: ${product.inativo === 'S' ? 'Inativo' : 'Ativo'}
+          - Status atual no Supabase: ${existingProduct?.active ? 'Ativo' : 'Inativo'}`
+        );
 
         // Construir objeto de atualização
         const updates: Record<string, any> = {
@@ -113,9 +131,9 @@ serve(async (req) => {
         };
 
         if (existingProduct) {
-          // Comparar preços com precisão de 2 casas decimais
-          const currentPrice = Math.round(existingProduct.price * 100) / 100;
-          const newPrice = Math.round(omiePrice * 100) / 100;
+          // Comparar preços com precisão de 4 casas decimais para maior precisão
+          const currentPrice = Math.round(existingProduct.price * 10000) / 10000;
+          const newPrice = Math.round(omiePrice * 10000) / 10000;
           const priceChanged = currentPrice !== newPrice;
           const activeChanged = existingProduct.active !== updates.active;
 
