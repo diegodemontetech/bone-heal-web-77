@@ -24,10 +24,8 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Iniciando busca de produtos no Omie');
-    console.log('Usando as credenciais:', { OMIE_APP_KEY, OMIE_APP_SECRET });
+    console.log('Iniciando sincronização de produtos com o Omie');
 
-    // Primeiro, vamos listar os produtos de forma resumida
     const listRequestBody = {
       call: 'ListarProdutosResumido',
       app_key: OMIE_APP_KEY,
@@ -40,56 +38,27 @@ serve(async (req) => {
       }]
     };
 
-    console.log('Request body (list):', JSON.stringify(listRequestBody, null, 2));
-
     const listResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(listRequestBody),
     });
 
-    // Log da resposta bruta para debug
-    const listResponseText = await listResponse.text();
-    console.log('Lista response (raw):', listResponseText);
+    const listData = await listResponse.json();
     
-    let listData;
-    try {
-      listData = JSON.parse(listResponseText);
-    } catch (error) {
-      console.error('Erro ao parsear resposta da lista:', error);
-      throw new Error(`Erro ao parsear resposta da API: ${listResponseText}`);
-    }
-
-    console.log('Lista response (parsed):', JSON.stringify(listData, null, 2));
-
     if (listData.faultstring) {
       throw new Error(`Erro Omie (lista): ${listData.faultstring}`);
     }
 
-    // Verificar todos os campos da resposta
-    console.log('Campos da resposta:', Object.keys(listData));
-    
     const produtosResumidos = listData.produto_servico_resumido || [];
     console.log(`Produtos encontrados: ${produtosResumidos.length}`);
 
-    if (produtosResumidos.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Nenhum produto encontrado no Omie',
-          products: [] 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    let updated = 0;
+    let errors = 0;
 
-    // Agora vamos buscar os detalhes de cada produto
-    const products = [];
     for (const produtoResumido of produtosResumidos) {
       try {
-        console.log('Processando produto resumido:', produtoResumido);
+        console.log('Processando produto:', produtoResumido.codigo);
         
         const detailRequestBody = {
           call: 'ConsultarProduto',
@@ -101,95 +70,64 @@ serve(async (req) => {
           }]
         };
 
-        console.log('Request body (detail):', JSON.stringify(detailRequestBody, null, 2));
-
         const detailResponse = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(detailRequestBody),
         });
 
-        // Log da resposta bruta para debug
-        const detailResponseText = await detailResponse.text();
-        console.log('Detail response (raw):', detailResponseText);
-        
-        let detailData;
-        try {
-          detailData = JSON.parse(detailResponseText);
-        } catch (error) {
-          console.error('Erro ao parsear resposta do detalhe:', error);
-          continue;
-        }
-
-        console.log('Detail response (parsed):', JSON.stringify(detailData, null, 2));
+        const detailData = await detailResponse.json();
 
         if (detailData.faultstring) {
           console.error(`Erro ao consultar produto ${produtoResumido.codigo}:`, detailData.faultstring);
           continue;
         }
 
-        // Se o produto vier dentro de um objeto, extrair
-        const product = detailData.produto_servico_cadastro || detailData;
+        const product = detailData.produto_servico_cadastro;
         
-        if (!product.descricao || !product.codigo) {
-          console.log('Produto inválido:', product);
+        if (!product) {
+          console.log('Produto inválido:', detailData);
           continue;
         }
 
-        // Pegar a primeira URL de imagem se existir
-        const imageUrl = product.imagens && product.imagens[0] ? product.imagens[0].url_imagem : null;
-
-        products.push({
-          name: product.descricao,
-          omie_code: product.codigo,
-          omie_product_id: product.codigo_produto.toString(),
-          price: product.valor_unitario ? parseFloat(product.valor_unitario) : 0,
-          stock: product.quantidade_estoque ? parseInt(product.quantidade_estoque) : 0,
-          slug: product.descricao.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          main_image: imageUrl,
-          omie_sync: true,
-          omie_last_update: new Date().toISOString()
-        });
-      } catch (error) {
-        console.error('Erro ao processar produto:', error);
-      }
-    }
-
-    console.log(`Produtos válidos: ${products.length}`);
-
-    // Atualizar no Supabase
-    let updated = 0;
-    let inserted = 0;
-    let errors = 0;
-
-    for (const product of products) {
-      try {
-        const { data: existing } = await supabase
+        // Buscar produto existente no Supabase
+        const { data: existingProduct } = await supabase
           .from('products')
-          .select('id')
-          .eq('omie_code', product.omie_code)
+          .select('*')
+          .eq('omie_code', product.codigo)
           .maybeSingle();
 
-        if (existing) {
-          const { error } = await supabase
-            .from('products')
-            .update(product)
-            .eq('id', existing.id);
+        if (existingProduct) {
+          // Atualizar apenas preço e status se necessário
+          const updates: Record<string, any> = {
+            omie_sync: true,
+            omie_last_update: new Date().toISOString()
+          };
 
-          if (error) throw error;
-          updated++;
-        } else {
-          const { error } = await supabase
-            .from('products')
-            .insert([product]);
+          // Atualizar preço se diferente
+          if (existingProduct.price !== parseFloat(product.valor_unitario)) {
+            updates.price = parseFloat(product.valor_unitario);
+          }
 
-          if (error) throw error;
-          inserted++;
+          // Atualizar status ativo baseado no status do Omie
+          const isActiveInOmie = product.inativo !== 'S';
+          if (existingProduct.active !== isActiveInOmie) {
+            updates.active = isActiveInOmie;
+          }
+
+          // Só atualiza se houver mudanças
+          if (Object.keys(updates).length > 1) { // > 1 porque sempre teremos omie_sync e omie_last_update
+            const { error } = await supabase
+              .from('products')
+              .update(updates)
+              .eq('id', existingProduct.id);
+
+            if (error) throw error;
+            updated++;
+          }
         }
       } catch (error) {
-        console.error('Erro ao processar produto no Supabase:', error);
+        console.error('Erro ao processar produto:', error);
         errors++;
       }
     }
@@ -197,9 +135,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Sincronização concluída: ${inserted} produtos inseridos, ${updated} atualizados, ${errors} erros`,
-        totalProducts: produtosResumidos.length,
-        validProducts: products.length
+        message: `Sincronização concluída: ${updated} produtos atualizados, ${errors} erros`,
+        totalProducts: produtosResumidos.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

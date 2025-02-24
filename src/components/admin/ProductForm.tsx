@@ -30,7 +30,6 @@ const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   slug: z.string().min(1, "Slug é obrigatório"),
   omie_code: z.string().min(1, "Código Omie é obrigatório"),
-  price: z.string().min(1, "Preço é obrigatório").transform(val => parseFloat(val)),
   stock: z.string().transform(val => parseInt(val || "0")),
   short_description: z.string().optional(),
   description: z.string().optional(),
@@ -55,7 +54,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       name: product?.name || "",
       slug: product?.slug || "",
       omie_code: product?.omie_code || "",
-      price: product?.price?.toString() || "",
       stock: product?.stock?.toString() || "0",
       short_description: product?.short_description || "",
       description: product?.description || "",
@@ -85,7 +83,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
         name: values.name,
         slug: values.slug,
         omie_code: values.omie_code,
-        price: values.price,
         stock: values.stock,
         short_description: values.short_description,
         description: values.description,
@@ -187,35 +184,19 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="number" step="0.01" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="stock"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estoque</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="number" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="stock"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estoque</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
