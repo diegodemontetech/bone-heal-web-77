@@ -28,7 +28,12 @@ interface PersonalSectionProps {
 export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => {
   const pessoaTipo = form.watch('pessoa_tipo');
 
-  console.log('Rendering PersonalSection with specialties:', specialties);
+  // Add more detailed logging
+  console.log('PersonalSection rendered with specialties:', {
+    count: specialties?.length || 0,
+    specialtiesList: specialties,
+    firstSpecialty: specialties?.[0]
+  });
 
   return (
     <div className="space-y-4">
@@ -150,7 +155,7 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
         name="specialty"
         rules={{ required: "Especialidade é obrigatória" }}
         render={({ field }) => (
-          <FormItem className="z-50">
+          <FormItem>
             <FormLabel>Especialidade</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
@@ -159,11 +164,17 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
                 </SelectTrigger>
               </FormControl>
               <SelectContent className="bg-white">
-                {specialties && specialties.map((specialty) => (
-                  <SelectItem key={specialty.id} value={specialty.name}>
-                    {specialty.name}
+                {specialties && specialties.length > 0 ? (
+                  specialties.map((specialty) => (
+                    <SelectItem key={specialty.id} value={specialty.name}>
+                      {specialty.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="" disabled>
+                    Nenhuma especialidade encontrada
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -188,3 +199,4 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
     </div>
   );
 };
+
