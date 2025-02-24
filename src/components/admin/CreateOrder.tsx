@@ -100,7 +100,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return;
       }
 
-      // Verificação dos produtos
       const invalidProducts = selectedProducts.filter(
         product => !product.omie_code || !product.omie_product_id
       );
@@ -124,16 +123,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
       const total = calculateTotal();
 
-      console.log("Criando pedido com itens:", orderItems);
-      console.log("Cliente selecionado:", selectedCustomer);
-
-      // Garantir que todos os campos necessários estejam presentes
       if (!selectedCustomer.address || !selectedCustomer.city || 
           !selectedCustomer.state || !selectedCustomer.zip_code) {
         toast.error("Dados de endereço do cliente incompletos");
         return;
       }
 
+      // Criar pedido inicial com status 'aguardando_pagamento'
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -142,7 +138,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           total_amount: total,
           subtotal: total,
           status: 'aguardando_pagamento',
-          omie_status: "novo",
+          omie_status: "novo", // Começa como novo no Omie
           shipping_address: {
             address: selectedCustomer.address,
             city: selectedCustomer.city,
@@ -158,8 +154,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         throw orderError;
       }
 
-      console.log("Pedido criado:", order);
-
+      // Criar preferência no MercadoPago
       const { data: prefData, error: prefError } = await supabase.functions.invoke(
         'mercadopago-checkout',
         {
@@ -183,8 +178,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         throw prefError;
       }
 
-      console.log("Preferência MP criada:", prefData);
-
+      // Atualizar pedido com ID da preferência do MP
       await supabase
         .from("orders")
         .update({
@@ -194,6 +188,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
       toast.success("Pedido criado com sucesso!");
       
+      // Navegar para a página do pedido
       navigate(`/orders/${order.id}`, { 
         state: { 
           showPaymentButton: true,
