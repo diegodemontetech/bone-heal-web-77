@@ -40,17 +40,8 @@ export const useRegistration = () => {
         }
       });
 
-      if (authError) {
-        if (authError.message.includes('already exists')) {
-          toast.error("Este email já está cadastrado");
-          return;
-        }
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error("Não foi possível criar a conta");
-      }
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Não foi possível criar a conta");
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -83,9 +74,13 @@ export const useRegistration = () => {
       toast.success("Cadastro realizado com sucesso!");
       navigate('/');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no registro:', error);
-      toast.error("Erro ao realizar cadastro. Por favor, tente novamente.");
+      if (error.message?.includes('already exists')) {
+        toast.error("Este email já está cadastrado");
+      } else {
+        toast.error("Erro ao realizar cadastro. Por favor, tente novamente.");
+      }
     }
   };
 

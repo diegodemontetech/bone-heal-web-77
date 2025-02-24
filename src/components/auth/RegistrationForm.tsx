@@ -15,7 +15,7 @@ const RegistrationForm = () => {
     defaultValues: {
       pessoa_tipo: "fisica",
     },
-    mode: "all"
+    mode: "onSubmit"
   });
 
   const onSubmit = async (data: FormData) => {
@@ -31,6 +31,7 @@ const RegistrationForm = () => {
           <Button 
             type="submit" 
             className="w-full"
+            disabled={form.formState.isSubmitting}
           >
             {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
           </Button>
