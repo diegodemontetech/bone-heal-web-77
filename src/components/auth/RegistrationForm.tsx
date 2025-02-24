@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-// Definindo um esquema base com campos obrigatórios
 const formSchema = z.object({
   // Campos obrigatórios
   email: z.string().email("E-mail inválido"),
@@ -37,6 +36,24 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+// Define required default values that match the schema
+const defaultValues: FormData = {
+  email: "",
+  password: "",
+  confirmPassword: "",
+  fullName: "",
+  cnpj: "",
+  address: "",
+  cro: "",
+  specialty: "",
+  city: "",
+  state: "",
+  neighborhood: "",
+  zipCode: "",
+  phone: "",
+  receiveNews: false
+};
 
 export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
@@ -71,22 +88,7 @@ export default function RegistrationForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      fullName: "",
-      cnpj: "",
-      address: "",
-      cro: "",
-      specialty: "",
-      city: "",
-      state: "",
-      neighborhood: "",
-      zipCode: "",
-      phone: "",
-      receiveNews: false
-    }
+    defaultValues
   });
 
   async function onSubmit(values: FormData) {
