@@ -166,12 +166,12 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
               <SelectContent className="bg-white">
                 {specialties && specialties.length > 0 ? (
                   specialties.map((specialty) => (
-                    <SelectItem key={specialty.id} value={specialty.name}>
+                    <SelectItem key={specialty.id} value={specialty.name || specialty.id}>
                       {specialty.name}
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="" disabled>
+                  <SelectItem value="no-specialties" disabled>
                     Nenhuma especialidade encontrada
                   </SelectItem>
                 )}
@@ -199,4 +199,3 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
     </div>
   );
 };
-
