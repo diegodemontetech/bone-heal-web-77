@@ -6,7 +6,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,6 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
+import { PhysicalPersonFields } from "./personal/PhysicalPersonFields";
+import { LegalPersonFields } from "./personal/LegalPersonFields";
+import { ProfessionalFields } from "./personal/ProfessionalFields";
 
 interface PersonalSectionProps {
   form: UseFormReturn<any>;
@@ -28,7 +30,6 @@ interface PersonalSectionProps {
 export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => {
   const pessoaTipo = form.watch('pessoa_tipo');
 
-  // Add more detailed logging
   console.log('PersonalSection rendered with specialties:', {
     count: specialties?.length || 0,
     specialtiesList: specialties,
@@ -61,141 +62,12 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
       />
 
       {pessoaTipo === 'fisica' ? (
-        <>
-          <FormField
-            control={form.control}
-            name="fullName"
-            rules={{ required: "Nome completo é obrigatório" }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome Completo</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cpf"
-            rules={{ 
-              required: "CPF é obrigatório",
-              pattern: {
-                value: /^\d{11}$/,
-                message: "CPF deve conter 11 dígitos"
-              }
-            }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CPF</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </>
+        <PhysicalPersonFields form={form} />
       ) : (
-        <>
-          <FormField
-            control={form.control}
-            name="razao_social"
-            rules={{ required: "Razão Social é obrigatória" }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Razão Social</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="nome_fantasia"
-            rules={{ required: "Nome Fantasia é obrigatório" }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome Fantasia</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cnpj"
-            rules={{ 
-              required: "CNPJ é obrigatório",
-              pattern: {
-                value: /^\d{14}$/,
-                message: "CNPJ deve conter 14 dígitos"
-              }
-            }}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CNPJ</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </>
+        <LegalPersonFields form={form} />
       )}
 
-      <FormField
-        control={form.control}
-        name="specialty"
-        rules={{ required: "Especialidade é obrigatória" }}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Especialidade</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value}>
-              <FormControl>
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Selecione uma especialidade" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent className="bg-white">
-                {specialties && specialties.length > 0 ? (
-                  specialties.map((specialty) => (
-                    <SelectItem key={specialty.id} value={specialty.name || specialty.id}>
-                      {specialty.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="no-specialties" disabled>
-                    Nenhuma especialidade encontrada
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="cro"
-        rules={{ required: "CRO é obrigatório" }}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>CRO</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <ProfessionalFields form={form} specialties={specialties} />
     </div>
   );
 };
