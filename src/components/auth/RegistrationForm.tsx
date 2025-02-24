@@ -213,8 +213,8 @@ const RegistrationForm = () => {
           type="submit" 
           className={`w-full ${
             (!isDirty || !isValid || isSubmitting || specialtiesLoading)
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-[#6E1A35]"
+              ? "opacity-50"
+              : "bg-[#8B1F41] hover:bg-[#6E1A35]"
           }`}
           disabled={!isDirty || !isValid || isSubmitting || specialtiesLoading}
         >
