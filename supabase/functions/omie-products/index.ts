@@ -20,118 +20,91 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Iniciando sincronização de produtos...');
-    
-    const omieProducts = await listOmieProducts();
-    console.log(`Encontrados ${omieProducts.length} produtos no Omie`);
+    const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        call: "ListarProdutos",
+        app_key: OMIE_APP_KEY,
+        app_secret: OMIE_APP_SECRET,
+        param: [{
+          pagina: 1,
+          registros_por_pagina: 50,
+          apenas_importado_api: "N",
+          filtrar_apenas_omiepdv: "N"
+        }]
+      })
+    });
 
-    let updatedCount = 0;
-    let errorCount = 0;
-    let errors = [];
+    if (!response.ok) {
+      throw new Error(`Erro na API do Omie: ${response.statusText}`);
+    }
 
-    for (const omieProduct of omieProducts) {
-      try {
-        if (!omieProduct.codigo) {
-          console.error('Produto sem código Omie:', omieProduct);
-          errors.push(`Produto sem código Omie: ${JSON.stringify(omieProduct)}`);
-          errorCount++;
-          continue;
-        }
+    const data = await response.json();
+    console.log('Resposta do Omie:', data);
 
-        console.log('Processando produto:', {
-          codigo: omieProduct.codigo,
-          nome: omieProduct.descricao,
-          preco: omieProduct.valor_unitario,
-          inativo: omieProduct.inativo
+    if (!data.produtos_cadastro || !Array.isArray(data.produtos_cadastro)) {
+      throw new Error('Formato de resposta inválido do Omie');
+    }
+
+    for (const produto of data.produtos_cadastro) {
+      console.log('Dados do produto do Omie:', produto);
+      
+      // Garantir que o preço seja um número
+      const precoOmie = typeof produto.valor_unitario === 'string' 
+        ? parseFloat(produto.valor_unitario.replace(',', '.'))
+        : Number(produto.valor_unitario);
+
+      console.log(`Preço convertido: ${precoOmie}`);
+
+      const { data: produtos, error: selectError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('omie_code', produto.codigo)
+        .maybeSingle();
+
+      if (selectError) {
+        console.error('Erro ao buscar produto:', selectError);
+        continue;
+      }
+
+      if (produtos) {
+        console.log('Atualizando produto:', {
+          codigo: produto.codigo,
+          precoAtual: produtos.price,
+          precoNovo: precoOmie,
+          ativoAtual: produtos.active,
+          ativoNovo: produto.inativo === "N"
         });
 
-        // Buscar produto existente pelo código Omie
-        const { data: existingProduct, error: findError } = await supabase
+        const { error: updateError } = await supabase
           .from('products')
-          .select('id, price, active')
-          .eq('omie_code', omieProduct.codigo)
-          .maybeSingle();
+          .update({
+            price: precoOmie,
+            active: produto.inativo === "N",
+            omie_sync: true,
+            omie_last_update: new Date().toISOString()
+          })
+          .eq('id', produtos.id);
 
-        if (findError) {
-          console.error('Erro ao buscar produto:', findError);
-          errors.push(`Erro ao buscar produto ${omieProduct.codigo}: ${findError.message}`);
-          errorCount++;
-          continue;
+        if (updateError) {
+          console.error('Erro ao atualizar produto:', updateError);
+          throw updateError;
         }
 
-        if (existingProduct) {
-          // Convertendo preço do Omie (pode vir como string "319,00" ou número)
-          let omiePrice = omieProduct.valor_unitario;
-          if (typeof omiePrice === 'string') {
-            omiePrice = parseFloat(omiePrice.replace('.', '').replace(',', '.'));
-          }
-
-          const isActive = omieProduct.inativo === "N";
-
-          console.log('Dados do produto:', {
-            codigo: omieProduct.codigo,
-            precoAtual: existingProduct.price,
-            precoOmie: omiePrice,
-            ativoAtual: existingProduct.active,
-            ativoOmie: isActive
-          });
-
-          // Só atualiza se houver mudança no preço ou no status
-          if (existingProduct.price !== omiePrice || existingProduct.active !== isActive) {
-            console.log('Atualizando produto:', omieProduct.codigo);
-            
-            const { error: updateError } = await supabase
-              .from('products')
-              .update({
-                price: omiePrice,
-                active: isActive,
-                omie_sync: true,
-                omie_last_update: new Date().toISOString()
-              })
-              .eq('id', existingProduct.id);
-
-            if (updateError) {
-              console.error('Erro ao atualizar produto:', updateError);
-              errors.push(`Erro ao atualizar produto ${omieProduct.codigo}: ${updateError.message}`);
-              errorCount++;
-              continue;
-            }
-
-            console.log('Produto atualizado com sucesso:', {
-              codigo: omieProduct.codigo,
-              precoAntigo: existingProduct.price,
-              precoNovo: omiePrice,
-              ativoAntigo: existingProduct.active,
-              ativoNovo: isActive
-            });
-            updatedCount++;
-          } else {
-            console.log('Produto já está atualizado:', omieProduct.codigo);
-          }
-        } else {
-          console.log('Produto não encontrado no e-commerce:', omieProduct.codigo);
-        }
-      } catch (productError) {
-        console.error(`Erro ao processar produto ${omieProduct.codigo}:`, productError);
-        errors.push(`Erro ao processar produto ${omieProduct.codigo}: ${productError.message}`);
-        errorCount++;
+        console.log('Produto atualizado com sucesso:', produto.codigo);
       }
     }
 
-    const summary = {
+    return new Response(JSON.stringify({
       success: true,
-      message: `Sincronização concluída: ${omieProducts.length} produtos processados, ${updatedCount} atualizados, ${errorCount} erros`,
-      errors: errors
-    };
-
-    console.log('Resumo da sincronização:', summary);
-
-    return new Response(JSON.stringify(summary), {
+      message: 'Sincronização concluída com sucesso'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('Erro na sincronização:', error);
+    console.error('Erro crítico:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message,
@@ -142,37 +115,3 @@ serve(async (req) => {
     });
   }
 });
-
-async function listOmieProducts() {
-  console.log('Buscando lista de produtos do Omie...');
-  
-  const response = await fetch('https://app.omie.com.br/api/v1/geral/produtos/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      call: "ListarProdutos",
-      app_key: OMIE_APP_KEY,
-      app_secret: OMIE_APP_SECRET,
-      param: [{
-        pagina: 1,
-        registros_por_pagina: 500,
-        apenas_importado_api: "N",
-        filtrar_apenas_omiepdv: "N"
-      }]
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Erro ao buscar produtos do Omie: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  
-  if (!data.produtos_cadastro || !Array.isArray(data.produtos_cadastro)) {
-    throw new Error('Resposta inválida do Omie');
-  }
-
-  return data.produtos_cadastro;
-}
