@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,12 +26,15 @@ const AdminProducts = () => {
   const { data: products, refetch, isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
+      console.log("Fetching admin products...");
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .order("created_at", { ascending: false });
       
       if (error) throw error;
+
+      console.log("Admin products fetched:", data);
       return data;
     },
   });

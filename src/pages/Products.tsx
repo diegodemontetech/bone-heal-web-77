@@ -23,8 +23,7 @@ export default function Products() {
       
       let query = supabase
         .from("products")
-        .select("*")
-        .eq("active", true); // Make sure we're explicitly querying for active products
+        .select("*");
 
       // Apply sorting
       if (filters.sortBy) {
