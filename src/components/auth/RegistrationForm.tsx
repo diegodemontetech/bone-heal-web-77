@@ -73,9 +73,7 @@ const formSchema = z.object({
     message: "Senha deve ter pelo menos 6 caracteres.",
   }),
   confirmPassword: z.string(),
-  specialty: z.string().uuid({
-    message: "Selecione uma especialidade válida.",
-  }),
+  specialty: z.string(),
   cro: z.string().min(3, {
     message: "CRO deve ter pelo menos 3 caracteres.",
   }),
@@ -107,7 +105,7 @@ const RegistrationForm = () => {
     mode: "onChange",
   });
 
-  const { data: specialties, isLoading: specialtiesLoading, error } = useQuery({
+  const { data: specialties, isLoading: specialtiesLoading } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
       console.log('Fetching dental specialties...');
@@ -131,7 +129,6 @@ const RegistrationForm = () => {
     try {
       console.log('Starting registration process with data:', data);
       
-      // 1. Create the user account
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -153,7 +150,6 @@ const RegistrationForm = () => {
         return;
       }
 
-      // 2. Create the profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -182,7 +178,6 @@ const RegistrationForm = () => {
       if (profileError) {
         console.error('Profile creation error:', profileError);
         toast.error("Erro ao criar perfil. Por favor, tente novamente.");
-        // Try to clean up the auth user if profile creation fails
         await supabase.auth.signOut();
         return;
       }
@@ -196,22 +191,14 @@ const RegistrationForm = () => {
     }
   };
 
-  if (error) {
-    console.error('Error in specialties query:', error);
-  }
-
-  const isSubmitting = form.formState.isSubmitting;
-  const isValid = form.formState.isValid;
-  const isDirty = form.formState.isDirty;
-
-  // Debug logs
+  // Remove the UUID validation from specialty field
+  // Add debug logs for form state
   console.log('Form State:', {
-    isValid,
-    isDirty,
-    errors: form.formState.errors,
     values: form.getValues(),
-    touchedFields: form.formState.touchedFields,
-    dirtyFields: form.formState.dirtyFields
+    errors: form.formState.errors,
+    isValid: form.formState.isValid,
+    isDirty: form.formState.isDirty,
+    dirtyFields: form.formState.dirtyFields,
   });
 
   return (
@@ -220,14 +207,9 @@ const RegistrationForm = () => {
         <RegistrationFormFields form={form} specialties={specialties || []} />
         <Button 
           type="submit" 
-          className={`w-full transition-colors ${
-            !isDirty || !isValid || isSubmitting || specialtiesLoading
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-[#6E1A35]"
-          }`}
-          disabled={!isDirty || !isValid || isSubmitting || specialtiesLoading}
+          className="w-full hover:bg-[#6E1A35]"
         >
-          {isSubmitting ? "Registrando..." : specialtiesLoading ? "Carregando..." : "Registrar"}
+          {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
         </Button>
       </form>
     </Form>
