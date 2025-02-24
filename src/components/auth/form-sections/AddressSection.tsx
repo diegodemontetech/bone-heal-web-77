@@ -15,20 +15,43 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface AddressSectionProps {
   form: UseFormReturn<FormData>;
-  cities: Array<{
-    id: number;
-    omie_code: string;
-    name: string;
-    state: string;
-  }>;
 }
 
-export const AddressSection = ({ form, cities }: AddressSectionProps) => {
-  // Get unique states from cities array
-  const states = [...new Set(cities.map(city => city.state))].sort();
-  
+export const AddressSection = ({ form }: AddressSectionProps) => {
+  // Fetch states
+  const { data: states = [] } = useQuery({
+    queryKey: ['ibge-states'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ibge_states')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const selectedState = form.watch('state');
-  const filteredCities = cities.filter(city => city.state === selectedState);
+
+  // Fetch cities based on selected state
+  const { data: cities = [] } = useQuery({
+    queryKey: ['ibge-cities', selectedState],
+    queryFn: async () => {
+      const selectedStateData = states.find(s => s.uf === selectedState);
+      if (!selectedStateData) return [];
+
+      const { data, error } = await supabase
+        .from('ibge_cities')
+        .select('*')
+        .eq('state_id', selectedStateData.id)
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedState
+  });
 
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedZipCode = e.target.value.replace(/\D/g, '').substring(0, 8);
@@ -55,7 +78,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
 
         <FormField
           control={form.control}
-          name="endereco_numero"
+          name="number"
           rules={{ required: "Número é obrigatório" }}
           render={({ field }) => (
             <FormItem>
@@ -81,7 +104,6 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
                 field.onChange(value);
                 // Reset city when state changes
                 form.setValue('city', '');
-                form.setValue('omie_city_code', '');
               }} 
               value={field.value}
             >
@@ -92,8 +114,8 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
               </FormControl>
               <SelectContent>
                 {states.map(state => (
-                  <SelectItem key={state} value={state}>
-                    {state}
+                  <SelectItem key={state.id} value={state.uf}>
+                    {state.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -112,13 +134,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
             <FormItem>
               <FormLabel>Cidade</FormLabel>
               <Select 
-                onValueChange={(value) => {
-                  const selectedCity = filteredCities.find(city => city.name === value);
-                  field.onChange(value);
-                  if (selectedCity) {
-                    form.setValue('omie_city_code', selectedCity.omie_code);
-                  }
-                }} 
+                onValueChange={field.onChange}
                 value={field.value}
                 disabled={!selectedState}
               >
@@ -128,7 +144,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {filteredCities.map((city) => (
+                  {cities.map((city) => (
                     <SelectItem key={city.id} value={city.name}>
                       {city.name}
                     </SelectItem>
