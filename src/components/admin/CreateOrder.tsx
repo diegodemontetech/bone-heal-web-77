@@ -34,21 +34,21 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const { data: products = [], isLoading: isLoadingProducts } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      console.log("Fetching products..."); // Debug log
+      console.log("Buscando produtos..."); // Log de debug em português
 
       const { data, error } = await supabase
         .from("products")
         .select("*")
         .eq('active', true)
-        .eq('omie_code', '7630401') // Filtrando pelo SKU específico
+        .eq('omie_code', '7630401')
         .order("name");
 
       if (error) {
-        console.error("Error fetching products:", error);
+        console.error("Erro ao buscar produtos:", error);
         return [];
       }
       
-      console.log("Products fetched:", data); // Debug log para ver os produtos retornados
+      console.log("Produtos encontrados:", data);
       return data || [];
     },
   });
@@ -82,7 +82,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         return;
       }
 
-      // Verificação mais rigorosa dos produtos
+      // Verificação dos produtos
       const invalidProducts = selectedProducts.filter(
         product => !product.omie_code || !product.omie_product_id
       );
@@ -106,8 +106,9 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
       const total = calculateTotal();
 
-      console.log("Creating order with items:", orderItems); // Debug log
+      console.log("Criando pedido com itens:", orderItems);
 
+      // Agora o status inicial é 'aguardando_pagamento' em vez de 'pending'
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -115,7 +116,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           items: orderItems,
           total_amount: total,
           subtotal: total,
-          status: "pending",
+          status: 'aguardando_pagamento',
           omie_status: "novo",
           shipping_address: {
             address: selectedCustomer.address,
@@ -167,7 +168,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       });
       
     } catch (error: any) {
-      console.error("Error creating order:", error);
+      console.error("Erro ao criar pedido:", error);
       toast.error("Erro ao criar pedido");
     } finally {
       setLoading(false);
@@ -176,20 +177,19 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   useEffect(() => {
     if (products.length > 0 && selectedProducts.length === 0) {
-      // Procurar pelo produto específico
-      const specificProduct = products[0]; // Como filtramos pelo SKU, será o único produto
+      const specificProduct = products[0];
       
       if (specificProduct) {
-        console.log("Selected specific product:", specificProduct);
+        console.log("Produto específico selecionado:", specificProduct);
         setSelectedProducts([{
           ...specificProduct,
           quantity: 1
         }]);
       } else {
-        console.log("No specific product found with SKU 7630401"); // Debug log
+        console.log("Nenhum produto encontrado com o SKU 7630401");
       }
     } else if (products.length === 0) {
-      console.log("No products returned from query"); // Debug log
+      console.log("Nenhum produto retornado da consulta");
     }
   }, [products]);
 
