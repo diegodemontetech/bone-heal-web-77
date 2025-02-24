@@ -57,7 +57,7 @@ export default function Navbar() {
       <div className="container flex items-center justify-between py-2">
         <Link to="/" className="flex items-center gap-2">
           <img 
-            src="https://i.ibb.co/Mkv44CY8/7c232e-500-x-100-px-1.png" 
+            src="/lovable-uploads/c5a855af-42eb-4ffd-8fa0-bacd9ce220b3.png"
             alt="BoneHeal" 
             className="h-10"
           />
@@ -116,14 +116,14 @@ export default function Navbar() {
         {session ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <div className="cursor-pointer">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={session.user.user_metadata?.avatar_url} />
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
-              </Button>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => navigate("/profile")}>
@@ -147,10 +147,12 @@ export default function Navbar() {
         )}
 
         <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger className="md:hidden">
-            <Button variant="outline" size="icon">
-              <Menu />
-            </Button>
+          <SheetTrigger asChild>
+            <div className="md:hidden">
+              <Button variant="outline" size="icon">
+                <Menu />
+              </Button>
+            </div>
           </SheetTrigger>
           <SheetContent side="left" className="sm:max-w-sm">
             <SheetHeader>
