@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { importIBGEData } from '@/utils/importIBGEData';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
@@ -26,16 +26,6 @@ const Login = () => {
     },
   });
 
-  const handleImportData = async () => {
-    try {
-      await importIBGEData();
-      toast.success('IBGE data imported successfully!');
-    } catch (error) {
-      console.error('Error importing data:', error);
-      toast.error('Failed to import IBGE data');
-    }
-  };
-
   const onSubmit = async (values: LoginFormData) => {
     try {
       setLoading(true);
@@ -60,10 +50,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Button onClick={handleImportData} className="mb-4">
-        Import IBGE Data
-      </Button>
-      
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
