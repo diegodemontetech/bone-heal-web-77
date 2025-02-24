@@ -20,7 +20,7 @@ interface RegistrationFormFieldsProps {
 
 const RegistrationFormFields: React.FC<RegistrationFormFieldsProps> = ({ 
   specialties, 
-  form
+  form 
 }) => {
   return (
     <>

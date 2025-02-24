@@ -20,6 +20,7 @@ export interface FormData {
   cpf: string;
   cnpj: string;
   address: string;
+  complemento: string; // Add this field to the interface
   omie_city_code: string;
   cro: string;
   specialty: string;
@@ -171,7 +172,6 @@ export default function RegistrationForm() {
         <RegistrationFormFields 
           specialties={specialties || []} 
           form={form} 
-          cities={cities || []}
         />
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Cadastrando..." : "Cadastrar"}

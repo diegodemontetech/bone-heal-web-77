@@ -34,11 +34,14 @@ export const AddressAndComplement = ({ form }: AddressAndComplementProps) => {
       <FormField
         control={form.control}
         name="complemento"
-        render={({ field }) => (
+        render={({ field: { value, ...fieldProps } }) => (
           <FormItem>
             <FormLabel>Número / Complemento</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input 
+                {...fieldProps}
+                value={typeof value === 'string' ? value : ''}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
