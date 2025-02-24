@@ -45,8 +45,8 @@ const WhatsAppWidget = () => {
         </motion.div>
       )}
     </AnimatePresence>
-  </div>
   );
 };
 
 export default WhatsAppWidget;
+
