@@ -113,7 +113,7 @@ export default function RegistrationForm() {
       zipCode: "",
       phone: "",
       receiveNews: false,
-    } as FormData, // Explicitly cast to FormData type
+    },
   });
 
   async function onSubmit(values: FormData) {
