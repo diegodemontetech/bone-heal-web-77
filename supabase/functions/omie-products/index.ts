@@ -39,36 +39,51 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      throw new Error(`Erro na requisição ao Omie: ${response.status} - ${response.statusText}`);
+      const error = await response.text();
+      console.error(`Erro na requisição ao Omie: ${response.status} - ${error}`);
+      throw new Error(`Erro na requisição ao Omie: ${response.status}`);
     }
 
     const data = await response.json();
+    
+    if (!data || typeof data !== 'object') {
+      console.error('Resposta do Omie não é um objeto válido:', data);
+      throw new Error('Resposta inválida do Omie');
+    }
+
     console.log('Resposta do Omie:', JSON.stringify(data, null, 2));
 
-    if (!data.produtos_cadastro || !Array.isArray(data.produtos_cadastro)) {
+    if (!data.produto_servico_cadastro || !Array.isArray(data.produto_servico_cadastro)) {
+      console.error('Formato de resposta inválido do Omie - produto_servico_cadastro não encontrado ou não é um array');
       throw new Error('Formato de resposta inválido do Omie');
     }
 
     let atualizados = 0;
     let erros = 0;
 
-    for (const produto of data.produtos_cadastro) {
+    for (const produto of data.produto_servico_cadastro) {
       try {
-        console.log(`Processando produto: ${produto.codigo} - ${produto.descricao}`);
+        console.log(`Processando produto: ${produto.codigo}`);
         
-        // Converte o preço para número, removendo formatação
-        const precoStr = produto.valor_unitario.toString().replace(',', '.');
-        const preco = parseFloat(precoStr);
+        if (!produto.codigo || !produto.valor_unitario) {
+          console.error(`Produto com dados inválidos:`, produto);
+          erros++;
+          continue;
+        }
+
+        // Garante que o valor é um número e converte para formato decimal
+        const valorStr = produto.valor_unitario.toString().replace(',', '.');
+        const preco = parseFloat(valorStr);
         
         if (isNaN(preco)) {
-          console.error(`Erro ao converter preço para o produto ${produto.codigo}: ${produto.valor_unitario}`);
+          console.error(`Erro ao converter preço do produto ${produto.codigo}: ${valorStr}`);
           erros++;
           continue;
         }
 
         const { data: produtoExistente, error: selectError } = await supabase
           .from('products')
-          .select('*')
+          .select('price, active')
           .eq('omie_code', produto.codigo)
           .maybeSingle();
 
@@ -78,33 +93,38 @@ serve(async (req) => {
           continue;
         }
 
-        if (produtoExistente) {
-          console.log(`Atualizando produto ${produto.codigo}:`, {
-            precoAtual: produtoExistente.price,
-            precoNovo: preco,
-            ativoAtual: produtoExistente.active,
-            ativoNovo: produto.inativo === "N"
-          });
-
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({
-              price: preco,
-              active: produto.inativo === "N",
-              omie_sync: true,
-              omie_last_update: new Date().toISOString()
-            })
-            .eq('omie_code', produto.codigo);
-
-          if (updateError) {
-            console.error(`Erro ao atualizar produto ${produto.codigo}:`, updateError);
-            erros++;
-            continue;
-          }
-
-          atualizados++;
-          console.log(`Produto ${produto.codigo} atualizado com sucesso`);
+        if (!produtoExistente) {
+          console.log(`Produto ${produto.codigo} não encontrado no banco de dados`);
+          continue;
         }
+
+        const isAtivo = produto.inativo === "N";
+        
+        console.log(`Atualizando produto ${produto.codigo}:`, {
+          precoAtual: produtoExistente.price,
+          precoNovo: preco,
+          ativoAtual: produtoExistente.active,
+          ativoNovo: isAtivo
+        });
+
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({
+            price: preco,
+            active: isAtivo,
+            omie_sync: true,
+            omie_last_update: new Date().toISOString()
+          })
+          .eq('omie_code', produto.codigo);
+
+        if (updateError) {
+          console.error(`Erro ao atualizar produto ${produto.codigo}:`, updateError);
+          erros++;
+          continue;
+        }
+
+        atualizados++;
+        console.log(`Produto ${produto.codigo} atualizado com sucesso`);
       } catch (error) {
         console.error(`Erro ao processar produto ${produto.codigo}:`, error);
         erros++;
