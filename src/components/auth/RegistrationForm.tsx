@@ -1,5 +1,6 @@
+
 import React, { useState } from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import RegistrationFormFields from "./RegistrationFormFields";
@@ -17,14 +18,14 @@ export interface FormData {
   cnpj: string;
   address: string;
   omie_city_code: string;
-  cro: string; // Changed from optional to required to match defaultValues
-  specialty: string; // Changed from optional to required to match defaultValues
-  city: string; // Changed from optional to required to match defaultValues
-  state: string; // Changed from optional to required to match defaultValues
-  neighborhood: string; // Changed from optional to required to match defaultValues
-  zipCode: string; // Changed from optional to required to match defaultValues
-  phone: string; // Changed from optional to required to match defaultValues
-  receiveNews: boolean; // Changed from optional to required to match defaultValues
+  cro: string;
+  specialty: string;
+  city: string;
+  state: string;
+  neighborhood: string;
+  zipCode: string;
+  phone: string;
+  receiveNews: boolean;
 }
 
 export default function RegistrationForm() {

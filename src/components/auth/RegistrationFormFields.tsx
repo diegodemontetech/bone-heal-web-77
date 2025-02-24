@@ -5,12 +5,13 @@ import { PersonalSection } from "./form-sections/PersonalSection";
 import { AddressSection } from "./form-sections/AddressSection";
 import { ContactSection } from "./form-sections/ContactSection";
 import { AccountSection } from "./form-sections/AccountSection";
+import { FormData } from './RegistrationForm';
 
 // Match the expected type from PersonalSection
 interface DentalSpecialty {
   id: string;
   name: string;
-  created_at: string;  // Make it required to match PersonalSection expectations
+  created_at: string;
 }
 
 interface City {
@@ -18,24 +19,6 @@ interface City {
   omie_code: string;
   name: string;
   state: string;
-}
-
-// Make sure this matches exactly what's in RegistrationForm
-interface FormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  fullName: string;
-  cnpj?: string;
-  cro: string;
-  specialty: string;
-  address: string;
-  city: string;
-  state: string;
-  neighborhood: string;
-  zipCode: string;
-  phone?: string;
-  receiveNews: boolean;
 }
 
 interface RegistrationFormFieldsProps {
