@@ -29,20 +29,50 @@ const Login = () => {
     },
   });
 
+  // Check if profile exists
+  const checkProfile = async (userId: string) => {
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw new Error('Erro ao buscar perfil');
+      }
+
+      return profile;
+    } catch (error) {
+      console.error('Profile check error:', error);
+      throw error;
+    }
+  };
+
   const onSubmit = async (values: LoginFormData) => {
     try {
       setLoading(true);
       setError(null);
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
 
       if (signInError) throw signInError;
+      
+      if (user) {
+        // Check if profile exists
+        const profile = await checkProfile(user.id);
+        
+        if (!profile) {
+          throw new Error('Perfil não encontrado. Por favor, registre-se primeiro.');
+        }
 
-      toast.success('Login realizado com sucesso!');
-      navigate('/'); // Changed from /dashboard to /
+        toast.success('Login realizado com sucesso!');
+        navigate('/');
+      }
 
     } catch (error: any) {
       console.error('Login error:', error);
@@ -52,6 +82,23 @@ const Login = () => {
       setLoading(false);
     }
   };
+
+  // Check if already logged in
+  React.useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        try {
+          await checkProfile(session.user.id);
+          navigate('/');
+        } catch (error) {
+          console.error('Session profile check error:', error);
+        }
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">
