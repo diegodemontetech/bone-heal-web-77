@@ -33,14 +33,11 @@ const formSchema = z.object({
   
   // Hidden fields that will be populated during form submission
   omie_city_code: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Senhas não conferem",
-  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const defaultValues: FormData = {
+const defaultValues: Required<FormData> = {
   email: "",
   password: "",
   confirmPassword: "",
@@ -91,7 +88,7 @@ export default function RegistrationForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: defaultValues as FormData,
   });
 
   async function onSubmit(values: FormData) {
@@ -158,4 +155,3 @@ export default function RegistrationForm() {
     </Form>
   );
 }
-
