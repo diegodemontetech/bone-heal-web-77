@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-import { FormData } from "../../RegistrationForm";
+import { FormData } from "../../types/registration-form";
 
 interface NeighborhoodAndZipCodeProps {
   form: UseFormReturn<FormData>;

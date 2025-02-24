@@ -5,7 +5,7 @@ import { PersonalSection } from "./form-sections/PersonalSection";
 import { AddressSection } from "./form-sections/AddressSection";
 import { ContactSection } from "./form-sections/ContactSection";
 import { AccountSection } from "./form-sections/AccountSection";
-import { FormData } from './RegistrationForm';
+import { FormData } from './types/registration-form';
 
 interface DentalSpecialty {
   id: string;

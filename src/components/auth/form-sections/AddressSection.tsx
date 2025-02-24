@@ -1,6 +1,6 @@
 
 import { UseFormReturn } from "react-hook-form";
-import { FormData } from "../RegistrationForm";
+import { FormData } from "../types/registration-form";
 import { StateAndCitySelector } from "./address/StateAndCitySelector";
 import { AddressAndComplement } from "./address/AddressAndComplement";
 import { NeighborhoodAndZipCode } from "./address/NeighborhoodAndZipCode";
