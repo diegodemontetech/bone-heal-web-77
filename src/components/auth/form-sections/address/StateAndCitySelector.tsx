@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UseFormReturn } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { FormData } from "../../RegistrationForm";
+import { FormData } from "../../types/registration-form";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 
