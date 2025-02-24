@@ -22,33 +22,40 @@ serve(async (req) => {
     console.log(`Processing ${action} for order ${order_id}`)
 
     if (action === 'sync_order') {
+      // Fetch order with detailed customer information
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .select(`
           *,
-          user_id,
-          items
+          user:user_id (
+            id,
+            profiles (
+              *,
+              city_data:ibge_cities!inner(
+                *,
+                state:ibge_states!inner(*)
+              )
+            )
+          )
         `)
         .eq('id', order_id)
         .single()
 
       if (orderError) throw new Error(`Error fetching order: ${orderError.message}`)
+      if (!order) throw new Error(`Order not found: ${order_id}`)
       
-      // Get customer profile
-      const { data: customer, error: customerError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', order.user_id)
-        .single()
+      const profile = order.user?.profiles?.[0]
+      if (!profile) throw new Error(`Profile not found for user: ${order.user_id}`)
+      
+      // Get IBGE data
+      const cityData = profile.city_data?.[0]
+      if (!cityData) throw new Error(`City IBGE data not found for profile: ${profile.id}`)
 
-      if (customerError) throw new Error(`Error fetching customer: ${customerError.message}`)
-
-      // First ensure customer exists in Omie
       console.log('Ensuring customer exists in Omie...')
-      const omieCustomer = await ensureCustomerInOmie(customer)
+      const omieCustomer = await ensureCustomerInOmie(profile, cityData)
       console.log('Customer processed in Omie:', omieCustomer)
 
-      // Then create order in Omie
+      console.log('Creating order in Omie...')
       const omieOrder = await createOmieOrder(order, omieCustomer)
       console.log('Order created in Omie:', omieOrder)
 
@@ -84,33 +91,34 @@ serve(async (req) => {
   }
 })
 
-async function ensureCustomerInOmie(customer: any) {
+async function ensureCustomerInOmie(profile: any, cityData: any) {
   try {
     // Prepare customer data based on person type
-    const isPessoaFisica = !customer.cnpj || customer.cnpj.trim() === '';
+    const isPessoaFisica = !profile.cnpj || profile.cnpj.trim() === '';
     
     const customerData = {
-      codigo_cliente_integracao: customer.id,
-      razao_social: customer.full_name,
-      nome_fantasia: customer.full_name,
-      cnpj_cpf: isPessoaFisica ? (customer.cpf || '').replace(/\D/g, '') : (customer.cnpj || '').replace(/\D/g, ''),
-      endereco: customer.address,
-      bairro: customer.neighborhood,
-      cidade: customer.city,
-      estado: customer.state,
-      cep: (customer.zip_code || '').replace(/\D/g, ''),
-      telefone1: (customer.phone || '').replace(/\D/g, ''),
-      email: customer.email,
+      codigo_cliente_integracao: profile.id,
+      razao_social: profile.full_name,
+      nome_fantasia: profile.full_name,
+      cnpj_cpf: isPessoaFisica ? (profile.cpf || '').replace(/\D/g, '') : (profile.cnpj || '').replace(/\D/g, ''),
+      endereco: profile.address,
+      endereco_numero: profile.endereco_numero || 'S/N',
+      complemento: profile.complemento || '',
+      bairro: profile.neighborhood,
+      estado: profile.state,
+      cidade: profile.city,
+      estado_ibge: cityData.state.ibge_code,
+      cidade_ibge: cityData.ibge_code,
+      cep: (profile.zip_code || '').replace(/\D/g, ''),
+      telefone1: (profile.phone || '').replace(/\D/g, ''),
+      email: profile.email,
       pessoa_fisica: isPessoaFisica ? "S" : "N",
-      // Default values for Omie requirements
-      contribuinte: customer.contribuinte || '9', // 9 = Não contribuinte
-      tipo_atividade: customer.tipo_atividade || '0', // 0 = Outros
-      endereco_numero: customer.endereco_numero || 'S/N',
-      complemento: customer.complemento || '',
-      inativo: customer.inativo ? "S" : "N",
-      bloqueado: customer.bloqueado ? "S" : "N",
-      exterior: customer.exterior ? "S" : "N",
-      optante_simples_nacional: customer.optante_simples_nacional ? "S" : "N"
+      contribuinte: profile.contribuinte || '9',
+      tipo_atividade: profile.tipo_atividade || '0',
+      inativo: profile.inativo ? "S" : "N",
+      bloqueado: profile.bloqueado ? "S" : "N",
+      exterior: profile.exterior ? "S" : "N",
+      optante_simples_nacional: profile.optante_simples_nacional ? "S" : "N"
     };
 
     // Try to find existing customer in Omie
@@ -121,7 +129,7 @@ async function ensureCustomerInOmie(customer: any) {
         app_key: omieAppKey,
         app_secret: omieAppSecret,
         param: [{
-          codigo_cliente_integracao: customer.id
+          codigo_cliente_integracao: profile.id
         }]
       })
     });
@@ -145,15 +153,6 @@ async function ensureCustomerInOmie(customer: any) {
       if (createResult.faultstring) {
         throw new Error(`Error creating client: ${createResult.faultstring}`);
       }
-
-      // Update local database with Omie code
-      await supabase
-        .from('profiles')
-        .update({
-          omie_code: createResult.codigo_cliente_omie.toString(),
-          omie_sync: true
-        })
-        .eq('id', customer.id);
 
       return { ...customerData, codigo_cliente_omie: createResult.codigo_cliente_omie };
     }

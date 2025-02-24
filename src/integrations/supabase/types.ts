@@ -170,6 +170,56 @@ export type Database = {
         }
         Relationships: []
       }
+      ibge_cities: {
+        Row: {
+          ibge_code: string
+          id: number
+          name: string
+          state_id: number | null
+        }
+        Insert: {
+          ibge_code: string
+          id?: number
+          name: string
+          state_id?: number | null
+        }
+        Update: {
+          ibge_code?: string
+          id?: number
+          name?: string
+          state_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ibge_cities_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "ibge_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ibge_states: {
+        Row: {
+          ibge_code: string
+          id: number
+          name: string
+          uf: string
+        }
+        Insert: {
+          ibge_code: string
+          id?: number
+          name: string
+          uf: string
+        }
+        Update: {
+          ibge_code?: string
+          id?: number
+          name?: string
+          uf?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           author: string | null
