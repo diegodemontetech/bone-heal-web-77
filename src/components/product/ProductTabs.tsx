@@ -3,40 +3,43 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Product } from "@/types/product";
 import ProductReviews from "./ProductReviews";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProductTabsProps {
   product: Product;
 }
 
 const ProductTabs = ({ product }: ProductTabsProps) => {
+  const isMobile = useIsMobile();
+
   return (
     <Tabs defaultValue="description" className="space-y-6">
-      <TabsList className="w-full justify-start border-b rounded-none h-12 bg-transparent p-0 space-x-8">
+      <TabsList className="w-full justify-start h-auto bg-transparent p-0 flex flex-wrap gap-2">
         <TabsTrigger 
           value="description"
-          className="data-[state=active]:border-violet-600 border-b-2 border-transparent rounded-none h-12 px-2"
+          className="bg-gray-50 hover:bg-gray-100 data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-full px-6 py-2 transition-colors"
         >
           Descrição
         </TabsTrigger>
         <TabsTrigger 
           value="details"
-          className="data-[state=active]:border-violet-600 border-b-2 border-transparent rounded-none h-12 px-2"
+          className="bg-gray-50 hover:bg-gray-100 data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-full px-6 py-2 transition-colors"
         >
           Detalhes Técnicos
         </TabsTrigger>
         <TabsTrigger 
           value="reviews"
-          className="data-[state=active]:border-violet-600 border-b-2 border-transparent rounded-none h-12 px-2"
+          className="bg-gray-50 hover:bg-gray-100 data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-full px-6 py-2 transition-colors"
         >
           Avaliações
         </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="description" className="text-gray-600 leading-relaxed">
+      <TabsContent value="description" className="text-gray-600 leading-relaxed mt-6">
         {product.full_description || product.description || "Nenhuma descrição disponível."}
       </TabsContent>
       
-      <TabsContent value="details">
+      <TabsContent value="details" className="mt-6">
         {product.technical_details ? (
           <Table>
             <TableHeader>
@@ -59,7 +62,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
         )}
       </TabsContent>
 
-      <TabsContent value="reviews">
+      <TabsContent value="reviews" className="mt-6">
         <ProductReviews product={product} />
       </TabsContent>
     </Tabs>

@@ -6,6 +6,7 @@ import { useSession } from "@supabase/auth-helpers-react";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Heart, Minus, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProductInfoProps {
   product: {
@@ -21,6 +22,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const [quantity, setQuantity] = useState(1);
   const { addItem, cartItems } = useCart();
   const session = useSession();
+  const isMobile = useIsMobile();
 
   const isInCart = cartItems.some(item => item.id === product.id);
   const price = product.price || 0;
@@ -44,27 +46,31 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
 
   return (
     <div className="space-y-8">
-      <div>
-        <Badge className="mb-4 bg-violet-100 text-violet-900 hover:bg-violet-200">Mais Vendido</Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-4">
-          {product.name}
-        </h1>
-        
-        <div className="flex items-baseline gap-4 mb-6">
-          <p className="text-3xl font-semibold tracking-tight text-gray-900">
-            {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </p>
-          {price > 100 && (
-            <p className="text-sm text-gray-500">
-              ou em até 12x sem juros
+      {!isMobile && (
+        <div>
+          <Badge className="mb-4 bg-violet-100 text-violet-900 hover:bg-violet-200">
+            Mais Vendido
+          </Badge>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 mb-4">
+            {product.name}
+          </h1>
+          
+          <div className="flex items-baseline gap-4 mb-6">
+            <p className="text-3xl font-semibold tracking-tight text-gray-900">
+              {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </p>
-          )}
-        </div>
+            {price > 100 && (
+              <p className="text-sm text-gray-500">
+                ou em até 12x sem juros
+              </p>
+            )}
+          </div>
 
-        <p className="text-gray-600 leading-relaxed">
-          {product.description}
-        </p>
-      </div>
+          <p className="text-gray-600 leading-relaxed">
+            {product.description}
+          </p>
+        </div>
+      )}
 
       {session && price > 0 && (
         <div className="space-y-6">
