@@ -13,15 +13,15 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 const formSchema = z.object({
-  // Campos obrigatórios
-  email: z.string().email("E-mail inválido"),
+  // Required fields with proper validation
+  email: z.string().min(1, "E-mail é obrigatório").email("E-mail inválido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  confirmPassword: z.string(),
+  confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
   fullName: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
   cnpj: z.string().min(1, "CPF/CNPJ é obrigatório"),
   address: z.string().min(2, "Endereço deve ter no mínimo 2 caracteres"),
   
-  // Campos opcionais
+  // Optional fields without validation
   cro: z.string().optional(),
   specialty: z.string().optional(),
   city: z.string().optional(),
@@ -29,7 +29,10 @@ const formSchema = z.object({
   neighborhood: z.string().optional(),
   zipCode: z.string().optional(),
   phone: z.string().optional(),
-  receiveNews: z.boolean().optional().default(false)
+  receiveNews: z.boolean().optional().default(false),
+  
+  // Hidden fields that will be populated during form submission
+  omie_city_code: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Senhas não conferem",
   path: ["confirmPassword"],
@@ -37,7 +40,6 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// Define required default values that match the schema
 const defaultValues: FormData = {
   email: "",
   password: "",
@@ -52,7 +54,8 @@ const defaultValues: FormData = {
   neighborhood: "",
   zipCode: "",
   phone: "",
-  receiveNews: false
+  receiveNews: false,
+  omie_city_code: "",
 };
 
 export default function RegistrationForm() {
@@ -88,7 +91,7 @@ export default function RegistrationForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues
+    defaultValues,
   });
 
   async function onSubmit(values: FormData) {
@@ -111,7 +114,8 @@ export default function RegistrationForm() {
             neighborhood: values.neighborhood || '',
             zip_code: values.zipCode || '',
             phone: values.phone || '',
-            receive_news: values.receiveNews
+            receive_news: values.receiveNews,
+            omie_city_code: values.omie_city_code || '',
           }
         }
       });
@@ -154,3 +158,4 @@ export default function RegistrationForm() {
     </Form>
   );
 }
+
