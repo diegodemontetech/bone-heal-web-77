@@ -9,6 +9,29 @@ const corsHeaders = {
 
 console.log("Omie Integration Function Started");
 
+async function fetchIBGECodes(city: string, state: string) {
+  try {
+    const response = await fetch(
+      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`
+    );
+    const cities = await response.json();
+    const cityData = cities.find(
+      (c: any) => c.nome.toUpperCase() === city.toUpperCase()
+    );
+    
+    if (cityData) {
+      return {
+        cidade_ibge: cityData.id.toString(),
+        estado_ibge: cityData.microrregiao.mesorregiao.UF.id.toString()
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching IBGE codes:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -59,18 +82,38 @@ serve(async (req) => {
       throw new Error('Missing required address information');
     }
 
+    // Fetch IBGE codes if not present
+    let ibgeCodes = null;
+    if (!order.profiles.cidade_ibge || !order.profiles.estado_ibge) {
+      ibgeCodes = await fetchIBGECodes(order.profiles.city, order.profiles.state);
+      if (ibgeCodes) {
+        // Update the profile with IBGE codes
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({
+            cidade_ibge: ibgeCodes.cidade_ibge,
+            estado_ibge: ibgeCodes.estado_ibge
+          })
+          .eq('id', order.profiles.id);
+
+        if (updateError) {
+          console.error("Error updating profile with IBGE codes:", updateError);
+        }
+      }
+    }
+
     // Format address fields
     const formattedAddress = {
       endereco: order.profiles.address.trim(),
-      endereco_numero: "S/N",
-      complemento: "",
+      endereco_numero: order.profiles.endereco_numero || "S/N",
+      complemento: order.profiles.complemento || "",
       bairro: order.profiles.neighborhood.trim(),
       estado: order.profiles.state.trim().toUpperCase(),
       cidade: order.profiles.city.trim().toUpperCase(),
       cep: order.profiles.zip_code.replace(/\D/g, ''),
       codigo_pais: "1058", // Brasil
-      cidade_ibge: "",
-      estado_ibge: ""
+      cidade_ibge: ibgeCodes?.cidade_ibge || order.profiles.cidade_ibge || "",
+      estado_ibge: ibgeCodes?.estado_ibge || order.profiles.estado_ibge || ""
     };
 
     // Check existing client
@@ -110,12 +153,13 @@ serve(async (req) => {
           telefone1_numero: order.profiles.phone?.substring(2) || "",
           ...formattedAddress,
           codigo_cliente_omie: parseInt(order.profiles.omie_code),
-          inativo: "N",
-          bloqueado: "N",
-          exterior: "N",
-          pessoa_fisica: order.profiles.cpf ? "S" : "N",
-          contribuinte: "2",
-          optante_simples_nacional: "N",
+          inativo: order.profiles.inativo ? "S" : "N",
+          bloqueado: order.profiles.bloqueado ? "S" : "N",
+          exterior: order.profiles.exterior ? "S" : "N",
+          pessoa_fisica: order.profiles.pessoa_fisica ? "S" : "N",
+          contribuinte: order.profiles.contribuinte || "2",
+          optante_simples_nacional: order.profiles.optante_simples_nacional ? "S" : "N",
+          tipo_atividade: order.profiles.tipo_atividade || "0",
           tags: ["ecommerce", "cliente_ativo"]
         }]
       };
@@ -235,4 +279,3 @@ serve(async (req) => {
     );
   }
 });
-
