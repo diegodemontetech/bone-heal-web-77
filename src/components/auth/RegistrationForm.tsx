@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -111,8 +112,8 @@ export default function RegistrationForm() {
       neighborhood: "",
       zipCode: "",
       phone: "",
-      receiveNews: false
-    } satisfies FormData,
+      receiveNews: false,
+    } as FormData, // Explicitly cast to FormData type
   });
 
   async function onSubmit(values: FormData) {
