@@ -7,156 +7,186 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-console.log("omie-integration function started")
+interface OmieConfig {
+  app_key: string
+  app_secret: string
+}
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const { action, order_id } = await req.json()
-
-    if (action !== 'sync_order') {
-      throw new Error('Invalid action')
+    const config: OmieConfig = {
+      app_key: Deno.env.get('OMIE_APP_KEY') || '',
+      app_secret: Deno.env.get('OMIE_APP_SECRET') || '',
     }
 
-    console.log('Fetching order:', order_id)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    // Fetch order with customer profile in a single query
-    const { data: order, error: orderError } = await supabaseClient
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase environment variables')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const { orderId } = await req.json()
+    console.log('Fetching order:', orderId)
+
+    // Buscar o pedido com os dados do usuário
+    const { data: order, error: orderError } = await supabase
       .from('orders')
       .select(`
         *,
-        customer:profiles(*)
+        profiles:user_id (
+          id,
+          full_name,
+          cpf,
+          cnpj,
+          address,
+          city,
+          state,
+          zip_code,
+          phone,
+          email,
+          pessoa_fisica,
+          endereco_numero,
+          complemento,
+          cidade_ibge,
+          estado_ibge,
+          contribuinte,
+          tipo_atividade,
+          exterior,
+          bloqueado,
+          inativo,
+          optante_simples_nacional
+        )
       `)
-      .eq('id', order_id)
+      .eq('id', orderId)
       .single()
 
-    if (orderError || !order) {
-      throw new Error(`Error fetching order: ${orderError?.message || 'Order not found'}`)
-    }
+    console.log('Order fetched:', order)
 
-    console.log('Order fetched:', JSON.stringify(order, null, 2))
-    
-    if (!order.customer) {
-      throw new Error('Customer profile not found for order')
-    }
+    if (orderError) throw orderError
+    if (!order) throw new Error('Order not found')
+    if (!order.profiles) throw new Error('Customer profile not found')
 
-    // Prepare customer data for Omie
-    const customerData = {
-      codigo_cliente_omie: order.customer.omie_code,
-      razao_social: order.customer.full_name,
-      cnpj_cpf: order.customer.cpf,
-      telefone1_numero: order.customer.phone?.replace(/\D/g, '') || '',
-      endereco: order.shipping_address?.address || order.customer.address || '',
-      endereco_numero: order.customer.endereco_numero || 'S/N',
-      complemento: order.customer.complemento || '',
-      bairro: order.shipping_address?.neighborhood || order.customer.neighborhood || '',
-      estado: order.shipping_address?.state || order.customer.state || '',
-      cidade: order.shipping_address?.city || order.customer.city || '',
-      cep: order.shipping_address?.zip_code || order.customer.zip_code || '',
-      contribuinte: 'N', // Always set as non-contributor
-      pessoa_fisica: 'S', // Always set as individual
-      estado_ibge: order.customer.estado_ibge || '',
-      cidade_ibge: order.customer.cidade_ibge || '',
-    }
+    const customer = order.profiles
+    const cpfCnpj = customer.pessoa_fisica ? customer.cpf : customer.cnpj
 
-    // Prepare items data
-    const items = order.items.map((item: any) => ({
-      codigo_produto: item.omie_code,
-      codigo_produto_integracao: item.omie_product_id,
-      quantidade: item.quantity,
-      valor_unitario: item.price,
-    }))
-
-    // Build Omie request payload
-    const omiePayload = {
-      call: "IncluirPedido",
-      app_key: Deno.env.get('OMIE_APP_KEY'),
-      app_secret: Deno.env.get('OMIE_APP_SECRET'),
+    // Preparar o cliente para o Omie
+    const clienteOmie = {
+      call: "UpsertClient",
+      app_key: config.app_key,
+      app_secret: config.app_secret,
       param: [{
-        cabecalho: {
-          codigo_cliente: customerData.codigo_cliente_omie,
-          data_previsao: new Date().toISOString().split('T')[0],
-          etapa: "10", // Ordem de serviço
-          codigo_parcela: "000",
-        },
-        det: items.map(item => ({
-          produto: {
-            codigo_produto: item.codigo_produto,
-            codigo_produto_integracao: item.codigo_produto_integracao,
-            quantidade: item.quantidade,
-            valor_unitario: item.valor_unitario,
-          }
-        })),
-        cliente_cadastro: customerData
+        codigo_cliente_integracao: customer.id,
+        email: customer.email,
+        razao_social: customer.full_name,
+        cnpj_cpf: cpfCnpj,
+        telefone1_ddd: customer.phone?.substring(0, 2) || "",
+        telefone1_numero: customer.phone?.substring(2) || "",
+        endereco: customer.address,
+        endereco_numero: customer.endereco_numero,
+        complemento: customer.complemento || "",
+        bairro: customer.neighborhood,
+        estado: customer.state,
+        cidade: customer.city,
+        cep: customer.zip_code,
+        pessoa_fisica: customer.pessoa_fisica ? "S" : "N",
+        cidade_ibge: customer.cidade_ibge,
+        estado_ibge: customer.estado_ibge,
+        contribuinte: customer.contribuinte,
+        tipo_atividade: customer.tipo_atividade,
+        exterior: customer.exterior ? "S" : "N",
+        bloqueado: customer.bloqueado ? "S" : "N",
+        inativo: customer.inativo ? "S" : "N",
+        optante_simples_nacional: customer.optante_simples_nacional ? "S" : "N"
       }]
     }
 
-    console.log('Sending request to Omie:', JSON.stringify(omiePayload, null, 2))
-
-    // Send request to Omie API
-    const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
+    // Enviar cliente para o Omie
+    console.log('Sending request to Omie:', clienteOmie)
+    const clientResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(omiePayload)
+      body: JSON.stringify(clienteOmie),
+      headers: { 'Content-Type': 'application/json' }
     })
 
-    const omieData = await omieResponse.json()
-    
-    if (!omieResponse.ok) {
-      console.error('Omie API error:', omieData)
-      throw new Error(`Omie API error: ${JSON.stringify(omieData)}`)
+    const clientResult = await clientResponse.json()
+    console.log('Client response:', clientResult)
+
+    if (clientResult.faultstring) {
+      throw new Error(`Omie API error: ${clientResult.faultstring}`)
     }
 
-    console.log('Omie response:', omieData)
+    // Preparar os itens do pedido
+    const items = order.items.map((item: any) => ({
+      codigo_produto: item.omie_code,
+      quantidade: item.quantity,
+      valor_unitario: item.price
+    }))
 
-    // Update order with Omie information
-    const { error: updateError } = await supabaseClient
+    // Criar o pedido no Omie
+    const pedidoOmie = {
+      call: "IncluirPedido",
+      app_key: config.app_key,
+      app_secret: config.app_secret,
+      param: [{
+        cabecalho: {
+          codigo_cliente: clientResult.codigo_cliente_omie,
+          codigo_pedido_integracao: order.id,
+          data_previsao: new Date().toISOString().split('T')[0],
+          etapa: "10",
+          codigo_parcela: "999"
+        },
+        det: items.map((item: any) => ({
+          produto: {
+            codigo_produto: item.codigo_produto,
+            quantidade: item.quantidade,
+            valor_unitario: item.valor_unitario
+          }
+        }))
+      }]
+    }
+
+    console.log('Sending order to Omie:', pedidoOmie)
+    const orderResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
+      method: 'POST',
+      body: JSON.stringify(pedidoOmie),
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    const orderResult = await orderResponse.json()
+    console.log('Order response:', orderResult)
+
+    if (orderResult.faultstring) {
+      throw new Error(`Omie API error: ${orderResult.faultstring}`)
+    }
+
+    // Atualizar o pedido no Supabase com o código do Omie
+    const { error: updateError } = await supabase
       .from('orders')
       .update({
-        omie_order_id: omieData.numero_pedido?.toString(),
+        omie_order_id: orderResult.codigo_pedido,
         omie_status: 'sincronizado',
         omie_last_update: new Date().toISOString()
       })
-      .eq('id', order_id)
-
-    if (updateError) {
-      throw new Error(`Error updating order: ${updateError.message}`)
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        omie_order_id: omieData.numero_pedido,
-        message: 'Order synchronized successfully'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
-
-  } catch (error) {
-    console.error('Error processing request:', error)
+      .eq('id', orderId)
     
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    if (updateError) throw updateError
+
+    return new Response(JSON.stringify({ success: true, omie_order_id: orderResult.codigo_pedido }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+
+  } catch (err) {
+    console.error('Error:', err)
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
