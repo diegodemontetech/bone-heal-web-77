@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
-interface FormData {
+export interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
@@ -18,15 +17,14 @@ interface FormData {
   cnpj: string;
   address: string;
   omie_city_code: string;
-  // Optional fields
-  cro?: string;
-  specialty?: string;
-  city?: string;
-  state?: string;
-  neighborhood?: string;
-  zipCode?: string;
-  phone?: string;
-  receiveNews?: boolean;
+  cro: string; // Changed from optional to required to match defaultValues
+  specialty: string; // Changed from optional to required to match defaultValues
+  city: string; // Changed from optional to required to match defaultValues
+  state: string; // Changed from optional to required to match defaultValues
+  neighborhood: string; // Changed from optional to required to match defaultValues
+  zipCode: string; // Changed from optional to required to match defaultValues
+  phone: string; // Changed from optional to required to match defaultValues
+  receiveNews: boolean; // Changed from optional to required to match defaultValues
 }
 
 export default function RegistrationForm() {
@@ -101,13 +99,13 @@ export default function RegistrationForm() {
             full_name: values.fullName,
             cnpj: values.cnpj,
             address: values.address,
-            cro: values.cro || '',
-            specialty: values.specialty || '',
-            city: values.city || '',
-            state: values.state || '',
-            neighborhood: values.neighborhood || '',
-            zip_code: values.zipCode || '',
-            phone: values.phone || '',
+            cro: values.cro,
+            specialty: values.specialty,
+            city: values.city,
+            state: values.state,
+            neighborhood: values.neighborhood,
+            zip_code: values.zipCode,
+            phone: values.phone,
             receive_news: values.receiveNews,
             omie_city_code: values.omie_city_code,
           }
