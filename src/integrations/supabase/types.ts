@@ -526,7 +526,6 @@ export type Database = {
           name: string
           omie_code: string | null
           omie_last_update: string | null
-          omie_product_id: string | null
           omie_sync: boolean | null
           price: number | null
           short_description: string | null
@@ -551,7 +550,6 @@ export type Database = {
           name: string
           omie_code?: string | null
           omie_last_update?: string | null
-          omie_product_id?: string | null
           omie_sync?: boolean | null
           price?: number | null
           short_description?: string | null
@@ -576,7 +574,6 @@ export type Database = {
           name?: string
           omie_code?: string | null
           omie_last_update?: string | null
-          omie_product_id?: string | null
           omie_sync?: boolean | null
           price?: number | null
           short_description?: string | null

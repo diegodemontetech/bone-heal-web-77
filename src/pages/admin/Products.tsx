@@ -123,7 +123,6 @@ const AdminProducts = () => {
           name: "BONE HEAL MEMBRANA REGENERATIVA ODONTOLÓGICA - TAMANHO 30X40 mm",
           slug: "bone-heal-membrana-regenerativa-odontologica-30x40",
           omie_code: "BH30401",
-          omie_product_id: "7630401",
           price: 320.00,
           stock: 10,
           active: true,
