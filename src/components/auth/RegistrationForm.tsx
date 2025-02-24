@@ -167,6 +167,7 @@ const RegistrationForm = () => {
   }
 
   const isSubmitting = form.formState.isSubmitting;
+  const isValid = form.formState.isValid;
 
   return (
     <Form {...form}>
@@ -174,8 +175,12 @@ const RegistrationForm = () => {
         <RegistrationFormFields form={form} specialties={specialties || []} />
         <Button 
           type="submit" 
-          className="w-full"
-          disabled={isSubmitting || specialtiesLoading || !form.formState.isValid}
+          className={`w-full transition-colors ${
+            !isValid || isSubmitting || specialtiesLoading
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-[#6E1A35]"
+          }`}
+          disabled={isSubmitting || specialtiesLoading || !isValid}
         >
           {isSubmitting ? "Registrando..." : specialtiesLoading ? "Carregando..." : "Registrar"}
         </Button>
