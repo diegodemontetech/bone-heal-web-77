@@ -42,33 +42,65 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="cnpj"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>CNPJ (opcional)</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="razao_social"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Razão Social</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <FormField
-        control={form.control}
-        name="cro"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>CRO</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+        <FormField
+          control={form.control}
+          name="nome_fantasia"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome Fantasia</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="cnpj"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CNPJ</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="cro"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CRO</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
       <FormField
         control={form.control}
