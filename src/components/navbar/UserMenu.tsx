@@ -1,7 +1,6 @@
 
 import { User } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useSession } from "@supabase/auth-helpers-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -11,16 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/use-auth";
 
-interface UserMenuProps {
-  handleSignOut: () => void;
-}
+export function UserMenu() {
+  const { user, profile, signOut } = useAuth();
 
-export function UserMenu({ handleSignOut }: UserMenuProps) {
-  const session = useSession();
-  const navigate = useNavigate();
-
-  if (!session) {
+  if (!user) {
     return (
       <div className="hidden md:flex gap-2">
         <Link to="/login">
@@ -35,7 +30,7 @@ export function UserMenu({ handleSignOut }: UserMenuProps) {
       <DropdownMenuTrigger asChild>
         <div className="cursor-pointer">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={session.user.user_metadata?.avatar_url} />
+            <AvatarImage src={user.user_metadata?.avatar_url} />
             <AvatarFallback>
               <User className="h-4 w-4" />
             </AvatarFallback>
@@ -43,14 +38,22 @@ export function UserMenu({ handleSignOut }: UserMenuProps) {
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
-          Meu Perfil
+        <DropdownMenuItem asChild>
+          <Link to="/profile">Meu Perfil</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/orders")}>
-          Meus Pedidos
+        <DropdownMenuItem asChild>
+          <Link to="/orders">Meus Pedidos</Link>
         </DropdownMenuItem>
+        {profile?.is_admin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/admin">Painel Admin</Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut}>
+        <DropdownMenuItem onClick={signOut}>
           Sair
         </DropdownMenuItem>
       </DropdownMenuContent>

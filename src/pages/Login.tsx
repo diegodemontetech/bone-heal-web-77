@@ -1,16 +1,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { Form } from '@/components/ui/form';
 import { useForm } from 'react-hook-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { UserPlus, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/use-auth';
 
 interface LoginFormData {
   email: string;
@@ -20,7 +18,7 @@ interface LoginFormData {
 const Login = () => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const form = useForm<LoginFormData>({
     defaultValues: {
@@ -29,86 +27,17 @@ const Login = () => {
     },
   });
 
-  // Simplified profile check that won't cause recursion
-  const checkProfileAndRedirect = async (userId: string) => {
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, full_name, is_admin')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        return;
-      }
-
-      // Redirect admin users to admin panel
-      if (profile?.is_admin) {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error('Profile check error:', error);
-      navigate('/');
-    }
-  };
-
   const onSubmit = async (values: LoginFormData) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Attempting login for:', values.email);
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (signInError) {
-        throw signInError;
-      }
-      
-      if (!data.user) {
-        throw new Error('Usuário não encontrado');
-      }
-
-      // Check if admin and redirect accordingly
-      await checkProfileAndRedirect(data.user.id);
-      
-      console.log('Login successful');
-      toast.success('Login realizado com sucesso!');
-
+      await signIn(values.email, values.password);
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = 'Falha ao fazer login';
-      
-      if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = 'Email ou senha inválidos';
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = 'Por favor, confirme seu email antes de fazer login';
-      }
-      
-      setError(errorMessage);
-      toast.error(errorMessage);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
-
-  // Simplified session check
-  React.useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        // Check if admin and redirect accordingly
-        await checkProfileAndRedirect(session.user.id);
-      }
-    };
-
-    checkSession();
-  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col">
