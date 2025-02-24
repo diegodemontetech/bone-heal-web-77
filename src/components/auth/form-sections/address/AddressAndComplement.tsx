@@ -33,7 +33,7 @@ export const AddressAndComplement = ({ form }: AddressAndComplementProps) => {
       />
       <FormField
         control={form.control}
-        name="complemento"
+        name="complement"
         render={({ field: { value, ...fieldProps } }) => (
           <FormItem>
             <FormLabel>Número / Complemento</FormLabel>

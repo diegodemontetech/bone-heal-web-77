@@ -17,7 +17,7 @@ interface NeighborhoodAndZipCodeProps {
 export const NeighborhoodAndZipCode = ({ form }: NeighborhoodAndZipCodeProps) => {
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedZipCode = e.target.value.replace(/\D/g, '').substring(0, 8);
-    form.setValue('zipCode', formattedZipCode);
+    form.setValue('zip_code', formattedZipCode);
   };
 
   return (
@@ -40,7 +40,7 @@ export const NeighborhoodAndZipCode = ({ form }: NeighborhoodAndZipCodeProps) =>
 
         <FormField
           control={form.control}
-          name="zipCode"
+          name="zip_code"
           rules={{ 
             required: "CEP é obrigatório",
             pattern: {
