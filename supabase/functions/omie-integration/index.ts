@@ -1,281 +1,228 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { corsHeaders } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const omieAppKey = Deno.env.get('OMIE_APP_KEY')!;
+const omieAppSecret = Deno.env.get('OMIE_APP_SECRET')!;
 
-console.log("Omie Integration Function Started");
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function fetchIBGECodes(city: string, state: string) {
-  try {
-    const response = await fetch(
-      `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${state}/municipios`
-    );
-    const cities = await response.json();
-    const cityData = cities.find(
-      (c: any) => c.nome.toUpperCase() === city.toUpperCase()
-    );
-    
-    if (cityData) {
-      return {
-        cidade_ibge: cityData.id.toString(),
-        estado_ibge: cityData.microrregiao.mesorregiao.UF.id.toString()
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error("Error fetching IBGE codes:", error);
-    return null;
-  }
-}
+const OMIE_API_URL = 'https://app.omie.com.br/api/v1';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const requestBody = await req.json();
-    console.log("Received request body:", JSON.stringify(requestBody, null, 2));
+    const { action, order_id } = await req.json()
+    console.log(`Processing ${action} for order ${order_id}`)
 
-    const { action, order_id } = requestBody;
-    
-    if (action !== 'sync_order') {
-      throw new Error('Invalid action');
-    }
+    if (action === 'sync_order') {
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          user_id,
+          items
+        `)
+        .eq('id', order_id)
+        .single()
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    console.log("Fetching order data for ID:", order_id);
-
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select(`
-        *,
-        profiles:user_id (*)
-      `)
-      .eq('id', order_id)
-      .single();
-
-    if (orderError || !order) {
-      throw new Error(`Error fetching order: ${orderError?.message || 'Order not found'}`);
-    }
-
-    console.log("Retrieved order data:", JSON.stringify(order, null, 2));
-
-    if (!order.profiles) {
-      throw new Error('Profile information not found for order');
-    }
-
-    if (!order.items || !Array.isArray(order.items) || order.items.length === 0) {
-      throw new Error('Order does not have any items');
-    }
-
-    // Ensure all required address fields are present
-    if (!order.profiles.address || !order.profiles.city || !order.profiles.state || !order.profiles.zip_code || !order.profiles.neighborhood) {
-      throw new Error('Missing required address information');
-    }
-
-    // Fetch IBGE codes if not present
-    let ibgeCodes = null;
-    if (!order.profiles.cidade_ibge || !order.profiles.estado_ibge) {
-      ibgeCodes = await fetchIBGECodes(order.profiles.city, order.profiles.state);
-      if (ibgeCodes) {
-        // Update the profile with IBGE codes
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            cidade_ibge: ibgeCodes.cidade_ibge,
-            estado_ibge: ibgeCodes.estado_ibge
-          })
-          .eq('id', order.profiles.id);
-
-        if (updateError) {
-          console.error("Error updating profile with IBGE codes:", updateError);
-        }
-      }
-    }
-
-    // Format address fields
-    const formattedAddress = {
-      endereco: order.profiles.address.trim(),
-      endereco_numero: order.profiles.endereco_numero || "S/N",
-      complemento: order.profiles.complemento || "",
-      bairro: order.profiles.neighborhood.trim(),
-      estado: order.profiles.state.trim().toUpperCase(),
-      cidade: order.profiles.city.trim().toUpperCase(),
-      cep: order.profiles.zip_code.replace(/\D/g, ''),
-      codigo_pais: "1058", // Brasil
-      cidade_ibge: ibgeCodes?.cidade_ibge || order.profiles.cidade_ibge || "",
-      estado_ibge: ibgeCodes?.estado_ibge || order.profiles.estado_ibge || ""
-    };
-
-    // Check existing client
-    const existingClientPayload = {
-      call: "ConsultarCliente",
-      app_key: Deno.env.get("OMIE_APP_KEY"),
-      app_secret: Deno.env.get("OMIE_APP_SECRET"),
-      param: [{
-        codigo_cliente_omie: order.profiles.omie_code
-      }]
-    };
-
-    console.log("Checking existing client:", order.profiles.omie_code);
-
-    const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(existingClientPayload)
-    });
-
-    const clienteExistente = await consultaResponse.json();
-    console.log("Existing client response:", JSON.stringify(clienteExistente, null, 2));
-
-    if (!clienteExistente.faultstring) {
-      // Update existing client with complete address information
-      const updatePayload = {
-        call: "AlterarCliente",
-        app_key: Deno.env.get("OMIE_APP_KEY"),
-        app_secret: Deno.env.get("OMIE_APP_SECRET"),
-        param: [{
-          codigo_cliente_integracao: order.profiles.id,
-          email: order.profiles.email,
-          razao_social: order.profiles.full_name,
-          nome_fantasia: order.profiles.full_name,
-          cnpj_cpf: order.profiles.cnpj || order.profiles.cpf,
-          telefone1_ddd: order.profiles.phone?.substring(0, 2) || "",
-          telefone1_numero: order.profiles.phone?.substring(2) || "",
-          ...formattedAddress,
-          codigo_cliente_omie: parseInt(order.profiles.omie_code),
-          inativo: order.profiles.inativo ? "S" : "N",
-          bloqueado: order.profiles.bloqueado ? "S" : "N",
-          exterior: order.profiles.exterior ? "S" : "N",
-          pessoa_fisica: order.profiles.pessoa_fisica ? "S" : "N",
-          contribuinte: order.profiles.contribuinte || "2",
-          optante_simples_nacional: order.profiles.optante_simples_nacional ? "S" : "N",
-          tipo_atividade: order.profiles.tipo_atividade || "0",
-          tags: ["ecommerce", "cliente_ativo"]
-        }]
-      };
-
-      console.log("Updating client with payload:", JSON.stringify(updatePayload, null, 2));
-
-      const updateResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatePayload)
-      });
-
-      const updateResult = await updateResponse.json();
-      console.log("Client update result:", JSON.stringify(updateResult, null, 2));
-
-      if (updateResult.faultstring) {
-        throw new Error(`Error updating client: ${updateResult.faultstring}`);
-      }
-    }
-
-    // Generate order code with maximum of 15 characters
-    const timestamp = Date.now().toString().slice(-5);
-    const codigoPedido = `W${timestamp}`;
-
-    // Map order items ensuring all required fields are present
-    const items = order.items.map((item: any, index: number) => {
-      if (!item.omie_code || !item.omie_product_id) {
-        throw new Error(`Missing Omie codes for item: ${item.name}`);
-      }
+      if (orderError) throw new Error(`Error fetching order: ${orderError.message}`)
       
-      return {
-        item_pedido: index + 1,
-        codigo_produto: item.omie_code,
-        quantidade: item.quantity,
-        valor_unitario: item.price,
-        codigo_item_integracao: `${order_id}_${item.product_id}`
-      };
-    });
+      // Get customer profile
+      const { data: customer, error: customerError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', order.user_id)
+        .single()
 
-    const pedidoPayload = {
-      call: "IncluirPedido",
-      app_key: Deno.env.get("OMIE_APP_KEY"),
-      app_secret: Deno.env.get("OMIE_APP_SECRET"),
-      param: [{
-        cabecalho: {
-          codigo_cliente: parseInt(order.profiles.omie_code),
-          codigo_pedido: codigoPedido,
-          codigo_pedido_integracao: order_id,
-          data_previsao: new Date().toISOString().split('T')[0],
-          etapa: "10",
-          origem_pedido: "API"
-        },
-        det: items.map(item => ({
-          produto: {
-            codigo_produto: item.codigo_produto,
-            quantidade: item.quantidade,
-            valor_unitario: item.valor_unitario
-          }
-        })),
-        frete: {
-          modalidade: "1",
-          valor_frete: 0
-        },
-        informacoes_adicionais: {
-          codigo_categoria: "1.01.03",
-          codigo_conta_corrente: "2697531662",
-          consumidor_final: "S",
-          enviar_email: "N"
-        }
-      }]
-    };
+      if (customerError) throw new Error(`Error fetching customer: ${customerError.message}`)
 
-    console.log("Sending order to Omie:", JSON.stringify(pedidoPayload, null, 2));
+      // First ensure customer exists in Omie
+      console.log('Ensuring customer exists in Omie...')
+      const omieCustomer = await ensureCustomerInOmie(customer)
+      console.log('Customer processed in Omie:', omieCustomer)
 
-    const omieResponse = await fetch('https://app.omie.com.br/api/v1/produtos/pedido/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pedidoPayload)
-    });
+      // Then create order in Omie
+      const omieOrder = await createOmieOrder(order, omieCustomer)
+      console.log('Order created in Omie:', omieOrder)
 
-    const omieData = await omieResponse.json();
-    console.log("Omie API response:", JSON.stringify(omieData, null, 2));
+      // Update order with Omie details
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          omie_order_id: omieOrder.codigo_pedido,
+          omie_status: 'novo',
+          omie_last_sync_attempt: new Date().toISOString(),
+        })
+        .eq('id', order_id)
 
-    if (omieData.faultstring) {
-      throw new Error(`Omie API error: ${omieData.faultstring}`);
+      if (updateError) throw new Error(`Error updating order: ${updateError.message}`)
+
+      return new Response(
+        JSON.stringify({ success: true, data: omieOrder }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    await supabase
-      .from('orders')
-      .update({
-        omie_order_id: omieData.pedido_id || codigoPedido,
-        omie_status: 'sincronizado',
-        omie_last_update: new Date().toISOString()
-      })
-      .eq('id', order_id);
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        omie_order_id: omieData.pedido_id || codigoPedido,
-        message: 'Order synchronized successfully'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    throw new Error(`Unknown action: ${action}`)
 
   } catch (error) {
-    console.error("Error in omie-integration function:", error);
+    console.error('Error:', error)
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
+      JSON.stringify({ success: false, error: error.message }),
       { 
-        status: 200, // Always return 200 even for errors to avoid Edge Function errors
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 // Always return 200 to avoid edge function issues
       }
-    );
+    )
   }
-});
+})
+
+async function ensureCustomerInOmie(customer: any) {
+  try {
+    // Prepare customer data based on person type
+    const isPessoaFisica = !customer.cnpj || customer.cnpj.trim() === '';
+    
+    const customerData = {
+      codigo_cliente_integracao: customer.id,
+      razao_social: customer.full_name,
+      nome_fantasia: customer.full_name,
+      cnpj_cpf: isPessoaFisica ? (customer.cpf || '').replace(/\D/g, '') : (customer.cnpj || '').replace(/\D/g, ''),
+      endereco: customer.address,
+      bairro: customer.neighborhood,
+      cidade: customer.city,
+      estado: customer.state,
+      cep: (customer.zip_code || '').replace(/\D/g, ''),
+      telefone1: (customer.phone || '').replace(/\D/g, ''),
+      email: customer.email,
+      pessoa_fisica: isPessoaFisica ? "S" : "N",
+      // Default values for Omie requirements
+      contribuinte: customer.contribuinte || '9', // 9 = Não contribuinte
+      tipo_atividade: customer.tipo_atividade || '0', // 0 = Outros
+      endereco_numero: customer.endereco_numero || 'S/N',
+      complemento: customer.complemento || '',
+      inativo: customer.inativo ? "S" : "N",
+      bloqueado: customer.bloqueado ? "S" : "N",
+      exterior: customer.exterior ? "S" : "N",
+      optante_simples_nacional: customer.optante_simples_nacional ? "S" : "N"
+    };
+
+    // Try to find existing customer in Omie
+    const findResponse = await fetch(`${OMIE_API_URL}/geral/clientes/`, {
+      method: 'POST',
+      body: JSON.stringify({
+        call: 'ConsultarCliente',
+        app_key: omieAppKey,
+        app_secret: omieAppSecret,
+        param: [{
+          codigo_cliente_integracao: customer.id
+        }]
+      })
+    });
+
+    const findResult = await findResponse.json();
+    
+    if (findResult.faultstring) {
+      // Customer doesn't exist, create new
+      console.log('Creating new customer in Omie...');
+      const createResponse = await fetch(`${OMIE_API_URL}/geral/clientes/`, {
+        method: 'POST',
+        body: JSON.stringify({
+          call: 'IncluirCliente',
+          app_key: omieAppKey,
+          app_secret: omieAppSecret,
+          param: [customerData]
+        })
+      });
+
+      const createResult = await createResponse.json();
+      if (createResult.faultstring) {
+        throw new Error(`Error creating client: ${createResult.faultstring}`);
+      }
+
+      // Update local database with Omie code
+      await supabase
+        .from('profiles')
+        .update({
+          omie_code: createResult.codigo_cliente_omie.toString(),
+          omie_sync: true
+        })
+        .eq('id', customer.id);
+
+      return { ...customerData, codigo_cliente_omie: createResult.codigo_cliente_omie };
+    }
+
+    // Customer exists, update
+    console.log('Updating existing customer in Omie...');
+    const updateResponse = await fetch(`${OMIE_API_URL}/geral/clientes/`, {
+      method: 'POST',
+      body: JSON.stringify({
+        call: 'AlterarCliente',
+        app_key: omieAppKey,
+        app_secret: omieAppSecret,
+        param: [{
+          ...customerData,
+          codigo_cliente_omie: findResult.codigo_cliente_omie
+        }]
+      })
+    });
+
+    const updateResult = await updateResponse.json();
+    if (updateResult.faultstring) {
+      throw new Error(`Error updating client: ${updateResult.faultstring}`);
+    }
+
+    return { ...customerData, codigo_cliente_omie: findResult.codigo_cliente_omie };
+  } catch (error) {
+    console.error('Error in ensureCustomerInOmie:', error);
+    throw error;
+  }
+}
+
+async function createOmieOrder(order: any, customer: any) {
+  try {
+    const orderItems = order.items.map((item: any) => ({
+      codigo_produto: item.omie_code,
+      quantidade: item.quantity,
+      valor_unitario: item.price,
+      tipo_desconto: 'V',
+      desconto: 0
+    }));
+
+    const orderData = {
+      codigo_cliente: customer.codigo_cliente_omie,
+      codigo_pedido_integracao: order.id,
+      data_previsao: new Date().toISOString().split('T')[0],
+      quantidade_itens: orderItems.length,
+      itens_pedido: orderItems,
+      codigo_parcela: '999', // À vista
+      qtde_parcelas: 1,
+    };
+
+    const response = await fetch(`${OMIE_API_URL}/produtos/pedido/`, {
+      method: 'POST',
+      body: JSON.stringify({
+        call: 'IncluirPedido',
+        app_key: omieAppKey,
+        app_secret: omieAppSecret,
+        param: [orderData]
+      })
+    });
+
+    const result = await response.json();
+    if (result.faultstring) {
+      throw new Error(`Error creating order in Omie: ${result.faultstring}`);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error in createOmieOrder:', error);
+    throw error;
+  }
+}
