@@ -15,12 +15,27 @@ const RegistrationForm = () => {
     defaultValues: {
       pessoa_tipo: "fisica",
     },
-    mode: "onSubmit"
+    mode: "onChange"
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log('Tentando submeter formulário com dados:', data);
-    await handleRegistration(data);
+    try {
+      console.log('Form submission attempted with data:', data);
+      console.log('Form state:', {
+        isValid: form.formState.isValid,
+        isDirty: form.formState.isDirty,
+        errors: form.formState.errors
+      });
+      
+      if (!form.formState.isValid) {
+        console.log('Form validation errors:', form.formState.errors);
+        return;
+      }
+      
+      await handleRegistration(data);
+    } catch (error) {
+      console.error('Error in form submission:', error);
+    }
   };
 
   return (
@@ -32,6 +47,7 @@ const RegistrationForm = () => {
             type="submit" 
             className="w-full"
             disabled={form.formState.isSubmitting}
+            variant="default"
           >
             {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
           </Button>

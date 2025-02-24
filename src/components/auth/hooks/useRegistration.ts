@@ -29,6 +29,9 @@ export const useRegistration = () => {
 
   const handleRegistration = async (data: FormData) => {
     try {
+      console.log('Starting registration process with data:', data);
+
+      // Create auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -40,9 +43,19 @@ export const useRegistration = () => {
         }
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Não foi possível criar a conta");
+      if (authError) {
+        console.error('Auth error:', authError);
+        throw authError;
+      }
 
+      if (!authData.user) {
+        console.error('No user data returned');
+        throw new Error("Não foi possível criar a conta");
+      }
+
+      console.log('Auth successful, creating profile...');
+
+      // Create profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert({
@@ -67,20 +80,24 @@ export const useRegistration = () => {
         });
 
       if (profileError) {
+        console.error('Profile creation error:', profileError);
         await supabase.auth.signOut();
         throw profileError;
       }
 
+      console.log('Registration successful');
       toast.success("Cadastro realizado com sucesso!");
       navigate('/');
 
     } catch (error: any) {
-      console.error('Erro no registro:', error);
+      console.error('Registration error:', error);
+      
       if (error.message?.includes('already exists')) {
         toast.error("Este email já está cadastrado");
       } else {
-        toast.error("Erro ao realizar cadastro. Por favor, tente novamente.");
+        toast.error("Erro ao realizar cadastro: " + (error.message || "Tente novamente"));
       }
+      throw error; // Re-throw to be handled by the form
     }
   };
 
