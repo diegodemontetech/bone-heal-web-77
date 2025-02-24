@@ -28,7 +28,7 @@ export const useRegistration = () => {
     try {
       console.log('Iniciando registro com dados:', data);
 
-      // Prepare user metadata
+      // Prepare user metadata - this will be used by the handle_new_user trigger
       const userMetadata = {
         full_name: data.fullName,
         pessoa_tipo: data.pessoa_tipo,
@@ -45,10 +45,10 @@ export const useRegistration = () => {
         cpf: data.cpf,
         cnpj: data.cnpj,
         razao_social: data.razao_social,
-        nome_fantasia: data.nome_fantasia
+        nome_fantasia: data.nome_fantasia,
+        receive_news: false
       };
 
-      // 1. Create auth user with metadata
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -71,7 +71,9 @@ export const useRegistration = () => {
 
     } catch (error) {
       console.error('Erro no processo de registro:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao registrar usuário';
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Erro ao registrar usuário';
       toast.error(errorMessage);
       throw error;
     }
