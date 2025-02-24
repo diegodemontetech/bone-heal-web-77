@@ -10,7 +10,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
-// Define a type for the valid form data to use in the type predicate
 type ValidFormData = {
   pessoa_tipo: 'fisica' | 'juridica';
   fullName: string;
@@ -99,7 +98,6 @@ export type FormData = z.infer<typeof formSchema>;
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
-  console.log('Initializing RegistrationForm component');
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -112,7 +110,6 @@ const RegistrationForm = () => {
   const { data: specialties, isLoading: specialtiesLoading } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
-      console.log('Fetching dental specialties...');
       const { data, error } = await supabase
         .from('dental_specialties')
         .select('*')
@@ -124,26 +121,25 @@ const RegistrationForm = () => {
         throw error;
       }
       
-      console.log('Fetched specialties:', data);
       return data;
     }
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log('Form submission started with data:', data);
-    
     try {
-      // Disable form submission button
-      form.formState.isSubmitting = true;
-      
-      console.log('Starting Supabase signup process...');
+      // Register user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+            pessoa_tipo: data.pessoa_tipo,
+          }
+        }
       });
 
       if (authError) {
-        console.error('Authentication error:', authError);
         if (authError.message.includes('already exists')) {
           toast.error("Este email já está cadastrado.");
         } else {
@@ -153,69 +149,51 @@ const RegistrationForm = () => {
       }
 
       if (!authData.user) {
-        console.error('No user data returned from Supabase');
         toast.error("Erro ao criar conta. Por favor, tente novamente.");
         return;
       }
 
-      console.log('User created successfully, creating profile...');
+      // Create user profile in Supabase
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            pessoa_tipo: data.pessoa_tipo,
-            full_name: data.fullName,
-            razao_social: data.razao_social,
-            nome_fantasia: data.nome_fantasia,
-            cpf: data.cpf,
-            cnpj: data.cnpj,
-            address: data.address,
-            address_number: data.address_number,
-            complement: data.complement,
-            neighborhood: data.neighborhood,
-            city: data.city,
-            state: data.state,
-            zip_code: data.zip_code,
-            phone: data.phone,
-            specialty_id: data.specialty,
-            cro: data.cro,
-            sync_with_omie: true
-          }
-        ]);
+        .insert({
+          id: authData.user.id,
+          pessoa_tipo: data.pessoa_tipo,
+          full_name: data.fullName,
+          razao_social: data.razao_social,
+          nome_fantasia: data.nome_fantasia,
+          cpf: data.cpf,
+          cnpj: data.cnpj,
+          address: data.address,
+          address_number: data.address_number,
+          complement: data.complement,
+          neighborhood: data.neighborhood,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zip_code,
+          phone: data.phone,
+          specialty: data.specialty,
+          cro: data.cro,
+          sync_with_omie: true,
+          email: data.email
+        });
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
+        console.error('Error creating profile:', profileError);
         toast.error("Erro ao criar perfil. Por favor, tente novamente.");
+        // Cleanup: sign out user if profile creation fails
         await supabase.auth.signOut();
         return;
       }
 
-      console.log('Registration completed successfully');
       toast.success("Cadastro realizado com sucesso!");
       navigate('/');
 
     } catch (err) {
       console.error('Registration error:', err);
       toast.error("Erro ao realizar cadastro. Tente novamente.");
-    } finally {
-      // Re-enable form submission button
-      form.formState.isSubmitting = false;
     }
   };
-
-  const isValid = form.formState.isValid;
-  const isDirty = form.formState.isDirty;
-  const isSubmitting = form.formState.isSubmitting;
-
-  console.log('Form State:', {
-    values: form.getValues(),
-    errors: form.formState.errors,
-    isValid: isValid,
-    isDirty: isDirty,
-    dirtyFields: form.formState.dirtyFields,
-    isSubmitting: isSubmitting
-  });
 
   return (
     <Form {...form}>
@@ -224,13 +202,13 @@ const RegistrationForm = () => {
         <Button 
           type="submit" 
           className={`w-full ${
-            (!isDirty || !isValid || isSubmitting || specialtiesLoading)
+            (!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting || specialtiesLoading)
               ? "opacity-50"
               : "bg-[#8B1F41] hover:bg-[#6E1A35]"
           }`}
-          disabled={!isDirty || !isValid || isSubmitting || specialtiesLoading}
+          disabled={!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting || specialtiesLoading}
         >
-          {isSubmitting ? "Registrando..." : "Registrar"}
+          {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
         </Button>
       </form>
     </Form>
