@@ -17,7 +17,7 @@ interface Profile {
   id: string;
   full_name: string;
   specialty?: string;
-  crm?: string;
+  crm: string;
   phone?: string;
   address?: string;
 }
@@ -67,6 +67,15 @@ const Profile = () => {
       toast({
         title: "Erro",
         description: "Usuário não autenticado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!profile?.crm) {
+      toast({
+        title: "Erro",
+        description: "CRM é obrigatório",
         variant: "destructive",
       });
       return;
@@ -151,6 +160,7 @@ const Profile = () => {
                   id="crm"
                   value={profile?.crm || ""}
                   onChange={(e) => setProfile(prev => ({ ...prev!, crm: e.target.value }))}
+                  required
                 />
               </div>
 
