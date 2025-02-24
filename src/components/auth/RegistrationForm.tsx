@@ -15,10 +15,11 @@ const RegistrationForm = () => {
     defaultValues: {
       pessoa_tipo: "fisica",
     },
+    mode: "all"
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log('Form submission attempted with data:', data);
+    console.log('Tentando submeter formulário com dados:', data);
     await handleRegistration(data);
   };
 
@@ -29,7 +30,6 @@ const RegistrationForm = () => {
         <div>
           <Button 
             type="submit" 
-            disabled={!form.formState.isDirty || !form.formState.isValid || form.formState.isSubmitting || specialtiesLoading}
             className="w-full"
           >
             {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
