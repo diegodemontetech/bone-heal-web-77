@@ -55,6 +55,7 @@ serve(async (req) => {
 
     let updated = 0;
     let errors = 0;
+    let noChanges = 0;
 
     for (const produtoResumido of produtosResumidos) {
       try {
@@ -87,7 +88,7 @@ serve(async (req) => {
         const product = detailData.produto_servico_cadastro;
         
         if (!product || !product.codigo || !product.descricao) {
-          console.log('Produto inválido ou sem dados obrigatórios:', detailData);
+          console.error('Produto inválido ou sem dados obrigatórios:', detailData);
           errors++;
           continue;
         }
@@ -99,17 +100,30 @@ serve(async (req) => {
           .eq('omie_code', product.codigo)
           .maybeSingle();
 
-        // Construir objeto de atualização apenas com campos relevantes
+        // Tratar o preço do Omie corretamente
+        const omiePrice = parseFloat(product.valor_unitario);
+        console.log(`Produto ${product.codigo} - Preço atual: ${existingProduct?.price}, Preço Omie: ${omiePrice}`);
+
+        // Construir objeto de atualização
         const updates: Record<string, any> = {
           omie_sync: true,
           omie_last_update: new Date().toISOString(),
-          price: parseFloat(product.valor_unitario),
+          price: omiePrice,
           active: product.inativo !== 'S'
         };
 
         if (existingProduct) {
-          // Atualizar apenas se houver mudanças
-          if (existingProduct.price !== updates.price || existingProduct.active !== updates.active) {
+          // Comparar preços com precisão de 2 casas decimais
+          const currentPrice = Math.round(existingProduct.price * 100) / 100;
+          const newPrice = Math.round(omiePrice * 100) / 100;
+          const priceChanged = currentPrice !== newPrice;
+          const activeChanged = existingProduct.active !== updates.active;
+
+          if (priceChanged || activeChanged) {
+            console.log(`Atualizando produto ${product.codigo}:`);
+            if (priceChanged) console.log(`- Preço: ${currentPrice} -> ${newPrice}`);
+            if (activeChanged) console.log(`- Status: ${existingProduct.active} -> ${updates.active}`);
+
             const { error } = await supabase
               .from('products')
               .update(updates)
@@ -121,6 +135,9 @@ serve(async (req) => {
               continue;
             }
             updated++;
+          } else {
+            noChanges++;
+            console.log(`Nenhuma mudança necessária para o produto ${product.codigo}`);
           }
         }
       } catch (error) {
@@ -129,12 +146,21 @@ serve(async (req) => {
       }
     }
 
+    const summary = {
+      success: true,
+      message: `Sincronização concluída: ${updated} produtos atualizados, ${noChanges} sem alterações, ${errors} erros`,
+      totalProducts: produtosResumidos.length,
+      details: {
+        updated,
+        noChanges,
+        errors,
+      }
+    };
+
+    console.log('Resumo da sincronização:', summary);
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Sincronização concluída: ${updated} produtos atualizados, ${errors} erros`,
-        totalProducts: produtosResumidos.length
-      }),
+      JSON.stringify(summary),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
