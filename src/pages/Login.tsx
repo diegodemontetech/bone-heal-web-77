@@ -31,6 +31,7 @@ const Login = () => {
 
   // Check if profile exists
   const checkProfile = async (userId: string) => {
+    console.log('Checking profile for user:', userId);
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -43,6 +44,7 @@ const Login = () => {
         throw new Error('Erro ao buscar perfil');
       }
 
+      console.log('Profile found:', profile);
       return profile;
     } catch (error) {
       console.error('Profile check error:', error);
@@ -54,6 +56,7 @@ const Login = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Attempting login for:', values.email);
 
       const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
         email: values.email,
@@ -63,6 +66,7 @@ const Login = () => {
       if (signInError) throw signInError;
       
       if (user) {
+        console.log('User authenticated successfully:', user.id);
         // Check if profile exists
         const profile = await checkProfile(user.id);
         
@@ -70,6 +74,7 @@ const Login = () => {
           throw new Error('Perfil não encontrado. Por favor, registre-se primeiro.');
         }
 
+        console.log('Login successful, navigating to home');
         toast.success('Login realizado com sucesso!');
         navigate('/');
       }
@@ -85,11 +90,14 @@ const Login = () => {
 
   // Check if already logged in
   React.useEffect(() => {
+    console.log('Checking existing session...');
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session);
       if (session?.user) {
         try {
           await checkProfile(session.user.id);
+          console.log('Session valid, navigating to home');
           navigate('/');
         } catch (error) {
           console.error('Session profile check error:', error);
