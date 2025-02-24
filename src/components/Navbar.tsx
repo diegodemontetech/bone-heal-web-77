@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 import { DesktopNav } from "./navbar/DesktopNav";
 import { MobileNav } from "./navbar/MobileNav";
 import { UserMenu } from "./navbar/UserMenu";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { signOut } = useAuth();
 
   return (
     <div className="bg-background border-b">
@@ -21,7 +23,7 @@ export default function Navbar() {
 
         <DesktopNav />
         <UserMenu />
-        <MobileNav open={open} setOpen={setOpen} />
+        <MobileNav open={open} setOpen={setOpen} handleSignOut={signOut} />
       </div>
     </div>
   );
