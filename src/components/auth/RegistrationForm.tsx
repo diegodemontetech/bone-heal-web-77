@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,6 +52,8 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
+type FormData = z.infer<typeof formSchema>;
+
 export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +72,10 @@ export default function RegistrationForm() {
         throw error;
       }
 
-      return data || [];
+      return data.map(specialty => ({
+        ...specialty,
+        created_at: specialty.created_at || new Date().toISOString() // Ensure created_at is always present
+      }));
     },
   });
 
@@ -90,7 +96,7 @@ export default function RegistrationForm() {
     },
   });
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: "",

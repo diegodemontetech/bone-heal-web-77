@@ -6,10 +6,11 @@ import { AddressSection } from "./form-sections/AddressSection";
 import { ContactSection } from "./form-sections/ContactSection";
 import { AccountSection } from "./form-sections/AccountSection";
 
+// Match the expected type from PersonalSection
 interface DentalSpecialty {
   id: string;
   name: string;
-  created_at?: string | null;
+  created_at: string;  // Make it required to match PersonalSection expectations
 }
 
 interface City {
@@ -19,24 +20,27 @@ interface City {
   state: string;
 }
 
+// Make sure this matches exactly what's in RegistrationForm
+interface FormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
+  cnpj?: string;
+  cro: string;
+  specialty: string;
+  address: string;
+  city: string;
+  state: string;
+  neighborhood: string;
+  zipCode: string;
+  phone?: string;
+  receiveNews: boolean;
+}
+
 interface RegistrationFormFieldsProps {
   specialties: DentalSpecialty[];
-  form: UseFormReturn<{
-    email: string;
-    password: string;
-    confirmPassword: string;
-    fullName: string;
-    cnpj?: string;
-    cro: string;
-    specialty: string;
-    address: string;
-    city: string;
-    state: string;
-    neighborhood: string;
-    zipCode: string;
-    phone?: string;
-    receiveNews: boolean;
-  }>;
+  form: UseFormReturn<FormData>;
   cities: City[];
 }
 
