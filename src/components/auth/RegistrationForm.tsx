@@ -13,42 +13,43 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 const formSchema = z.object({
-  email: z.string().email({
-    message: "Email inválido.",
+  email: z.string({
+    required_error: "E-mail é obrigatório",
+  }).email({
+    message: "E-mail inválido",
   }),
-  password: z.string().min(6, {
-    message: "Senha deve ter no mínimo 6 caracteres.",
+  password: z.string({
+    required_error: "Senha é obrigatória",
+  }).min(6, {
+    message: "Senha deve ter no mínimo 6 caracteres",
   }),
-  confirmPassword: z.string(),
-  fullName: z.string().min(2, {
-    message: "Nome deve ter no mínimo 2 caracteres.",
+  confirmPassword: z.string({
+    required_error: "Confirmação de senha é obrigatória",
   }),
-  cnpj: z.string().optional(),
-  cro: z.string().min(4, {
-    message: "CRO inválido.",
+  fullName: z.string({
+    required_error: "Nome completo é obrigatório",
+  }).min(2, {
+    message: "Nome deve ter no mínimo 2 caracteres",
   }),
-  specialty: z.string({
-    required_error: "Selecione uma especialidade.",
+  cnpj: z.string({
+    required_error: "CPF/CNPJ é obrigatório",
   }),
-  address: z.string().min(2, {
-    message: "Endereço deve ter no mínimo 2 caracteres.",
+  address: z.string({
+    required_error: "Endereço é obrigatório",
+  }).min(2, {
+    message: "Endereço deve ter no mínimo 2 caracteres",
   }),
-  city: z.string().min(2, {
-    message: "Cidade deve ter no mínimo 2 caracteres.",
-  }),
-  state: z.string().length(2, {
-    message: "UF deve ter 2 caracteres.",
-  }),
-  neighborhood: z.string().min(2, {
-    message: "Bairro deve ter no mínimo 2 caracteres.",
-  }),
-  zipCode: z.string().length(8, {
-    message: "CEP deve ter 8 dígitos.",
-  }),
+  // Campos opcionais
+  cro: z.string().optional(),
+  specialty: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  neighborhood: z.string().optional(),
+  zipCode: z.string().optional(),
   phone: z.string().optional(),
-  receiveNews: z.boolean().default(false),
+  receiveNews: z.boolean().optional().default(false),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Senhas não conferem.",
+  message: "Senhas não conferem",
   path: ["confirmPassword"],
 });
 
@@ -96,26 +97,24 @@ export default function RegistrationForm() {
     },
   });
 
-  const defaultValues: FormData = {
-    email: "",
-    password: "",
-    confirmPassword: "",
-    fullName: "",
-    cnpj: "",
-    cro: "",
-    specialty: "",
-    address: "",
-    city: "",
-    state: "",
-    neighborhood: "",
-    zipCode: "",
-    phone: "",
-    receiveNews: false,
-  };
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      email: "",
+      password: "",
+      confirmPassword: "",
+      fullName: "",
+      cnpj: "",
+      address: "",
+      cro: "",
+      specialty: "",
+      city: "",
+      state: "",
+      neighborhood: "",
+      zipCode: "",
+      phone: "",
+      receiveNews: false,
+    },
   });
 
   async function onSubmit(values: FormData) {
@@ -129,15 +128,15 @@ export default function RegistrationForm() {
         options: {
           data: {
             full_name: values.fullName,
-            cro: values.cro,
-            specialty: values.specialty,
+            cnpj: values.cnpj,
             address: values.address,
-            city: values.city,
-            state: values.state,
-            neighborhood: values.neighborhood,
-            zip_code: values.zipCode,
+            cro: values.cro || '',
+            specialty: values.specialty || '',
+            city: values.city || '',
+            state: values.state || '',
+            neighborhood: values.neighborhood || '',
+            zip_code: values.zipCode || '',
             phone: values.phone || '',
-            cnpj: values.cnpj || '',
             receive_news: values.receiveNews,
           }
         }
