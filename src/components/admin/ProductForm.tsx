@@ -30,7 +30,6 @@ const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   slug: z.string().min(1, "Slug é obrigatório"),
   omie_code: z.string().min(1, "Código Omie é obrigatório"),
-  omie_product_id: z.string().min(1, "ID do produto no Omie é obrigatório"),
   price: z.string().min(1, "Preço é obrigatório").transform(val => parseFloat(val)),
   stock: z.string().transform(val => parseInt(val || "0")),
   short_description: z.string().optional(),
@@ -56,7 +55,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       name: product?.name || "",
       slug: product?.slug || "",
       omie_code: product?.omie_code || "",
-      omie_product_id: product?.omie_product_id || "",
       price: product?.price?.toString() || "",
       stock: product?.stock?.toString() || "0",
       short_description: product?.short_description || "",
@@ -71,7 +69,7 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       const { data: existingProduct, error: checkError } = await supabase
         .from("products")
         .select("id")
-        .or(`omie_code.eq.${values.omie_code},omie_product_id.eq.${values.omie_product_id}`)
+        .eq('omie_code', values.omie_code)
         .neq('id', product?.id || '')
         .single();
 
@@ -80,14 +78,13 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       }
 
       if (existingProduct) {
-        throw new Error("Já existe um produto cadastrado com este código Omie ou ID de produto");
+        throw new Error("Já existe um produto cadastrado com este código Omie");
       }
 
       const data = {
         name: values.name,
         slug: values.slug,
         omie_code: values.omie_code,
-        omie_product_id: values.omie_product_id,
         price: values.price,
         stock: values.stock,
         short_description: values.short_description,
@@ -173,41 +170,22 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="omie_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código Omie</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Código do produto no Omie
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="omie_product_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ID Produto Omie</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      ID interno do produto no Omie
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="omie_code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Código Omie</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Código do produto no Omie
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
