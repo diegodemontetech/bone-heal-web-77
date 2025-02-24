@@ -54,88 +54,6 @@ serve(async (req) => {
       throw new Error('Order does not have any items');
     }
 
-    // Ensure all required address fields are present
-    if (!order.profiles.address || !order.profiles.city || !order.profiles.state || !order.profiles.zip_code || !order.profiles.neighborhood) {
-      throw new Error('Missing required address information');
-    }
-
-    // Format address fields
-    const formattedAddress = {
-      endereco: order.profiles.address.trim(),
-      endereco_numero: "S/N",
-      complemento: "",
-      bairro: order.profiles.neighborhood.trim(),
-      estado: order.profiles.state.trim().toUpperCase(),
-      cidade: order.profiles.city.trim().toUpperCase(),
-      cep: order.profiles.zip_code.replace(/\D/g, ''),
-      codigo_pais: "1058", // Brasil
-      cidade_ibge: "",
-      estado_ibge: ""
-    };
-
-    // Check existing client
-    const existingClientPayload = {
-      call: "ConsultarCliente",
-      app_key: Deno.env.get("OMIE_APP_KEY"),
-      app_secret: Deno.env.get("OMIE_APP_SECRET"),
-      param: [{
-        codigo_cliente_omie: order.profiles.omie_code
-      }]
-    };
-
-    console.log("Checking existing client:", order.profiles.omie_code);
-
-    const consultaResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(existingClientPayload)
-    });
-
-    const clienteExistente = await consultaResponse.json();
-    console.log("Existing client response:", JSON.stringify(clienteExistente, null, 2));
-
-    if (!clienteExistente.faultstring) {
-      // Update existing client with complete address information
-      const updatePayload = {
-        call: "AlterarCliente",
-        app_key: Deno.env.get("OMIE_APP_KEY"),
-        app_secret: Deno.env.get("OMIE_APP_SECRET"),
-        param: [{
-          codigo_cliente_integracao: order.profiles.id,
-          email: order.profiles.email,
-          razao_social: order.profiles.full_name,
-          nome_fantasia: order.profiles.full_name,
-          cnpj_cpf: order.profiles.cnpj || order.profiles.cpf,
-          telefone1_ddd: order.profiles.phone?.substring(0, 2) || "",
-          telefone1_numero: order.profiles.phone?.substring(2) || "",
-          ...formattedAddress,
-          codigo_cliente_omie: parseInt(order.profiles.omie_code),
-          inativo: "N",
-          bloqueado: "N",
-          exterior: "N",
-          pessoa_fisica: order.profiles.cpf ? "S" : "N",
-          contribuinte: "2",
-          optante_simples_nacional: "N",
-          tags: ["ecommerce", "cliente_ativo"]
-        }]
-      };
-
-      console.log("Updating client with payload:", JSON.stringify(updatePayload, null, 2));
-
-      const updateResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatePayload)
-      });
-
-      const updateResult = await updateResponse.json();
-      console.log("Client update result:", JSON.stringify(updateResult, null, 2));
-
-      if (updateResult.faultstring) {
-        throw new Error(`Error updating client: ${updateResult.faultstring}`);
-      }
-    }
-
     // Generate order code with maximum of 15 characters
     const timestamp = Date.now().toString().slice(-5);
     const codigoPedido = `W${timestamp}`;
@@ -235,3 +153,4 @@ serve(async (req) => {
     );
   }
 });
+
