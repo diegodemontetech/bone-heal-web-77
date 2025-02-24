@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/Layout";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Loader2, 
@@ -15,8 +15,8 @@ import {
   Star,
   Activity
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-// Moved types to the top for better organization
 interface OrderItem {
   name: string;
   quantity: number;
@@ -51,43 +51,31 @@ interface DashboardStats {
 
 const Admin = () => {
   const navigate = useNavigate();
-  const [isChecking, setIsChecking] = useState(true);
+  const { isAdmin, loading, user } = useAuth();
   const [adminData, setAdminData] = useState<DashboardStats | null>(null);
 
-  // Single check for admin status
   useEffect(() => {
-    let isSubscribed = true;
+    if (!loading) {
+      if (!user) {
+        navigate("/admin/login");
+        return;
+      }
+      
+      if (!isAdmin) {
+        navigate("/");
+        return;
+      }
+    }
+  }, [loading, user, isAdmin, navigate]);
 
-    const checkAdminAccess = async () => {
+  useEffect(() => {
+    const fetchDashboardData = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session) {
-          console.log("No session found, redirecting to login");
-          navigate("/admin/login");
-          return;
-        }
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("is_admin")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (!profile?.is_admin) {
-          console.log("User is not admin, redirecting to home");
-          navigate("/");
-          return;
-        }
-
-        // Fetch dashboard data only if user is admin
         const [orders, leads, users] = await Promise.all([
           supabase.from("orders").select("*"),
           supabase.from("contact_leads").select("*"),
           supabase.from("profiles").select("*")
         ]);
-
-        if (!isSubscribed) return;
 
         const lastMonth = new Date();
         lastMonth.setMonth(lastMonth.getMonth() - 1);
@@ -124,21 +112,17 @@ const Admin = () => {
         };
 
         setAdminData(stats);
-        setIsChecking(false);
       } catch (error) {
-        console.error("Error checking admin access:", error);
-        navigate("/admin/login");
+        console.error("Error fetching dashboard data:", error);
       }
     };
 
-    checkAdminAccess();
+    if (isAdmin && user) {
+      fetchDashboardData();
+    }
+  }, [isAdmin, user]);
 
-    return () => {
-      isSubscribed = false;
-    };
-  }, [navigate]);
-
-  if (isChecking) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -146,7 +130,7 @@ const Admin = () => {
     );
   }
 
-  if (!adminData) {
+  if (!isAdmin || !user || !adminData) {
     return null;
   }
 

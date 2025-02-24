@@ -28,33 +28,29 @@ export function useAuth() {
   const { toast } = useToast();
 
   const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, is_admin")
-        .eq("id", userId)
-        .maybeSingle();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, is_admin")
+      .eq("id", userId)
+      .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error in fetchProfile:", error);
+    if (error) {
+      console.error("Error fetching profile:", error);
       return null;
     }
+
+    return data;
   };
 
   // Handle auth state changes
   useEffect(() => {
+    let mounted = true;
+
     const initializeAuth = async () => {
       try {
-        // Get current session
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session?.user) {
+        if (session?.user && mounted) {
           const profile = await fetchProfile(session.user.id);
           setAuthState({
             user: session.user,
@@ -62,7 +58,7 @@ export function useAuth() {
             profile,
             loading: false,
           });
-        } else {
+        } else if (mounted) {
           setAuthState({
             user: null,
             session: null,
@@ -72,18 +68,19 @@ export function useAuth() {
         }
       } catch (error) {
         console.error("Error in initializeAuth:", error);
-        setAuthState(prev => ({ ...prev, loading: false }));
+        if (mounted) {
+          setAuthState(prev => ({ ...prev, loading: false }));
+        }
       }
     };
 
     initializeAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Auth state changed:", event, session);
         
-        if (session?.user) {
+        if (session?.user && mounted) {
           const profile = await fetchProfile(session.user.id);
           setAuthState({
             user: session.user,
@@ -91,7 +88,7 @@ export function useAuth() {
             profile,
             loading: false,
           });
-        } else {
+        } else if (mounted) {
           setAuthState({
             user: null,
             session: null,
@@ -103,6 +100,7 @@ export function useAuth() {
     );
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
