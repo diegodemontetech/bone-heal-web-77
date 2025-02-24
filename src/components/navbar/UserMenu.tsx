@@ -1,6 +1,6 @@
 
 import { User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +18,7 @@ interface UserMenuProps {
 
 export function UserMenu({ handleSignOut }: UserMenuProps) {
   const session = useSession();
+  const navigate = useNavigate();
 
   if (!session) {
     return (
