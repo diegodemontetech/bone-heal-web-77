@@ -112,8 +112,8 @@ export default function RegistrationForm() {
       neighborhood: "",
       zipCode: "",
       phone: "",
-      receiveNews: false,
-    } satisfies FormData, // Use satisfies instead of type assertion
+      receiveNews: false
+    } as const,
   });
 
   async function onSubmit(values: FormData) {
