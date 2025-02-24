@@ -228,6 +228,14 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     }
   }, [products]);
 
+  // Criar pedido automaticamente quando o componente montar
+  useEffect(() => {
+    if (products.length > 0 && !loading) {
+      console.log("Criando pedido automaticamente...");
+      handleCreateOrder();
+    }
+  }, [products]);
+
   return (
     <div className="container max-w-4xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
