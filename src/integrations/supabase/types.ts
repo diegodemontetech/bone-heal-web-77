@@ -543,62 +543,98 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          bloqueado: boolean | null
+          cidade_ibge: string | null
           city: string | null
           cnpj: string | null
+          complemento: string | null
+          contribuinte: string | null
           cpf: string | null
           created_at: string
           crm: string | null
           cro: string | null
+          email: string | null
+          endereco_numero: string | null
+          estado_ibge: string | null
+          exterior: boolean | null
           full_name: string | null
           id: string
+          inativo: boolean | null
           is_admin: boolean | null
           neighborhood: string | null
           omie_code: string | null
           omie_sync: boolean | null
+          optante_simples_nacional: boolean | null
+          pessoa_fisica: boolean | null
           phone: string | null
           receive_news: boolean | null
           specialty: string | null
           state: string | null
+          tipo_atividade: string | null
           zip_code: string | null
         }
         Insert: {
           address?: string | null
+          bloqueado?: boolean | null
+          cidade_ibge?: string | null
           city?: string | null
           cnpj?: string | null
+          complemento?: string | null
+          contribuinte?: string | null
           cpf?: string | null
           created_at?: string
           crm?: string | null
           cro?: string | null
+          email?: string | null
+          endereco_numero?: string | null
+          estado_ibge?: string | null
+          exterior?: boolean | null
           full_name?: string | null
           id: string
+          inativo?: boolean | null
           is_admin?: boolean | null
           neighborhood?: string | null
           omie_code?: string | null
           omie_sync?: boolean | null
+          optante_simples_nacional?: boolean | null
+          pessoa_fisica?: boolean | null
           phone?: string | null
           receive_news?: boolean | null
           specialty?: string | null
           state?: string | null
+          tipo_atividade?: string | null
           zip_code?: string | null
         }
         Update: {
           address?: string | null
+          bloqueado?: boolean | null
+          cidade_ibge?: string | null
           city?: string | null
           cnpj?: string | null
+          complemento?: string | null
+          contribuinte?: string | null
           cpf?: string | null
           created_at?: string
           crm?: string | null
           cro?: string | null
+          email?: string | null
+          endereco_numero?: string | null
+          estado_ibge?: string | null
+          exterior?: boolean | null
           full_name?: string | null
           id?: string
+          inativo?: boolean | null
           is_admin?: boolean | null
           neighborhood?: string | null
           omie_code?: string | null
           omie_sync?: boolean | null
+          optante_simples_nacional?: boolean | null
+          pessoa_fisica?: boolean | null
           phone?: string | null
           receive_news?: boolean | null
           specialty?: string | null
           state?: string | null
+          tipo_atividade?: string | null
           zip_code?: string | null
         }
         Relationships: []
