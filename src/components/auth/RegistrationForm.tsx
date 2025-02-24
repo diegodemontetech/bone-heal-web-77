@@ -80,33 +80,33 @@ export default function RegistrationForm() {
     }
   });
 
-  async function onSubmit(values: FormData) {
-    if (values.password !== values.confirmPassword) {
-      form.setError('confirmPassword', {
-        type: 'manual',
-        message: 'As senhas não coincidem'
-      });
-      return;
-    }
-
-    // Validação condicional para CPF/CNPJ
-    if (values.pessoa_tipo === 'fisica' && !values.cpf) {
-      form.setError('cpf', {
-        type: 'manual',
-        message: 'CPF é obrigatório para Pessoa Física'
-      });
-      return;
-    }
-
-    if (values.pessoa_tipo === 'juridica' && !values.cnpj) {
-      form.setError('cnpj', {
-        type: 'manual',
-        message: 'CNPJ é obrigatório para Pessoa Jurídica'
-      });
-      return;
-    }
-
+  const onSubmit = async (values: FormData) => {
     try {
+      if (values.password !== values.confirmPassword) {
+        form.setError('confirmPassword', {
+          type: 'manual',
+          message: 'As senhas não coincidem'
+        });
+        return;
+      }
+
+      // Validação condicional para CPF/CNPJ
+      if (values.pessoa_tipo === 'fisica' && !values.cpf) {
+        form.setError('cpf', {
+          type: 'manual',
+          message: 'CPF é obrigatório para Pessoa Física'
+        });
+        return;
+      }
+
+      if (values.pessoa_tipo === 'juridica' && !values.cnpj) {
+        form.setError('cnpj', {
+          type: 'manual',
+          message: 'CNPJ é obrigatório para Pessoa Jurídica'
+        });
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
