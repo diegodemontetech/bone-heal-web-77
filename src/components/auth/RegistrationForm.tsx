@@ -52,6 +52,7 @@ const formSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Define the type explicitly based on the schema
 type FormData = z.infer<typeof formSchema>;
 
 export default function RegistrationForm() {
@@ -74,7 +75,7 @@ export default function RegistrationForm() {
 
       return data.map(specialty => ({
         ...specialty,
-        created_at: specialty.created_at || new Date().toISOString() // Ensure created_at is always present
+        created_at: specialty.created_at || new Date().toISOString()
       }));
     },
   });
@@ -96,6 +97,7 @@ export default function RegistrationForm() {
     },
   });
 
+  // Explicitly type the useForm hook with FormData
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -113,10 +115,10 @@ export default function RegistrationForm() {
       zipCode: "",
       phone: "",
       receiveNews: false,
-    },
+    } as FormData, // Cast defaultValues to FormData type
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormData) {
     try {
       setLoading(true);
       setError(null);
