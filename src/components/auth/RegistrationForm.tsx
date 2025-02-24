@@ -99,6 +99,8 @@ export type FormData = z.infer<typeof formSchema>;
 
 const RegistrationForm = () => {
   const navigate = useNavigate();
+  console.log('Initializing RegistrationForm component');
+  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -128,9 +130,13 @@ const RegistrationForm = () => {
   });
 
   const onSubmit = async (data: FormData) => {
+    console.log('Form submission started with data:', data);
+    
     try {
-      console.log('Starting registration process with data:', data);
+      // Disable form submission button
+      form.formState.isSubmitting = true;
       
+      console.log('Starting Supabase signup process...');
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -147,11 +153,12 @@ const RegistrationForm = () => {
       }
 
       if (!authData.user) {
-        console.error('No user data returned');
+        console.error('No user data returned from Supabase');
         toast.error("Erro ao criar conta. Por favor, tente novamente.");
         return;
       }
 
+      console.log('User created successfully, creating profile...');
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -184,12 +191,16 @@ const RegistrationForm = () => {
         return;
       }
 
+      console.log('Registration completed successfully');
       toast.success("Cadastro realizado com sucesso!");
       navigate('/');
 
     } catch (err) {
       console.error('Registration error:', err);
       toast.error("Erro ao realizar cadastro. Tente novamente.");
+    } finally {
+      // Re-enable form submission button
+      form.formState.isSubmitting = false;
     }
   };
 
@@ -203,6 +214,7 @@ const RegistrationForm = () => {
     isValid: isValid,
     isDirty: isDirty,
     dirtyFields: form.formState.dirtyFields,
+    isSubmitting: isSubmitting
   });
 
   return (
