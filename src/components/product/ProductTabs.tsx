@@ -10,14 +10,29 @@ interface ProductTabsProps {
 
 const ProductTabs = ({ product }: ProductTabsProps) => {
   return (
-    <Tabs defaultValue="description" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="description">Descrição</TabsTrigger>
-        <TabsTrigger value="details">Detalhes Técnicos</TabsTrigger>
-        <TabsTrigger value="reviews">Avaliações</TabsTrigger>
+    <Tabs defaultValue="description" className="space-y-6">
+      <TabsList className="w-full justify-start border-b rounded-none h-12 bg-transparent p-0 space-x-8">
+        <TabsTrigger 
+          value="description"
+          className="data-[state=active]:border-violet-600 border-b-2 border-transparent rounded-none h-12 px-2"
+        >
+          Descrição
+        </TabsTrigger>
+        <TabsTrigger 
+          value="details"
+          className="data-[state=active]:border-violet-600 border-b-2 border-transparent rounded-none h-12 px-2"
+        >
+          Detalhes Técnicos
+        </TabsTrigger>
+        <TabsTrigger 
+          value="reviews"
+          className="data-[state=active]:border-violet-600 border-b-2 border-transparent rounded-none h-12 px-2"
+        >
+          Avaliações
+        </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="description" className="text-muted-foreground">
+      <TabsContent value="description" className="text-gray-600 leading-relaxed">
         {product.full_description || product.description || "Nenhuma descrição disponível."}
       </TabsContent>
       
@@ -26,7 +41,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Característica</TableHead>
+                <TableHead className="w-1/3">Característica</TableHead>
                 <TableHead>Valor</TableHead>
               </TableRow>
             </TableHeader>
@@ -40,7 +55,7 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
             </TableBody>
           </Table>
         ) : (
-          <p className="text-muted-foreground">Nenhum detalhe técnico disponível.</p>
+          <p className="text-gray-500">Nenhum detalhe técnico disponível.</p>
         )}
       </TabsContent>
 

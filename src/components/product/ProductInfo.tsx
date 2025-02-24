@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard } from "lucide-react";
+import { ShoppingCart, Heart, Minus, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ProductInfoProps {
   product: {
@@ -42,49 +43,70 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   };
 
   return (
-    <div className="lg:col-span-5 mt-10 lg:mt-0">
-      <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-        {product.name}
-      </h1>
+    <div className="space-y-8">
+      <div>
+        <Badge className="mb-4 bg-violet-100 text-violet-900 hover:bg-violet-200">Mais Vendido</Badge>
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 mb-4">
+          {product.name}
+        </h1>
+        
+        <div className="flex items-baseline gap-4 mb-6">
+          <p className="text-3xl font-semibold tracking-tight text-gray-900">
+            {price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </p>
+          {price > 100 && (
+            <p className="text-sm text-gray-500">
+              ou em até 12x sem juros
+            </p>
+          )}
+        </div>
 
-      <div className="mt-4">
-        <h2 className="sr-only">Product information</h2>
-        <p className="text-3xl tracking-tight text-gray-900">
-          R$ {price.toFixed(2)}
+        <p className="text-gray-600 leading-relaxed">
+          {product.description}
         </p>
       </div>
 
-      <div className="mt-4">
-        <p className="text-base text-gray-900">{product.description}</p>
-      </div>
-
       {session && price > 0 && (
-        <div className="mt-10 space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+        <div className="space-y-6">
+          <div className="flex gap-4">
+            <div className="inline-flex items-center rounded-lg border border-gray-200">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={() => handleQuantityChange(quantity - 1)}
                 disabled={quantity <= 1}
+                className="h-12 w-12 rounded-none border-r"
               >
-                -
+                <Minus className="h-4 w-4" />
               </Button>
-              <span className="w-12 text-center">{quantity}</span>
+              <span className="w-12 text-center text-lg font-medium">
+                {quantity}
+              </span>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 onClick={() => handleQuantityChange(quantity + 1)}
+                className="h-12 w-12 rounded-none border-l"
               >
-                +
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <Button 
-              onClick={handleAddToCart} 
-              className="flex-1 font-bold text-white hover:bg-primary-dark"
+
+            <Button
+              onClick={handleAddToCart}
+              size="lg"
+              className="flex-1 h-12 bg-violet-600 hover:bg-violet-700 text-lg"
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
               Adicionar ao Carrinho
+            </Button>
+
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-12 w-12"
+            >
+              <Heart className="h-5 w-5" />
             </Button>
           </div>
 
@@ -93,24 +115,33 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
               <Link to="/products" className="flex-1">
                 <Button 
                   variant="outline" 
-                  className="w-full"
+                  className="w-full h-12"
                 >
                   Continuar Comprando
                 </Button>
               </Link>
               <Link to="/checkout" className="flex-1">
                 <Button 
-                  variant="default"
-                  className="w-full"
+                  className="w-full h-12 bg-green-600 hover:bg-green-700"
                 >
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Ir para Pagamento
+                  Finalizar Compra
                 </Button>
               </Link>
             </div>
           )}
         </div>
       )}
+
+      <div className="grid grid-cols-2 gap-4 pt-8 border-t">
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-900">Entrega Grátis</p>
+          <p className="text-sm text-gray-500">Em todo o Brasil</p>
+        </div>
+        <div className="text-center border-l">
+          <p className="text-sm font-medium text-gray-900">Garantia</p>
+          <p className="text-sm text-gray-500">30 dias de garantia</p>
+        </div>
+      </div>
     </div>
   );
 };

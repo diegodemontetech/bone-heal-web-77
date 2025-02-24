@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,33 +99,21 @@ const ProductDetail = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
-      <main className="flex-grow pt-32">
+      <main className="flex-grow pt-24">
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <ProductGallery product={product} />
-            <ProductInfo product={product} />
+          <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+              <ProductGallery product={product} />
+              <ProductInfo product={product} />
+            </div>
           </div>
           
-          <div className="mt-16">
+          <div className="bg-white rounded-xl shadow-sm p-8">
             <ProductTabs product={product} />
           </div>
-
-          {product.video_url && (
-            <div className="mt-8">
-              <a
-                href={product.video_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-primary hover:underline"
-              >
-                <Play className="w-5 h-5" />
-                Assistir vídeo do produto
-              </a>
-            </div>
-          )}
         </div>
       </main>
 
