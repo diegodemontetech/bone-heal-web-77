@@ -9,9 +9,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormData } from "../RegistrationForm";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AddressSectionProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<FormData>;
   cities: Array<{
     id: number;
     omie_code: string;
@@ -21,6 +24,9 @@ interface AddressSectionProps {
 }
 
 export const AddressSection = ({ form, cities }: AddressSectionProps) => {
+  // Get unique states from cities array
+  const states = [...new Set(cities.map(city => city.state))].sort();
+  
   const selectedState = form.watch('state');
   const filteredCities = cities.filter(city => city.state === selectedState);
 
@@ -35,6 +41,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
         <FormField
           control={form.control}
           name="address"
+          rules={{ required: "Endereço é obrigatório" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Endereço</FormLabel>
@@ -49,6 +56,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
         <FormField
           control={form.control}
           name="endereco_numero"
+          rules={{ required: "Número é obrigatório" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Número</FormLabel>
@@ -64,21 +72,26 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
       <FormField
         control={form.control}
         name="state"
+        rules={{ required: "Estado é obrigatório" }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Estado</FormLabel>
-            <Select onValueChange={(value) => {
-              field.onChange(value);
-              form.setValue('city', '');
-              form.setValue('omie_city_code', '');
-            }} value={field.value}>
+            <Select 
+              onValueChange={(value) => {
+                field.onChange(value);
+                // Reset city when state changes
+                form.setValue('city', '');
+                form.setValue('omie_city_code', '');
+              }} 
+              value={field.value}
+            >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder="Selecione o estado" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {[...new Set(cities.map(city => city.state))].sort().map(state => (
+                {states.map(state => (
                   <SelectItem key={state} value={state}>
                     {state}
                   </SelectItem>
@@ -94,6 +107,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
         <FormField
           control={form.control}
           name="city"
+          rules={{ required: "Cidade é obrigatória" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cidade</FormLabel>
@@ -106,10 +120,11 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
                   }
                 }} 
                 value={field.value}
+                disabled={!selectedState}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={selectedState ? "Selecione a cidade" : "Selecione primeiro o estado"} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -128,6 +143,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
         <FormField
           control={form.control}
           name="neighborhood"
+          rules={{ required: "Bairro é obrigatório" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Bairro</FormLabel>
@@ -143,6 +159,13 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
       <FormField
         control={form.control}
         name="zipCode"
+        rules={{ 
+          required: "CEP é obrigatório",
+          pattern: {
+            value: /^\d{8}$/,
+            message: "CEP deve conter 8 dígitos"
+          }
+        }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>CEP</FormLabel>
@@ -151,6 +174,7 @@ export const AddressSection = ({ form, cities }: AddressSectionProps) => {
                 {...field} 
                 onChange={handleZipCodeChange}
                 maxLength={8}
+                placeholder="00000000"
               />
             </FormControl>
             <FormMessage />
