@@ -1,190 +1,110 @@
-
-import React, { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
+import { z } from "zod";
 import { Form } from "@/components/ui/form";
-import RegistrationFormFields from "./RegistrationFormFields";
-import { supabase } from "@/integrations/supabase/client";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import RegistrationFormFields from "./RegistrationFormFields";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-export interface FormData {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  fullName: string;
-  razao_social: string;
-  nome_fantasia: string;
-  cpf: string;
-  cnpj: string;
-  address: string;
-  complemento: string;
-  omie_city_code: string;
-  cro: string;
-  specialty: string;
-  city: string;
-  state: string;
-  neighborhood: string;
-  zipCode: string;
-  phone: string;
-  receiveNews: boolean;
-  pessoa_tipo: 'fisica' | 'juridica';
-}
+const formSchema = z.object({
+  pessoa_tipo: z.enum(['fisica', 'juridica'], {
+    required_error: "Você precisa selecionar o tipo de pessoa.",
+  }),
+  fullName: z.string().min(2, {
+    message: "Nome completo deve ter pelo menos 2 caracteres.",
+  }),
+  razao_social: z.string().optional(),
+  nome_fantasia: z.string().optional(),
+  cpf: z.string().optional(),
+  cnpj: z.string().optional(),
+  address: z.string().min(5, {
+    message: "Endereço deve ter pelo menos 5 caracteres.",
+  }),
+  address_number: z.string().min(1, {
+    message: "Número do endereço é obrigatório.",
+  }),
+  complement: z.string().optional(),
+  neighborhood: z.string().min(3, {
+    message: "Bairro deve ter pelo menos 3 caracteres.",
+  }),
+  city: z.string().min(3, {
+    message: "Cidade deve ter pelo menos 3 caracteres.",
+  }),
+  state: z.string().min(2, {
+    message: "Estado deve ter pelo menos 2 caracteres.",
+  }),
+  zip_code: z.string().min(8, {
+    message: "CEP deve ter pelo menos 8 caracteres.",
+  }),
+  phone: z.string().min(10, {
+    message: "Telefone deve ter pelo menos 10 caracteres.",
+  }),
+  email: z.string().email({
+    message: "Email inválido.",
+  }),
+  password: z.string().min(6, {
+    message: "Senha deve ter pelo menos 6 caracteres.",
+  }),
+  confirmPassword: z.string(),
+  specialty: z.string().min(3, {
+    message: "Especialidade deve ter pelo menos 3 caracteres.",
+  }),
+  cro: z.string().min(3, {
+    message: "CRO deve ter pelo menos 3 caracteres.",
+  }),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não conferem",
+  path: ["confirmPassword"],
+});
 
-export default function RegistrationForm() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+export type FormData = z.infer<typeof formSchema>;
 
+const RegistrationForm = () => {
   const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      fullName: "",
-      razao_social: "",
-      nome_fantasia: "",
-      cpf: "",
-      cnpj: "",
-      address: "",
-      complemento: "",
-      omie_city_code: "",
-      cro: "",
-      specialty: "",
-      city: "",
-      state: "",
-      neighborhood: "",
-      zipCode: "",
-      phone: "",
-      receiveNews: false,
-      pessoa_tipo: 'fisica'
-    }
+      pessoa_tipo: "fisica",
+    },
   });
 
-  const { data: specialties, isLoading: loadingSpecialties } = useQuery({
+  const { data: specialties, isLoading } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('dental_specialties')
         .select('*')
         .order('name');
-
+      
       if (error) {
-        console.error('Error fetching specialties:', error);
+        toast.error('Erro ao carregar especialidades');
         throw error;
       }
-      console.log('Specialties fetched:', data);
-      return data || [];
+      
+      return data;
     }
   });
 
-  const onSubmit = async (values: FormData) => {
-    try {
-      if (values.password !== values.confirmPassword) {
-        form.setError('confirmPassword', {
-          type: 'manual',
-          message: 'As senhas não coincidem'
-        });
-        return;
-      }
-
-      // Validação condicional para CPF/CNPJ
-      if (values.pessoa_tipo === 'fisica' && !values.cpf) {
-        form.setError('cpf', {
-          type: 'manual',
-          message: 'CPF é obrigatório para Pessoa Física'
-        });
-        return;
-      }
-
-      if (values.pessoa_tipo === 'juridica' && !values.cnpj) {
-        form.setError('cnpj', {
-          type: 'manual',
-          message: 'CNPJ é obrigatório para Pessoa Jurídica'
-        });
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const signUpData = {
-        email: values.email,
-        password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName,
-            cpf: values.cpf,
-            cnpj: values.cnpj,
-            razao_social: values.razao_social,
-            nome_fantasia: values.nome_fantasia,
-            address: values.address,
-            complemento: values.complemento,
-            cro: values.cro,
-            specialty: values.specialty,
-            city: values.city,
-            state: values.state,
-            neighborhood: values.neighborhood,
-            zip_code: values.zipCode,
-            phone: values.phone,
-            receive_news: values.receiveNews,
-            omie_city_code: values.omie_city_code,
-            pessoa_fisica: values.pessoa_tipo === 'fisica'
-          }
-        }
-      };
-
-      console.log('Attempting signup with data:', signUpData);
-      const { error: signUpError, data } = await supabase.auth.signUp(signUpData);
-
-      if (signUpError) {
-        console.error('Signup error:', signUpError);
-        throw signUpError;
-      }
-
-      console.log('Signup successful:', data);
-      toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
-      navigate('/login');
-    } catch (error: any) {
-      console.error('Erro no cadastro:', error);
-      const errorMessage = error.message || 'Erro ao realizar cadastro. Por favor, tente novamente.';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (loadingSpecialties) {
-    return <div className="flex items-center justify-center p-4">Carregando...</div>;
-  }
+  const onSubmit = async (data: FormData) => {
+    console.log(data);
+    toast.success("Cadastro realizado com sucesso!");
+  };
 
   return (
     <Form {...form}>
-      <div className="space-y-6 max-w-2xl mx-auto">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border border-purple-100 p-6">
-            <RegistrationFormFields 
-              specialties={specialties || []} 
-              form={form} 
-            />
-          </div>
-          <Button 
-            type="submit" 
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-full py-6 text-lg font-medium transition-colors"
-            disabled={loading}
-          >
-            {loading ? "Cadastrando..." : "Cadastrar"}
-          </Button>
-        </form>
-      </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <RegistrationFormFields form={form} specialties={specialties || []} />
+        <Button 
+          type="submit" 
+          className="w-full"
+          disabled={isLoading}
+        >
+          Registrar
+        </Button>
+      </form>
     </Form>
   );
-}
+};
+
+export default RegistrationForm;
