@@ -22,43 +22,21 @@ serve(async (req) => {
   try {
     console.log('Iniciando sincronização de produtos...');
     
-    // Buscar produtos do Omie
     const omieProducts = await listOmieProducts();
     console.log(`Encontrados ${omieProducts.length} produtos no Omie`);
 
     let updatedCount = 0;
     let errorCount = 0;
 
-    // Processar cada produto
     for (const omieProduct of omieProducts) {
       try {
         if (!omieProduct.codigo) {
-          console.error('Produto Omie inválido:', omieProduct);
+          console.error('Produto sem código Omie:', omieProduct);
           errorCount++;
           continue;
         }
 
-        console.log(`\nProcessando produto Omie:`, {
-          codigo: omieProduct.codigo,
-          descricao: omieProduct.descricao,
-          valor_unitario: omieProduct.valor_unitario,
-          inativo: omieProduct.inativo
-        });
-        
-        const productData = {
-          name: omieProduct.descricao,
-          price: typeof omieProduct.valor_unitario === 'string' ? 
-            parseFloat(omieProduct.valor_unitario.replace(',', '.')) : 
-            omieProduct.valor_unitario,
-          omie_code: omieProduct.codigo,
-          active: omieProduct.inativo === "N",
-          omie_sync: true,
-          omie_last_update: new Date().toISOString(),
-        };
-
-        console.log('Dados preparados para atualização:', productData);
-
-        // Verificar se o produto já existe
+        // Buscar produto existente pelo código Omie
         const { data: existingProduct, error: findError } = await supabase
           .from('products')
           .select('id, price, active')
@@ -66,29 +44,37 @@ serve(async (req) => {
           .maybeSingle();
 
         if (findError) {
-          console.error('Erro ao buscar produto existente:', findError);
+          console.error('Erro ao buscar produto:', findError);
           errorCount++;
           continue;
         }
 
         if (existingProduct) {
-          console.log('Produto existente encontrado:', {
-            id: existingProduct.id,
-            priceAtual: existingProduct.price,
-            priceNovo: productData.price,
-            activeAtual: existingProduct.active,
-            activeNovo: productData.active
+          // Convertendo preço do Omie (pode vir como string "319,00" ou número)
+          let omiePrice = omieProduct.valor_unitario;
+          if (typeof omiePrice === 'string') {
+            omiePrice = parseFloat(omiePrice.replace('.', '').replace(',', '.'));
+          }
+
+          const isActive = omieProduct.inativo === "N";
+
+          console.log('Verificando produto:', {
+            codigo: omieProduct.codigo,
+            precoAtual: existingProduct.price,
+            precoOmie: omiePrice,
+            ativoAtual: existingProduct.active,
+            ativoOmie: isActive
           });
 
-          // Comparando os valores com uma margem de erro pequena para números decimais
-          const priceChanged = Math.abs(existingProduct.price - productData.price) > 0.01;
-          
-          if (priceChanged || existingProduct.active !== productData.active) {
+          // Só atualiza se houver mudança no preço ou no status
+          if (existingProduct.price !== omiePrice || existingProduct.active !== isActive) {
+            console.log('Atualizando produto:', omieProduct.codigo);
+            
             const { error: updateError } = await supabase
               .from('products')
               .update({
-                price: productData.price,
-                active: productData.active,
+                price: omiePrice,
+                active: isActive,
                 omie_sync: true,
                 omie_last_update: new Date().toISOString()
               })
@@ -101,45 +87,18 @@ serve(async (req) => {
             }
 
             console.log('Produto atualizado com sucesso:', {
-              id: existingProduct.id,
-              omie_code: productData.omie_code,
-              oldPrice: existingProduct.price,
-              newPrice: productData.price,
-              oldActive: existingProduct.active,
-              newActive: productData.active
+              codigo: omieProduct.codigo,
+              precoAntigo: existingProduct.price,
+              precoNovo: omiePrice,
+              ativoAntigo: existingProduct.active,
+              ativoNovo: isActive
             });
             updatedCount++;
           } else {
-            console.log('Produto não precisa de atualização (preço e status iguais)');
+            console.log('Produto já está atualizado:', omieProduct.codigo);
           }
         } else {
-          // Criar slug a partir do nome
-          const slug = productData.name
-            .toLowerCase()
-            .replace(/[^\w\s-]/g, '')
-            .replace(/\s+/g, '-');
-
-          console.log('Criando novo produto com slug:', slug);
-
-          const { error: insertError } = await supabase
-            .from('products')
-            .insert({
-              ...productData,
-              slug
-            });
-
-          if (insertError) {
-            console.error('Erro ao criar produto:', insertError);
-            errorCount++;
-            continue;
-          }
-
-          console.log('Novo produto criado:', {
-            omie_code: productData.omie_code,
-            price: productData.price,
-            active: productData.active
-          });
-          updatedCount++;
+          console.log('Produto não encontrado no e-commerce:', omieProduct.codigo);
         }
       } catch (productError) {
         console.error(`Erro ao processar produto ${omieProduct.codigo}:`, productError);
@@ -188,18 +147,13 @@ async function listOmieProducts() {
   });
 
   if (!response.ok) {
-    console.error('Erro na resposta do Omie:', response.status, response.statusText);
-    const text = await response.text();
-    console.error('Resposta do Omie:', text);
     throw new Error(`Erro ao buscar produtos do Omie: ${response.statusText}`);
   }
 
   const data = await response.json();
-  console.log('Resposta do Omie:', JSON.stringify(data, null, 2));
-
+  
   if (!data.produtos_cadastro || !Array.isArray(data.produtos_cadastro)) {
-    console.error('Resposta inválida do Omie:', data);
-    throw new Error('Formato de resposta inválido do Omie');
+    throw new Error('Resposta inválida do Omie');
   }
 
   return data.produtos_cadastro;
