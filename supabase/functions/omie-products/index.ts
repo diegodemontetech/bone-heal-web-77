@@ -80,13 +80,15 @@ serve(async (req) => {
 
         if (detailData.faultstring) {
           console.error(`Erro ao consultar produto ${produtoResumido.codigo}:`, detailData.faultstring);
+          errors++;
           continue;
         }
 
         const product = detailData.produto_servico_cadastro;
         
-        if (!product) {
-          console.log('Produto inválido:', detailData);
+        if (!product || !product.codigo || !product.descricao) {
+          console.log('Produto inválido ou sem dados obrigatórios:', detailData);
+          errors++;
           continue;
         }
 
@@ -97,32 +99,27 @@ serve(async (req) => {
           .eq('omie_code', product.codigo)
           .maybeSingle();
 
+        // Construir objeto de atualização apenas com campos relevantes
+        const updates: Record<string, any> = {
+          omie_sync: true,
+          omie_last_update: new Date().toISOString(),
+          price: parseFloat(product.valor_unitario),
+          active: product.inativo !== 'S'
+        };
+
         if (existingProduct) {
-          // Atualizar apenas preço e status se necessário
-          const updates: Record<string, any> = {
-            omie_sync: true,
-            omie_last_update: new Date().toISOString()
-          };
-
-          // Atualizar preço se diferente
-          if (existingProduct.price !== parseFloat(product.valor_unitario)) {
-            updates.price = parseFloat(product.valor_unitario);
-          }
-
-          // Atualizar status ativo baseado no status do Omie
-          const isActiveInOmie = product.inativo !== 'S';
-          if (existingProduct.active !== isActiveInOmie) {
-            updates.active = isActiveInOmie;
-          }
-
-          // Só atualiza se houver mudanças
-          if (Object.keys(updates).length > 1) { // > 1 porque sempre teremos omie_sync e omie_last_update
+          // Atualizar apenas se houver mudanças
+          if (existingProduct.price !== updates.price || existingProduct.active !== updates.active) {
             const { error } = await supabase
               .from('products')
               .update(updates)
               .eq('id', existingProduct.id);
 
-            if (error) throw error;
+            if (error) {
+              console.error(`Erro ao atualizar produto ${product.codigo}:`, error);
+              errors++;
+              continue;
+            }
             updated++;
           }
         }
