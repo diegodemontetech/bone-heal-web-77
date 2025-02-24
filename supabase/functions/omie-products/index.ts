@@ -27,14 +27,23 @@ serve(async (req) => {
 
     let updatedCount = 0;
     let errorCount = 0;
+    let errors = [];
 
     for (const omieProduct of omieProducts) {
       try {
         if (!omieProduct.codigo) {
           console.error('Produto sem código Omie:', omieProduct);
+          errors.push(`Produto sem código Omie: ${JSON.stringify(omieProduct)}`);
           errorCount++;
           continue;
         }
+
+        console.log('Processando produto:', {
+          codigo: omieProduct.codigo,
+          nome: omieProduct.descricao,
+          preco: omieProduct.valor_unitario,
+          inativo: omieProduct.inativo
+        });
 
         // Buscar produto existente pelo código Omie
         const { data: existingProduct, error: findError } = await supabase
@@ -45,6 +54,7 @@ serve(async (req) => {
 
         if (findError) {
           console.error('Erro ao buscar produto:', findError);
+          errors.push(`Erro ao buscar produto ${omieProduct.codigo}: ${findError.message}`);
           errorCount++;
           continue;
         }
@@ -58,7 +68,7 @@ serve(async (req) => {
 
           const isActive = omieProduct.inativo === "N";
 
-          console.log('Verificando produto:', {
+          console.log('Dados do produto:', {
             codigo: omieProduct.codigo,
             precoAtual: existingProduct.price,
             precoOmie: omiePrice,
@@ -82,6 +92,7 @@ serve(async (req) => {
 
             if (updateError) {
               console.error('Erro ao atualizar produto:', updateError);
+              errors.push(`Erro ao atualizar produto ${omieProduct.codigo}: ${updateError.message}`);
               errorCount++;
               continue;
             }
@@ -102,14 +113,20 @@ serve(async (req) => {
         }
       } catch (productError) {
         console.error(`Erro ao processar produto ${omieProduct.codigo}:`, productError);
+        errors.push(`Erro ao processar produto ${omieProduct.codigo}: ${productError.message}`);
         errorCount++;
       }
     }
 
-    return new Response(JSON.stringify({
+    const summary = {
       success: true,
-      message: `Sincronização concluída: ${omieProducts.length} produtos processados, ${updatedCount} atualizados, ${errorCount} erros`
-    }), {
+      message: `Sincronização concluída: ${omieProducts.length} produtos processados, ${updatedCount} atualizados, ${errorCount} erros`,
+      errors: errors
+    };
+
+    console.log('Resumo da sincronização:', summary);
+
+    return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
@@ -117,7 +134,8 @@ serve(async (req) => {
     console.error('Erro na sincronização:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
