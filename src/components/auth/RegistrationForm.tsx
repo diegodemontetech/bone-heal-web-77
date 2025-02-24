@@ -15,6 +15,9 @@ export interface FormData {
   password: string;
   confirmPassword: string;
   fullName: string;
+  razao_social: string;
+  nome_fantasia: string;
+  cpf: string;
   cnpj: string;
   address: string;
   omie_city_code: string;
@@ -26,6 +29,7 @@ export interface FormData {
   zipCode: string;
   phone: string;
   receiveNews: boolean;
+  pessoa_tipo: 'fisica' | 'juridica';
 }
 
 export default function RegistrationForm() {
@@ -39,6 +43,9 @@ export default function RegistrationForm() {
       password: "",
       confirmPassword: "",
       fullName: "",
+      razao_social: "",
+      nome_fantasia: "",
+      cpf: "",
       cnpj: "",
       address: "",
       omie_city_code: "",
@@ -50,6 +57,7 @@ export default function RegistrationForm() {
       zipCode: "",
       phone: "",
       receiveNews: false,
+      pessoa_tipo: 'fisica'
     }
   });
 
@@ -88,6 +96,23 @@ export default function RegistrationForm() {
       return;
     }
 
+    // Validação condicional para CPF/CNPJ
+    if (values.pessoa_tipo === 'fisica' && !values.cpf) {
+      form.setError('cpf', {
+        type: 'manual',
+        message: 'CPF é obrigatório para Pessoa Física'
+      });
+      return;
+    }
+
+    if (values.pessoa_tipo === 'juridica' && !values.cnpj) {
+      form.setError('cnpj', {
+        type: 'manual',
+        message: 'CNPJ é obrigatório para Pessoa Jurídica'
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -98,7 +123,10 @@ export default function RegistrationForm() {
         options: {
           data: {
             full_name: values.fullName,
+            cpf: values.cpf,
             cnpj: values.cnpj,
+            razao_social: values.razao_social,
+            nome_fantasia: values.nome_fantasia,
             address: values.address,
             cro: values.cro,
             specialty: values.specialty,
@@ -109,6 +137,7 @@ export default function RegistrationForm() {
             phone: values.phone,
             receive_news: values.receiveNews,
             omie_city_code: values.omie_city_code,
+            pessoa_fisica: values.pessoa_tipo === 'fisica'
           }
         }
       });
