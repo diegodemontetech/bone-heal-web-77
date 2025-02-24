@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, Minus, Plus } from "lucide-react";
+import { ShieldCheck, ShoppingCart, Heart, Minus, Plus, Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -139,13 +139,17 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       )}
 
       <div className="grid grid-cols-2 gap-4 pt-8 border-t">
-        <div className="text-center">
-          <p className="text-sm font-medium text-gray-900">Entrega Grátis</p>
-          <p className="text-sm text-gray-500">Em todo o Brasil</p>
+        <div className="flex items-center justify-center gap-2 text-center">
+          <ShieldCheck className="w-5 h-5 text-violet-600" />
+          <div>
+            <p className="text-sm font-medium text-gray-900">Aprovado Anvisa</p>
+          </div>
         </div>
-        <div className="text-center border-l">
-          <p className="text-sm font-medium text-gray-900">Garantia</p>
-          <p className="text-sm text-gray-500">30 dias de garantia</p>
+        <div className="flex items-center justify-center gap-2 text-center border-l">
+          <Award className="w-5 h-5 text-violet-600" />
+          <div>
+            <p className="text-sm font-medium text-gray-900">Produto Patenteado</p>
+          </div>
         </div>
       </div>
     </div>
