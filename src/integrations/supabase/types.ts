@@ -179,7 +179,7 @@ export type Database = {
         }
         Insert: {
           ibge_code: string
-          id?: number
+          id: number
           name: string
           state_id?: number | null
         }
@@ -208,7 +208,7 @@ export type Database = {
         }
         Insert: {
           ibge_code: string
-          id?: number
+          id: number
           name: string
           uf: string
         }
