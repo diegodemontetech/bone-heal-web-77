@@ -115,53 +115,6 @@ const AdminProducts = () => {
     }
   };
 
-  const handleCreate = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("products")
-        .insert([{
-          name: "BONE HEAL MEMBRANA REGENERATIVA ODONTOLÓGICA - TAMANHO 30X40 mm",
-          slug: "bone-heal-membrana-regenerativa-odontologica-30x40",
-          omie_code: "BH30401",
-          price: 320.00,
-          stock: 10,
-          active: true,
-          short_description: "Membrana regenerativa odontológica Bone Heal, tamanho 30x40mm",
-          description: "Membrana regenerativa odontológica Bone Heal, tamanho 30x40mm. Código NCM: 3006.10.90. EAN: 7898994908401",
-          technical_details: {
-            ncm: "3006.10.90",
-            ean: "7898994908401",
-            family: "Bone Heal",
-            dimensions: "30x40mm",
-            unit: "UN"
-          },
-          width: 30,
-          height: 40,
-          length: 1,
-          weight: 0.1,
-          default_image_url: "public/lovable-uploads/0a6d1a02-a166-4ef7-a719-07474622ee16.png",
-          omie_sync: true,
-          omie_last_update: new Date().toISOString()
-        }])
-        .select();
-
-      if (error) throw error;
-
-      toast({
-        title: "Produto cadastrado com sucesso",
-        description: "O produto foi sincronizado com o Omie."
-      });
-
-      refetch();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao cadastrar produto",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <AdminLayout>
       <div className="p-8">
@@ -176,7 +129,7 @@ const AdminProducts = () => {
               <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
               {isSyncing ? "Sincronizando..." : "Sincronizar com Omie"}
             </Button>
-            <Button onClick={handleCreate}>
+            <Button onClick={() => setIsFormOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Novo Produto
             </Button>
