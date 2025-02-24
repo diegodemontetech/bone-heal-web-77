@@ -8,7 +8,7 @@ import { formSchema, FormData } from "./types/registration-form";
 import { useRegistration } from "./hooks/useRegistration";
 
 const RegistrationForm = () => {
-  const { specialties, specialtiesLoading, handleRegistration } = useRegistration();
+  const { specialties, handleRegistration } = useRegistration();
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -20,33 +20,27 @@ const RegistrationForm = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log('Form submission attempted with data:', data);
-      console.log('Form state:', {
-        isValid: form.formState.isValid,
-        isDirty: form.formState.isDirty,
-        errors: form.formState.errors
-      });
-      
-      if (!form.formState.isValid) {
-        console.log('Form validation errors:', form.formState.errors);
-        return;
-      }
-      
+      console.log('Tentando enviar formulário com dados:', data);
       await handleRegistration(data);
     } catch (error) {
-      console.error('Error in form submission:', error);
+      console.error('Erro no envio do formulário:', error);
     }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <RegistrationFormFields form={form} specialties={specialties || []} />
+      <form 
+        onSubmit={form.handleSubmit(onSubmit)} 
+        className="space-y-8"
+      >
+        <RegistrationFormFields 
+          form={form} 
+          specialties={specialties || []} 
+        />
         <Button 
           type="submit" 
           className="w-full"
-          disabled={form.formState.isSubmitting}
-          variant="default"
+          disabled={!form.formState.isValid || form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? "Registrando..." : "Registrar"}
         </Button>

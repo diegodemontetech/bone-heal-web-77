@@ -8,29 +8,28 @@ import { useQuery } from "@tanstack/react-query";
 export const useRegistration = () => {
   const navigate = useNavigate();
 
+  // Busca especialidades odontológicas
   const { data: specialties = [], isLoading: specialtiesLoading } = useQuery({
     queryKey: ['dental-specialties'],
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('dental_specialties')
-          .select('*')
-          .order('name');
+      const { data, error } = await supabase
+        .from('dental_specialties')
+        .select('*')
+        .order('name');
 
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error loading specialties:', error);
-        toast.error('Error loading specialties');
-        return [];
+      if (error) {
+        console.error('Erro ao carregar especialidades:', error);
+        throw error;
       }
+      return data || [];
     }
   });
 
   const handleRegistration = async (data: FormData) => {
     try {
-      console.log('Starting registration process with data:', data);
+      console.log('Iniciando registro com dados:', data);
 
+      // 1. Criação do usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -43,20 +42,21 @@ export const useRegistration = () => {
       });
 
       if (authError) {
-        console.error('Auth error:', authError);
-        throw authError;
+        console.error('Erro de autenticação:', authError);
+        throw new Error(authError.message);
       }
 
       if (!authData.user) {
-        console.error('No user data returned');
-        throw new Error("Could not create account");
+        console.error('Nenhum dado de usuário retornado');
+        throw new Error("Não foi possível criar a conta");
       }
 
-      console.log('Auth successful, creating profile...');
+      console.log('Usuário criado com sucesso, criando perfil...');
 
+      // 2. Criação do perfil
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert({
+        .insert([{
           id: authData.user.id,
           full_name: data.fullName,
           pessoa_tipo: data.pessoa_tipo,
@@ -75,25 +75,26 @@ export const useRegistration = () => {
           specialty: data.specialty,
           cro: data.cro,
           email: data.email
-        });
+        }]);
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
+        console.error('Erro ao criar perfil:', profileError);
+        // Se houver erro, remover o usuário criado
         await supabase.auth.signOut();
-        throw profileError;
+        throw new Error("Erro ao criar perfil: " + profileError.message);
       }
 
-      console.log('Registration successful');
-      toast.success("Registration successful!");
+      console.log('Registro concluído com sucesso');
+      toast.success("Cadastro realizado com sucesso!");
       navigate('/');
 
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('Erro no registro:', error);
       
       if (error.message?.includes('already exists')) {
-        toast.error("This email is already registered");
+        toast.error("Este email já está cadastrado");
       } else {
-        toast.error("Registration error: " + (error.message || "Please try again"));
+        toast.error("Erro no cadastro: " + (error.message || "Por favor tente novamente"));
       }
       throw error;
     }
