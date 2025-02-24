@@ -22,13 +22,15 @@ const RegistrationForm = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      console.log('Iniciando registro com dados:', data);
       await handleRegistration(data);
     } catch (error) {
       console.error('Erro no registro:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao registrar usuário');
     }
   };
+
+  const isValid = form.formState.isValid;
+  const isSubmitting = form.formState.isSubmitting;
 
   return (
     <Form {...form}>
@@ -43,10 +45,10 @@ const RegistrationForm = () => {
         
         <Button 
           type="submit"
-          className="w-full bg-purple-600 hover:bg-purple-700"
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
+          className="w-full text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+          disabled={!isValid || isSubmitting}
         >
-          {form.formState.isSubmitting ? (
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Registrando...
