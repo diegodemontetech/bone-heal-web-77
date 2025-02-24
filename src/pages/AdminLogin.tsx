@@ -12,7 +12,7 @@ const AdminLogin = () => {
   const { toast } = useToast();
   const [isChecking, setIsChecking] = useState(true);
 
-  // Single check for existing session
+  // Single check for existing session and admin status
   useEffect(() => {
     let isSubscribed = true;
 
@@ -25,16 +25,30 @@ const AdminLogin = () => {
           return;
         }
 
-        const { data: profile } = await supabase
+        // Fetch profile and check admin status
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("is_admin")
           .eq("id", session.user.id)
           .maybeSingle();
 
-        if (profile?.is_admin && isSubscribed) {
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          if (isSubscribed) setIsChecking(false);
+          return;
+        }
+
+        // If user is admin, redirect to admin panel
+        if (profile?.is_admin) {
           navigate("/admin");
         } else {
-          setIsChecking(false);
+          // If not admin, show error and redirect to home
+          toast({
+            title: "Acesso negado",
+            description: "Você não tem permissão para acessar a área administrativa.",
+            variant: "destructive",
+          });
+          navigate("/");
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -44,11 +58,10 @@ const AdminLogin = () => {
 
     checkSession();
 
-    // Cleanup function
     return () => {
       isSubscribed = false;
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   // Auth state change listener
   useEffect(() => {
@@ -57,11 +70,16 @@ const AdminLogin = () => {
       
       if (event === "SIGNED_IN" && session) {
         try {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("is_admin")
             .eq("id", session.user.id)
             .maybeSingle();
+
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+            return;
+          }
 
           if (profile?.is_admin) {
             navigate("/admin");
@@ -72,6 +90,7 @@ const AdminLogin = () => {
               variant: "destructive",
             });
             await supabase.auth.signOut();
+            navigate("/");
           }
         } catch (error) {
           console.error("Error checking admin status:", error);

@@ -30,25 +30,28 @@ const Login = () => {
   });
 
   // Simplified profile check that won't cause recursion
-  const checkProfile = async (userId: string) => {
+  const checkProfileAndRedirect = async (userId: string) => {
     try {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, is_admin')
         .eq('id', userId)
         .maybeSingle();
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
-        // Não vamos bloquear o login por erro no perfil
-        return null;
+        return;
       }
 
-      return profile;
+      // Redirect admin users to admin panel
+      if (profile?.is_admin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error('Profile check error:', error);
-      // Não vamos bloquear o login por erro no perfil
-      return null;
+      navigate('/');
     }
   };
 
@@ -71,12 +74,11 @@ const Login = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      // Tentar buscar o perfil, mas não bloquear o login se falhar
-      await checkProfile(data.user.id);
+      // Check if admin and redirect accordingly
+      await checkProfileAndRedirect(data.user.id);
       
-      console.log('Login successful, navigating to home');
+      console.log('Login successful');
       toast.success('Login realizado com sucesso!');
-      navigate('/');
 
     } catch (error: any) {
       console.error('Login error:', error);
@@ -100,7 +102,8 @@ const Login = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        navigate('/');
+        // Check if admin and redirect accordingly
+        await checkProfileAndRedirect(session.user.id);
       }
     };
 
