@@ -24,7 +24,6 @@ serve(async (req) => {
       throw new Error('Invalid action');
     }
 
-    // Fetch order data from Supabase
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -74,23 +73,31 @@ serve(async (req) => {
     console.log("Existing client response:", JSON.stringify(clienteExistente, null, 2));
 
     if (!clienteExistente.faultstring) {
-      // Atualizar cliente existente com configurações necessárias
+      // Following the exact structure from documentation for client update
       const updatePayload = {
         call: "AlterarCliente",
         app_key: Deno.env.get("OMIE_APP_KEY"),
         app_secret: Deno.env.get("OMIE_APP_SECRET"),
         param: [{
-          ...clienteExistente,
+          codigo_cliente_integracao: order.profiles.id,
+          email: order.profiles.email,
+          razao_social: order.profiles.full_name,
+          nome_fantasia: order.profiles.full_name,
+          cnpj_cpf: order.profiles.cnpj || order.profiles.cpf,
+          telefone1_ddd: order.profiles.phone?.substring(0, 2) || "",
+          telefone1_numero: order.profiles.phone?.substring(2) || "",
+          endereco: order.profiles.address || "",
+          endereco_numero: "S/N",
+          bairro: order.profiles.neighborhood || "",
+          estado: order.profiles.state || "",
+          cidade: `${order.profiles.city?.toUpperCase() || ""} (${order.profiles.state || ""})`,
+          codigo_cliente_omie: parseInt(order.profiles.omie_code),
           inativo: "N",
           bloqueado: "N",
-          pessoa_fisica: order.profiles.cpf?.length === 11 ? "S" : "N",
-          contribuinte: "2", // 2 = Não contribuinte
-          tipo_atividade: "3", // 3 = Serviços
-          tags: ["ecommerce", "cliente_ativo"],
-          recomendacoes: {
-            tipo_assinante: "9", // 9 = Outros
-            gerar_boletos: "N"
-          }
+          exterior: "N",
+          pessoa_fisica: order.profiles.cpf ? "S" : "N",
+          optante_simples_nacional: "N",
+          tags: ["ecommerce", "cliente_ativo"]
         }]
       };
 
@@ -110,11 +117,11 @@ serve(async (req) => {
       }
     }
 
-    // Gerar código do pedido com máximo de 15 caracteres
+    // Generate order code with maximum of 15 characters
     const timestamp = Date.now().toString().slice(-5);
     const codigoPedido = `W${timestamp}`;
 
-    // Mapear itens do pedido garantindo que todos os campos necessários estejam presentes
+    // Map order items ensuring all required fields are present
     const items = order.items.map((item: any, index: number) => {
       if (!item.omie_code || !item.omie_product_id) {
         throw new Error(`Missing Omie codes for item: ${item.name}`);
@@ -203,9 +210,10 @@ serve(async (req) => {
         error: error.message
       }),
       { 
-        status: 400,
+        status: 200, // Always return 200 even for errors to avoid Edge Function errors
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
 });
+
