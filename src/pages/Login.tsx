@@ -53,8 +53,25 @@ const Login = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Login to your account
+            Área do Cliente
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Acesse sua conta como
+          </p>
+          <div className="mt-4 flex gap-4 justify-center">
+            <Link
+              to="/register"
+              className="inline-flex items-center px-4 py-2 border border-purple-600 text-sm font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              Pessoa Física
+            </Link>
+            <Link
+              to="/register"
+              className="inline-flex items-center px-4 py-2 border border-purple-600 text-sm font-medium rounded-md text-purple-600 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
+              Pessoa Jurídica
+            </Link>
+          </div>
         </div>
 
         {error && (
@@ -100,7 +117,7 @@ const Login = () => {
                 disabled={loading}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </div>
 
@@ -109,7 +126,7 @@ const Login = () => {
                 to="/register"
                 className="font-medium text-purple-600 hover:text-purple-500"
               >
-                Don't have an account? Register
+                Ainda não tem conta? Cadastre-se
               </Link>
             </div>
           </form>
