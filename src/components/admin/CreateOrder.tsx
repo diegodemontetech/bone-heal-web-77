@@ -86,29 +86,60 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     }
   };
 
+  const validateOrderData = () => {
+    console.log("Validando dados do pedido...");
+
+    if (!selectedCustomer?.id) {
+      throw new Error("Cliente não selecionado");
+    }
+
+    if (selectedProducts.length === 0) {
+      throw new Error("Adicione pelo menos um produto");
+    }
+
+    const invalidProducts = selectedProducts.filter(
+      product => !product.omie_code || !product.omie_product_id
+    );
+
+    if (invalidProducts.length > 0) {
+      throw new Error(`Os seguintes produtos não estão sincronizados com o Omie: ${invalidProducts.map(p => p.name).join(", ")}`);
+    }
+
+    if (!selectedCustomer.address || !selectedCustomer.city || 
+        !selectedCustomer.state || !selectedCustomer.zip_code) {
+      throw new Error("Dados de endereço do cliente incompletos");
+    }
+
+    // Validar dados específicos do Omie
+    const requiredFields = [
+      'omie_code',
+      'cidade_ibge',
+      'estado_ibge',
+      'pessoa_fisica',
+      'contribuinte',
+      'tipo_atividade'
+    ];
+
+    const missingFields = requiredFields.filter(field => !selectedCustomer[field]);
+    if (missingFields.length > 0) {
+      throw new Error(`Dados do cliente incompletos para integração com Omie. Campos faltantes: ${missingFields.join(", ")}`);
+    }
+
+    console.log("Validação concluída com sucesso");
+    return true;
+  };
+
   const handleCreateOrder = async () => {
     try {
-      if (!selectedCustomer?.id) {
-        toast.error("Cliente não selecionado");
-        return;
-      }
-
-      if (selectedProducts.length === 0) {
-        toast.error("Adicione pelo menos um produto");
-        return;
-      }
-
-      const invalidProducts = selectedProducts.filter(
-        product => !product.omie_code || !product.omie_product_id
-      );
-
-      if (invalidProducts.length > 0) {
-        const productNames = invalidProducts.map(p => p.name).join(", ");
-        toast.error(`Os seguintes produtos não estão sincronizados com o Omie: ${productNames}`);
-        return;
-      }
-
+      console.log("Iniciando criação do pedido...");
       setLoading(true);
+
+      try {
+        validateOrderData();
+      } catch (validationError: any) {
+        toast.error(validationError.message);
+        return;
+      }
 
       const orderItems = selectedProducts.map(product => ({
         product_id: product.id,
@@ -121,13 +152,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
       const total = calculateTotal();
 
-      if (!selectedCustomer.address || !selectedCustomer.city || 
-          !selectedCustomer.state || !selectedCustomer.zip_code) {
-        toast.error("Dados de endereço do cliente incompletos");
-        return;
-      }
-
-      // Criar pedido com status inicial
+      console.log("Criando pedido na base de dados...");
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -152,7 +177,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         throw orderError;
       }
 
-      // Criar preferência do MercadoPago
+      console.log("Pedido criado com sucesso, criando preferência no MercadoPago...");
       const { data: prefData, error: prefError } = await supabase.functions.invoke(
         'mercadopago-checkout',
         {
@@ -176,6 +201,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         throw prefError;
       }
 
+      console.log("Preferência MP criada, atualizando pedido...");
       await supabase
         .from("orders")
         .update({
