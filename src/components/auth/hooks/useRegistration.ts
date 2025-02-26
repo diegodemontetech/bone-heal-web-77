@@ -31,11 +31,6 @@ export const useRegistration = () => {
     try {
       console.log('Starting registration process with data:', data);
 
-      // Validate required fields
-      if (!data.email || !data.password) {
-        throw new Error('Email e senha são obrigatórios');
-      }
-
       // Format phone number
       const phone = data.telefone1_ddd && data.telefone1_numero 
         ? `${data.telefone1_ddd}${data.telefone1_numero}`

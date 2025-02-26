@@ -27,6 +27,28 @@ const RegistrationForm = () => {
   const onSubmit = async (data: FormData) => {
     try {
       console.log('Form submission started with data:', data);
+      
+      // Validate required fields based on pessoa_tipo
+      if (data.pessoa_tipo === 'fisica' && !data.cpf) {
+        toast.error('CPF é obrigatório para pessoa física');
+        return;
+      }
+      
+      if (data.pessoa_tipo === 'juridica' && (!data.cnpj || !data.razao_social)) {
+        toast.error('CNPJ e Razão Social são obrigatórios para pessoa jurídica');
+        return;
+      }
+
+      if (!data.email || !data.password) {
+        toast.error('Email e senha são obrigatórios');
+        return;
+      }
+
+      if (data.password !== data.confirmPassword) {
+        toast.error('As senhas não conferem');
+        return;
+      }
+
       await handleRegistration(data);
     } catch (error) {
       console.error('Registration error:', error);
