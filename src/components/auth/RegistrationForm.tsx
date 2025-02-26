@@ -8,6 +8,7 @@ import RegistrationFormFields from "./RegistrationFormFields";
 import { formSchema, FormData } from "./types/registration-form";
 import { useRegistration } from "./hooks/useRegistration";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const RegistrationForm = () => {
   const { specialties, specialtiesLoading, handleRegistration } = useRegistration();
@@ -51,7 +52,7 @@ const RegistrationForm = () => {
           specialties={specialties || []} 
         />
         
-        <div className="mt-6">
+        <div className="mt-6 space-y-4">
           <Button 
             type="submit"
             variant="default"
@@ -68,6 +69,15 @@ const RegistrationForm = () => {
               "Registrar"
             )}
           </Button>
+
+          <div className="text-center">
+            <span className="text-sm text-gray-600">
+              Já tem uma conta?{" "}
+              <Link to="/login" className="text-primary hover:underline font-medium">
+                Entrar
+              </Link>
+            </span>
+          </div>
         </div>
       </form>
     </Form>
