@@ -17,6 +17,7 @@ const RegistrationForm = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       pessoa_tipo: "fisica",
+      receive_news: false,
     },
     mode: "onChange"
   });
@@ -25,7 +26,6 @@ const RegistrationForm = () => {
     try {
       console.log('Form submission started with data:', data);
       await handleRegistration(data);
-      console.log('Registration successful');
     } catch (error) {
       console.error('Registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao registrar usuário');
@@ -34,19 +34,21 @@ const RegistrationForm = () => {
 
   const isValid = form.formState.isValid;
   const isSubmitting = form.formState.isSubmitting;
+  const formErrors = form.formState.errors;
 
   if (specialtiesLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
       </div>
     );
   }
 
-  console.log('Form state:', {
+  console.log('Form validation state:', {
     isValid,
     isSubmitting,
-    formErrors: form.formState.errors
+    formErrors,
+    values: form.getValues()
   });
 
   return (
@@ -69,14 +71,20 @@ const RegistrationForm = () => {
             disabled={!isValid || isSubmitting}
           >
             {isSubmitting ? (
-              <div className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              <div className="flex items-center justify-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
                 <span>Registrando...</span>
               </div>
             ) : (
               "Registrar"
             )}
           </Button>
+
+          {Object.keys(formErrors).length > 0 && (
+            <div className="text-sm text-red-500">
+              Por favor, corrija os erros no formulário antes de continuar.
+            </div>
+          )}
 
           <div className="text-center">
             <span className="text-sm text-gray-600">

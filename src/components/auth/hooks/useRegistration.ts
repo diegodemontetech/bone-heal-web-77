@@ -29,7 +29,12 @@ export const useRegistration = () => {
 
   const handleRegistration = async (data: FormData) => {
     try {
-      console.log('Starting registration with data:', data);
+      console.log('Starting registration process with data:', data);
+
+      // Validate required fields
+      if (!data.email || !data.password) {
+        throw new Error('Email e senha são obrigatórios');
+      }
 
       // Prepare user metadata
       const userMetadata = {
@@ -52,41 +57,43 @@ export const useRegistration = () => {
         receive_news: false
       };
 
+      console.log('Attempting to create user with metadata:', userMetadata);
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
-          data: userMetadata
+          data: userMetadata,
         }
       });
 
       if (authError) {
-        console.error('Auth error:', authError);
+        console.error('Authentication error:', authError);
         
-        // Translate common error messages
-        let errorMessage = 'Erro no registro';
+        // Mensagens de erro mais amigáveis em português
         if (authError.message.includes('User already registered')) {
-          errorMessage = 'Este email já está registrado';
+          throw new Error('Este email já está registrado');
         } else if (authError.message.includes('Password should be at least')) {
-          errorMessage = 'A senha deve ter pelo menos 6 caracteres';
+          throw new Error('A senha deve ter pelo menos 6 caracteres');
         } else if (authError.message.includes('Email not confirmed')) {
-          errorMessage = 'Email ainda não confirmado';
+          throw new Error('Email ainda não confirmado');
+        } else {
+          throw new Error(authError.message);
         }
-        
-        toast.error(errorMessage);
-        throw authError;
       }
 
       if (!authData.user) {
+        console.error('No user data returned from signup');
         throw new Error('Não foi possível criar a conta');
       }
 
-      toast.success('Cadastro realizado com sucesso!');
-      navigate('/');
+      console.log('User successfully created:', authData.user);
+      toast.success('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.');
+      navigate('/login');
 
     } catch (error) {
       console.error('Registration error:', error);
-      throw error;
+      throw error instanceof Error ? error : new Error('Erro desconhecido no registro');
     }
   };
 
@@ -96,4 +103,3 @@ export const useRegistration = () => {
     handleRegistration
   };
 };
-
