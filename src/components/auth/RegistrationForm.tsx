@@ -53,7 +53,7 @@ const RegistrationForm = () => {
         
         <Button 
           type="submit"
-          className="w-full text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+          className="w-full"
           disabled={!isValid || isSubmitting}
         >
           {isSubmitting ? (
@@ -71,4 +71,3 @@ const RegistrationForm = () => {
 };
 
 export default RegistrationForm;
-
