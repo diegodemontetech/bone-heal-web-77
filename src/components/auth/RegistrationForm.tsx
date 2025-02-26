@@ -34,7 +34,6 @@ const RegistrationForm = () => {
     }
   };
 
-  const isValid = form.formState.isValid;
   const isSubmitting = form.formState.isSubmitting;
   const formErrors = form.formState.errors;
 
@@ -47,7 +46,6 @@ const RegistrationForm = () => {
   }
 
   console.log('Form validation state:', {
-    isValid,
     isSubmitting,
     formErrors,
     values: form.getValues()
@@ -70,7 +68,7 @@ const RegistrationForm = () => {
             variant="default"
             size="lg"
             className="w-full h-12 text-base font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-colors duration-200"
-            disabled={!isValid || isSubmitting}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center space-x-2">
@@ -81,12 +79,6 @@ const RegistrationForm = () => {
               "Registrar"
             )}
           </Button>
-
-          {!isValid && Object.keys(formErrors).length > 0 && (
-            <div className="text-sm text-red-500">
-              Por favor, corrija os erros no formulário antes de continuar.
-            </div>
-          )}
 
           <div className="text-center">
             <span className="text-sm text-gray-600">
