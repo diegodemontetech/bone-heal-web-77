@@ -23,9 +23,11 @@ const RegistrationForm = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
+      console.log('Form submission started with data:', data);
       await handleRegistration(data);
+      console.log('Registration successful');
     } catch (error) {
-      console.error('Erro no registro:', error);
+      console.error('Registration error:', error);
       toast.error(error instanceof Error ? error.message : 'Erro ao registrar usuário');
     }
   };
@@ -41,6 +43,12 @@ const RegistrationForm = () => {
     );
   }
 
+  console.log('Form state:', {
+    isValid,
+    isSubmitting,
+    formErrors: form.formState.errors
+  });
+
   return (
     <Form {...form}>
       <form 
@@ -52,19 +60,19 @@ const RegistrationForm = () => {
           specialties={specialties || []} 
         />
         
-        <div className="mt-6 space-y-4">
+        <div className="mt-8 space-y-4">
           <Button 
             type="submit"
             variant="default"
             size="lg"
-            className="w-full min-h-[48px] text-base font-semibold bg-primary hover:bg-primary/90 text-white shadow-sm"
+            className="w-full h-12 text-base font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-colors duration-200"
             disabled={!isValid || isSubmitting}
           >
             {isSubmitting ? (
-              <>
+              <div className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 <span>Registrando...</span>
-              </>
+              </div>
             ) : (
               "Registrar"
             )}
@@ -73,7 +81,7 @@ const RegistrationForm = () => {
           <div className="text-center">
             <span className="text-sm text-gray-600">
               Já tem uma conta?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link to="/login" className="text-purple-600 hover:text-purple-700 hover:underline font-medium">
                 Entrar
               </Link>
             </span>
