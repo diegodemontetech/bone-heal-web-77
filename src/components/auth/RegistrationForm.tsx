@@ -51,22 +51,24 @@ const RegistrationForm = () => {
           specialties={specialties || []} 
         />
         
-        <Button 
-          type="submit"
-          variant="default"
-          size="lg"
-          className="w-full bg-[#8B1F41] hover:bg-[#6E1A35] text-white font-medium py-3"
-          disabled={!isValid || isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Registrando...
-            </>
-          ) : (
-            "Registrar"
-          )}
-        </Button>
+        <div className="mt-6">
+          <Button 
+            type="submit"
+            variant="default"
+            size="lg"
+            className="w-full min-h-[48px] text-base font-semibold bg-primary hover:bg-primary/90 text-white shadow-sm"
+            disabled={!isValid || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <span>Registrando...</span>
+              </>
+            ) : (
+              "Registrar"
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );
