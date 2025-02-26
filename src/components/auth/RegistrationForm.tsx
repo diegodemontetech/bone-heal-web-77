@@ -18,6 +18,8 @@ const RegistrationForm = () => {
     defaultValues: {
       pessoa_tipo: "fisica",
       receive_news: false,
+      city: "",
+      state: "",
     },
     mode: "onChange"
   });
@@ -80,7 +82,7 @@ const RegistrationForm = () => {
             )}
           </Button>
 
-          {Object.keys(formErrors).length > 0 && (
+          {!isValid && Object.keys(formErrors).length > 0 && (
             <div className="text-sm text-red-500">
               Por favor, corrija os erros no formulário antes de continuar.
             </div>

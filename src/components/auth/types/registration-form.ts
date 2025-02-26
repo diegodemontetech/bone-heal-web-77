@@ -22,11 +22,11 @@ export const formSchema = z.object({
   neighborhood: z.string().min(3, {
     message: "Bairro deve ter pelo menos 3 caracteres.",
   }),
-  city: z.string().min(3, {
-    message: "Cidade deve ter pelo menos 3 caracteres.",
+  city: z.string().min(2, {
+    message: "Cidade é obrigatória.",
   }),
   state: z.string().min(2, {
-    message: "Estado deve ter pelo menos 2 caracteres.",
+    message: "Estado é obrigatório.",
   }),
   zip_code: z.string().min(8, {
     message: "CEP deve ter pelo menos 8 caracteres.",
@@ -47,6 +47,9 @@ export const formSchema = z.object({
   cro: z.string().min(3, {
     message: "CRO deve ter pelo menos 3 caracteres.",
   }),
+  receive_news: z.boolean().default(false),
+  telefone1_ddd: z.string().optional(),
+  telefone1_numero: z.string().optional()
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não conferem",
   path: ["confirmPassword"],

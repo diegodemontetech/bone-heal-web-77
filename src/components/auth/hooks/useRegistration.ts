@@ -36,6 +36,11 @@ export const useRegistration = () => {
         throw new Error('Email e senha são obrigatórios');
       }
 
+      // Format phone number
+      const phone = data.telefone1_ddd && data.telefone1_numero 
+        ? `${data.telefone1_ddd}${data.telefone1_numero}`
+        : data.phone;
+
       // Prepare user metadata
       const userMetadata = {
         full_name: data.fullName,
@@ -49,12 +54,12 @@ export const useRegistration = () => {
         city: data.city,
         state: data.state,
         zip_code: data.zip_code,
-        phone: data.phone,
+        phone: phone,
         cpf: data.cpf,
         cnpj: data.cnpj,
         razao_social: data.razao_social,
         nome_fantasia: data.nome_fantasia,
-        receive_news: false
+        receive_news: data.receive_news
       };
 
       console.log('Attempting to create user with metadata:', userMetadata);
@@ -70,7 +75,6 @@ export const useRegistration = () => {
       if (authError) {
         console.error('Authentication error:', authError);
         
-        // Mensagens de erro mais amigáveis em português
         if (authError.message.includes('User already registered')) {
           throw new Error('Este email já está registrado');
         } else if (authError.message.includes('Password should be at least')) {
