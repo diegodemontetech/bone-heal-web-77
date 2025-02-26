@@ -53,7 +53,9 @@ const RegistrationForm = () => {
         
         <Button 
           type="submit"
-          className="w-full"
+          variant="default"
+          size="lg"
+          className="w-full bg-[#8B1F41] hover:bg-[#6E1A35] text-white font-medium py-3"
           disabled={!isValid || isSubmitting}
         >
           {isSubmitting ? (
