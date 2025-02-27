@@ -9,9 +9,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UseFormReturn } from "react-hook-form";
+import { FormData } from "../types/registration-form";
 
 interface ContactSectionProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<FormData>;
 }
 
 export const ContactSection = ({ form }: ContactSectionProps) => {
@@ -38,6 +39,7 @@ export const ContactSection = ({ form }: ContactSectionProps) => {
                   {...field} 
                   onChange={(e) => handlePhoneChange(e, 'telefone1_ddd')}
                   maxLength={2}
+                  placeholder="11"
                 />
               </FormControl>
               <FormMessage />
@@ -56,6 +58,7 @@ export const ContactSection = ({ form }: ContactSectionProps) => {
                   {...field} 
                   onChange={(e) => handlePhoneChange(e, 'telefone1_numero')}
                   maxLength={9}
+                  placeholder="987654321"
                 />
               </FormControl>
               <FormMessage />
@@ -66,7 +69,7 @@ export const ContactSection = ({ form }: ContactSectionProps) => {
 
       <FormField
         control={form.control}
-        name="receiveNews"
+        name="receive_news"
         render={({ field }) => (
           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
             <FormControl>

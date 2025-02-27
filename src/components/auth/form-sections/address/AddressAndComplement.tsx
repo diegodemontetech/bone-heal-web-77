@@ -16,7 +16,7 @@ interface AddressAndComplementProps {
 
 export const AddressAndComplement = ({ form }: AddressAndComplementProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
       <FormField
         control={form.control}
         name="address"
@@ -25,28 +25,52 @@ export const AddressAndComplement = ({ form }: AddressAndComplementProps) => {
           <FormItem>
             <FormLabel>Endereço</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input {...field} placeholder="Rua, Avenida, etc" />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      <FormField
-        control={form.control}
-        name="complement"
-        render={({ field: { value, ...fieldProps } }) => (
-          <FormItem>
-            <FormLabel>Número / Complemento</FormLabel>
-            <FormControl>
-              <Input 
-                {...fieldProps}
-                value={typeof value === 'string' ? value : ''}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="address_number"
+          rules={{ required: "Número é obrigatório" }}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Número</FormLabel>
+              <FormControl>
+                <Input 
+                  {...field} 
+                  placeholder="123"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="complement"
+          render={({ field: { value, ...fieldProps } }) => (
+            <FormItem>
+              <FormLabel>Complemento</FormLabel>
+              <FormControl>
+                <Input 
+                  {...fieldProps}
+                  value={typeof value === 'string' ? value : ''}
+                  placeholder="Apto, Sala, Conjunto, etc"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+    </>
   );
 };
+
+export default AddressAndComplement;

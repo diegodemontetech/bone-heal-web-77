@@ -31,9 +31,7 @@ export const formSchema = z.object({
   zip_code: z.string().min(8, {
     message: "CEP deve ter pelo menos 8 caracteres.",
   }),
-  phone: z.string().min(10, {
-    message: "Telefone deve ter pelo menos 10 caracteres.",
-  }),
+  phone: z.string().optional(),
   email: z.string().email({
     message: "Email inválido.",
   }),
@@ -48,8 +46,16 @@ export const formSchema = z.object({
     message: "CRO deve ter pelo menos 3 caracteres.",
   }),
   receive_news: z.boolean().default(false),
-  telefone1_ddd: z.string().optional(),
-  telefone1_numero: z.string().optional()
+  telefone1_ddd: z.string().min(2, {
+    message: "DDD deve ter 2 dígitos."
+  }).max(2, {
+    message: "DDD deve ter apenas 2 dígitos."
+  }),
+  telefone1_numero: z.string().min(8, {
+    message: "Número de telefone deve ter entre 8 e 9 dígitos."
+  }).max(9, {
+    message: "Número de telefone deve ter no máximo 9 dígitos."
+  })
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não conferem",
   path: ["confirmPassword"],

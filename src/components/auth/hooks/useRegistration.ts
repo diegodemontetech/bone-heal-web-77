@@ -34,7 +34,7 @@ export const useRegistration = () => {
       // Format phone number
       const phone = data.telefone1_ddd && data.telefone1_numero 
         ? `${data.telefone1_ddd}${data.telefone1_numero}`
-        : data.phone;
+        : data.phone || '';
 
       // Prepare user metadata
       const userMetadata = {
@@ -44,17 +44,19 @@ export const useRegistration = () => {
         specialty: data.specialty,
         address: data.address,
         address_number: data.address_number,
-        complement: data.complement,
+        complement: data.complement || '',
         neighborhood: data.neighborhood,
         city: data.city,
         state: data.state,
         zip_code: data.zip_code,
         phone: phone,
-        cpf: data.cpf,
-        cnpj: data.cnpj,
-        razao_social: data.razao_social,
-        nome_fantasia: data.nome_fantasia,
-        receive_news: data.receive_news
+        cpf: data.cpf || '',
+        cnpj: data.cnpj || '',
+        razao_social: data.razao_social || '',
+        nome_fantasia: data.nome_fantasia || '',
+        receive_news: data.receive_news,
+        telefone1_ddd: data.telefone1_ddd || '',
+        telefone1_numero: data.telefone1_numero || ''
       };
 
       console.log('Attempting to create user with metadata:', userMetadata);

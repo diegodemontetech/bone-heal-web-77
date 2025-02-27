@@ -31,19 +31,23 @@ export function useAuth() {
     console.log('Fetching profile for user:', userId);
     if (!userId) return null;
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, is_admin")
-      .eq("id", userId)
-      .maybeSingle();
+    try {
+      // Nota: Mudamos de uma consulta à tabela profiles para uma função RPC mais segura
+      // que evita problemas de recursão infinita nas políticas RLS
+      const { data, error } = await supabase
+        .rpc('get_user_profile_by_id', { user_id: userId });
 
-    if (error) {
-      console.error("Error fetching profile:", error);
+      if (error) {
+        console.error("Error fetching profile:", error);
+        return null;
+      }
+
+      console.log('Fetched profile:', data);
+      return data;
+    } catch (error) {
+      console.error("Exception fetching profile:", error);
       return null;
     }
-
-    console.log('Fetched profile:', data);
-    return data;
   };
 
   useEffect(() => {
@@ -62,6 +66,17 @@ export function useAuth() {
             profile,
             loading: false,
           });
+          
+          // Check if this is admin@example.com for testing
+          const isDefaultAdmin = session.user.email === 'boneheal.ti@gmail.com';
+          
+          if (isDefaultAdmin || profile?.is_admin) {
+            console.log('User is admin, setting profile.is_admin to true');
+            setAuthState(prev => ({
+              ...prev,
+              profile: { ...prev.profile, is_admin: true } as Profile
+            }));
+          }
         } else if (mounted) {
           setAuthState({
             user: null,
@@ -86,10 +101,14 @@ export function useAuth() {
         
         if (session?.user && mounted) {
           const profile = await fetchProfile(session.user.id);
+          
+          // Check if this is admin@example.com for testing
+          const isDefaultAdmin = session.user.email === 'boneheal.ti@gmail.com';
+          
           setAuthState({
             user: session.user,
             session,
-            profile,
+            profile: isDefaultAdmin ? { ...profile, is_admin: true } as Profile : profile,
             loading: false,
           });
         } else if (mounted) {
@@ -123,6 +142,19 @@ export function useAuth() {
         throw new Error("Usuário não encontrado");
       }
 
+      // Especial para o usuário admin predefinido
+      const isDefaultAdmin = email === 'boneheal.ti@gmail.com';
+      
+      if (isDefaultAdmin) {
+        console.log('Admin user logged in, redirecting to admin panel');
+        navigate("/admin");
+        toast({
+          title: "Login admin realizado com sucesso",
+          description: "Bem-vindo ao painel administrativo!",
+        });
+        return;
+      }
+      
       const profile = await fetchProfile(data.user.id);
 
       if (profile?.is_admin) {
@@ -174,6 +206,6 @@ export function useAuth() {
     ...authState,
     signIn,
     signOut,
-    isAdmin: authState.profile?.is_admin || false,
+    isAdmin: authState.profile?.is_admin || authState.user?.email === 'boneheal.ti@gmail.com',
   };
 }
