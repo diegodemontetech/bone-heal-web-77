@@ -18,41 +18,53 @@ export default function Products() {
   const [filters, setFilters] = useState<FilterValues>(initialFilters);
   const { toast } = useToast();
 
-  // Query products from Supabase only
   const { data: products, isLoading, error } = useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
-      console.log("Fetching products with filters:", filters);
+      console.log("Iniciando busca de produtos...");
       
-      let query = supabase
-        .from("products")
-        .select("*")
-        .eq('active', true);
+      try {
+        let query = supabase
+          .from("products")
+          .select("*")
+          .eq('active', true);
 
-      // Apply sorting
-      if (filters.sortBy) {
-        const [field, direction] = filters.sortBy.split("-");
-        query = query.order(field, { ascending: direction === "asc" });
-      }
+        // Apply sorting
+        if (filters.sortBy) {
+          const [field, direction] = filters.sortBy.split("-");
+          query = query.order(field, { ascending: direction === "asc" });
+        }
 
-      const { data, error } = await query;
+        console.log("Executando query Supabase...");
+        const { data, error } = await query;
 
-      if (error) {
-        console.error("Error fetching products from Supabase:", error);
+        if (error) {
+          console.error("Erro ao buscar produtos do Supabase:", error);
+          throw error;
+        }
+
+        if (!data) {
+          console.log("Nenhum produto encontrado");
+          return [];
+        }
+
+        console.log("Produtos encontrados:", data.length);
+        return data as Product[];
+      } catch (error) {
+        console.error("Erro fatal na query de produtos:", error);
         throw error;
       }
-
-      console.log("Products fetched successfully:", data?.length || 0, "products");
-      return data as Product[];
     },
     retry: 1,
     refetchOnWindowFocus: false,
-    staleTime: 60000, // Cache data for 1 minute
-    gcTime: 300000, // Keep data for 5 minutes
+    staleTime: 60000,
+    gcTime: 300000,
   });
 
+  console.log("Estado atual:", { isLoading, error, productsCount: products?.length });
+
   const handleFilterChange = (newFilters: FilterValues) => {
-    console.log("Applying new filters:", newFilters);
+    console.log("Aplicando novos filtros:", newFilters);
     setFilters(newFilters);
   };
 
