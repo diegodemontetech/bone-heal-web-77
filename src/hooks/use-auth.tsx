@@ -8,6 +8,9 @@ import { useToast } from "./use-toast";
 interface Profile {
   id: string;
   is_admin: boolean;
+  full_name?: string;
+  email?: string;
+  created_at?: string;
 }
 
 interface AuthState {
@@ -32,8 +35,7 @@ export function useAuth() {
     if (!userId) return null;
 
     try {
-      // Nota: Mudamos de uma consulta à tabela profiles para uma função RPC mais segura
-      // que evita problemas de recursão infinita nas políticas RLS
+      // Use our new RPC function to avoid infinite recursion issues
       const { data, error } = await supabase
         .rpc('get_user_profile_by_id', { user_id: userId });
 
@@ -142,7 +144,7 @@ export function useAuth() {
         throw new Error("Usuário não encontrado");
       }
 
-      // Especial para o usuário admin predefinido
+      // Special handling for the admin user
       const isDefaultAdmin = email === 'boneheal.ti@gmail.com';
       
       if (isDefaultAdmin) {

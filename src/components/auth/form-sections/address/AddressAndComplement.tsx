@@ -20,7 +20,6 @@ export const AddressAndComplement = ({ form }: AddressAndComplementProps) => {
       <FormField
         control={form.control}
         name="address"
-        rules={{ required: "Endereço é obrigatório" }}
         render={({ field }) => (
           <FormItem>
             <FormLabel>Endereço</FormLabel>
@@ -36,7 +35,6 @@ export const AddressAndComplement = ({ form }: AddressAndComplementProps) => {
         <FormField
           control={form.control}
           name="address_number"
-          rules={{ required: "Número é obrigatório" }}
           render={({ field }) => (
             <FormItem>
               <FormLabel>Número</FormLabel>

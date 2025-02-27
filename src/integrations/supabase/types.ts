@@ -937,6 +937,12 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_profile_by_id: {
+        Args: {
+          user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       payment_method_type: "credit_card" | "pix" | "boleto"
