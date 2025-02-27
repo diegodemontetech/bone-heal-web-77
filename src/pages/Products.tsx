@@ -18,46 +18,37 @@ export default function Products() {
   const [filters, setFilters] = useState<FilterValues>(initialFilters);
   const { toast } = useToast();
 
-  // Use a simplified query function that doesn't depend on Firebase
+  // Query products from Supabase only
   const { data: products, isLoading, error } = useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
       console.log("Fetching products with filters:", filters);
       
-      try {
-        let query = supabase
-          .from("products")
-          .select("*")
-          .eq('active', true);
+      let query = supabase
+        .from("products")
+        .select("*")
+        .eq('active', true);
 
-        // Apply sorting
-        if (filters.sortBy) {
-          const [field, direction] = filters.sortBy.split("-");
-          query = query.order(field, { ascending: direction === "asc" });
-        }
+      // Apply sorting
+      if (filters.sortBy) {
+        const [field, direction] = filters.sortBy.split("-");
+        query = query.order(field, { ascending: direction === "asc" });
+      }
 
-        const { data, error } = await query;
+      const { data, error } = await query;
 
-        if (error) {
-          console.error("Error fetching products from Supabase:", error);
-          throw error;
-        }
-
-        console.log("Products fetched successfully:", data?.length || 0, "products");
-        return data as Product[];
-      } catch (error: any) {
-        console.error("Error in products query:", error.message);
-        toast({
-          title: "Erro ao carregar produtos",
-          description: "Houve um problema ao carregar os produtos. Tente novamente mais tarde.",
-          variant: "destructive"
-        });
+      if (error) {
+        console.error("Error fetching products from Supabase:", error);
         throw error;
       }
+
+      console.log("Products fetched successfully:", data?.length || 0, "products");
+      return data as Product[];
     },
     retry: 1,
     refetchOnWindowFocus: false,
-    staleTime: 60000, // Cache data for 1 minute to prevent excessive requests
+    staleTime: 60000, // Cache data for 1 minute
+    gcTime: 300000, // Keep data for 5 minutes
   });
 
   const handleFilterChange = (newFilters: FilterValues) => {
