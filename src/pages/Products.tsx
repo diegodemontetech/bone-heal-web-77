@@ -72,26 +72,33 @@ export default function Products() {
         }
 
         // Verify that data is actually an array of products with required fields
-        if (Array.isArray(data) && data.length > 0) {
-          // Basic validation to ensure we have proper product objects
-          // Use type guard to ensure non-null items and validate properties
-          const isValidProductArray = data.every((item): item is Product => 
-            item !== null && 
-            typeof item === 'object' && 
-            'id' in item && 
-            'name' in item && 
-            'slug' in item
-          );
-          
-          if (!isValidProductArray) {
-            console.error("Dados invalidos recebidos:", data);
-            throw new Error("Os dados retornados não são produtos válidos");
-          }
+        if (!Array.isArray(data)) {
+          console.error("Dados retornados não são um array:", data);
+          throw new Error("Formato de dados inválido retornado da API");
         }
 
-        console.log(`Query concluída com sucesso. ${data.length} produtos encontrados.`);
-        // Safe to cast as Product[] now because we've validated the structure
-        return data as Product[];
+        // Filter out any null items and perform type validation
+        const validProducts = data.filter((item): item is Product => {
+          if (item === null) return false;
+          
+          const isValid = typeof item === 'object' && 
+            'id' in item && 
+            'name' in item && 
+            'slug' in item;
+          
+          if (!isValid) {
+            console.error("Item inválido encontrado:", item);
+          }
+          
+          return isValid;
+        });
+        
+        if (validProducts.length !== data.length) {
+          console.warn(`Filtrados ${data.length - validProducts.length} itens inválidos dos resultados`);
+        }
+
+        console.log(`Query concluída com sucesso. ${validProducts.length} produtos válidos encontrados.`);
+        return validProducts;
       } catch (error) {
         console.error("Erro fatal na query de produtos:", error);
         // Re-throw with a clearer message
