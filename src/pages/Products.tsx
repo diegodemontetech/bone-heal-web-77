@@ -71,6 +71,21 @@ export default function Products() {
           return [];
         }
 
+        // Verify that data is actually an array of products with required fields
+        if (Array.isArray(data) && data.length > 0) {
+          // Basic validation to ensure we have proper product objects
+          const isValidProductArray = data.every(item => 
+            typeof item === 'object' && 
+            'id' in item && 
+            'name' in item && 
+            'slug' in item
+          );
+          
+          if (!isValidProductArray) {
+            throw new Error("Os dados retornados não são produtos válidos");
+          }
+        }
+
         console.log(`Query concluída com sucesso. ${data.length} produtos encontrados.`);
         return data as Product[];
       } catch (error) {
