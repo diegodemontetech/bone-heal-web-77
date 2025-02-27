@@ -74,7 +74,9 @@ export default function Products() {
         // Verify that data is actually an array of products with required fields
         if (Array.isArray(data) && data.length > 0) {
           // Basic validation to ensure we have proper product objects
-          const isValidProductArray = data.every(item => 
+          // Use type guard to ensure non-null items and validate properties
+          const isValidProductArray = data.every((item): item is Product => 
+            item !== null && 
             typeof item === 'object' && 
             'id' in item && 
             'name' in item && 
@@ -82,11 +84,13 @@ export default function Products() {
           );
           
           if (!isValidProductArray) {
+            console.error("Dados invalidos recebidos:", data);
             throw new Error("Os dados retornados não são produtos válidos");
           }
         }
 
         console.log(`Query concluída com sucesso. ${data.length} produtos encontrados.`);
+        // Safe to cast as Product[] now because we've validated the structure
         return data as Product[];
       } catch (error) {
         console.error("Erro fatal na query de produtos:", error);
