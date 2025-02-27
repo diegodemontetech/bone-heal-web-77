@@ -14,6 +14,19 @@ const initialFilters: FilterValues = {
   sortBy: "price-asc",
 };
 
+// Only select the fields we need
+const PRODUCT_FIELDS = `
+  id,
+  name,
+  slug,
+  short_description,
+  description,
+  main_image,
+  default_image_url,
+  price,
+  active
+`.trim();
+
 export default function Products() {
   const [filters, setFilters] = useState<FilterValues>(initialFilters);
   const { toast } = useToast();
@@ -21,12 +34,13 @@ export default function Products() {
   const { data: products, isLoading, error } = useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
-      console.log("Iniciando busca de produtos...");
+      console.log("Iniciando busca de produtos...", { filters });
       
       try {
+        // Start with a base query
         let query = supabase
           .from("products")
-          .select("*")
+          .select(PRODUCT_FIELDS)
           .eq('active', true);
 
         // Apply sorting
@@ -36,11 +50,20 @@ export default function Products() {
         }
 
         console.log("Executando query Supabase...");
-        const { data, error } = await query;
+        
+        // Add timeout and abort controller
+        const abortController = new AbortController();
+        const timeout = setTimeout(() => {
+          abortController.abort();
+        }, 10000); // 10 second timeout
+
+        const { data, error } = await query.abortSignal(abortController.signal);
+        
+        clearTimeout(timeout);
 
         if (error) {
           console.error("Erro ao buscar produtos do Supabase:", error);
-          throw error;
+          throw new Error(`Erro na busca: ${error.message}`);
         }
 
         if (!data) {
@@ -48,25 +71,43 @@ export default function Products() {
           return [];
         }
 
-        console.log("Produtos encontrados:", data.length);
+        console.log(`Query concluída com sucesso. ${data.length} produtos encontrados.`);
         return data as Product[];
       } catch (error) {
         console.error("Erro fatal na query de produtos:", error);
-        throw error;
+        // Re-throw with a clearer message
+        throw new Error(error instanceof Error ? error.message : "Erro desconhecido ao buscar produtos");
       }
     },
-    retry: 1,
+    retry: false, // Disable retries
     refetchOnWindowFocus: false,
-    staleTime: 60000,
-    gcTime: 300000,
+    staleTime: 60000, // 1 minute
+    gcTime: 300000, // 5 minutes
+    meta: {
+      errorMessage: "Falha ao carregar produtos"
+    }
   });
 
-  console.log("Estado atual:", { isLoading, error, productsCount: products?.length });
+  console.log("Estado atual:", { 
+    isLoading, 
+    hasError: !!error, 
+    errorMessage: error instanceof Error ? error.message : null,
+    productsCount: products?.length 
+  });
 
   const handleFilterChange = (newFilters: FilterValues) => {
     console.log("Aplicando novos filtros:", newFilters);
     setFilters(newFilters);
   };
+
+  // Handle errors with toast
+  if (error) {
+    toast({
+      title: "Erro",
+      description: error instanceof Error ? error.message : "Erro ao carregar produtos",
+      variant: "destructive"
+    });
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -86,7 +127,7 @@ export default function Products() {
               <div className="flex items-center justify-center h-96 flex-col gap-4">
                 <AlertCircle className="w-12 h-12 text-destructive" />
                 <p className="text-muted-foreground">
-                  Ocorreu um erro ao carregar os produtos.
+                  {error instanceof Error ? error.message : "Erro ao carregar produtos"}
                 </p>
                 <button 
                   onClick={() => window.location.reload()}
