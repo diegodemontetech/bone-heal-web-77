@@ -9,15 +9,16 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  // Format price using Intl API
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
   }).format(product.price || 0);
 
-  // Usar o slug original do produto sem modificações
+  // Use the product slug for routing
   const productUrl = product.slug ? `/products/${encodeURIComponent(product.slug)}` : "/products";
 
-  // Se não tiver slug, logar o erro mas ainda mostrar o card
+  // Log warning if no slug is present
   if (!product.slug) {
     console.warn('Produto sem slug:', product);
   }
@@ -32,6 +33,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               src={product.main_image || product.default_image_url}
               alt={product.name}
               className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105"
+              loading="lazy" // Add lazy loading for better performance
             />
           </div>
         </CardContent>

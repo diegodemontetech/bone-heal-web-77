@@ -18,6 +18,7 @@ export default function Products() {
   const [filters, setFilters] = useState<FilterValues>(initialFilters);
   const { toast } = useToast();
 
+  // Use a simplified query function that doesn't depend on Firebase
   const { data: products, isLoading, error } = useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
@@ -27,7 +28,7 @@ export default function Products() {
         let query = supabase
           .from("products")
           .select("*")
-          .eq('active', true); // Only fetch active products
+          .eq('active', true);
 
         // Apply sorting
         if (filters.sortBy) {
@@ -38,7 +39,7 @@ export default function Products() {
         const { data, error } = await query;
 
         if (error) {
-          console.error("Error fetching products:", error);
+          console.error("Error fetching products from Supabase:", error);
           throw error;
         }
 
@@ -54,8 +55,9 @@ export default function Products() {
         throw error;
       }
     },
-    retry: 1, // Only retry once to avoid infinite loading issues
+    retry: 1,
     refetchOnWindowFocus: false,
+    staleTime: 60000, // Cache data for 1 minute to prevent excessive requests
   });
 
   const handleFilterChange = (newFilters: FilterValues) => {
