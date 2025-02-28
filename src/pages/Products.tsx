@@ -21,25 +21,35 @@ export default function Products() {
     queryFn: async () => {
       console.log("Fetching products with filters:", filters);
       
-      let query = supabase
-        .from("products")
-        .select("*");
+      try {
+        let query = supabase
+          .from("products")
+          .select("*");
 
-      // Apply sorting
-      if (filters.sortBy) {
-        const [field, direction] = filters.sortBy.split("-");
-        query = query.order(field, { ascending: direction === "asc" });
-      }
+        // Apply sorting
+        if (filters.sortBy) {
+          const [field, direction] = filters.sortBy.split("-");
+          query = query.order(field, { ascending: direction === "asc" });
+        }
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
-        console.error("Error fetching products:", error);
+        if (error) {
+          console.error("Error fetching products:", error);
+          throw error;
+        }
+
+        if (!data) {
+          console.log("No products found");
+          return [] as Product[];
+        }
+
+        console.log("Products fetched:", data);
+        return data as Product[];
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
         throw error;
       }
-
-      console.log("Products fetched:", data);
-      return data as Product[];
     },
   });
 
