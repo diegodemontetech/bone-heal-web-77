@@ -28,24 +28,33 @@ const AdminLogin = () => {
         // Log the user information for debugging
         console.log("Session found:", session);
 
+        // Use the current user's email to check if they're an admin
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select("is_admin, email")
           .eq("id", session.user.id)
           .single();
 
         // Log the profile information for debugging
         console.log("Profile data:", profile, "Error:", error);
 
-        if (profile?.is_admin && isSubscribed) {
-          navigate("/admin");
+        if (profile?.is_admin) {
+          console.log("User is admin, redirecting to admin dashboard");
+          if (isSubscribed) navigate("/admin");
         } else {
           if (isSubscribed) {
             setIsChecking(false);
+            console.log("User is not admin:", profile?.email);
             if (profile === null && !error) {
               toast({
                 title: "Erro no perfil",
                 description: "Seu perfil não foi encontrado. Por favor, contate o suporte.",
+                variant: "destructive",
+              });
+            } else if (!profile?.is_admin) {
+              toast({
+                title: "Acesso negado",
+                description: "Você não tem permissão para acessar a área administrativa.",
                 variant: "destructive",
               });
             }
@@ -68,28 +77,31 @@ const AdminLogin = () => {
   // Auth state change listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event);
+      console.log("Auth state changed:", event, "User:", session?.user.email);
       
       if (event === "SIGNED_IN" && session) {
         try {
           // Add delay to ensure profile has been created
           await new Promise(resolve => setTimeout(resolve, 1000));
           
+          // Use the current user's email to check if they're an admin
           const { data: profile, error } = await supabase
             .from("profiles")
-            .select("is_admin")
+            .select("is_admin, email")
             .eq("id", session.user.id)
             .single();
             
           console.log("After sign in - Profile:", profile, "Error:", error);
 
           if (profile?.is_admin) {
+            console.log("Admin login confirmed, navigating to admin dashboard");
             toast({
               title: "Login bem-sucedido",
               description: "Bem-vindo à área administrativa!",
             });
             navigate("/admin");
           } else {
+            console.log("User is not admin:", profile?.email, "or profile:", profile);
             toast({
               title: "Acesso negado",
               description: "Você não tem permissão para acessar a área administrativa.",

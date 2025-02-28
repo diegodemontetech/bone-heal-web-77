@@ -22,42 +22,78 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate("/admin/login");
-        return;
-      }
-      
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin, email")
-        .eq("id", session.user.id)
-        .single();
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-      if (!profile?.is_admin) {
+        if (!session) {
+          console.log("No session in Layout component, redirecting to login");
+          navigate("/admin/login");
+          return;
+        }
+        
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("is_admin, email")
+          .eq("id", session.user.id)
+          .single();
+        
+        console.log("Layout admin check - Profile:", profile, "Error:", error);
+        
+        if (error) {
+          console.error("Error fetching profile in Layout:", error);
+          toast({
+            title: "Erro",
+            description: "Ocorreu um erro ao verificar suas permissões.",
+            variant: "destructive",
+          });
+          navigate("/admin/login");
+          return;
+        }
+          
+        // Check if is_admin is explicitly true (not just truthy)
+        if (profile?.is_admin !== true) {
+          console.log("User not admin in Layout component, redirecting to login. Email:", profile?.email);
+          toast({
+            title: "Acesso negado",
+            description: "Você não tem permissão para acessar a área administrativa.",
+            variant: "destructive",
+          });
+          navigate("/admin/login");
+          return;
+        }
+        
+        setAdminEmail(profile.email || session.user.email);
+        console.log("Admin access confirmed in Layout for:", profile.email);
+      } catch (error) {
+        console.error("Error in Layout admin check:", error);
         toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar a área administrativa.",
+          title: "Erro",
+          description: "Ocorreu um erro ao verificar suas permissões.",
           variant: "destructive",
         });
         navigate("/admin/login");
-        return;
       }
-      
-      setAdminEmail(profile.email || session.user.email);
     };
     
     checkSession();
   }, [navigate, toast]);
   
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logout realizado",
-      description: "Você saiu da área administrativa.",
-    });
-    navigate("/admin/login");
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você saiu da área administrativa.",
+      });
+      navigate("/admin/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao tentar sair. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const menuItems = [

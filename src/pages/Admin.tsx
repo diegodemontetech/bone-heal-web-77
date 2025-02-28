@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/admin/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ const Admin = () => {
         // Check if user is admin
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("is_admin")
+          .select("is_admin, email")
           .eq("id", session.user.id)
           .single();
 
@@ -46,8 +46,9 @@ const Admin = () => {
           return;
         }
 
-        if (!profile?.is_admin) {
-          console.log("User is not admin, redirecting to admin login");
+        // Check if is_admin is explicitly true (not just truthy)
+        if (profile?.is_admin !== true) {
+          console.log("User is not admin, redirecting to admin login. Email:", profile?.email);
           toast({
             title: "Acesso negado",
             description: "Você não tem permissão para acessar a área administrativa.",
@@ -57,6 +58,7 @@ const Admin = () => {
           return;
         }
 
+        console.log("Admin access granted for:", profile.email);
         setIsLoading(false);
       } catch (error) {
         console.error("Error in admin check:", error);
