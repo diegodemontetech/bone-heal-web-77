@@ -20,19 +20,19 @@ const Admin = () => {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
-          console.log("No session found, redirecting to admin login");
+          console.log("No session found in Admin page, redirecting to admin login");
           navigate("/admin/login");
           return;
         }
 
-        console.log("Session found:", session.user.email);
+        console.log("Session found in Admin page:", session.user.email);
 
         // TEMPORARY WORKAROUND:
-        // Check if the user email is in the hardcoded admin list
-        const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+        // Hardcoded admin emails until RLS policy is fixed
+        const adminEmails = ['boneheal.ti@gmail.com'];
         const isAdmin = adminEmails.includes(session.user.email || '');
 
-        console.log("Admin check workaround - Email:", session.user.email, "Is admin:", isAdmin);
+        console.log("Admin check in Admin page - Email:", session.user.email, "Is admin:", isAdmin);
 
         if (!isAdmin) {
           console.log("User is not in admin list, redirecting to admin login");

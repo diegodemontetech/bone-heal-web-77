@@ -37,8 +37,8 @@ const Layout = ({ children, adminEmail: propAdminEmail }: LayoutProps) => {
         }
         
         // TEMPORARY WORKAROUND:
-        // Check if the user email is in the hardcoded admin list
-        const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+        // Hardcoded admin emails until RLS policy is fixed
+        const adminEmails = ['boneheal.ti@gmail.com'];
         const isAdmin = adminEmails.includes(session.user.email || '');
 
         console.log("Layout admin check - Email:", session.user.email, "Is admin:", isAdmin);

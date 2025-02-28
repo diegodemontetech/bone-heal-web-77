@@ -21,24 +21,26 @@ const AdminLogin = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
+          console.log("No session found during initial check");
           if (isSubscribed) setIsChecking(false);
           return;
         }
 
         // Log the user information for debugging
-        console.log("Session found:", session.user.email);
+        console.log("Session found during initial check:", session.user.email);
 
         // TEMPORARY WORKAROUND:
-        // Check if the user email is in the hardcoded admin list
-        const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+        // Hardcoded admin emails until RLS policy is fixed
+        const adminEmails = ['boneheal.ti@gmail.com']; 
         const isAdmin = adminEmails.includes(session.user.email || '');
 
-        console.log("Admin check workaround - Email:", session.user.email, "Is admin:", isAdmin);
+        console.log("Admin check (initial) - Email:", session.user.email, "Is admin:", isAdmin);
 
         if (isAdmin) {
-          console.log("User is admin, redirecting to admin dashboard");
+          console.log("Admin access granted during initial check, redirecting to admin dashboard");
           if (isSubscribed) navigate("/admin");
         } else {
+          console.log("User is not in admin list:", session.user.email);
           if (isSubscribed) {
             setIsChecking(false);
             toast({
@@ -65,16 +67,18 @@ const AdminLogin = () => {
   // Auth state change listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, "User:", session?.user.email);
+      console.log("Auth state changed:", event, "User:", session?.user?.email);
       
       if (event === "SIGNED_IN" && session) {
         try {
+          console.log("Sign in detected, checking admin status");
+          
           // TEMPORARY WORKAROUND:
-          // Check if the user email is in the hardcoded admin list
-          const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+          // Hardcoded admin emails until RLS policy is fixed
+          const adminEmails = ['boneheal.ti@gmail.com']; 
           const isAdmin = adminEmails.includes(session.user.email || '');
 
-          console.log("After sign in - Email:", session.user.email, "Is admin:", isAdmin);
+          console.log("Admin check (after sign in) - Email:", session.user.email, "Is admin:", isAdmin);
 
           if (isAdmin) {
             console.log("Admin login confirmed, navigating to admin dashboard");
@@ -84,7 +88,7 @@ const AdminLogin = () => {
             });
             navigate("/admin");
           } else {
-            console.log("User is not admin:", session.user.email);
+            console.log("User is not an admin:", session.user.email);
             toast({
               title: "Acesso negado",
               description: "Você não tem permissão para acessar a área administrativa.",
@@ -93,7 +97,7 @@ const AdminLogin = () => {
             await supabase.auth.signOut();
           }
         } catch (error) {
-          console.error("Error checking admin status:", error);
+          console.error("Error checking admin status after sign in:", error);
           toast({
             title: "Erro",
             description: "Ocorreu um erro ao verificar suas permissões.",
