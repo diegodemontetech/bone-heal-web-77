@@ -9,11 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
           <div>
-            <img 
-              src="/lovable-uploads/c5a855af-42eb-4ffd-8fa0-bacd9ce220b3.png"
-              alt="Bone Heal®"
-              className="h-10 mb-6 brightness-0 invert"
-            />
+            <h2 className="text-white text-2xl font-bold mb-6">Bone Heal<sup>®</sup></h2>
             <p className="text-neutral-400 mb-6">
               Inovação em regeneração óssea para procedimentos odontológicos.
             </p>
