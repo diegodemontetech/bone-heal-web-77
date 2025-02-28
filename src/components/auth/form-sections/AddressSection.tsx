@@ -13,11 +13,19 @@ import { FormData } from "../RegistrationForm";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-interface AddressSectionProps {
-  form: UseFormReturn<FormData>;
+interface City {
+  id: number;
+  omie_code: string;
+  name: string;
+  state: string;
 }
 
-export const AddressSection = ({ form }: AddressSectionProps) => {
+interface AddressSectionProps {
+  form: UseFormReturn<FormData>;
+  cities?: City[];
+}
+
+export const AddressSection = ({ form, cities = [] }: AddressSectionProps) => {
   // Fetch states
   const { data: states = [] } = useQuery({
     queryKey: ['ibge-states'],
@@ -35,7 +43,7 @@ export const AddressSection = ({ form }: AddressSectionProps) => {
   const selectedState = form.watch('state');
 
   // Fetch cities based on selected state
-  const { data: cities = [] } = useQuery({
+  const { data: fetchedCities = [] } = useQuery({
     queryKey: ['ibge-cities', selectedState],
     queryFn: async () => {
       const selectedStateData = states.find(s => s.uf === selectedState);
@@ -52,6 +60,9 @@ export const AddressSection = ({ form }: AddressSectionProps) => {
     },
     enabled: !!selectedState
   });
+
+  // Use provided cities or fetched cities
+  const availableCities = cities.length > 0 ? cities : fetchedCities;
 
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedZipCode = e.target.value.replace(/\D/g, '').substring(0, 8);
@@ -78,7 +89,7 @@ export const AddressSection = ({ form }: AddressSectionProps) => {
 
         <FormField
           control={form.control}
-          name="number"
+          name="addressNumber" // Changed from "number" to "addressNumber"
           rules={{ required: "Número é obrigatório" }}
           render={({ field }) => (
             <FormItem>
@@ -144,7 +155,7 @@ export const AddressSection = ({ form }: AddressSectionProps) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {cities.map((city) => (
+                  {availableCities.map((city) => (
                     <SelectItem key={city.id} value={city.name}>
                       {city.name}
                     </SelectItem>
