@@ -94,7 +94,7 @@ const Layout = ({ children, adminEmail: propAdminEmail }: LayoutProps) => {
     { label: "Dashboard", path: "/admin" },
     { label: "Usuários", path: "/admin/users" },
     { label: "Produtos", path: "/admin/products" },
-    { label: "Pedidos", path: "/admin/orders" },
+    { label: "Pedidos", path: "/admin/orders" }, // Make sure this points to the admin orders route
     { label: "Sincronização", path: "/admin/sync" },
     { label: "Notícias", path: "/admin/news" },
     { label: "Artigos", path: "/admin/studies" },

@@ -31,8 +31,10 @@ const formSchema = z.object({
   slug: z.string().min(1, "Slug é obrigatório"),
   omie_code: z.string().min(1, "Código Omie é obrigatório"),
   stock: z.string().transform(val => parseInt(val || "0")),
+  weight: z.string().transform(val => parseFloat(val || "0")),
   short_description: z.string().optional(),
   description: z.string().optional(),
+  video_url: z.string().optional(),
 });
 
 interface ProductFormProps {
@@ -55,8 +57,10 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       slug: product?.slug || "",
       omie_code: product?.omie_code || "",
       stock: product?.stock?.toString() || "0",
+      weight: product?.weight?.toString() || "0.5",
       short_description: product?.short_description || "",
       description: product?.description || "",
+      video_url: product?.video_url || "",
     },
   });
 
@@ -84,8 +88,10 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
         slug: values.slug,
         omie_code: values.omie_code,
         stock: values.stock,
+        weight: values.weight,
         short_description: values.short_description,
         description: values.description,
+        video_url: values.video_url,
         main_image: images[0] || null,
         gallery: images.slice(1),
         active: true,
@@ -197,6 +203,23 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Peso (kg)</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="number" step="0.01" />
+                  </FormControl>
+                  <FormDescription>
+                    Peso do produto em kilogramas
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -221,6 +244,23 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="video_url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link do Vídeo (YouTube)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="https://www.youtube.com/watch?v=..." />
+                  </FormControl>
+                  <FormDescription>
+                    Cole aqui o link completo do vídeo do YouTube
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
