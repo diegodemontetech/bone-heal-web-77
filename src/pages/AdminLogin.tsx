@@ -26,38 +26,26 @@ const AdminLogin = () => {
         }
 
         // Log the user information for debugging
-        console.log("Session found:", session);
+        console.log("Session found:", session.user.email);
 
-        // Use the current user's email to check if they're an admin
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("is_admin, email")
-          .eq("id", session.user.id)
-          .single();
+        // TEMPORARY WORKAROUND:
+        // Check if the user email is in the hardcoded admin list
+        const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+        const isAdmin = adminEmails.includes(session.user.email || '');
 
-        // Log the profile information for debugging
-        console.log("Profile data:", profile, "Error:", error);
+        console.log("Admin check workaround - Email:", session.user.email, "Is admin:", isAdmin);
 
-        if (profile?.is_admin) {
+        if (isAdmin) {
           console.log("User is admin, redirecting to admin dashboard");
           if (isSubscribed) navigate("/admin");
         } else {
           if (isSubscribed) {
             setIsChecking(false);
-            console.log("User is not admin:", profile?.email);
-            if (profile === null && !error) {
-              toast({
-                title: "Erro no perfil",
-                description: "Seu perfil não foi encontrado. Por favor, contate o suporte.",
-                variant: "destructive",
-              });
-            } else if (!profile?.is_admin) {
-              toast({
-                title: "Acesso negado",
-                description: "Você não tem permissão para acessar a área administrativa.",
-                variant: "destructive",
-              });
-            }
+            toast({
+              title: "Acesso negado",
+              description: "Você não tem permissão para acessar a área administrativa.",
+              variant: "destructive",
+            });
           }
         }
       } catch (error) {
@@ -81,19 +69,14 @@ const AdminLogin = () => {
       
       if (event === "SIGNED_IN" && session) {
         try {
-          // Add delay to ensure profile has been created
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Use the current user's email to check if they're an admin
-          const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("is_admin, email")
-            .eq("id", session.user.id)
-            .single();
-            
-          console.log("After sign in - Profile:", profile, "Error:", error);
+          // TEMPORARY WORKAROUND:
+          // Check if the user email is in the hardcoded admin list
+          const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+          const isAdmin = adminEmails.includes(session.user.email || '');
 
-          if (profile?.is_admin) {
+          console.log("After sign in - Email:", session.user.email, "Is admin:", isAdmin);
+
+          if (isAdmin) {
             console.log("Admin login confirmed, navigating to admin dashboard");
             toast({
               title: "Login bem-sucedido",
@@ -101,7 +84,7 @@ const AdminLogin = () => {
             });
             navigate("/admin");
           } else {
-            console.log("User is not admin:", profile?.email, "or profile:", profile);
+            console.log("User is not admin:", session.user.email);
             toast({
               title: "Acesso negado",
               description: "Você não tem permissão para acessar a área administrativa.",

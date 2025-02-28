@@ -14,11 +14,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
-const Layout = ({ children }: { children: React.ReactNode }) => {
+interface LayoutProps {
+  children: React.ReactNode;
+  adminEmail?: string | null;
+}
+
+const Layout = ({ children, adminEmail: propAdminEmail }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [adminEmail, setAdminEmail] = useState<string | null>(propAdminEmail || null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -31,28 +36,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           return;
         }
         
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("is_admin, email")
-          .eq("id", session.user.id)
-          .single();
+        // TEMPORARY WORKAROUND:
+        // Check if the user email is in the hardcoded admin list
+        const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+        const isAdmin = adminEmails.includes(session.user.email || '');
+
+        console.log("Layout admin check - Email:", session.user.email, "Is admin:", isAdmin);
         
-        console.log("Layout admin check - Profile:", profile, "Error:", error);
-        
-        if (error) {
-          console.error("Error fetching profile in Layout:", error);
-          toast({
-            title: "Erro",
-            description: "Ocorreu um erro ao verificar suas permissões.",
-            variant: "destructive",
-          });
-          navigate("/admin/login");
-          return;
-        }
-          
-        // Check if is_admin is explicitly true (not just truthy)
-        if (profile?.is_admin !== true) {
-          console.log("User not admin in Layout component, redirecting to login. Email:", profile?.email);
+        if (!isAdmin) {
+          console.log("User not admin in Layout component, redirecting to login. Email:", session.user.email);
           toast({
             title: "Acesso negado",
             description: "Você não tem permissão para acessar a área administrativa.",
@@ -62,8 +54,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           return;
         }
         
-        setAdminEmail(profile.email || session.user.email);
-        console.log("Admin access confirmed in Layout for:", profile.email);
+        setAdminEmail(session.user.email);
+        console.log("Admin access confirmed in Layout for:", session.user.email);
       } catch (error) {
         console.error("Error in Layout admin check:", error);
         toast({
@@ -75,8 +67,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       }
     };
     
-    checkSession();
-  }, [navigate, toast]);
+    if (!propAdminEmail) {
+      checkSession();
+    }
+  }, [navigate, toast, propAdminEmail]);
   
   const handleSignOut = async () => {
     try {

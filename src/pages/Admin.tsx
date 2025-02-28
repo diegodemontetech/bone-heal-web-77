@@ -11,6 +11,7 @@ const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -24,31 +25,17 @@ const Admin = () => {
           return;
         }
 
-        console.log("Session found:", session);
+        console.log("Session found:", session.user.email);
 
-        // Check if user is admin
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("is_admin, email")
-          .eq("id", session.user.id)
-          .single();
+        // TEMPORARY WORKAROUND:
+        // Check if the user email is in the hardcoded admin list
+        const adminEmails = ['boneheal.ti@gmail.com']; // Add any other admin emails here
+        const isAdmin = adminEmails.includes(session.user.email || '');
 
-        console.log("Admin check - Profile:", profile, "Error:", error);
+        console.log("Admin check workaround - Email:", session.user.email, "Is admin:", isAdmin);
 
-        if (error) {
-          console.error("Error checking admin status:", error);
-          toast({
-            title: "Erro",
-            description: "Ocorreu um erro ao verificar suas permissões. Por favor, tente novamente.",
-            variant: "destructive",
-          });
-          navigate("/admin/login");
-          return;
-        }
-
-        // Check if is_admin is explicitly true (not just truthy)
-        if (profile?.is_admin !== true) {
-          console.log("User is not admin, redirecting to admin login. Email:", profile?.email);
+        if (!isAdmin) {
+          console.log("User is not in admin list, redirecting to admin login");
           toast({
             title: "Acesso negado",
             description: "Você não tem permissão para acessar a área administrativa.",
@@ -58,7 +45,8 @@ const Admin = () => {
           return;
         }
 
-        console.log("Admin access granted for:", profile.email);
+        setAdminEmail(session.user.email);
+        console.log("Admin access granted for:", session.user.email);
         setIsLoading(false);
       } catch (error) {
         console.error("Error in admin check:", error);
@@ -83,7 +71,7 @@ const Admin = () => {
   }
 
   return (
-    <Layout>
+    <Layout adminEmail={adminEmail}>
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
