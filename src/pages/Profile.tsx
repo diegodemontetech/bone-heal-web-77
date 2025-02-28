@@ -17,7 +17,7 @@ interface Profile {
   id: string;
   full_name: string;
   specialty?: string;
-  crm: string;
+  crm?: string;
   phone?: string;
   address?: string;
 }
@@ -31,13 +31,12 @@ const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-        return;
-      }
+    if (!session) {
+      navigate("/login");
+      return;
+    }
 
+    const fetchProfile = async () => {
       try {
         const { data, error } = await supabase
           .from("profiles")
@@ -58,29 +57,11 @@ const Profile = () => {
       }
     };
 
-    checkAuth();
-  }, [navigate, toast]);
+    fetchProfile();
+  }, [session, navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!session?.user?.id) {
-      toast({
-        title: "Erro",
-        description: "Usuário não autenticado",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!profile?.crm) {
-      toast({
-        title: "Erro",
-        description: "CRO Responsável é obrigatório",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSaving(true);
 
     try {
@@ -93,7 +74,7 @@ const Profile = () => {
           phone: profile?.phone,
           address: profile?.address,
         })
-        .eq("id", session.user.id);
+        .eq("id", session?.user?.id);
 
       if (error) throw error;
 
@@ -126,10 +107,10 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="container mx-auto p-4 flex-1">
-        <Card className="max-w-2xl mx-auto">
+        <Card>
           <CardHeader>
             <CardTitle>Meu Perfil</CardTitle>
           </CardHeader>
@@ -155,12 +136,11 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="crm">CRO Responsável</Label>
+                <Label htmlFor="crm">CRM</Label>
                 <Input
                   id="crm"
                   value={profile?.crm || ""}
                   onChange={(e) => setProfile(prev => ({ ...prev!, crm: e.target.value }))}
-                  required
                 />
               </div>
 
@@ -182,7 +162,7 @@ const Profile = () => {
                 />
               </div>
 
-              <Button type="submit" disabled={isSaving} className="w-full">
+              <Button type="submit" disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

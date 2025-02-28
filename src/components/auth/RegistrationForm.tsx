@@ -1,119 +1,182 @@
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Form } from "@/components/ui/form";
 import RegistrationFormFields from "./RegistrationFormFields";
-import { formSchema, FormData } from "./types/registration-form";
-import { useRegistration } from "./hooks/useRegistration";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
-const RegistrationForm = () => {
-  const { specialties, specialtiesLoading, handleRegistration } = useRegistration();
-  
+export interface FormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName: string;
+  razao_social: string;
+  nome_fantasia: string;
+  cpf: string;
+  cnpj: string;
+  address: string;
+  omie_city_code: string;
+  cro: string;
+  specialty: string;
+  city: string;
+  state: string;
+  neighborhood: string;
+  zipCode: string;
+  phone: string;
+  receiveNews: boolean;
+  pessoa_tipo: 'fisica' | 'juridica';
+}
+
+export default function RegistrationForm() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
   const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
     defaultValues: {
-      pessoa_tipo: "fisica",
-      receive_news: false,
+      email: "",
+      password: "",
+      confirmPassword: "",
+      fullName: "",
+      razao_social: "",
+      nome_fantasia: "",
+      cpf: "",
+      cnpj: "",
+      address: "",
+      omie_city_code: "",
+      cro: "",
+      specialty: "",
       city: "",
       state: "",
-    },
-    mode: "onChange"
+      neighborhood: "",
+      zipCode: "",
+      phone: "",
+      receiveNews: false,
+      pessoa_tipo: 'fisica'
+    }
   });
 
-  const onSubmit = async (data: FormData) => {
-    try {
-      console.log('Form submission started with data:', data);
-      
-      // Validate required fields based on pessoa_tipo
-      if (data.pessoa_tipo === 'fisica' && !data.cpf) {
-        toast.error('CPF é obrigatório para pessoa física');
-        return;
-      }
-      
-      if (data.pessoa_tipo === 'juridica' && (!data.cnpj || !data.razao_social)) {
-        toast.error('CNPJ e Razão Social são obrigatórios para pessoa jurídica');
-        return;
-      }
+  const { data: specialties, isLoading: loadingSpecialties } = useQuery({
+    queryKey: ['dental-specialties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dental_specialties')
+        .select('*')
+        .order('name');
 
-      if (!data.email || !data.password) {
-        toast.error('Email e senha são obrigatórios');
-        return;
-      }
-
-      if (data.password !== data.confirmPassword) {
-        toast.error('As senhas não conferem');
-        return;
-      }
-
-      await handleRegistration(data);
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao registrar usuário');
+      if (error) throw error;
+      return data || [];
     }
-  };
+  });
 
-  const isSubmitting = form.formState.isSubmitting;
-  const formErrors = form.formState.errors;
+  const { data: cities, isLoading: loadingCities } = useQuery({
+    queryKey: ['omie-cities'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('omie_cities')
+        .select('*')
+        .order('name');
 
-  if (specialtiesLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-      </div>
-    );
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  async function onSubmit(values: FormData) {
+    if (values.password !== values.confirmPassword) {
+      form.setError('confirmPassword', {
+        type: 'manual',
+        message: 'As senhas não coincidem'
+      });
+      return;
+    }
+
+    // Validação condicional para CPF/CNPJ
+    if (values.pessoa_tipo === 'fisica' && !values.cpf) {
+      form.setError('cpf', {
+        type: 'manual',
+        message: 'CPF é obrigatório para Pessoa Física'
+      });
+      return;
+    }
+
+    if (values.pessoa_tipo === 'juridica' && !values.cnpj) {
+      form.setError('cnpj', {
+        type: 'manual',
+        message: 'CNPJ é obrigatório para Pessoa Jurídica'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            full_name: values.fullName,
+            cpf: values.cpf,
+            cnpj: values.cnpj,
+            razao_social: values.razao_social,
+            nome_fantasia: values.nome_fantasia,
+            address: values.address,
+            cro: values.cro,
+            specialty: values.specialty,
+            city: values.city,
+            state: values.state,
+            neighborhood: values.neighborhood,
+            zip_code: values.zipCode,
+            phone: values.phone,
+            receive_news: values.receiveNews,
+            omie_city_code: values.omie_city_code,
+            pessoa_fisica: values.pessoa_tipo === 'fisica'
+          }
+        }
+      });
+
+      if (signUpError) throw signUpError;
+      
+      toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
+      navigate('/login');
+    } catch (error: any) {
+      console.error('Erro no cadastro:', error);
+      const errorMessage = error.message || 'Erro ao realizar cadastro. Por favor, tente novamente.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  console.log('Form validation state:', {
-    isSubmitting,
-    formErrors,
-    values: form.getValues()
-  });
+  if (loadingSpecialties || loadingCities) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <Form {...form}>
-      <form 
-        onSubmit={form.handleSubmit(onSubmit)} 
-        className="space-y-6"
-      >
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <RegistrationFormFields 
-          form={form} 
           specialties={specialties || []} 
+          form={form} 
+          cities={cities || []}
         />
-        
-        <div className="mt-8 space-y-4">
-          <Button 
-            type="submit"
-            variant="default"
-            size="lg"
-            className="w-full h-12 text-base font-semibold bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-colors duration-200"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <div className="flex items-center justify-center space-x-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Registrando...</span>
-              </div>
-            ) : (
-              "Registrar"
-            )}
-          </Button>
-
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              Já tem uma conta?{" "}
-              <Link to="/login" className="text-purple-600 hover:text-purple-700 hover:underline font-medium">
-                Entrar
-              </Link>
-            </span>
-          </div>
-        </div>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Cadastrando..." : "Cadastrar"}
+        </Button>
       </form>
     </Form>
   );
-};
-
-export default RegistrationForm;
+}

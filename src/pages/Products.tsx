@@ -7,133 +7,46 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ProductFilters, FilterValues } from "@/components/products/ProductFilters";
 import { ProductGrid } from "@/components/products/ProductGrid";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 const initialFilters: FilterValues = {
   sortBy: "price-asc",
 };
 
-// Only select the fields we need
-const PRODUCT_FIELDS = `
-  id,
-  name,
-  slug,
-  short_description,
-  description,
-  main_image,
-  default_image_url,
-  price,
-  active
-`.trim();
-
 export default function Products() {
   const [filters, setFilters] = useState<FilterValues>(initialFilters);
-  const { toast } = useToast();
 
-  const { data: products, isLoading, error } = useQuery({
+  const { data: products, isLoading } = useQuery({
     queryKey: ["products", filters],
     queryFn: async () => {
-      console.log("Iniciando busca de produtos...", { filters });
+      console.log("Fetching products with filters:", filters);
       
-      try {
-        // Start with a base query
-        let query = supabase
-          .from("products")
-          .select(PRODUCT_FIELDS)
-          .eq('active', true);
+      let query = supabase
+        .from("products")
+        .select("*");
 
-        // Apply sorting
-        if (filters.sortBy) {
-          const [field, direction] = filters.sortBy.split("-");
-          query = query.order(field, { ascending: direction === "asc" });
-        }
-
-        console.log("Executando query Supabase...");
-        
-        // Add timeout and abort controller
-        const abortController = new AbortController();
-        const timeout = setTimeout(() => {
-          abortController.abort();
-        }, 10000); // 10 second timeout
-
-        const { data, error } = await query.abortSignal(abortController.signal);
-        
-        clearTimeout(timeout);
-
-        if (error) {
-          console.error("Erro ao buscar produtos do Supabase:", error);
-          throw new Error(`Erro na busca: ${error.message}`);
-        }
-
-        if (!data) {
-          console.log("Nenhum produto encontrado");
-          return [];
-        }
-
-        // Verify that data is actually an array of products with required fields
-        if (!Array.isArray(data)) {
-          console.error("Dados retornados não são um array:", data);
-          throw new Error("Formato de dados inválido retornado da API");
-        }
-
-        // Filter out any null items and perform type validation
-        const validProducts = data.filter((item): item is Product => {
-          if (item === null) return false;
-          
-          const isValid = typeof item === 'object' && 
-            'id' in item && 
-            'name' in item && 
-            'slug' in item;
-          
-          if (!isValid) {
-            console.error("Item inválido encontrado:", item);
-          }
-          
-          return isValid;
-        });
-        
-        if (validProducts.length !== data.length) {
-          console.warn(`Filtrados ${data.length - validProducts.length} itens inválidos dos resultados`);
-        }
-
-        console.log(`Query concluída com sucesso. ${validProducts.length} produtos válidos encontrados.`);
-        return validProducts;
-      } catch (error) {
-        console.error("Erro fatal na query de produtos:", error);
-        // Re-throw with a clearer message
-        throw new Error(error instanceof Error ? error.message : "Erro desconhecido ao buscar produtos");
+      // Apply sorting
+      if (filters.sortBy) {
+        const [field, direction] = filters.sortBy.split("-");
+        query = query.order(field, { ascending: direction === "asc" });
       }
-    },
-    retry: false, // Disable retries
-    refetchOnWindowFocus: false,
-    staleTime: 60000, // 1 minute
-    gcTime: 300000, // 5 minutes
-    meta: {
-      errorMessage: "Falha ao carregar produtos"
-    }
-  });
 
-  console.log("Estado atual:", { 
-    isLoading, 
-    hasError: !!error, 
-    errorMessage: error instanceof Error ? error.message : null,
-    productsCount: products?.length 
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching products:", error);
+        throw error;
+      }
+
+      console.log("Products fetched:", data);
+      return data as Product[];
+    },
   });
 
   const handleFilterChange = (newFilters: FilterValues) => {
-    console.log("Aplicando novos filtros:", newFilters);
+    console.log("Applying new filters:", newFilters);
     setFilters(newFilters);
   };
-
-  // Handle errors with toast
-  if (error) {
-    toast({
-      title: "Erro",
-      description: error instanceof Error ? error.message : "Erro ao carregar produtos",
-      variant: "destructive"
-    });
-  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -149,20 +62,7 @@ export default function Products() {
           </aside>
 
           <div className="flex-1">
-            {error ? (
-              <div className="flex items-center justify-center h-96 flex-col gap-4">
-                <AlertCircle className="w-12 h-12 text-destructive" />
-                <p className="text-muted-foreground">
-                  {error instanceof Error ? error.message : "Erro ao carregar produtos"}
-                </p>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-primary text-white rounded-md"
-                >
-                  Tentar Novamente
-                </button>
-              </div>
-            ) : isLoading ? (
+            {isLoading ? (
               <div className="flex items-center justify-center h-96">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>

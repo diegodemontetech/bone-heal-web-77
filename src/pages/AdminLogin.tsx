@@ -1,30 +1,95 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { isAdmin, loading, user } = useAuth();
+  const { toast } = useToast();
+  const [isChecking, setIsChecking] = useState(true);
 
+  // Single check for existing session
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        if (isAdmin) {
+    let isSubscribed = true;
+
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          if (isSubscribed) setIsChecking(false);
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profile?.is_admin && isSubscribed) {
           navigate("/admin");
         } else {
-          navigate("/");
+          setIsChecking(false);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        if (isSubscribed) setIsChecking(false);
+      }
+    };
+
+    checkSession();
+
+    // Cleanup function
+    return () => {
+      isSubscribed = false;
+    };
+  }, [navigate]);
+
+  // Auth state change listener
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event);
+      
+      if (event === "SIGNED_IN" && session) {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (profile?.is_admin) {
+            navigate("/admin");
+          } else {
+            toast({
+              title: "Acesso negado",
+              description: "Você não tem permissão para acessar a área administrativa.",
+              variant: "destructive",
+            });
+            await supabase.auth.signOut();
+          }
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          toast({
+            title: "Erro",
+            description: "Ocorreu um erro ao verificar suas permissões.",
+            variant: "destructive",
+          });
         }
       }
-    }
-  }, [loading, user, isAdmin, navigate]);
+    });
 
-  // Se ainda estiver carregando, mostra o spinner
-  if (loading) {
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate, toast]);
+
+  if (isChecking) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -32,13 +97,6 @@ const AdminLogin = () => {
     );
   }
 
-  // Se não estiver carregando e tiver usuário logado, não renderiza nada
-  // (o useEffect vai cuidar do redirecionamento)
-  if (user) {
-    return null;
-  }
-
-  // Se não estiver carregando e não tiver usuário, mostra o formulário de login
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
