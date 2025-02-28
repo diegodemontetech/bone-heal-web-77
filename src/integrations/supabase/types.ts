@@ -934,6 +934,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_profile: {
+        Args: {
+          profile_id: string
+        }
+        Returns: boolean
+      }
       generate_default_password: {
         Args: {
           document: string

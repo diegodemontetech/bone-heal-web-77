@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/Layout";
 import {
@@ -11,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -23,11 +24,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AdminStudies = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingStudy, setEditingStudy] = useState<any>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -36,38 +40,135 @@ const AdminStudies = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const { data: studies, refetch } = useQuery({
+  const { data: studies, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-studies"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("scientific_studies")
-        .select("*")
-        .order("published_date", { ascending: false });
-      
-      if (error) throw error;
-      return data;
+      try {
+        console.log("Fetching admin studies...");
+        const { data, error } = await supabase
+          .from("scientific_studies")
+          .select("*")
+          .order("published_date", { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching studies:", error);
+          throw error;
+        }
+        
+        console.log("Admin studies fetched:", data);
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch studies:", error);
+        throw error;
+      }
     },
   });
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("scientific_studies")
-      .delete()
-      .eq("id", id);
+  const createStudyMutation = useMutation({
+    mutationFn: async (studyData: typeof formData & { file_url: string }) => {
+      const { error } = await supabase
+        .from("scientific_studies")
+        .insert([studyData]);
 
-    if (error) {
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-studies"] });
+      toast({
+        title: "Estudo criado com sucesso",
+      });
+      handleCloseForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar estudo",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateStudyMutation = useMutation({
+    mutationFn: async (studyData: typeof formData & { id: string }) => {
+      const { error } = await supabase
+        .from("scientific_studies")
+        .update({
+          title: studyData.title,
+          description: studyData.description,
+          published_date: studyData.published_date,
+          file_url: studyData.file_url,
+        })
+        .eq("id", studyData.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-studies"] });
+      toast({
+        title: "Estudo atualizado com sucesso",
+      });
+      handleCloseForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar estudo",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteStudyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("scientific_studies")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-studies"] });
+      toast({
+        title: "Estudo excluído com sucesso",
+      });
+    },
+    onError: (error: any) => {
       toast({
         title: "Erro ao excluir estudo",
         description: error.message,
         variant: "destructive",
       });
-      return;
-    }
+    },
+  });
 
-    toast({
-      title: "Estudo excluído com sucesso",
+  const handleEdit = (study: any) => {
+    setEditingStudy(study);
+    setFormData({
+      title: study.title,
+      description: study.description || "",
+      published_date: study.published_date,
+      file_url: study.file_url || "",
     });
-    refetch();
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingStudy(null);
+    setFormData({
+      title: "",
+      description: "",
+      published_date: "",
+      file_url: "",
+    });
+    setSelectedFile(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este estudo?")) {
+      deleteStudyMutation.mutate(id);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,22 +217,19 @@ const AdminStudies = () => {
         fileUrl = await uploadFile(selectedFile);
       }
 
-      const { error } = await supabase
-        .from("scientific_studies")
-        .insert([{ ...formData, file_url: fileUrl }]);
+      const studyData = { 
+        ...formData, 
+        file_url: fileUrl 
+      };
 
-      if (error) throw error;
-
-      toast({
-        title: "Estudo criado com sucesso",
-      });
-      setIsFormOpen(false);
-      setFormData({ title: "", description: "", published_date: "", file_url: "" });
-      setSelectedFile(null);
-      refetch();
+      if (editingStudy) {
+        updateStudyMutation.mutate({ ...studyData, id: editingStudy.id });
+      } else {
+        createStudyMutation.mutate(studyData);
+      }
     } catch (error: any) {
       toast({
-        title: "Erro ao criar estudo",
+        title: "Erro ao salvar estudo",
         description: error.message,
         variant: "destructive",
       });
@@ -149,6 +247,16 @@ const AdminStudies = () => {
           </Button>
         </div>
 
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro</AlertTitle>
+            <AlertDescription>
+              Não foi possível carregar os estudos científicos. Por favor, tente novamente mais tarde.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="bg-white rounded-lg shadow">
           <Table>
             <TableHeader>
@@ -160,38 +268,58 @@ const AdminStudies = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {studies?.map((study) => (
-                <TableRow key={study.id}>
-                  <TableCell>{study.title}</TableCell>
-                  <TableCell>
-                    {new Date(study.published_date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    {study.file_url && (
-                      <a
-                        href={study.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:text-primary-dark"
-                      >
-                        Ver PDF
-                      </a>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="outline" size="icon">
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleDelete(study.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : studies?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                    Nenhum estudo científico encontrado. Clique em "Novo Estudo" para adicionar.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                studies?.map((study) => (
+                  <TableRow key={study.id}>
+                    <TableCell>{study.title}</TableCell>
+                    <TableCell>
+                      {new Date(study.published_date).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {study.file_url ? (
+                        <a
+                          href={study.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary-dark"
+                        >
+                          Ver PDF
+                        </a>
+                      ) : (
+                        <span className="text-neutral-400">Sem arquivo</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(study)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDelete(study.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
@@ -199,7 +327,7 @@ const AdminStudies = () => {
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo Estudo Científico</DialogTitle>
+              <DialogTitle>{editingStudy ? "Editar Estudo" : "Novo Estudo Científico"}</DialogTitle>
               <DialogDescription>
                 Preencha os dados do estudo científico e faça upload do arquivo PDF.
               </DialogDescription>
@@ -241,12 +369,25 @@ const AdminStudies = () => {
                     type="file"
                     accept=".pdf"
                     onChange={handleFileChange}
-                    required
+                    className="flex-1"
+                    required={!editingStudy || !formData.file_url}
                   />
                   {isUploading && (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
                   )}
                 </div>
+                {formData.file_url && (
+                  <div className="mt-2">
+                    <a 
+                      href={formData.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer" 
+                      className="text-sm text-primary hover:text-primary-dark"
+                    >
+                      Arquivo atual
+                    </a>
+                  </div>
+                )}
               </div>
               <Button type="submit" className="w-full" disabled={isUploading}>
                 {isUploading ? (
@@ -255,7 +396,7 @@ const AdminStudies = () => {
                     Enviando...
                   </>
                 ) : (
-                  "Criar Estudo"
+                  editingStudy ? "Atualizar Estudo" : "Criar Estudo"
                 )}
               </Button>
             </form>

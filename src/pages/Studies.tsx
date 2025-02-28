@@ -1,45 +1,66 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Search, Calendar } from "lucide-react";
+import { Download, Search, Calendar, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Studies = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const { data: studies, isLoading } = useQuery({
+  const { data: studies, isLoading, error } = useQuery({
     queryKey: ['scientific-studies', searchTerm, startDate, endDate],
     queryFn: async () => {
-      let query = supabase
-        .from('scientific_studies')
-        .select('*')
-        .order('published_date', { ascending: false });
+      try {
+        console.log("Fetching scientific studies with filters:", { searchTerm, startDate, endDate });
+        
+        let query = supabase
+          .from('scientific_studies')
+          .select('*')
+          .order('published_date', { ascending: false });
 
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-      }
+        if (searchTerm) {
+          query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
 
-      if (startDate) {
-        query = query.gte('published_date', startDate);
-      }
+        if (startDate) {
+          query = query.gte('published_date', startDate);
+        }
 
-      if (endDate) {
-        query = query.lte('published_date', endDate);
+        if (endDate) {
+          query = query.lte('published_date', endDate);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error("Error fetching scientific studies:", error);
+          throw error;
+        }
+        
+        console.log("Scientific studies fetched successfully:", data);
+        return data;
+      } catch (error) {
+        console.error("Failed to fetch scientific studies:", error);
+        throw error;
       }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      return data;
-    }
+    },
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // The query will be re-fetched automatically due to the queryKey dependencies
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -62,7 +83,7 @@ const Studies = () => {
           
           <div className="container mx-auto px-8 py-16">
             {/* Search and Filter Section */}
-            <div className="mb-8 space-y-4">
+            <form onSubmit={handleSearch} className="mb-8 space-y-4">
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1">
                   <div className="relative">
@@ -78,32 +99,51 @@ const Studies = () => {
                 </div>
                 <div className="flex gap-4">
                   <div>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full"
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="pl-10"
+                        placeholder="Data inicial"
+                      />
+                    </div>
                   </div>
                   <div>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full"
-                    />
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <Input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="pl-10"
+                        placeholder="Data final"
+                      />
+                    </div>
                   </div>
                 </div>
+                <Button type="submit">Buscar</Button>
               </div>
-            </div>
+            </form>
+
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro</AlertTitle>
+                <AlertDescription>
+                  Não foi possível carregar os estudos científicos. Por favor, tente novamente mais tarde.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {isLoading ? (
               <div className="flex justify-center items-center min-h-[200px]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : (
+            ) : studies && studies.length > 0 ? (
               <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {studies?.map((study) => (
+                {studies.map((study) => (
                   <div key={study.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
                     <div className="p-6">
                       <h3 className="text-xl font-bold text-primary mb-3">{study.title}</h3>
@@ -113,19 +153,27 @@ const Studies = () => {
                           <Calendar className="w-4 h-4 mr-2" />
                           {study.published_date && format(new Date(study.published_date), "d 'de' MMMM, yyyy", { locale: ptBR })}
                         </div>
-                        <a 
-                          href={study.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
-                        >
-                          <Download className="h-4 w-4" />
-                          <span>Download PDF</span>
-                        </a>
+                        {study.file_url ? (
+                          <a 
+                            href={study.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
+                          >
+                            <Download className="h-4 w-4" />
+                            <span>Download PDF</span>
+                          </a>
+                        ) : (
+                          <span className="text-neutral-400 text-sm">Arquivo indisponível</span>
+                        )}
                       </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-neutral-500">Nenhum estudo científico encontrado.</p>
               </div>
             )}
           </div>
