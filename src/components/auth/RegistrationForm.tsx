@@ -20,6 +20,7 @@ export interface FormData {
   cpf: string;
   cnpj: string;
   address: string;
+  addressNumber: string; // Added addressNumber field
   omie_city_code: string;
   cro: string;
   specialty: string;
@@ -48,6 +49,7 @@ export default function RegistrationForm() {
       cpf: "",
       cnpj: "",
       address: "",
+      addressNumber: "", // Added default value for addressNumber
       omie_city_code: "",
       cro: "",
       specialty: "",
@@ -128,6 +130,7 @@ export default function RegistrationForm() {
             razao_social: values.razao_social,
             nome_fantasia: values.nome_fantasia,
             address: values.address,
+            address_number: values.addressNumber, // Use addressNumber instead of number
             cro: values.cro,
             specialty: values.specialty,
             city: values.city,

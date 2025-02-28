@@ -89,7 +89,7 @@ export const AddressSection = ({ form, cities = [] }: AddressSectionProps) => {
 
         <FormField
           control={form.control}
-          name="addressNumber" // Changed from "number" to "addressNumber"
+          name="addressNumber"
           rules={{ required: "Número é obrigatório" }}
           render={({ field }) => (
             <FormItem>
