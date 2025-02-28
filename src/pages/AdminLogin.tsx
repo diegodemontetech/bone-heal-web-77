@@ -25,16 +25,31 @@ const AdminLogin = () => {
           return;
         }
 
-        const { data: profile } = await supabase
+        // Log the user information for debugging
+        console.log("Session found:", session);
+
+        const { data: profile, error } = await supabase
           .from("profiles")
           .select("is_admin")
           .eq("id", session.user.id)
-          .maybeSingle();
+          .single();
+
+        // Log the profile information for debugging
+        console.log("Profile data:", profile, "Error:", error);
 
         if (profile?.is_admin && isSubscribed) {
           navigate("/admin");
         } else {
-          setIsChecking(false);
+          if (isSubscribed) {
+            setIsChecking(false);
+            if (profile === null && !error) {
+              toast({
+                title: "Erro no perfil",
+                description: "Seu perfil não foi encontrado. Por favor, contate o suporte.",
+                variant: "destructive",
+              });
+            }
+          }
         }
       } catch (error) {
         console.error("Error checking session:", error);
@@ -48,7 +63,7 @@ const AdminLogin = () => {
     return () => {
       isSubscribed = false;
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   // Auth state change listener
   useEffect(() => {
@@ -57,13 +72,22 @@ const AdminLogin = () => {
       
       if (event === "SIGNED_IN" && session) {
         try {
-          const { data: profile } = await supabase
+          // Add delay to ensure profile has been created
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const { data: profile, error } = await supabase
             .from("profiles")
             .select("is_admin")
             .eq("id", session.user.id)
-            .maybeSingle();
+            .single();
+            
+          console.log("After sign in - Profile:", profile, "Error:", error);
 
           if (profile?.is_admin) {
+            toast({
+              title: "Login bem-sucedido",
+              description: "Bem-vindo à área administrativa!",
+            });
             navigate("/admin");
           } else {
             toast({
