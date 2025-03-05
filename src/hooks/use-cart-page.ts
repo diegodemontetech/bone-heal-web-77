@@ -13,16 +13,20 @@ export function useCartPage() {
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [shippingCost, setShippingCost] = useState<number | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   // Verifica o status da sessão ao carregar o componente
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
+      if (!hasAttemptedFetch) {
+        setHasAttemptedFetch(true);
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+      }
     };
     
     checkSession();
-  }, []);
+  }, [hasAttemptedFetch]);
 
   useEffect(() => {
     // Limpar erro de frete quando o CEP muda

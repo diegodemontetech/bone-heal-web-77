@@ -10,6 +10,7 @@ export const useShipping = () => {
   const [selectedShippingRate, setSelectedShippingRate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zipCode, setZipCode] = useState("");
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const session = useSession();
   const { toast } = useToast();
 
@@ -71,7 +72,8 @@ export const useShipping = () => {
   // Efeito para carregar o CEP do usuário automaticamente quando estiver logado
   useEffect(() => {
     const loadUserShipping = async () => {
-      if (session?.user?.id) {
+      if (session?.user?.id && !hasAttemptedFetch) {
+        setHasAttemptedFetch(true);
         const userZipCode = await fetchUserZipCode();
         if (userZipCode) {
           setZipCode(userZipCode);
@@ -81,7 +83,7 @@ export const useShipping = () => {
     };
 
     loadUserShipping();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, hasAttemptedFetch]);
 
   // Calcula a data estimada de entrega
   const getDeliveryDate = () => {

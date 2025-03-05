@@ -12,6 +12,7 @@ import { useCheckout } from "@/hooks/use-checkout";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
+import { useEffect } from "react";
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
@@ -43,6 +44,13 @@ const Checkout = () => {
     setPaymentMethod,
     handleCheckout: processCheckout
   } = useCheckout();
+
+  // Redirecionar para o carrinho se não houver itens
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      navigate("/cart");
+    }
+  }, [cartItems, navigate]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
