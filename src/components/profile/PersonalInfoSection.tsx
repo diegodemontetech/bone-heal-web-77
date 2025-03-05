@@ -28,6 +28,7 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
         <Label htmlFor="full_name">Nome Completo</Label>
         <Input
           id="full_name"
+          name="full_name"
           value={formData.full_name}
           onChange={handleChange}
           required
@@ -39,9 +40,10 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <Label htmlFor="specialty">Especialidade</Label>
           <Select 
             onValueChange={(value) => handleSelectChange('specialty', value)}
-            value={formData.specialty || ""}
+            value={formData.specialty}
+            defaultValue={formData.specialty}
           >
-            <SelectTrigger>
+            <SelectTrigger id="specialty" className="w-full">
               <SelectValue placeholder="Selecione sua especialidade" />
             </SelectTrigger>
             <SelectContent>
@@ -58,6 +60,7 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <Label htmlFor="cro">CRO</Label>
           <Input
             id="cro"
+            name="cro"
             value={formData.cro}
             onChange={handleChange}
           />
@@ -69,6 +72,7 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <Label htmlFor="cpf">CPF</Label>
           <Input
             id="cpf"
+            name="cpf"
             value={formData.cpf}
             onChange={handleChange}
           />
@@ -77,6 +81,7 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <Label htmlFor="cnpj">CNPJ</Label>
           <Input
             id="cnpj"
+            name="cnpj"
             value={formData.cnpj}
             onChange={handleChange}
           />

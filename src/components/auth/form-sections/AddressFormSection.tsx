@@ -2,12 +2,10 @@
 import React, { useState } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { FormData } from "../RegistrationForm";
-import { brazilianStates } from "@/utils/states";
-import { Loader2, MapPin } from "lucide-react";
 import { fetchAddressFromCep } from "@/utils/address";
+import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 interface AddressFormSectionProps {
@@ -166,24 +164,14 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
         render={({ field }) => (
           <FormItem>
             <FormLabel>Estado</FormLabel>
-            <Select 
-              onValueChange={field.onChange}
-              defaultValue={field.value}
-              disabled
-            >
-              <FormControl>
-                <SelectTrigger className="bg-gray-100">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {brazilianStates.map((state) => (
-                  <SelectItem key={state.value} value={state.value}>
-                    {state.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <FormControl>
+              <Input 
+                placeholder="UF" 
+                {...field} 
+                readOnly 
+                className="bg-gray-100" 
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}

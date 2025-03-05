@@ -62,6 +62,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
         <div className="relative">
           <Input
             id="zip_code"
+            name="zip_code"
             value={formData.zip_code}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, '');
@@ -84,6 +85,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
           <Label htmlFor="endereco_numero">Número</Label>
           <Input
             id="endereco_numero"
+            name="endereco_numero"
             value={formData.endereco_numero}
             onChange={handleChange}
             placeholder="Número"
@@ -93,6 +95,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
           <Label htmlFor="complemento">Complemento</Label>
           <Input
             id="complemento"
+            name="complemento"
             value={formData.complemento}
             onChange={handleChange}
             placeholder="Apartamento, bloco, etc."
@@ -105,6 +108,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
         <div className="relative">
           <Input
             id="address"
+            name="address"
             value={formData.address}
             onChange={handleChange}
             readOnly
@@ -119,6 +123,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
           <Label htmlFor="neighborhood">Bairro</Label>
           <Input
             id="neighborhood"
+            name="neighborhood"
             value={formData.neighborhood}
             onChange={handleChange}
             readOnly
@@ -129,6 +134,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
           <Label htmlFor="city">Cidade</Label>
           <Input
             id="city"
+            name="city"
             value={formData.city}
             onChange={handleChange}
             readOnly
@@ -139,22 +145,16 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
 
       <div className="space-y-2">
         <Label htmlFor="state">Estado</Label>
-        <Select 
-          onValueChange={(value) => handleSelectChange('state', value)}
-          value={formData.state}
-          disabled
-        >
-          <SelectTrigger className="bg-gray-100">
-            <SelectValue placeholder="Selecione" />
-          </SelectTrigger>
-          <SelectContent>
-            {brazilianStates.map((state) => (
-              <SelectItem key={state.value} value={state.value}>
-                {state.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="relative">
+          <Input
+            id="state"
+            name="state"
+            value={formData.state}
+            onChange={handleChange}
+            readOnly
+            className="bg-gray-100"
+          />
+        </div>
       </div>
     </div>
   );

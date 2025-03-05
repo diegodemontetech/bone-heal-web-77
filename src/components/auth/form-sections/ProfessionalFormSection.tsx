@@ -23,9 +23,10 @@ const ProfessionalFormSection: React.FC<ProfessionalFormSectionProps> = ({ form 
             <Select 
               onValueChange={field.onChange}
               defaultValue={field.value}
+              value={field.value}
             >
               <FormControl>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione sua especialidade" />
                 </SelectTrigger>
               </FormControl>
