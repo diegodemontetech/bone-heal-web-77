@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -68,7 +67,6 @@ const Checkout = () => {
         
         if (!error && data.session) {
           setHasValidSession(true);
-          setSession(data.session);
           setIsAuthChecked(true);
           setIsInitialized(true);
         } else {
