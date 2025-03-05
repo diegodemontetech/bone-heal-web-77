@@ -59,7 +59,7 @@ const Studies = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // The query will be re-fetched automatically due to the queryKey dependencies
+    // A consulta será refeita automaticamente devido às dependências em queryKey
   };
 
   return (
@@ -173,7 +173,7 @@ const Studies = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-neutral-500">Nenhum estudo científico encontrado.</p>
+                <p className="text-neutral-500">Nenhum estudo científico encontrado. Os administradores podem adicionar estudos através do painel administrativo.</p>
               </div>
             )}
           </div>

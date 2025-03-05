@@ -66,11 +66,15 @@ const AdminStudies = () => {
 
   const createStudyMutation = useMutation({
     mutationFn: async (studyData: typeof formData & { file_url: string }) => {
+      console.log("Creating new study:", studyData);
       const { error } = await supabase
         .from("scientific_studies")
         .insert([studyData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating study:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-studies"] });
@@ -90,6 +94,7 @@ const AdminStudies = () => {
 
   const updateStudyMutation = useMutation({
     mutationFn: async (studyData: typeof formData & { id: string }) => {
+      console.log("Updating study:", studyData);
       const { error } = await supabase
         .from("scientific_studies")
         .update({
@@ -100,7 +105,10 @@ const AdminStudies = () => {
         })
         .eq("id", studyData.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating study:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-studies"] });
@@ -120,12 +128,16 @@ const AdminStudies = () => {
 
   const deleteStudyMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log("Deleting study:", id);
       const { error } = await supabase
         .from("scientific_studies")
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error deleting study:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-studies"] });
@@ -184,16 +196,37 @@ const AdminStudies = () => {
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `studies/${fileName}`;
 
+      // Verificar se o bucket existe primeiro
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const studiesBucketExists = buckets?.some(bucket => bucket.name === 'studies_files');
+      
+      if (!studiesBucketExists) {
+        // Criar o bucket se não existir
+        const { error: createBucketError } = await supabase.storage.createBucket('studies_files', {
+          public: true,
+          fileSizeLimit: 20971520 // 20MB
+        });
+        
+        if (createBucketError) {
+          console.error("Error creating bucket:", createBucketError);
+          throw createBucketError;
+        }
+      }
+
       const { error: uploadError } = await supabase.storage
         .from('studies_files')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Error uploading file:", uploadError);
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('studies_files')
         .getPublicUrl(filePath);
 
+      console.log("File uploaded successfully:", publicUrl);
       return publicUrl;
     } catch (error: any) {
       toast({

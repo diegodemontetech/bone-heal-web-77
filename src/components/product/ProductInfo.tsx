@@ -72,7 +72,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
       )}
 
-      {session && price > 0 && (
+      {price > 0 && (
         <div className="space-y-6">
           <div className="flex gap-4">
             <div className="inline-flex items-center rounded-lg border border-gray-200">

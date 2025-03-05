@@ -946,6 +946,12 @@ export type Database = {
         }
         Returns: string
       }
+      get_user_admin_status: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
+      }
       get_user_profile_by_id: {
         Args: {
           user_id: string
