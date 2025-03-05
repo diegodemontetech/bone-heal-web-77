@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react";
 import { CartItem } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -19,6 +20,7 @@ interface CartSummaryProps {
   calculateShipping: () => void;
   handleCheckout: (cartItems: CartItem[], subtotal: number, total: number) => void;
   session: any;
+  isAuthenticated?: boolean;
 }
 
 export const CartSummary = ({
@@ -30,8 +32,10 @@ export const CartSummary = ({
   shippingError,
   calculateShipping,
   handleCheckout,
-  session
+  session,
+  isAuthenticated = false
 }: CartSummaryProps) => {
+  const navigate = useNavigate();
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + (shippingCost || 0);
 
@@ -45,6 +49,10 @@ export const CartSummary = ({
     if (e.key === 'Enter') {
       calculateShipping();
     }
+  };
+
+  const handleLoginClick = () => {
+    navigate("/login", { state: { from: "/cart" } });
   };
 
   return (
@@ -106,24 +114,36 @@ export const CartSummary = ({
           </div>
         </div>
 
-        <Button
-          className="w-full"
-          size="lg"
-          onClick={() => handleCheckout(cartItems, subtotal, total)}
-          disabled={!shippingCost || (!session?.user?.id)}
-        >
-          Finalizar Compra
-        </Button>
-
-        {!session?.user?.id ? (
-          <p className="text-sm text-red-500 text-center">
-            Faça login para continuar com a compra
-          </p>
-        ) : (!shippingCost && (
-          <p className="text-sm text-amber-600 text-center">
-            Calcule o frete antes de continuar
-          </p>
-        ))}
+        {!isAuthenticated ? (
+          <>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={handleLoginClick}
+            >
+              Fazer login para continuar
+            </Button>
+            <p className="text-sm text-red-500 text-center">
+              Faça login para continuar com a compra
+            </p>
+          </>
+        ) : (
+          <>
+            <Button
+              className="w-full"
+              size="lg"
+              onClick={() => handleCheckout(cartItems, subtotal, total)}
+              disabled={!shippingCost}
+            >
+              Finalizar Compra
+            </Button>
+            {!shippingCost && (
+              <p className="text-sm text-amber-600 text-center">
+                Calcule o frete antes de continuar
+              </p>
+            )}
+          </>
+        )}
       </div>
     </div>
   );

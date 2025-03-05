@@ -1,18 +1,29 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CartItem } from "@/hooks/use-cart";
+import { useAuth } from "@/hooks/use-auth-context";
 
 export function useCartPage() {
-  const session = useSession();
   const navigate = useNavigate();
+  const [session, setSession] = useState<any>(null);
+  const { profile } = useAuth();
   const [zipCode, setZipCode] = useState("");
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [shippingCost, setShippingCost] = useState<number | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
+
+  // Verifica o status da sessão ao carregar o componente
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+    };
+    
+    checkSession();
+  }, []);
 
   useEffect(() => {
     // Limpar erro de frete quando o CEP muda
@@ -20,6 +31,9 @@ export function useCartPage() {
       setShippingError(null);
     }
   }, [zipCode]);
+
+  // Determina se o usuário está autenticado verificando tanto a sessão quanto o perfil
+  const isAuthenticated = !!session?.user?.id || !!profile?.id;
 
   const calculateShipping = async () => {
     if (!zipCode || zipCode.length !== 8) {
@@ -82,19 +96,20 @@ export function useCartPage() {
       return;
     }
 
-    // Verificar sessão - usar session?.user?.id para verificar login em vez de session
-    if (!session?.user?.id) {
+    // Verificar se o usuário está autenticado
+    if (!isAuthenticated) {
       toast.error("Por favor, faça login para continuar");
-      navigate("/login");
+      navigate("/login", { state: { from: "/cart" } });
       return;
     }
 
-    console.log("Indo para checkout com itens:", cartItems, "usuário:", session.user);
+    console.log("Indo para checkout com itens:", cartItems);
     navigate("/checkout");
   };
 
   return {
     session,
+    isAuthenticated,
     zipCode,
     setZipCode,
     isCalculatingShipping,

@@ -26,13 +26,18 @@ const Login = () => {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [currentSession, setCurrentSession] = useState<any>(null);
 
+  const from = location.state?.from?.pathname || location.state?.from || "/profile";
+
   // Verificar a sessão atual usando diretamente o cliente Supabase
   useEffect(() => {
     const checkSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (!error && data.session) {
+          console.log("Sessão ativa encontrada:", data.session);
           setCurrentSession(data.session);
+        } else {
+          console.log("Nenhuma sessão ativa encontrada");
         }
       } catch (error) {
         console.error("Erro ao verificar sessão:", error);
@@ -50,7 +55,7 @@ const Login = () => {
     if (isLoading || sessionLoading) return;
     
     // Se temos um profile OU uma sessão válida, o usuário está autenticado
-    const isAuthenticated = profile || currentSession?.user;
+    const isAuthenticated = profile?.id || currentSession?.user?.id;
     
     if (isAuthenticated) {
       console.log("Usuário autenticado:", profile || currentSession?.user, "isAdmin:", isAdmin);
@@ -61,12 +66,11 @@ const Login = () => {
         navigate("/admin/dashboard");
       } else {
         // Para usuários normais, redirecionar para a página específica ou para profile
-        const from = location.state?.from?.pathname || "/profile";
         console.log("Redirecionando usuário normal para:", from);
         navigate(from);
       }
     }
-  }, [isLoading, profile, isAdmin, navigate, location, sessionLoading, currentSession]);
+  }, [isLoading, profile, isAdmin, navigate, from, sessionLoading, currentSession]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,11 +101,11 @@ const Login = () => {
   }
 
   // Se o usuário já estiver logado, mostra apenas o loader enquanto redireciona
-  if (profile || currentSession?.user) {
+  if (profile?.id || currentSession?.user?.id) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="ml-2">Redirecionando...</p>
+      <div className="min-h-screen flex items-center justify-center flex-col">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
+        <p>Redirecionando para a sua área...</p>
       </div>
     );
   }

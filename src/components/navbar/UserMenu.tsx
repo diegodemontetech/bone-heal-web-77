@@ -22,7 +22,8 @@ export const UserMenu = ({ session }: UserMenuProps) => {
   const navigate = useNavigate();
   const { isAdmin, profile } = useAuth();
 
-  // Determina se o usuário está realmente autenticado verificando tanto a session quanto o profile
+  // Determina se o usuário está realmente autenticado verificando se há um usuário ativo na sessão fornecida
+  // Ou se há um perfil de usuário no contexto de autenticação
   const isAuthenticated = !!session?.user?.id || !!profile?.id;
 
   const handleSignOut = async () => {
@@ -64,7 +65,7 @@ export const UserMenu = ({ session }: UserMenuProps) => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={session?.user?.user_metadata?.avatar_url || profile?.avatar_url} />
+            <AvatarImage src={session?.user?.user_metadata?.avatar_url || (profile?.avatar_url || "")} />
             <AvatarFallback>
               <User className="h-4 w-4" />
             </AvatarFallback>

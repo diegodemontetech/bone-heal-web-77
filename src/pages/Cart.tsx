@@ -5,11 +5,14 @@ import Navbar from "@/components/Navbar";
 import { EmptyCart } from "@/components/cart/EmptyCart";
 import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";
+import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeItem } = useCart();
   const {
     session,
+    isAuthenticated,
     zipCode,
     setZipCode,
     isCalculatingShipping,
@@ -26,6 +29,8 @@ const Cart = () => {
         <div className="container mx-auto px-4 py-16">
           <EmptyCart />
         </div>
+        <Footer />
+        <WhatsAppWidget />
       </div>
     );
   }
@@ -60,9 +65,12 @@ const Cart = () => {
             calculateShipping={calculateShipping}
             handleCheckout={handleCheckout}
             session={session}
+            isAuthenticated={isAuthenticated}
           />
         </div>
       </div>
+      <Footer />
+      <WhatsAppWidget />
     </div>
   );
 };

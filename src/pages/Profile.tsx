@@ -21,7 +21,10 @@ const Profile = () => {
       try {
         const { data, error } = await supabase.auth.getSession();
         if (!error && data?.session) {
+          console.log("Sessão válida encontrada em Profile:", data.session);
           setHasValidSession(true);
+        } else {
+          console.log("Nenhuma sessão válida encontrada em Profile");
         }
       } catch (error) {
         console.error("Erro ao verificar sessão:", error);
@@ -35,12 +38,17 @@ const Profile = () => {
 
   // Redirecionar para login se não estiver autenticado
   useEffect(() => {
-    if (!isLoading && !sessionLoading && !profile && !hasValidSession) {
-      navigate("/login");
-      return;
+    // Verificar se a página já carregou completamente (ambos, profile e sessão)
+    if (!isLoading && !sessionLoading) {
+      // Verificar se o usuário não está autenticado de nenhuma forma
+      if (!profile && !hasValidSession) {
+        console.log("Usuário não autenticado, redirecionando para login");
+        navigate("/login");
+      }
     }
   }, [isLoading, profile, navigate, sessionLoading, hasValidSession]);
 
+  // Mostrar loading enquanto verificamos autenticação
   if (isLoading || sessionLoading) {
     return (
       <div className="min-h-screen flex flex-col">

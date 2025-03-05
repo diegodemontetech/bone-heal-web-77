@@ -24,7 +24,8 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
   const [open, setOpen] = useState(false);
   const { isAdmin, profile } = useAuth();
   
-  // Determina se o usuário está realmente autenticado verificando tanto a session quanto o profile
+  // Determina se o usuário está realmente autenticado verificando se há um usuário ativo na sessão fornecida
+  // Ou se há um perfil de usuário no contexto de autenticação
   const isAuthenticated = !!session?.user?.id || !!profile?.id;
 
   const handleSignOut = async () => {
@@ -44,6 +45,11 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
     } else {
       navigate("/profile");
     }
+    setOpen(false);
+  };
+
+  const handleLoginClick = () => {
+    navigate("/login");
     setOpen(false);
   };
 
@@ -77,7 +83,7 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
           <Link to="/about" onClick={() => setOpen(false)}>
             <Button variant="ghost" className="w-full justify-start gap-2">
               <Info className="w-4 h-4" />
-              História
+              Sobre
             </Button>
           </Link>
           <Link to="/news" onClick={() => setOpen(false)}>
@@ -113,10 +119,7 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
           ) : (
             <Button 
               className="w-full" 
-              onClick={() => {
-                navigate("/login");
-                setOpen(false);
-              }}
+              onClick={handleLoginClick}
             >
               Área do Dentista
             </Button>
