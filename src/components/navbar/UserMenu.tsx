@@ -65,7 +65,10 @@ export const UserMenu = ({ session }: UserMenuProps) => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={session?.user?.user_metadata?.avatar_url || (profile?.avatar_url || "")} />
+            <AvatarImage 
+              src={session?.user?.user_metadata?.avatar_url || (profile?.avatar_url || "")} 
+              alt="Avatar do usuário"
+            />
             <AvatarFallback>
               <User className="h-4 w-4" />
             </AvatarFallback>

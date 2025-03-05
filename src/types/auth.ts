@@ -39,4 +39,5 @@ export interface UserProfile {
   omie_code?: string;
   endereco_numero?: string;
   complemento?: string;
+  avatar_url?: string; // Adicionando propriedade avatar_url
 }
