@@ -16,19 +16,20 @@ export function useCartPage() {
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [shippingCalculated, setShippingCalculated] = useState(false);
+  const [lastCalculatedZip, setLastCalculatedZip] = useState<string>("");
 
   // Verifica o status da sessão ao carregar o componente
   useEffect(() => {
     const checkSession = async () => {
-      if (!hasAttemptedFetch) {
-        setHasAttemptedFetch(true);
-        const { data } = await supabase.auth.getSession();
-        setSession(data.session);
-        
-        // Se o usuário tem um profile, tenta preencher o CEP automaticamente
-        if (profile?.zip_code) {
-          setZipCode(profile.zip_code);
-        }
+      if (hasAttemptedFetch) return;
+      
+      setHasAttemptedFetch(true);
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+      
+      // Se o usuário tem um profile, tenta preencher o CEP automaticamente
+      if (profile?.zip_code) {
+        setZipCode(profile.zip_code);
       }
     };
     
@@ -42,11 +43,11 @@ export function useCartPage() {
     }
     
     // Resetar cálculo de frete quando o CEP muda
-    if (zipCode.length !== 8) {
+    if (zipCode !== lastCalculatedZip) {
       setShippingCalculated(false);
       setShippingCost(null);
     }
-  }, [zipCode]);
+  }, [zipCode, lastCalculatedZip]);
 
   // Determina se o usuário está autenticado verificando tanto a sessão quanto o perfil
   const isAuthenticated = !!session?.user?.id || !!profile?.id;
@@ -58,7 +59,12 @@ export function useCartPage() {
     }
 
     // Evita recálculos desnecessários
-    if (shippingCalculated && shippingCost) {
+    if (isCalculatingShipping) {
+      return;
+    }
+    
+    // Verifica se já calculamos para este CEP
+    if (lastCalculatedZip === zipCode && shippingCalculated && shippingCost !== null) {
       return;
     }
 
@@ -94,6 +100,7 @@ export function useCartPage() {
       
       setShippingCost(cheapestRate.rate);
       setShippingCalculated(true);
+      setLastCalculatedZip(zipCode);
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
       setShippingError("Erro ao calcular o frete. Por favor, tente novamente.");
@@ -107,6 +114,7 @@ export function useCartPage() {
   const resetShipping = () => {
     setShippingCalculated(false);
     setShippingCost(null);
+    setLastCalculatedZip("");
   }
 
   const handleCheckout = (cartItems: CartItem[], subtotal: number, total: number) => {

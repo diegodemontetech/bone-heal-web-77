@@ -55,26 +55,24 @@ const Checkout = () => {
 
   // Verificar a sessão apenas uma vez no carregamento
   useEffect(() => {
-    const checkAuth = async () => {
-      // Se já verificou a autenticação, não fazer novamente
-      if (isAuthChecked) return;
-      
-      setIsAuthChecked(true);
-      
-      if (!session) {
-        toast.error("Você precisa estar logado para finalizar a compra");
-        navigate("/login", { state: { from: "/checkout" } });
-      } else {
-        setIsInitialized(true);
-      }
-    };
+    if (isAuthChecked) return; // Evitar verificações repetidas
     
-    checkAuth();
+    setIsAuthChecked(true);
+    
+    if (!session) {
+      toast.error("Você precisa estar logado para finalizar a compra");
+      navigate("/login", { state: { from: "/checkout" } });
+      return;
+    }
+    
+    // Só inicializamos a página se o usuário estiver logado
+    setIsInitialized(true);
   }, [session, navigate, isAuthChecked]);
 
   // Verificar carrinho vazio apenas uma vez após inicialização
   useEffect(() => {
     if (isInitialized && cartItems.length === 0) {
+      console.log("Carrinho vazio, redirecionando para /cart");
       navigate("/cart");
     }
   }, [isInitialized, cartItems.length, navigate]);
@@ -86,17 +84,21 @@ const Checkout = () => {
   };
 
   const handleCheckout = () => {
-    if (selectedShippingRate && session?.user) {
-      processCheckout(cartItems, selectedShippingRate.zipCode, shippingFee, discount, appliedVoucher);
-    } else if (!session?.user) {
+    if (!selectedShippingRate) {
+      toast.error("Selecione uma opção de frete para continuar");
+      return;
+    }
+    
+    if (!session?.user) {
       toast.error("Você precisa estar logado para finalizar a compra");
       navigate("/login", { state: { from: "/checkout" } });
-    } else if (!selectedShippingRate) {
-      toast.error("Selecione uma opção de frete para continuar");
+      return;
     }
+    
+    processCheckout(cartItems, selectedShippingRate.zipCode, shippingFee, discount, appliedVoucher);
   };
 
-  // Mostra um loading enquanto inicializa
+  // Mostra um loading simples enquanto inicializa
   if (!isInitialized) {
     return null;
   }
