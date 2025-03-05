@@ -66,6 +66,10 @@ export const routes = [
     element: <AdminProducts />,
   },
   {
+    path: "/admin",
+    element: <AdminDashboard />,
+  },
+  {
     path: "/admin/dashboard",
     element: <AdminDashboard />,
   },
