@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cart from "./pages/Cart";
 import AdminProducts from "./pages/admin/Products";
+import AdminDashboard from "./pages/admin/Dashboard";
 import Tickets from "./pages/support/Tickets";
 import TicketDetails from "./pages/support/TicketDetails";
 import AdminTickets from "./pages/admin/Tickets";
@@ -16,17 +17,6 @@ import ContactPage from "./pages/Contact";
 import AboutPage from "./pages/About";
 import NewsPage from "./pages/News";
 import StudiesPage from "./pages/Studies";
-
-// Criamos um componente placeholder para o AdminDashboard
-import React from "react";
-const AdminDashboard = () => {
-  return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-4">Painel Administrativo</h1>
-      <p>Conteúdo do dashboard em desenvolvimento.</p>
-    </div>
-  );
-};
 
 export const routes = [
   {

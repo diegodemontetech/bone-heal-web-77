@@ -48,6 +48,7 @@ const Login = () => {
     try {
       setLoginLoading(true);
       await signIn(email, password);
+      // O redirecionamento é feito pelo useEffect quando o profile for carregado
     } catch (error) {
       // Erro já tratado no hook
     } finally {
