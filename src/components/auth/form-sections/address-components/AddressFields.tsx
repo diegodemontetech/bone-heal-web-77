@@ -34,7 +34,7 @@ export const AddressFields = ({ form }: AddressFieldsProps) => {
 
       <FormField
         control={form.control}
-        name="addressNumber"
+        name="endereco_numero"
         rules={{ required: "Número é obrigatório" }}
         render={({ field }) => (
           <FormItem>
