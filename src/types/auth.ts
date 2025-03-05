@@ -37,4 +37,6 @@ export interface UserProfile {
   updated_at?: string;
   is_omie_synced?: boolean;
   omie_code?: string;
+  endereco_numero?: string;
+  complemento?: string;
 }
