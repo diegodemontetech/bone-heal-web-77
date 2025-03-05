@@ -55,7 +55,7 @@ export const useProductForm = (
         name: values.name,
         slug: values.slug,
         omie_code: values.omie_code,
-        weight: values.weight,
+        weight: parseFloat(values.weight as unknown as string), // Garantir conversão para número
         short_description: values.short_description,
         description: values.description,
         video_url: values.video_url,
