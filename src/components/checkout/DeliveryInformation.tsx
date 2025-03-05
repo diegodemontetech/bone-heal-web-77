@@ -43,7 +43,7 @@ const DeliveryInformation = ({
           <CardTitle>Entrega</CardTitle>
         </CardHeader>
         <CardContent>
-          {shippingRates.length > 0 && (
+          {shippingRates.length > 0 ? (
             <RadioGroup 
               value={selectedShippingRate?.service_type}
               onValueChange={(value) => {
@@ -70,6 +70,10 @@ const DeliveryInformation = ({
                 </div>
               ))}
             </RadioGroup>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Nenhuma opção de frete disponível para sua região.
+            </p>
           )}
         </CardContent>
       </Card>

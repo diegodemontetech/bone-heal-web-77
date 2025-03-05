@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash, Save, X } from "lucide-react";
 
 interface ShippingRate {
   id: string;
@@ -41,6 +41,9 @@ const ShippingRatesTable = () => {
   const [newServiceType, setNewServiceType] = useState("");
   const [newRate, setNewRate] = useState("");
   const [newDeliveryDays, setNewDeliveryDays] = useState("");
+  const [editingRate, setEditingRate] = useState<ShippingRate | null>(null);
+  const [editRate, setEditRate] = useState("");
+  const [editDeliveryDays, setEditDeliveryDays] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -50,7 +53,8 @@ const ShippingRatesTable = () => {
       const { data, error } = await supabase
         .from("shipping_rates")
         .select("*")
-        .order("state", { ascending: true });
+        .order("state", { ascending: true })
+        .order("service_type", { ascending: true });
 
       if (error) throw error;
       return data as ShippingRate[];
@@ -81,6 +85,48 @@ const ShippingRatesTable = () => {
     },
   });
 
+  const updateRateMutation = useMutation({
+    mutationFn: async (rate: ShippingRate) => {
+      const { error } = await supabase
+        .from("shipping_rates")
+        .update({
+          rate: rate.rate,
+          delivery_days: rate.delivery_days
+        })
+        .eq('id', rate.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
+      toast.success("Taxa de frete atualizada com sucesso!");
+      setEditingRate(null);
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar taxa:", error);
+      toast.error("Erro ao atualizar taxa de frete");
+    },
+  });
+
+  const deleteRateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("shipping_rates")
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
+      toast.success("Taxa de frete removida com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Erro ao remover taxa:", error);
+      toast.error("Erro ao remover taxa de frete");
+    },
+  });
+
   const handleAddRate = async () => {
     if (!newState || !newServiceType || !newRate || !newDeliveryDays) {
       toast.error("Por favor, preencha todos os campos");
@@ -101,6 +147,40 @@ const ShippingRatesTable = () => {
       rate,
       delivery_days: deliveryDays
     });
+  };
+
+  const handleEditClick = (rate: ShippingRate) => {
+    setEditingRate(rate);
+    setEditRate(rate.rate.toString());
+    setEditDeliveryDays(rate.delivery_days.toString());
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingRate) return;
+
+    const rate = parseFloat(editRate);
+    const deliveryDays = parseInt(editDeliveryDays);
+
+    if (isNaN(rate) || isNaN(deliveryDays)) {
+      toast.error("Valores inválidos");
+      return;
+    }
+
+    updateRateMutation.mutate({
+      ...editingRate,
+      rate,
+      delivery_days: deliveryDays
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRate(null);
+  };
+
+  const handleDeleteRate = (id: string) => {
+    if (window.confirm("Tem certeza que deseja remover esta taxa de frete?")) {
+      deleteRateMutation.mutate(id);
+    }
   };
 
   if (isLoading) {
@@ -193,17 +273,85 @@ const ShippingRatesTable = () => {
                 <TableHead>Serviço</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Prazo</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {shippingRates?.map((rate) => (
-                <TableRow key={`${rate.state}-${rate.service_type}`}>
+                <TableRow key={rate.id}>
                   <TableCell>{rate.state}</TableCell>
                   <TableCell>
                     {serviceTypes.find(t => t.value === rate.service_type)?.label || rate.service_type}
                   </TableCell>
-                  <TableCell>R$ {rate.rate.toFixed(2)}</TableCell>
-                  <TableCell>{rate.delivery_days} dias</TableCell>
+                  
+                  {editingRate?.id === rate.id ? (
+                    <>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={editRate}
+                          onChange={(e) => setEditRate(e.target.value)}
+                          className="w-24"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={editDeliveryDays}
+                          onChange={(e) => setEditDeliveryDays(e.target.value)}
+                          className="w-16"
+                        />
+                      </TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={handleSaveEdit}
+                          disabled={updateRateMutation.isPending}
+                        >
+                          {updateRateMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={handleCancelEdit}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell>R$ {rate.rate.toFixed(2)}</TableCell>
+                      <TableCell>{rate.delivery_days} dias</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditClick(rate)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleDeleteRate(rate.id)}
+                          disabled={deleteRateMutation.isPending}
+                        >
+                          {deleteRateMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
