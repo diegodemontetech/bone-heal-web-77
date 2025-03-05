@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { NavItems } from "./NavItems";
 
-const MobileMenu = () => {
+export const MobileMenu = () => {
   const [open, setOpen] = useState(false);
 
   return (

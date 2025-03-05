@@ -8,12 +8,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarIcon } from "lucide-react";
+import { Product } from "@/types/product";
 
 interface ProductReviewsProps {
-  productId: string;
+  productId?: string;
+  product?: Product;
 }
 
-const ProductReviews = ({ productId }: ProductReviewsProps) => {
+const ProductReviews = ({ productId, product }: ProductReviewsProps) => {
+  // Extrair o ID do produto, seja da prop productId ou do objeto product
+  const actualProductId = productId || (product ? product.id : "");
+  
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userReview, setUserReview] = useState("");
@@ -23,17 +28,21 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchReviews();
-  }, [productId]);
+    if (actualProductId) {
+      fetchReviews();
+    }
+  }, [actualProductId]);
 
   const fetchReviews = async () => {
+    if (!actualProductId) return;
+    
     setLoading(true);
     try {
       // Corrigindo a consulta para buscar avaliações sem tentar fazer join na tabela profiles
       const { data, error } = await supabase
         .from('product_reviews')
         .select('*')
-        .eq('product_id', productId)
+        .eq('product_id', actualProductId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -81,12 +90,21 @@ const ProductReviews = ({ productId }: ProductReviewsProps) => {
       return;
     }
 
+    if (!actualProductId) {
+      toast({
+        title: "Erro",
+        description: "ID do produto não encontrado",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSubmitLoading(true);
     try {
       const { error } = await supabase
         .from('product_reviews')
         .insert({
-          product_id: productId,
+          product_id: actualProductId,
           user_id: session.user.id,
           rating: userRating,
           comment: userReview
