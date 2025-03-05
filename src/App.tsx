@@ -28,6 +28,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
+          {/* O erro estava aqui, Routes estava sendo importado incorretamente */}
           <Routes />
         </BrowserRouter>
         <Toaster />
