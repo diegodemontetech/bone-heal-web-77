@@ -32,8 +32,9 @@ const Checkout = () => {
     shippingFee,
     deliveryDate,
     handleShippingRateChange,
-    zipCode
-  } = useShipping();
+    zipCode,
+    setZipCode
+  } = useShipping(cartItems);
 
   const {
     voucherCode,
@@ -112,6 +113,7 @@ const Checkout = () => {
               shippingRates={shippingRates}
               selectedShippingRate={selectedShippingRate}
               onShippingRateChange={handleShippingRateChange}
+              shippingLoading={shippingLoading}
             />
           </div>
 

@@ -16,30 +16,42 @@ serve(async (req) => {
     const body = await req.json();
     // Aceitamos tanto zipCode quanto zipCodeDestination para compatibilidade
     const zipCode = body.zipCode || body.zipCodeDestination;
-
-    if (!zipCode) {
-      throw new Error("CEP não informado");
+    const items = body.items || [];
+    
+    // Validação do CEP
+    if (!zipCode || zipCode.length !== 8) {
+      throw new Error("CEP inválido");
     }
 
     console.log(`Calculando frete para CEP: ${zipCode}`);
     
-    // Cálculo simplificado baseado apenas no CEP
-    const cep = parseInt(zipCode);
-    const baseRate = 25 + (cep % 10);
+    // Calcular peso total dos itens (se disponível)
+    let totalWeight = 0;
+    if (items.length > 0) {
+      totalWeight = items.reduce((acc, item) => acc + ((item.weight || 0.5) * item.quantity), 0);
+    } else {
+      // Peso padrão se não houver itens
+      totalWeight = 0.5;
+    }
+    
+    // Cálculo simplificado baseado no CEP e peso
+    const cepPrefix = parseInt(zipCode.substring(0, 3));
+    const baseRate = 15 + (cepPrefix % 30);
+    const weightFactor = Math.max(1, totalWeight);
     
     // Simular diferentes opções de frete
     const shippingRates = [
       {
         service_type: "PAC",
         name: "PAC",
-        rate: baseRate,
+        rate: Math.round(baseRate * weightFactor * 100) / 100,
         delivery_days: 7,
         zipCode: zipCode
       },
       {
         service_type: "SEDEX",
         name: "SEDEX",
-        rate: baseRate * 1.5,
+        rate: Math.round(baseRate * weightFactor * 1.5 * 100) / 100,
         delivery_days: 3,
         zipCode: zipCode
       }

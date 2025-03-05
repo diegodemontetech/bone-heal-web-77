@@ -24,6 +24,7 @@ interface DeliveryInformationProps {
   shippingRates: ShippingRate[];
   selectedShippingRate: ShippingRate | null;
   onShippingRateChange: (rate: ShippingRate) => void;
+  shippingLoading?: boolean;
 }
 
 const DeliveryInformation = ({
@@ -36,6 +37,7 @@ const DeliveryInformation = ({
   shippingRates,
   selectedShippingRate,
   onShippingRateChange,
+  shippingLoading = false,
 }: DeliveryInformationProps) => {
   const session = useSession();
 
@@ -46,7 +48,16 @@ const DeliveryInformation = ({
           <CardTitle className="text-primary">Entrega</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          {shippingRates.length > 0 ? (
+          {shippingLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="flex flex-col items-center space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-gray-600">
+                  Calculando opções de frete...
+                </p>
+              </div>
+            </div>
+          ) : shippingRates.length > 0 ? (
             <RadioGroup 
               value={selectedShippingRate?.service_type}
               onValueChange={(value) => {
@@ -74,13 +85,10 @@ const DeliveryInformation = ({
               ))}
             </RadioGroup>
           ) : (
-            <div className="flex justify-center items-center py-8">
-              <div className="flex flex-col items-center space-y-3">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-gray-600">
-                  Calculando opções de frete...
-                </p>
-              </div>
+            <div className="p-4 bg-gray-50 rounded-md text-center">
+              <p className="text-gray-600">
+                Nenhuma opção de frete disponível. Verifique o CEP informado.
+              </p>
             </div>
           )}
         </CardContent>
