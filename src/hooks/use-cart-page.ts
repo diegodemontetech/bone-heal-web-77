@@ -16,7 +16,8 @@ export function useCartPage() {
 
   const calculateShipping = async () => {
     if (!zipCode || zipCode.length !== 8) {
-      toast.error("Por favor, insira um CEP válido");
+      toast.error("Por favor, insira um CEP válido com 8 dígitos");
+      setShippingError("Por favor, insira um CEP válido com 8 dígitos");
       return;
     }
 
@@ -24,34 +25,38 @@ export function useCartPage() {
     setShippingError(null);
     
     try {
-      // Primeiro, vamos obter o estado do CEP usando a API dos Correios
-      const { data: correiosData, error: correiosError } = await supabase.functions.invoke("correios-shipping", {
+      console.log(`Enviando requisição para calcular frete com CEP: ${zipCode}`);
+      
+      const { data, error } = await supabase.functions.invoke("correios-shipping", {
         body: {
-          zipCodeDestination: zipCode,
+          zipCode: zipCode,
         },
       });
 
-      if (correiosError) throw correiosError;
-
-      // Agora vamos buscar a taxa de frete baseada no estado
-      const { data: shippingRate, error: shippingError } = await supabase
-        .from('shipping_rates')
-        .select('rate, delivery_days')
-        .eq('state', correiosData.state)
-        .single();
-
-      if (shippingError) throw shippingError;
-
-      if (!shippingRate) {
-        throw new Error("Não foi possível calcular o frete para este CEP");
+      if (error) {
+        console.error("Erro na resposta da função:", error);
+        throw error;
       }
 
-      setShippingCost(shippingRate.rate);
-      toast.success(`Frete calculado: entrega em ${shippingRate.delivery_days} dias úteis`);
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.error("Resposta inválida:", data);
+        throw new Error("Resposta inválida do serviço de frete");
+      }
+
+      console.log("Resposta do cálculo de frete:", data);
+      
+      // Escolher a opção mais barata
+      const cheapestRate = data.reduce((prev, curr) => 
+        prev.rate < curr.rate ? prev : curr
+      );
+      
+      setShippingCost(cheapestRate.rate);
+      toast.success(`Frete calculado: entrega em ${cheapestRate.delivery_days} dias úteis`);
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
       setShippingError("Erro ao calcular o frete. Por favor, tente novamente.");
       toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
+      setShippingCost(null);
     } finally {
       setIsCalculatingShipping(false);
     }

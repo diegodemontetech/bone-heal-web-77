@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { CartItem } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -34,6 +35,18 @@ export const CartSummary = ({
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + (shippingCost || 0);
 
+  const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Permitir apenas números e limitar a 8 dígitos
+    const value = e.target.value.replace(/\D/g, "").slice(0, 8);
+    setZipCode(value);
+  };
+
+  const handleZipCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      calculateShipping();
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow space-y-6">
       <h2 className="text-xl font-bold">Resumo do Pedido</h2>
@@ -44,15 +57,17 @@ export const CartSummary = ({
           <div className="flex gap-2 mt-1">
             <Input
               id="zipCode"
-              placeholder="CEP"
+              placeholder="CEP (somente números)"
               value={zipCode}
-              onChange={(e) => setZipCode(e.target.value.replace(/\D/g, ""))}
+              onChange={handleZipCodeChange}
+              onKeyDown={handleZipCodeKeyDown}
               maxLength={8}
+              className={shippingError ? "border-red-500" : ""}
             />
             <Button
               variant="outline"
               onClick={calculateShipping}
-              disabled={isCalculatingShipping}
+              disabled={isCalculatingShipping || zipCode.length !== 8}
             >
               {isCalculatingShipping ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -62,8 +77,13 @@ export const CartSummary = ({
             </Button>
           </div>
           {shippingError && (
-            <p className="text-sm text-red-500 mt-1">{shippingError}</p>
+            <Alert variant="destructive" className="mt-2">
+              <AlertDescription className="text-sm">{shippingError}</AlertDescription>
+            </Alert>
           )}
+          <p className="text-xs text-muted-foreground mt-1">
+            Digite apenas os 8 números do seu CEP
+          </p>
         </div>
 
         <Separator />
