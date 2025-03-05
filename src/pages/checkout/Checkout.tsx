@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
@@ -15,11 +15,13 @@ import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
   const session = useSession();
   const navigate = useNavigate();
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const {
     shippingRates,
@@ -50,12 +52,17 @@ const Checkout = () => {
     orderId
   } = useCheckout();
 
-  // Redirecionar para o carrinho se não houver itens
+  // Verificar se o usuário está logado antes de continuar
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (!session && isInitialized) {
+      toast.error("Você precisa estar logado para finalizar a compra");
+      navigate("/login", { state: { from: "/checkout" } });
+    } else if (isInitialized && cartItems.length === 0) {
       navigate("/cart");
+    } else {
+      setIsInitialized(true);
     }
-  }, [cartItems, navigate]);
+  }, [session, cartItems, navigate, isInitialized]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
@@ -66,8 +73,17 @@ const Checkout = () => {
   const handleCheckout = () => {
     if (selectedShippingRate && session?.user) {
       processCheckout(cartItems, selectedShippingRate.zipCode, shippingFee, discount, appliedVoucher);
+    } else if (!session?.user) {
+      toast.error("Você precisa estar logado para finalizar a compra");
+      navigate("/login", { state: { from: "/checkout" } });
+    } else if (!selectedShippingRate) {
+      toast.error("Selecione uma opção de frete para continuar");
     }
   };
+
+  if (!isInitialized) {
+    return null; // Evita renderização antes da verificação de autenticação
+  }
 
   if (!cartItems.length) {
     return (

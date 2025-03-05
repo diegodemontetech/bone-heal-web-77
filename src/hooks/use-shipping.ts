@@ -19,23 +19,28 @@ export const useShipping = () => {
   const fetchUserZipCode = async () => {
     if (!session?.user?.id) return null;
     
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('zip_code')
-      .eq('id', session.user.id)
-      .single();
-    
-    if (error) {
-      console.error('Erro ao buscar CEP do usuário:', error);
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('zip_code')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (error) {
+        console.error('Erro ao buscar CEP do usuário:', error);
+        return null;
+      }
+      
+      return profile?.zip_code;
+    } catch (error) {
+      console.error('Erro inesperado ao buscar CEP:', error);
       return null;
     }
-    
-    return profile?.zip_code;
   };
 
   // Função para calcular o frete
-  const calculateShipping = async (zipCodeInput: string) => {
-    if (!zipCodeInput || calculationCompleted) return;
+  const calculateShipping = async (zipCodeInput) => {
+    if (!zipCodeInput || zipCodeInput.length !== 8 || calculationCompleted || loading) return;
     
     setLoading(true);
     
@@ -61,11 +66,22 @@ export const useShipping = () => {
 
       console.log("Resposta do cálculo de frete:", data);
       
-      setShippingRates(data);
+      const ratesWithZipCode = data.map(rate => ({
+        ...rate,
+        zipCode: zipCodeInput
+      }));
+      
+      setShippingRates(ratesWithZipCode);
       
       // Se houver apenas uma opção de frete, seleciona automaticamente
-      if (data.length === 1) {
-        setSelectedShippingRate(data[0]);
+      if (ratesWithZipCode.length === 1) {
+        setSelectedShippingRate(ratesWithZipCode[0]);
+      } else if (ratesWithZipCode.length > 1) {
+        // Seleciona a opção mais barata por padrão
+        const cheapestRate = ratesWithZipCode.reduce((prev, curr) => 
+          prev.rate < curr.rate ? prev : curr
+        );
+        setSelectedShippingRate(cheapestRate);
       }
       
       setCalculationCompleted(true);
@@ -77,7 +93,6 @@ export const useShipping = () => {
         variant: "destructive"
       });
       setShippingRates([]);
-      setCalculationCompleted(false);
     } finally {
       setLoading(false);
     }
@@ -86,7 +101,7 @@ export const useShipping = () => {
   // Efeito para carregar o CEP do usuário automaticamente quando estiver logado
   useEffect(() => {
     const loadUserShipping = async () => {
-      if (session?.user?.id && !hasAttemptedFetch) {
+      if (session?.user?.id && !hasAttemptedFetch && !calculationCompleted) {
         setHasAttemptedFetch(true);
         const userZipCode = await fetchUserZipCode();
         if (userZipCode) {
@@ -97,7 +112,7 @@ export const useShipping = () => {
     };
 
     loadUserShipping();
-  }, [session?.user?.id, hasAttemptedFetch]);
+  }, [session?.user?.id, hasAttemptedFetch, calculationCompleted]);
 
   // Função para resetar o estado do cálculo de frete
   const resetShippingCalculation = () => {
@@ -108,7 +123,8 @@ export const useShipping = () => {
 
   // Efeito para resetar o cálculo quando o CEP mudar
   useEffect(() => {
-    if (zipCode) {
+    if (zipCode && calculationCompleted) {
+      // Se o CEP mudou e já tínhamos calculado antes, resetamos
       resetShippingCalculation();
     }
   }, [zipCode]);
