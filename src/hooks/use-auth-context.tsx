@@ -8,7 +8,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, userData: any) => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<any>; // Alterada para retornar os dados do signup
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isDentist: boolean;
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, userData: any) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -129,6 +129,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Cadastro realizado com sucesso!",
         description: "Verifique seu e-mail para confirmar o cadastro.",
       });
+
+      // Retornando os dados para que possamos utilizar o ID do usuário para integrações
+      return data;
     } catch (error: any) {
       toast({
         title: "Erro ao cadastrar",

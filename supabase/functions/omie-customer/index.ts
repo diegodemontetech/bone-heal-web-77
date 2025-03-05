@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Verificar se é uma requisição OPTIONS (preflight CORS)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -18,6 +19,8 @@ serve(async (req) => {
     if (!user_id && !profile) {
       throw new Error('ID do usuário ou perfil não fornecido')
     }
+
+    console.log('Recebida solicitação para sincronizar usuário:', user_id)
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -43,10 +46,17 @@ serve(async (req) => {
         .eq('id', user_id)
         .single()
 
-      if (error) throw error
-      if (!data) throw new Error('Perfil não encontrado')
+      if (error) {
+        console.error('Erro ao buscar perfil:', error)
+        throw error
+      }
+      if (!data) {
+        console.error('Perfil não encontrado para o ID:', user_id)
+        throw new Error('Perfil não encontrado')
+      }
       
       customerProfile = data
+      console.log('Perfil encontrado:', customerProfile)
     }
 
     // Verificar se já existe código OMIE
@@ -66,11 +76,25 @@ serve(async (req) => {
     const cpfCnpj = customerProfile.pessoa_fisica ? customerProfile.cpf : customerProfile.cnpj
     
     if (!cpfCnpj) {
+      console.error('CPF/CNPJ não informado para o usuário:', user_id)
       throw new Error('CPF/CNPJ não informado')
     }
 
-    const telefone1_ddd = customerProfile.phone?.substring(0, 2) || ""
-    const telefone1_numero = customerProfile.phone?.substring(2) || ""
+    // Extrair DDD e número do telefone (se disponível)
+    let telefone1_ddd = ""
+    let telefone1_numero = ""
+    
+    if (customerProfile.phone) {
+      // Limpar formatação do telefone para extrair DDD e número
+      const phoneClean = customerProfile.phone.replace(/\D/g, '')
+      
+      if (phoneClean.length >= 2) {
+        telefone1_ddd = phoneClean.substring(0, 2)
+        telefone1_numero = phoneClean.substring(2)
+      } else {
+        telefone1_numero = phoneClean
+      }
+    }
 
     const omieCustomer = {
       call: "UpsertClient",
@@ -114,6 +138,7 @@ serve(async (req) => {
     console.log('Resposta do OMIE:', omieResult)
 
     if (omieResult.faultstring) {
+      console.error('Erro do OMIE:', omieResult.faultstring)
       throw new Error(`Erro do OMIE: ${omieResult.faultstring}`)
     }
 
@@ -126,7 +151,12 @@ serve(async (req) => {
       })
       .eq('id', customerProfile.id)
 
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error('Erro ao atualizar perfil:', updateError)
+      throw updateError
+    }
+
+    console.log('Perfil atualizado com sucesso. Código Omie:', omieResult.codigo_cliente_omie)
 
     return new Response(
       JSON.stringify({ 

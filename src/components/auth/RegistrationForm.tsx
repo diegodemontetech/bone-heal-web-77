@@ -107,7 +107,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist = true })
     try {
       setSubmitting(true);
       
-      await signUp(data.email, data.password, {
+      const signUpResult = await signUp(data.email, data.password, {
         full_name: data.fullName,
         cro: data.cro,
         specialty: data.specialty,
@@ -125,11 +125,41 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist = true })
         role: UserRole.DENTIST
       });
       
-      // Redirecionar para a página de verificação ou login
+      // Verificar se o cadastro foi realizado com sucesso
+      if (signUpResult && signUpResult.user) {
+        // Tentar sincronizar com o Omie
+        try {
+          console.log("Sincronizando usuário com Omie:", signUpResult.user.id);
+          const response = await fetch(`${window.location.origin}/api/omie-customer`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: signUpResult.user.id }),
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            toast.success("Perfil sincronizado com o Omie");
+          } else {
+            console.error("Erro ao sincronizar com o Omie:", result.error);
+            toast.error("Erro ao sincronizar com o Omie: " + (result.error || "Erro desconhecido"));
+          }
+        } catch (omieError) {
+          console.error("Erro ao fazer requisição para o Omie:", omieError);
+        }
+      }
+      
+      // Mostrar mensagem de sucesso
+      toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.");
+      
+      // Redirecionar para a página de login
       navigate('/login');
       
     } catch (error) {
       console.error('Erro no cadastro:', error);
+      toast.error("Erro ao realizar cadastro: " + (error instanceof Error ? error.message : "Erro desconhecido"));
     } finally {
       setSubmitting(false);
     }
