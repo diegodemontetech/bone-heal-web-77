@@ -3,11 +3,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useToast } from "@/components/ui/use-toast";
+import { addDays } from "date-fns";
 
 export const useShipping = () => {
   const [shippingRates, setShippingRates] = useState([]);
   const [selectedShippingRate, setSelectedShippingRate] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [zipCode, setZipCode] = useState("");
   const session = useSession();
   const { toast } = useToast();
 
@@ -30,8 +32,8 @@ export const useShipping = () => {
   };
 
   // Função para calcular o frete
-  const calculateShipping = async (zipCode: string) => {
-    if (!zipCode) return;
+  const calculateShipping = async (zipCodeInput: string) => {
+    if (!zipCodeInput) return;
     
     setLoading(true);
     try {
@@ -41,7 +43,7 @@ export const useShipping = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         },
-        body: JSON.stringify({ zipCode })
+        body: JSON.stringify({ zipCode: zipCodeInput })
       });
 
       if (!response.ok) throw new Error('Falha ao calcular o frete');
@@ -70,9 +72,10 @@ export const useShipping = () => {
   useEffect(() => {
     const loadUserShipping = async () => {
       if (session?.user?.id) {
-        const zipCode = await fetchUserZipCode();
-        if (zipCode) {
-          await calculateShipping(zipCode);
+        const userZipCode = await fetchUserZipCode();
+        if (userZipCode) {
+          setZipCode(userZipCode);
+          await calculateShipping(userZipCode);
         }
       }
     };
@@ -80,11 +83,34 @@ export const useShipping = () => {
     loadUserShipping();
   }, [session?.user?.id]);
 
+  // Calcula a data estimada de entrega
+  const getDeliveryDate = () => {
+    if (!selectedShippingRate) return null;
+    const deliveryDays = selectedShippingRate.delivery_days || 5;
+    return addDays(new Date(), deliveryDays);
+  };
+
+  const handleShippingRateChange = (rate) => {
+    setSelectedShippingRate(rate);
+  };
+
+  const shippingFee = selectedShippingRate ? selectedShippingRate.rate : 0;
+  const deliveryDate = getDeliveryDate();
+  const isCalculatingShipping = loading;
+  const availableShippingRates = shippingRates;
+
   return {
     shippingRates,
     selectedShippingRate,
     setSelectedShippingRate,
     loading,
-    calculateShipping
+    calculateShipping,
+    zipCode,
+    setZipCode,
+    isCalculatingShipping,
+    shippingFee,
+    deliveryDate,
+    availableShippingRates,
+    handleShippingRateChange
   };
 };

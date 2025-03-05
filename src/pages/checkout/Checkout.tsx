@@ -16,13 +16,11 @@ const Checkout = () => {
   const navigate = useNavigate();
   
   const {
-    zipCode,
-    setZipCode,
-    isCalculatingShipping,
+    shippingRates,
+    selectedShippingRate,
+    loading: shippingLoading,
     shippingFee,
     deliveryDate,
-    availableShippingRates,
-    selectedShippingRate,
     handleShippingRateChange
   } = useShipping();
 
@@ -50,7 +48,9 @@ const Checkout = () => {
   };
 
   const handleCheckout = () => {
-    processCheckout(cartItems, zipCode, shippingFee, discount, appliedVoucher);
+    if (selectedShippingRate) {
+      processCheckout(cartItems, selectedShippingRate.zipCode, shippingFee, discount, appliedVoucher);
+    }
   };
 
   if (!cartItems.length) {
@@ -78,7 +78,7 @@ const Checkout = () => {
             appliedVoucher={appliedVoucher}
             applyVoucher={handleVoucherApply}
             removeVoucher={removeVoucher}
-            shippingRates={availableShippingRates}
+            shippingRates={shippingRates}
             selectedShippingRate={selectedShippingRate}
             onShippingRateChange={handleShippingRateChange}
           />
@@ -90,7 +90,7 @@ const Checkout = () => {
           discount={discount}
           loading={loading}
           isLoggedIn={!!session}
-          hasZipCode={!!zipCode}
+          hasZipCode={!!selectedShippingRate}
           onCheckout={handleCheckout}
           deliveryDate={deliveryDate}
         />
