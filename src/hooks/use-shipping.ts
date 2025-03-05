@@ -40,7 +40,16 @@ export const useShipping = () => {
 
   // Função para calcular o frete
   const calculateShipping = async (zipCodeInput) => {
-    if (!zipCodeInput || zipCodeInput.length !== 8 || calculationCompleted || loading) return;
+    // Evita cálculos repetidos ou quando não há CEP válido
+    if (!zipCodeInput || zipCodeInput.length !== 8 || loading) {
+      return;
+    }
+    
+    // Se já calculamos o frete para este CEP e já temos taxas, não recalcular
+    if (calculationCompleted && shippingRates.length > 0 && 
+        shippingRates.some(rate => rate.zipCode === zipCodeInput)) {
+      return;
+    }
     
     setLoading(true);
     
@@ -101,9 +110,15 @@ export const useShipping = () => {
   // Efeito para carregar o CEP do usuário automaticamente quando estiver logado
   useEffect(() => {
     const loadUserShipping = async () => {
-      if (session?.user?.id && !hasAttemptedFetch && !calculationCompleted) {
+      // Somente busca o CEP do usuário se:
+      // 1. O usuário estiver logado
+      // 2. Ainda não tentou buscar o CEP
+      // 3. Ainda não calculou o frete
+      // 4. Não estiver em processo de cálculo
+      if (session?.user?.id && !hasAttemptedFetch && !calculationCompleted && !loading) {
         setHasAttemptedFetch(true);
         const userZipCode = await fetchUserZipCode();
+        
         if (userZipCode) {
           setZipCode(userZipCode);
           await calculateShipping(userZipCode);
@@ -112,7 +127,7 @@ export const useShipping = () => {
     };
 
     loadUserShipping();
-  }, [session?.user?.id, hasAttemptedFetch, calculationCompleted]);
+  }, [session?.user?.id, hasAttemptedFetch, calculationCompleted, loading]);
 
   // Função para resetar o estado do cálculo de frete
   const resetShippingCalculation = () => {
@@ -124,8 +139,13 @@ export const useShipping = () => {
   // Efeito para resetar o cálculo quando o CEP mudar
   useEffect(() => {
     if (zipCode && calculationCompleted) {
-      // Se o CEP mudou e já tínhamos calculado antes, resetamos
-      resetShippingCalculation();
+      // Verifica se o CEP já foi calculado
+      const alreadyCalculated = shippingRates.some(rate => rate.zipCode === zipCode);
+      
+      // Se o CEP mudou e não foi calculado ainda, resetamos para calcular novamente
+      if (!alreadyCalculated) {
+        resetShippingCalculation();
+      }
     }
   }, [zipCode]);
 

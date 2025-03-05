@@ -22,6 +22,7 @@ const Checkout = () => {
   const session = useSession();
   const navigate = useNavigate();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   
   const {
     shippingRates,
@@ -52,17 +53,31 @@ const Checkout = () => {
     orderId
   } = useCheckout();
 
-  // Verificar se o usuário está logado antes de continuar
+  // Verificar a sessão apenas uma vez no carregamento
   useEffect(() => {
-    if (!session && isInitialized) {
-      toast.error("Você precisa estar logado para finalizar a compra");
-      navigate("/login", { state: { from: "/checkout" } });
-    } else if (isInitialized && cartItems.length === 0) {
+    const checkAuth = async () => {
+      // Se já verificou a autenticação, não fazer novamente
+      if (isAuthChecked) return;
+      
+      setIsAuthChecked(true);
+      
+      if (!session) {
+        toast.error("Você precisa estar logado para finalizar a compra");
+        navigate("/login", { state: { from: "/checkout" } });
+      } else {
+        setIsInitialized(true);
+      }
+    };
+    
+    checkAuth();
+  }, [session, navigate, isAuthChecked]);
+
+  // Verificar carrinho vazio apenas uma vez após inicialização
+  useEffect(() => {
+    if (isInitialized && cartItems.length === 0) {
       navigate("/cart");
-    } else {
-      setIsInitialized(true);
     }
-  }, [session, cartItems, navigate, isInitialized]);
+  }, [isInitialized, cartItems.length, navigate]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
@@ -81,30 +96,9 @@ const Checkout = () => {
     }
   };
 
+  // Mostra um loading enquanto inicializa
   if (!isInitialized) {
-    return null; // Evita renderização antes da verificação de autenticação
-  }
-
-  if (!cartItems.length) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="container mx-auto p-4 flex-1">
-          <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
-            <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">Seu carrinho está vazio</p>
-            <Button 
-              onClick={() => navigate("/products")}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              Continuar comprando
-            </Button>
-          </div>
-        </div>
-        <Footer />
-        <WhatsAppWidget />
-      </div>
-    );
+    return null;
   }
 
   // Se temos URL de pagamento, realizar redirect
@@ -134,6 +128,29 @@ const Checkout = () => {
                 Ir para pagamento agora
               </Button>
             </div>
+          </div>
+        </div>
+        <Footer />
+        <WhatsAppWidget />
+      </div>
+    );
+  }
+
+  // Se o carrinho estiver vazio, mostrar mensagem e link para produtos
+  if (!cartItems.length) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="container mx-auto p-4 flex-1">
+          <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
+            <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500 mb-4">Seu carrinho está vazio</p>
+            <Button 
+              onClick={() => navigate("/products")}
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
+              Continuar comprando
+            </Button>
           </div>
         </div>
         <Footer />
