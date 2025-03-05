@@ -2,8 +2,6 @@
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { brazilianStates } from "@/utils/states";
 import { fetchAddressFromCep } from "@/utils/address";
 import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
