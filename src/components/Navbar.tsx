@@ -140,9 +140,9 @@ export default function Navbar() {
           </DropdownMenu>
         ) : (
           <div className="hidden md:flex gap-2">
-            <Link to="/login">
-              <Button variant="outline">Área do Dentista</Button>
-            </Link>
+            <Button variant="outline" onClick={() => navigate("/login")}>
+              Área do Dentista
+            </Button>
           </div>
         )}
 
@@ -210,9 +210,15 @@ export default function Navbar() {
                   </Button>
                 </>
               ) : (
-                <Link to="/login" onClick={() => setOpen(false)}>
-                  <Button className="w-full">Área do Dentista</Button>
-                </Link>
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    navigate("/login");
+                    setOpen(false);
+                  }}
+                >
+                  Área do Dentista
+                </Button>
               )}
             </div>
           </SheetContent>

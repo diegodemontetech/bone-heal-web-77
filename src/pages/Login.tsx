@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { UserRole } from "@/types/auth";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -24,7 +23,7 @@ const Login = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
-    // Redirecionar com base no tipo de usuário
+    // Redirecionar com base no tipo de usuário somente se estiver autenticado
     if (profile) {
       if (isAdmin) {
         navigate("/admin");
