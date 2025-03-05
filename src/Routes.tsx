@@ -1,22 +1,25 @@
+
 import { createBrowserRouter } from "react-router-dom";
-import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
 import AdminProducts from "./pages/admin/Products";
-import AdminDashboard from "./pages/admin/Dashboard";
 import Tickets from "./pages/support/Tickets";
 import TicketDetails from "./pages/support/TicketDetails";
 import AdminTickets from "./pages/admin/Tickets";
 
+// Importações substituídas ou que estão faltando
+import Index from "./pages/Index";
+import { default as Checkout } from "./pages/checkout/Checkout";
+import AdminDashboard from "./pages/admin/Dashboard";
+
 export const routes = [
   {
     path: "/",
-    element: <Home />,
+    element: <Index />,
   },
   {
     path: "/products",
