@@ -34,7 +34,7 @@ export const routes = [
     element: <Products />,
   },
   {
-    path: "/product/:slug",
+    path: "/products/:slug",
     element: <ProductDetail />,
   },
   {
