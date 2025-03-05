@@ -1,22 +1,8 @@
 
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-  FormDescription
-} from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { UseFormReturn } from "react-hook-form";
-import { ProductFormValues } from "@/hooks/use-product-form";
 
-interface ProductBasicDetailsProps {
-  form: UseFormReturn<ProductFormValues>;
-}
-
-const ProductBasicDetails = ({ form }: ProductBasicDetailsProps) => {
+const ProductBasicDetails = ({ form }) => {
   return (
     <div className="space-y-4">
       <FormField
@@ -26,7 +12,7 @@ const ProductBasicDetails = ({ form }: ProductBasicDetailsProps) => {
           <FormItem>
             <FormLabel>Nome do Produto</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input placeholder="Nome do produto" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -40,8 +26,11 @@ const ProductBasicDetails = ({ form }: ProductBasicDetailsProps) => {
           <FormItem>
             <FormLabel>Slug</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input placeholder="slug-do-produto" {...field} />
             </FormControl>
+            <FormDescription>
+              URL amigável do produto, use apenas letras minúsculas, números e hífens
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -54,10 +43,10 @@ const ProductBasicDetails = ({ form }: ProductBasicDetailsProps) => {
           <FormItem>
             <FormLabel>Código Omie</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input placeholder="12345" {...field} />
             </FormControl>
             <FormDescription>
-              Código do produto no Omie
+              Código do produto no sistema Omie
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -71,10 +60,10 @@ const ProductBasicDetails = ({ form }: ProductBasicDetailsProps) => {
           <FormItem>
             <FormLabel>Peso (kg)</FormLabel>
             <FormControl>
-              <Input {...field} type="number" step="0.01" />
+              <Input type="number" step="0.01" placeholder="0.2" {...field} />
             </FormControl>
             <FormDescription>
-              Peso do produto em kilogramas
+              Peso do produto em quilogramas (ex: 0.2 para 200g)
             </FormDescription>
             <FormMessage />
           </FormItem>

@@ -7,14 +7,14 @@ export const useProductNotifications = () => {
   const notifyProductCreated = () => {
     toast({
       title: "Produto criado com sucesso!",
-      description: "O produto foi cadastrado e está sincronizado com o Omie."
+      description: "O produto foi cadastrado e será sincronizado com o Omie na próxima sincronização."
     });
   };
 
   const notifyProductUpdated = () => {
     toast({
       title: "Produto atualizado com sucesso!",
-      description: "O produto foi atualizado e está sincronizado com o Omie."
+      description: "O produto foi atualizado e será sincronizado com o Omie na próxima sincronização."
     });
   };
 

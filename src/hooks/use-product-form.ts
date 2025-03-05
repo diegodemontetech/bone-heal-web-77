@@ -27,7 +27,7 @@ export const useProductForm = (
       name: product?.name || "",
       slug: product?.slug || "",
       omie_code: product?.omie_code || "",
-      weight: product?.weight?.toString() || "0.2",
+      weight: product?.weight || 0.2,
       short_description: product?.short_description || "",
       description: product?.description || "",
       video_url: product?.video_url || "",
@@ -55,7 +55,7 @@ export const useProductForm = (
         name: values.name,
         slug: values.slug,
         omie_code: values.omie_code,
-        weight: parseFloat(values.weight as unknown as string), // Garantir conversão para número
+        weight: values.weight, // Já é convertido para número pelo Zod
         short_description: values.short_description,
         description: values.description,
         video_url: values.video_url,
