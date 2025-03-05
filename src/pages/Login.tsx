@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client"; 
 
 const Login = () => {
   const navigate = useNavigate();
@@ -22,24 +23,50 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [currentSession, setCurrentSession] = useState<any>(null);
 
+  // Verificar a sessão atual usando diretamente o cliente Supabase
   useEffect(() => {
-    // Verificar se o usuário está autenticado e redirecionar apropriadamente
-    if (!isLoading && profile) {
-      console.log("Usuário já logado:", profile, "isAdmin:", isAdmin);
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!error && data.session) {
+          setCurrentSession(data.session);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar sessão:", error);
+      } finally {
+        setSessionLoading(false);
+      }
+    };
+    
+    checkSession();
+  }, []);
+
+  // Verificar se o usuário está autenticado e redirecionar apropriadamente
+  useEffect(() => {
+    // Esperar até que tanto o profile quanto a sessão tenham sido verificados
+    if (isLoading || sessionLoading) return;
+    
+    // Se temos um profile OU uma sessão válida, o usuário está autenticado
+    const isAuthenticated = profile || currentSession?.user;
+    
+    if (isAuthenticated) {
+      console.log("Usuário autenticado:", profile || currentSession?.user, "isAdmin:", isAdmin);
       
       // Verificar o tipo de usuário e redirecionar
       if (isAdmin) {
-        console.log("Redirecionando admin para /admin");
+        console.log("Redirecionando admin para /admin/dashboard");
         navigate("/admin/dashboard");
       } else {
-        // Para usuários normais, redirecionar para a página específica ou para produtos
+        // Para usuários normais, redirecionar para a página específica ou para profile
         const from = location.state?.from?.pathname || "/profile";
         console.log("Redirecionando usuário normal para:", from);
         navigate(from);
       }
     }
-  }, [isLoading, profile, isAdmin, navigate, location]);
+  }, [isLoading, profile, isAdmin, navigate, location, sessionLoading, currentSession]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +87,8 @@ const Login = () => {
     }
   };
 
-  if (isLoading) {
+  // Se estiver carregando, mostra o loader
+  if (isLoading || sessionLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -69,7 +97,7 @@ const Login = () => {
   }
 
   // Se o usuário já estiver logado, mostra apenas o loader enquanto redireciona
-  if (profile) {
+  if (profile || currentSession?.user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -22,7 +22,10 @@ interface MobileMenuProps {
 export const MobileMenu = ({ session }: MobileMenuProps) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile } = useAuth();
+  
+  // Determina se o usuário está realmente autenticado verificando tanto a session quanto o profile
+  const isAuthenticated = !!session?.user?.id || !!profile?.id;
 
   const handleSignOut = async () => {
     try {
@@ -89,7 +92,7 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
               Artigos Científicos
             </Button>
           </Link>
-          {session ? (
+          {isAuthenticated ? (
             <>
               <Button 
                 variant="ghost" 

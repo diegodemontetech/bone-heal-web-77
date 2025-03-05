@@ -20,7 +20,10 @@ interface UserMenuProps {
 
 export const UserMenu = ({ session }: UserMenuProps) => {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile } = useAuth();
+
+  // Determina se o usuário está realmente autenticado verificando tanto a session quanto o profile
+  const isAuthenticated = !!session?.user?.id || !!profile?.id;
 
   const handleSignOut = async () => {
     try {
@@ -33,7 +36,7 @@ export const UserMenu = ({ session }: UserMenuProps) => {
   };
 
   const handleAreaClick = () => {
-    if (session) {
+    if (isAuthenticated) {
       // Se já está logado, vá para a área apropriada
       if (isAdmin) {
         navigate("/admin/dashboard");
@@ -46,7 +49,7 @@ export const UserMenu = ({ session }: UserMenuProps) => {
     }
   };
 
-  if (!session) {
+  if (!isAuthenticated) {
     return (
       <div className="hidden md:flex gap-2">
         <Button variant="outline" onClick={handleAreaClick}>
@@ -61,7 +64,7 @@ export const UserMenu = ({ session }: UserMenuProps) => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={session.user.user_metadata?.avatar_url} />
+            <AvatarImage src={session?.user?.user_metadata?.avatar_url || profile?.avatar_url} />
             <AvatarFallback>
               <User className="h-4 w-4" />
             </AvatarFallback>
