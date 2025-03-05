@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => void }) => {
   const [url, setUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const generateNews = async () => {
     if (!url) {
@@ -17,8 +19,11 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
     }
 
     setIsGenerating(true);
+    setError(null);
+    
     try {
       // Generate content using the edge function
+      console.log("Enviando requisição para generate-news com URL:", url);
       const { data: generatedContent, error: generationError } = await supabase.functions
         .invoke('generate-news', {
           body: { url }
@@ -33,9 +38,10 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
         throw new Error('Conteúdo gerado inválido ou vazio');
       }
 
-      console.log('Conteúdo gerado:', generatedContent);
+      console.log('Conteúdo gerado com sucesso:', generatedContent);
 
       // Generate an image based on the title
+      console.log("Gerando imagem para título:", generatedContent.title);
       const { data: imageData, error: imageError } = await supabase.functions
         .invoke('generate-news-image', {
           body: { prompt: `Imagem para notícia sobre: ${generatedContent.title}` }
@@ -52,6 +58,7 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-');
 
+      console.log("Inserindo notícia no banco de dados");
       // Create the news entry
       const { error: insertError } = await supabase
         .from('news')
@@ -74,9 +81,11 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
 
       toast.success("Notícia gerada e publicada com sucesso!");
       setUrl("");
+      setError(null);
       onNewsGenerated();
     } catch (error: any) {
       console.error('Erro completo ao gerar notícia:', error);
+      setError(error.message || "Erro desconhecido ao gerar notícia");
       toast.error("Erro ao gerar notícia: " + error.message);
     } finally {
       setIsGenerating(false);
@@ -96,6 +105,7 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
         <Button 
           onClick={generateNews} 
           disabled={isGenerating}
+          className="bg-primary hover:bg-primary/90"
         >
           {isGenerating ? (
             <>
@@ -109,6 +119,27 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
             </>
           )}
         </Button>
+      </div>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertTitle>Erro na geração</AlertTitle>
+          <AlertDescription className="text-sm">
+            {error}
+            <div className="mt-2">
+              <p className="text-xs">Verifique se:</p>
+              <ul className="list-disc pl-5 text-xs">
+                <li>A URL é válida e acessível</li>
+                <li>O conteúdo da página contém texto suficiente</li>
+                <li>A função edge está funcionando corretamente</li>
+              </ul>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="text-sm text-gray-500 px-1">
+        Cole a URL de uma notícia relevante para gerar automaticamente um artigo adaptado para o site.
       </div>
     </div>
   );
