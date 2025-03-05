@@ -43,3 +43,20 @@ export const createProduct = async (data: any) => {
     .from("products")
     .insert([data]);
 };
+
+export const fetchProductReviews = async (productId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('product_reviews')
+      .select('*')
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error("Erro ao buscar avaliações:", error);
+    return [];
+  }
+};

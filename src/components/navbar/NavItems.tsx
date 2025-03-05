@@ -1,64 +1,36 @@
 
-import { Link, useLocation } from "react-router-dom";
-import { Book, Mail, Newspaper, Info } from "lucide-react";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@/components/ui/navigation-menu";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
-export const NavItems = () => {
-  const location = useLocation();
-  
+interface NavItemsProps {
+  mobile?: boolean;
+}
+
+export const NavItems = ({ mobile = false }: NavItemsProps) => {
+  const items = [
+    { href: "/", label: "Home" },
+    { href: "/about", label: "Sobre" },
+    { href: "/products", label: "Produtos" },
+    { href: "/studies", label: "Estudos" },
+    { href: "/news", label: "Notícias" },
+    { href: "/how-it-works", label: "Como Funciona" },
+    { href: "/contact", label: "Contato" },
+  ];
+
   return (
-    <NavigationMenu className="hidden md:flex">
-      <NavigationMenuList className="flex items-center gap-8">
-        <NavigationMenuItem>
-          <Link 
-            to="/products" 
-            className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/products' ? 'text-primary' : ''}`}
-          >
-            <Book className="w-4 h-4" />
-            <span>Produtos</span>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link 
-            to="/contact"
-            className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/contact' ? 'text-primary' : ''}`}
-          >
-            <Mail className="w-4 h-4" />
-            <span>Contato</span>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link 
-            to="/about"
-            className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/about' ? 'text-primary' : ''}`}
-          >
-            <Info className="w-4 h-4" />
-            <span>História</span>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link 
-            to="/news"
-            className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/news' ? 'text-primary' : ''}`}
-          >
-            <Newspaper className="w-4 h-4" />
-            <span>Notícias</span>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link 
-            to="/studies"
-            className={`flex items-center gap-1.5 text-sm font-semibold hover:text-primary transition-colors ${location.pathname === '/studies' ? 'text-primary' : ''}`}
-          >
-            <Book className="w-4 h-4" />
-            <span>Artigos Científicos</span>
-          </Link>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+    <>
+      {items.map((item) => (
+        <Link
+          key={item.href}
+          to={item.href}
+          className={cn(
+            "text-sm font-medium transition-colors hover:text-primary",
+            mobile ? "w-full text-center p-2 hover:bg-muted rounded-md" : ""
+          )}
+        >
+          {item.label}
+        </Link>
+      ))}
+    </>
   );
 };

@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import NavItems from "./NavItems";
+import { NavItems } from "./NavItems";
 
 const MobileMenu = () => {
   const [open, setOpen] = useState(false);
