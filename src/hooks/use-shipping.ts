@@ -14,6 +14,7 @@ export const useShipping = () => {
   const [calculationCompleted, setCalculationCompleted] = useState(false);
   const [lastCalculatedZip, setLastCalculatedZip] = useState("");
   const calculationInProgress = useRef(false);
+  const initialZipCodeFetched = useRef(false);
   const session = useSession();
   const { toast } = useToast();
 
@@ -122,29 +123,38 @@ export const useShipping = () => {
   // Efeito para carregar o CEP do usuário automaticamente quando estiver logado
   useEffect(() => {
     const loadUserShipping = async () => {
-      if (!session?.user?.id || hasAttemptedFetch) {
+      if (!session?.user?.id || initialZipCodeFetched.current) {
         return;
       }
       
-      setHasAttemptedFetch(true);
+      initialZipCodeFetched.current = true;
       const userZipCode = await fetchUserZipCode();
       
       if (userZipCode) {
         setZipCode(userZipCode);
+        // Iniciamos o cálculo de frete aqui diretamente
+        if (userZipCode.length === 8) {
+          calculateShipping(userZipCode);
+        }
       }
     };
 
     loadUserShipping();
-  }, [session?.user?.id, hasAttemptedFetch]);
+  }, [session?.user?.id]);
 
-  // Efeito para calcular o frete quando o CEP mudar
+  // Efeito para calcular o frete quando o CEP mudar manualmente
   useEffect(() => {
-    // Só calcular se tiver zipCode válido e ele diferir do último calculado
-    if (zipCode && zipCode.length === 8 && zipCode !== lastCalculatedZip && !loading && !calculationInProgress.current) {
+    // Só calcular se tiver zipCode válido, ele diferir do último calculado, 
+    // não estiver carregando e não houver cálculo em andamento
+    if (zipCode && 
+        zipCode.length === 8 && 
+        zipCode !== lastCalculatedZip && 
+        !loading && 
+        !calculationInProgress.current) {
       console.log(`Alteração de CEP detectada, calculando para: ${zipCode}`);
       calculateShipping(zipCode);
     }
-  }, [zipCode]);
+  }, [zipCode, lastCalculatedZip, loading]);
 
   // Função para resetar o estado do cálculo de frete
   const resetShippingCalculation = () => {

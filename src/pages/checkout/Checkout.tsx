@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -81,8 +82,10 @@ const Checkout = () => {
       }
     };
     
-    checkAuthStatus();
-  }, [navigate]);
+    if (!isAuthChecked) {
+      checkAuthStatus();
+    }
+  }, [navigate, isAuthChecked]);
 
   // Verificar carrinho vazio apenas após confirmar que o usuário está autenticado
   useEffect(() => {
