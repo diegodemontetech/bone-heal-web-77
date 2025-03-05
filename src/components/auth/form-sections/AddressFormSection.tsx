@@ -27,6 +27,7 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
           form.setValue('neighborhood', addressData.bairro || '');
           form.setValue('city', addressData.localidade || '');
           form.setValue('state', addressData.uf || '');
+          toast.success("Endereço encontrado com sucesso!");
         }
       } catch (error) {
         console.error('Erro ao buscar endereço:', error);
@@ -39,53 +40,35 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="zipCode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CEP</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input 
-                    placeholder="00000000" 
-                    {...field} 
-                    onBlur={(e) => handleCepBlur(e.target.value.replace(/\D/g, ''))}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      field.onChange(value);
-                    }}
-                    maxLength={8}
-                  />
-                  {addressLoading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input placeholder="Rua, Avenida..." {...field} />
-                  <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="zipCode"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>CEP</FormLabel>
+            <FormControl>
+              <div className="relative">
+                <Input 
+                  placeholder="00000000" 
+                  {...field} 
+                  onBlur={(e) => handleCepBlur(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    field.onChange(value);
+                  }}
+                  maxLength={8}
+                />
+                {addressLoading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
@@ -116,6 +99,28 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
         />
       </div>
 
+      <FormField
+        control={form.control}
+        name="address"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Endereço</FormLabel>
+            <FormControl>
+              <div className="relative">
+                <Input 
+                  placeholder="Rua, Avenida..." 
+                  {...field} 
+                  readOnly 
+                  className="bg-gray-100" 
+                />
+                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -124,7 +129,12 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
             <FormItem>
               <FormLabel>Bairro</FormLabel>
               <FormControl>
-                <Input placeholder="Seu bairro" {...field} />
+                <Input 
+                  placeholder="Seu bairro" 
+                  {...field} 
+                  readOnly 
+                  className="bg-gray-100" 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -137,7 +147,12 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
             <FormItem>
               <FormLabel>Cidade</FormLabel>
               <FormControl>
-                <Input placeholder="Sua cidade" {...field} />
+                <Input 
+                  placeholder="Sua cidade" 
+                  {...field} 
+                  readOnly 
+                  className="bg-gray-100" 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -145,35 +160,34 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="state"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Estado</FormLabel>
-              <Select 
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {brazilianStates.map((state) => (
-                    <SelectItem key={state.value} value={state.value}>
-                      {state.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
+      <FormField
+        control={form.control}
+        name="state"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Estado</FormLabel>
+            <Select 
+              onValueChange={field.onChange}
+              defaultValue={field.value}
+              disabled
+            >
+              <FormControl>
+                <SelectTrigger className="bg-gray-100">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {brazilianStates.map((state) => (
+                  <SelectItem key={state.value} value={state.value}>
+                    {state.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </>
   );
 };

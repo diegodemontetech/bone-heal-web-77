@@ -39,7 +39,7 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
           <Label htmlFor="specialty">Especialidade</Label>
           <Select 
             onValueChange={(value) => handleSelectChange('specialty', value)}
-            value={formData.specialty}
+            value={formData.specialty || ""}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione sua especialidade" />

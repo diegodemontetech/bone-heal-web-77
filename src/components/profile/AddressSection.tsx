@@ -44,6 +44,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             city: addressData.localidade || prev.city,
             state: addressData.uf || prev.state,
           }));
+          toast.success("Endereço encontrado com sucesso!");
         }
       } catch (error) {
         console.error('Erro ao buscar endereço:', error);
@@ -68,24 +69,13 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             }}
             maxLength={8}
             onBlur={(e) => handleCepBlur(e.target.value)}
+            placeholder="Digite apenas números"
           />
           {addressLoading && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
           )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="address">Endereço</Label>
-        <div className="relative">
-          <Input
-            id="address"
-            value={formData.address}
-            onChange={handleChange}
-          />
-          <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
       </div>
 
@@ -96,6 +86,7 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             id="endereco_numero"
             value={formData.endereco_numero}
             onChange={handleChange}
+            placeholder="Número"
           />
         </div>
         <div className="space-y-2">
@@ -104,7 +95,22 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             id="complemento"
             value={formData.complemento}
             onChange={handleChange}
+            placeholder="Apartamento, bloco, etc."
           />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="address">Endereço</Label>
+        <div className="relative">
+          <Input
+            id="address"
+            value={formData.address}
+            onChange={handleChange}
+            readOnly
+            className="bg-gray-100"
+          />
+          <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
       </div>
 
@@ -115,6 +121,8 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             id="neighborhood"
             value={formData.neighborhood}
             onChange={handleChange}
+            readOnly
+            className="bg-gray-100"
           />
         </div>
         <div className="space-y-2">
@@ -123,6 +131,8 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             id="city"
             value={formData.city}
             onChange={handleChange}
+            readOnly
+            className="bg-gray-100"
           />
         </div>
       </div>
@@ -132,8 +142,9 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
         <Select 
           onValueChange={(value) => handleSelectChange('state', value)}
           value={formData.state}
+          disabled
         >
-          <SelectTrigger>
+          <SelectTrigger className="bg-gray-100">
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
