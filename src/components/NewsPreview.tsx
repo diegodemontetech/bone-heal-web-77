@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -8,23 +9,70 @@ import { ptBR } from "date-fns/locale";
 
 const NewsPreview = () => {
   const navigate = useNavigate();
-  const { data: news } = useQuery({
+  const { data: news, isLoading, error } = useQuery({
     queryKey: ["news-preview"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .order("published_at", { ascending: false })
-        .limit(3);
-      
-      if (error) throw error;
-      return data;
+      try {
+        console.log("Fetching news preview...");
+        const { data, error } = await supabase
+          .from("news")
+          .select("*")
+          .order("published_at", { ascending: false })
+          .limit(3);
+        
+        if (error) {
+          console.error("Error fetching news preview:", error);
+          throw error;
+        }
+        
+        return data || [];
+      } catch (err) {
+        console.error("Failed to fetch news preview:", err);
+        return [];
+      }
     },
+    retry: 1,
   });
 
   const handleNewsClick = (slug: string) => {
     navigate(`/news/${slug}`);
   };
+
+  if (isLoading) {
+    return (
+      <section className="py-24 bg-neutral-50">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <p>Carregando notícias...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-24 bg-neutral-50">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <p className="text-red-500">Erro ao carregar notícias. Por favor, tente novamente mais tarde.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!news || news.length === 0) {
+    return (
+      <section className="py-24 bg-neutral-50">
+        <div className="container mx-auto px-8">
+          <div className="text-center">
+            <p>Nenhuma notícia disponível no momento.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-24 bg-neutral-50">
@@ -45,7 +93,7 @@ const NewsPreview = () => {
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {news?.map((item) => (
+          {news.map((item) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 20 }}
@@ -61,6 +109,9 @@ const NewsPreview = () => {
                     src={item.featured_image || "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80"}
                     alt={item.title}
                     className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80";
+                    }}
                   />
                 </div>
                 <div className="p-6">

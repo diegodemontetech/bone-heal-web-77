@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -30,7 +31,6 @@ const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   slug: z.string().min(1, "Slug é obrigatório"),
   omie_code: z.string().min(1, "Código Omie é obrigatório"),
-  stock: z.string().transform(val => parseInt(val || "0")),
   weight: z.string().transform(val => parseFloat(val || "0")),
   short_description: z.string().optional(),
   description: z.string().optional(),
@@ -56,7 +56,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
       name: product?.name || "",
       slug: product?.slug || "",
       omie_code: product?.omie_code || "",
-      stock: product?.stock?.toString() || "0",
       weight: product?.weight?.toString() || "0.5",
       short_description: product?.short_description || "",
       description: product?.description || "",
@@ -87,7 +86,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
         name: values.name,
         slug: values.slug,
         omie_code: values.omie_code,
-        stock: values.stock,
         weight: values.weight,
         short_description: values.short_description,
         description: values.description,
@@ -141,6 +139,9 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
           <DialogTitle>
             {product ? "Editar Produto" : "Novo Produto"}
           </DialogTitle>
+          <DialogDescription>
+            Preencha os dados do produto abaixo
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -185,20 +186,6 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
                   <FormDescription>
                     Código do produto no Omie
                   </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="stock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="number" />
-                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

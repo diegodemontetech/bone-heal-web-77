@@ -1,32 +1,39 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, Eye } from "lucide-react";
+import { CalendarDays, Eye, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const NewsList = () => {
   const navigate = useNavigate();
   
-  const { data: news, isLoading, error } = useQuery({
+  const { data: news, isLoading, error, refetch } = useQuery({
     queryKey: ["news"],
     queryFn: async () => {
-      console.log("Fetching news...");
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .order("published_at", { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching news:", error);
-        throw error;
-      }
+      try {
+        console.log("Fetching news...");
+        const { data, error } = await supabase
+          .from("news")
+          .select("*")
+          .order("published_at", { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching news:", error);
+          throw error;
+        }
 
-      console.log("News data:", data);
-      return data;
+        console.log("News data:", data);
+        return data || [];
+      } catch (err) {
+        console.error("Failed to fetch news:", err);
+        throw err;
+      }
     },
     retry: 1,
     meta: {
@@ -44,12 +51,13 @@ const NewsList = () => {
         <div className="text-red-600 font-semibold mb-4">
           Erro ao carregar notícias
         </div>
-        <button 
-          onClick={() => window.location.reload()}
+        <Button 
+          onClick={() => refetch()}
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
         >
+          <RefreshCw className="w-4 h-4 mr-2" />
           Tentar Novamente
-        </button>
+        </Button>
       </div>
     );
   }

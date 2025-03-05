@@ -23,20 +23,34 @@ const AdminProducts = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
-  const { data: products, refetch, isLoading } = useQuery({
+  const { data: products, refetch, isLoading, error } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
       console.log("Fetching admin products...");
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) throw error;
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching products:", error);
+          throw error;
+        }
 
-      console.log("Admin products fetched:", data);
-      return data;
+        console.log("Admin products fetched successfully:", data);
+        return data || [];
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+        toast({
+          title: "Erro ao carregar produtos",
+          description: "Houve um problema ao buscar os produtos. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return [];
+      }
     },
+    retry: 1,
   });
 
   const handleToggleActive = async (id: string, currentActive: boolean) => {
@@ -63,24 +77,32 @@ const AdminProducts = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", id);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Erro ao excluir produto",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Produto excluído com sucesso",
+      });
+      refetch();
+    } catch (err: any) {
       toast({
         title: "Erro ao excluir produto",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Produto excluído com sucesso",
-    });
-    refetch();
   };
 
   const syncOmieProducts = async () => {
@@ -143,6 +165,7 @@ const AdminProducts = () => {
                 <TableHead>Nome</TableHead>
                 <TableHead>Código Omie</TableHead>
                 <TableHead>Preço</TableHead>
+                <TableHead>Peso (kg)</TableHead>
                 <TableHead>Última Atualização</TableHead>
                 <TableHead>Status Omie</TableHead>
                 <TableHead>Ativo</TableHead>
@@ -152,18 +175,24 @@ const AdminProducts = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
-              ) : products?.length === 0 ? (
+              ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={8} className="text-center py-8 text-red-500">
+                    Erro ao carregar produtos. Por favor, tente novamente.
+                  </TableCell>
+                </TableRow>
+              ) : !products || products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                     Nenhum produto encontrado. Clique em "Novo Produto" para adicionar.
                   </TableCell>
                 </TableRow>
               ) : (
-                products?.map((product) => (
+                products.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>{product.name}</TableCell>
                     <TableCell>{product.omie_code || "Não sincronizado"}</TableCell>
@@ -171,6 +200,11 @@ const AdminProducts = () => {
                       {product.price
                         ? `R$ ${product.price.toFixed(2)}`
                         : "Não definido"}
+                    </TableCell>
+                    <TableCell>
+                      {product.weight 
+                        ? `${product.weight} kg`
+                        : "0.5 kg"}
                     </TableCell>
                     <TableCell>
                       {product.omie_last_update 
