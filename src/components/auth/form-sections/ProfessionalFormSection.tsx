@@ -66,16 +66,30 @@ const ProfessionalFormSection: React.FC<ProfessionalFormSectionProps> = ({ form 
                 placeholder="(00) 00000-0000" 
                 {...field} 
                 onChange={(e) => {
-                  // Implementar máscara de telefone
+                  // Máscara de telefone melhorada
                   let value = e.target.value.replace(/\D/g, '');
                   if (value.length > 11) value = value.slice(0, 11);
                   
-                  if (value.length > 10) {
-                    value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
-                  } else if (value.length > 6) {
-                    value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
-                  } else if (value.length > 2) {
-                    value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                  // Aplicar máscara para celular (11 dígitos) ou telefone fixo (10 dígitos)
+                  if (value.length > 2) {
+                    if (value.length > 7) {
+                      // Para números com formato (XX) XXXXX-XXXX (celular)
+                      if (value.length >= 11) {
+                        value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
+                      } 
+                      // Para números com formato (XX) XXXX-XXXX (fixo)
+                      else if (value.length >= 10) {
+                        value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6, 10)}`;
+                      }
+                      // Para números incompletos
+                      else if (value.length > 6) {
+                        value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
+                      } else {
+                        value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                      }
+                    } else {
+                      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                    }
                   }
                   
                   field.onChange(value);

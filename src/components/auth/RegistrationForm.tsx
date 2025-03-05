@@ -21,8 +21,9 @@ import AddressFormSection from "./form-sections/AddressFormSection";
 import DocumentsFormSection from "./form-sections/DocumentsFormSection";
 import NewsletterFormSection from "./form-sections/NewsletterFormSection";
 
+// Alterando a regex do telefone para aceitar o formato brasileiro
 const phoneRegex = new RegExp(
-  /^([+]?[\s0-9]+)?(\d{3}|[\s(-]?[0-9]{3})?([(-]?[\s]?[0-9]{3})?([(-]?[\s]?[0-9]{2,4})+$/
+  /^(\([0-9]{2}\)\s?[0-9]{4,5}-[0-9]{4})$/
 );
 
 export const DentistSignUpSchema = z.object({
@@ -61,7 +62,7 @@ export const DentistSignUpSchema = z.object({
     message: "CEP deve ter 8 caracteres.",
   }),
   phone: z.string().regex(phoneRegex, {
-    message: "Número de telefone inválido.",
+    message: "Formato de telefone inválido. Use (XX) XXXXX-XXXX.",
   }),
   cnpj: z.string().optional(),
   cpf: z.string().optional(),
