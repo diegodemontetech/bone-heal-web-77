@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -13,6 +13,7 @@ export const useShipping = () => {
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [calculationCompleted, setCalculationCompleted] = useState(false);
   const [lastCalculatedZip, setLastCalculatedZip] = useState("");
+  const calculationInProgress = useRef(false);
   const session = useSession();
   const { toast } = useToast();
 
@@ -48,7 +49,7 @@ export const useShipping = () => {
     }
     
     // Evita cálculos repetidos
-    if (loading) {
+    if (loading || calculationInProgress.current) {
       console.log("Já está calculando frete, ignorando chamada");
       return;
     }
@@ -60,6 +61,7 @@ export const useShipping = () => {
     }
     
     setLoading(true);
+    calculationInProgress.current = true;
     console.log(`Iniciando cálculo de frete para CEP: ${zipCodeInput}`);
     
     try {
@@ -113,6 +115,7 @@ export const useShipping = () => {
       setCalculationCompleted(false);
     } finally {
       setLoading(false);
+      calculationInProgress.current = false;
     }
   };
 
@@ -128,21 +131,20 @@ export const useShipping = () => {
       
       if (userZipCode) {
         setZipCode(userZipCode);
-        // Não chamamos calculateShipping aqui para evitar loops - vamos deixar o segundo useEffect fazer isso
       }
     };
 
     loadUserShipping();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, hasAttemptedFetch]);
 
   // Efeito para calcular o frete quando o CEP mudar
   useEffect(() => {
     // Só calcular se tiver zipCode válido e ele diferir do último calculado
-    if (zipCode && zipCode.length === 8 && zipCode !== lastCalculatedZip && !loading) {
+    if (zipCode && zipCode.length === 8 && zipCode !== lastCalculatedZip && !loading && !calculationInProgress.current) {
       console.log(`Alteração de CEP detectada, calculando para: ${zipCode}`);
       calculateShipping(zipCode);
     }
-  }, [zipCode, lastCalculatedZip, loading]);
+  }, [zipCode]);
 
   // Função para resetar o estado do cálculo de frete
   const resetShippingCalculation = () => {

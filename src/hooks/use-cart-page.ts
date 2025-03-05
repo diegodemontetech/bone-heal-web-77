@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
@@ -17,6 +17,7 @@ export function useCartPage() {
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
   const [shippingCalculated, setShippingCalculated] = useState(false);
   const [lastCalculatedZip, setLastCalculatedZip] = useState<string>("");
+  const calculationInProgress = useRef(false);
 
   // Verifica o status da sessão ao carregar o componente
   useEffect(() => {
@@ -59,7 +60,7 @@ export function useCartPage() {
     }
 
     // Evita recálculos desnecessários
-    if (isCalculatingShipping) {
+    if (isCalculatingShipping || calculationInProgress.current) {
       return;
     }
     
@@ -69,6 +70,7 @@ export function useCartPage() {
     }
 
     setIsCalculatingShipping(true);
+    calculationInProgress.current = true;
     setShippingError(null);
     
     try {
@@ -108,6 +110,7 @@ export function useCartPage() {
       setShippingCalculated(false);
     } finally {
       setIsCalculatingShipping(false);
+      calculationInProgress.current = false;
     }
   };
 

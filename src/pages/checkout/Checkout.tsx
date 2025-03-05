@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +16,7 @@ import WhatsAppWidget from "@/components/WhatsAppWidget";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
@@ -23,6 +24,8 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [hasValidSession, setHasValidSession] = useState(false);
+  const authCheckRef = useRef(false);
   
   const {
     shippingRates,
@@ -55,27 +58,41 @@ const Checkout = () => {
 
   // Verificar a sessão apenas uma vez no carregamento
   useEffect(() => {
-    if (isAuthChecked) return; // Evitar verificações repetidas
-    
-    setIsAuthChecked(true);
-    
-    if (!session) {
-      toast.error("Você precisa estar logado para finalizar a compra");
-      navigate("/login", { state: { from: "/checkout" } });
-      return;
-    }
-    
-    // Só inicializamos a página se o usuário estiver logado
-    setIsInitialized(true);
-  }, [session, navigate, isAuthChecked]);
+    const checkAuthStatus = async () => {
+      if (authCheckRef.current) return;
+      authCheckRef.current = true;
 
-  // Verificar carrinho vazio apenas uma vez após inicialização
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        console.log("Verificando sessão na página de checkout:", data);
+        
+        if (!error && data.session) {
+          setHasValidSession(true);
+          setSession(data.session);
+          setIsAuthChecked(true);
+          setIsInitialized(true);
+        } else {
+          console.log("Nenhuma sessão válida encontrada no checkout");
+          setIsAuthChecked(true);
+          toast.error("Você precisa estar logado para finalizar a compra");
+          navigate("/login", { state: { from: "/checkout" } });
+        }
+      } catch (err) {
+        console.error("Erro ao verificar autenticação:", err);
+        setIsAuthChecked(true);
+      }
+    };
+    
+    checkAuthStatus();
+  }, [navigate]);
+
+  // Verificar carrinho vazio apenas após confirmar que o usuário está autenticado
   useEffect(() => {
-    if (isInitialized && cartItems.length === 0) {
+    if (isInitialized && hasValidSession && cartItems.length === 0) {
       console.log("Carrinho vazio, redirecionando para /cart");
       navigate("/cart");
     }
-  }, [isInitialized, cartItems.length, navigate]);
+  }, [isInitialized, hasValidSession, cartItems.length, navigate]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
@@ -99,8 +116,20 @@ const Checkout = () => {
   };
 
   // Mostra um loading simples enquanto inicializa
-  if (!isInitialized) {
-    return null;
+  if (!isInitialized || !isAuthChecked) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="container mx-auto p-4 flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <ShoppingBag className="w-12 h-12 mx-auto text-primary animate-pulse mb-4" />
+            <p className="text-gray-500">Carregando checkout...</p>
+          </div>
+        </div>
+        <Footer />
+        <WhatsAppWidget />
+      </div>
+    );
   }
 
   // Se temos URL de pagamento, realizar redirect

@@ -25,6 +25,7 @@ const Login = () => {
   const [loginLoading, setLoginLoading] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [currentSession, setCurrentSession] = useState<any>(null);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   const from = location.state?.from?.pathname || location.state?.from || "/profile";
 
@@ -51,6 +52,9 @@ const Login = () => {
 
   // Verificar se o usuário está autenticado e redirecionar apropriadamente
   useEffect(() => {
+    // Evitar múltiplas tentativas de redirecionamento
+    if (redirectAttempted) return;
+
     // Esperar até que tanto o profile quanto a sessão tenham sido verificados
     if (isLoading || sessionLoading) return;
     
@@ -59,6 +63,7 @@ const Login = () => {
     
     if (isAuthenticated) {
       console.log("Usuário autenticado:", profile || currentSession?.user, "isAdmin:", isAdmin);
+      setRedirectAttempted(true);
       
       // Verificar o tipo de usuário e redirecionar
       if (isAdmin) {
@@ -70,7 +75,7 @@ const Login = () => {
         navigate(from);
       }
     }
-  }, [isLoading, profile, isAdmin, navigate, from, sessionLoading, currentSession]);
+  }, [isLoading, profile, isAdmin, navigate, from, sessionLoading, currentSession, redirectAttempted]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
