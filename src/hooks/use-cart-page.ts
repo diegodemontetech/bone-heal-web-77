@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,13 @@ export function useCartPage() {
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
   const [shippingCost, setShippingCost] = useState<number | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Limpar erro de frete quando o CEP muda
+    if (zipCode.length > 0) {
+      setShippingError(null);
+    }
+  }, [zipCode]);
 
   const calculateShipping = async () => {
     if (!zipCode || zipCode.length !== 8) {
@@ -30,6 +37,7 @@ export function useCartPage() {
       const { data, error } = await supabase.functions.invoke("correios-shipping", {
         body: {
           zipCode: zipCode,
+          zipCodeDestination: zipCode, // Adicionando como fallback
         },
       });
 
@@ -63,9 +71,9 @@ export function useCartPage() {
   };
 
   const handleCheckout = (cartItems: CartItem[], subtotal: number, total: number) => {
-    if (!session) {
-      toast.error("Por favor, faça login para continuar");
-      navigate("/login");
+    // Verificar se há itens no carrinho
+    if (cartItems.length === 0) {
+      toast.error("Seu carrinho está vazio");
       return;
     }
 
@@ -74,13 +82,14 @@ export function useCartPage() {
       return;
     }
 
-    // Verificar se há itens no carrinho
-    if (cartItems.length === 0) {
-      toast.error("Seu carrinho está vazio");
+    // Verificar sessão - usar session?.user?.id para verificar login em vez de session
+    if (!session?.user?.id) {
+      toast.error("Por favor, faça login para continuar");
+      navigate("/login");
       return;
     }
 
-    console.log("Indo para checkout com itens:", cartItems);
+    console.log("Indo para checkout com itens:", cartItems, "usuário:", session.user);
     navigate("/checkout");
   };
 

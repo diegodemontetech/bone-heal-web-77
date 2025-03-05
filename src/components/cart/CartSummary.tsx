@@ -110,17 +110,21 @@ export const CartSummary = ({
           className="w-full"
           size="lg"
           onClick={() => handleCheckout(cartItems, subtotal, total)}
-          disabled={!session || !shippingCost}
+          disabled={!shippingCost || (!session?.user?.id)}
         >
           Finalizar Compra
         </Button>
 
-        {!session && (
+        {!session?.user?.id ? (
           <p className="text-sm text-red-500 text-center">
             Faça login para continuar com a compra
           </p>
-        )}
+        ) : (!shippingCost && (
+          <p className="text-sm text-amber-600 text-center">
+            Calcule o frete antes de continuar
+          </p>
+        ))}
       </div>
     </div>
   );
-};
+}

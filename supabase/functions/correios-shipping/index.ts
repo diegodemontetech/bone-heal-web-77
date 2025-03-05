@@ -16,6 +16,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    // Aceitamos tanto zipCode quanto zipCodeDestination para compatibilidade
     const zipCode = body.zipCode || body.zipCodeDestination;
 
     if (!zipCode) {
