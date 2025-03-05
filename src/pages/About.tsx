@@ -1,22 +1,26 @@
-import { motion } from "framer-motion";
+
+import React from "react";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import AboutHero from "@/components/AboutHero";
-import Timeline from "@/components/Timeline";
-import MissionVision from "@/components/MissionVision";
+import Footer from "@/components/Footer";
+import MissionValues from "@/components/MissionValues";
 import Team from "@/components/Team";
-import Recognition from "@/components/Recognition";
+import Timeline from "@/components/Timeline";
+import { Helmet } from "react-helmet-async";
 
 const About = () => {
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>Nossa História | BoneHeal</title>
+        <meta name="description" content="Conheça a história e missão da BoneHeal" />
+      </Helmet>
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-1">
         <AboutHero />
-        <MissionVision />
-        <Timeline />
+        <MissionValues />
         <Team />
-        <Recognition />
+        <Timeline />
       </main>
       <Footer />
     </div>

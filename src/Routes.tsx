@@ -12,6 +12,10 @@ import TicketDetails from "./pages/support/TicketDetails";
 import AdminTickets from "./pages/admin/Tickets";
 import Index from "./pages/Index";
 import { default as Checkout } from "./pages/checkout/Checkout";
+import ContactPage from "./pages/Contact";
+import AboutPage from "./pages/About";
+import NewsPage from "./pages/News";
+import StudiesPage from "./pages/Studies";
 
 // Criamos um componente placeholder para o AdminDashboard
 import React from "react";
@@ -76,6 +80,22 @@ export const routes = [
   {
     path: "/admin/tickets",
     element: <AdminTickets />,
+  },
+  {
+    path: "/contact",
+    element: <ContactPage />,
+  },
+  {
+    path: "/about",
+    element: <AboutPage />,
+  },
+  {
+    path: "/news",
+    element: <NewsPage />,
+  },
+  {
+    path: "/studies",
+    element: <StudiesPage />,
   },
 ];
 
