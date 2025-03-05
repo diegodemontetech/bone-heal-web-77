@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Routes } from './Routes';
+import Routes from './Routes';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

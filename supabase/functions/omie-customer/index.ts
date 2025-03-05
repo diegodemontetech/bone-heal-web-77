@@ -7,156 +7,143 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY')
-const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET')
-
-interface OmieCustomerRequest {
-  profile_id: string
-}
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Validar chaves Omie
-    if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
-      throw new Error('Chaves da API Omie não configuradas')
-    }
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    // Get the profile ID from the request
-    const { profile_id }: OmieCustomerRequest = await req.json()
+    const { user_id, profile } = await req.json()
     
-    // Validar ID do perfil
-    if (!profile_id) {
-      throw new Error('ID do perfil não fornecido')
+    if (!user_id && !profile) {
+      throw new Error('ID do usuário ou perfil não fornecido')
     }
 
-    console.log('Iniciando sincronização de cliente Omie para perfil:', profile_id)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const omieAppKey = Deno.env.get('OMIE_APP_KEY')
+    const omieAppSecret = Deno.env.get('OMIE_APP_SECRET')
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Variáveis de ambiente do Supabase não configuradas')
+    }
+
+    if (!omieAppKey || !omieAppSecret) {
+      throw new Error('Variáveis de ambiente do OMIE não configuradas')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Se apenas o user_id foi fornecido, buscar o perfil
+    let customerProfile = profile
+    if (!profile && user_id) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user_id)
+        .single()
+
+      if (error) throw error
+      if (!data) throw new Error('Perfil não encontrado')
+      
+      customerProfile = data
+    }
+
+    // Verificar se já existe código OMIE
+    if (customerProfile.omie_code) {
+      console.log(`Cliente já possui código OMIE: ${customerProfile.omie_code}`)
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Cliente já sincronizado', 
+          omie_code: customerProfile.omie_code 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Preparar dados para envio ao OMIE
+    const cpfCnpj = customerProfile.pessoa_fisica ? customerProfile.cpf : customerProfile.cnpj
     
-    // Fetch the profile data
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', profile_id)
-      .single()
-
-    if (profileError || !profile) {
-      console.error('Erro ao buscar perfil:', profileError)
-      throw new Error('Perfil não encontrado')
+    if (!cpfCnpj) {
+      throw new Error('CPF/CNPJ não informado')
     }
 
-    console.log('Perfil encontrado:', JSON.stringify(profile, null, 2))
+    const telefone1_ddd = customerProfile.phone?.substring(0, 2) || ""
+    const telefone1_numero = customerProfile.phone?.substring(2) || ""
 
-    // Prepare Omie customer data
-    const customerData = {
-      call: "IncluirCliente",
-      app_key: OMIE_APP_KEY,
-      app_secret: OMIE_APP_SECRET,
+    const omieCustomer = {
+      call: "UpsertClient",
+      app_key: omieAppKey,
+      app_secret: omieAppSecret,
       param: [{
-        codigo_cliente_integracao: profile.id,
-        razao_social: profile.pessoa_fisica ? profile.full_name : profile.razao_social,
-        cnpj_cpf: profile.pessoa_fisica ? profile.cpf : profile.cnpj,
-        nome_fantasia: profile.pessoa_fisica ? profile.full_name : (profile.nome_fantasia || profile.razao_social),
-        telefone1_numero: profile.phone?.replace(/\D/g, '') || "",
-        email: profile.email,
-        endereco: profile.address || "",
-        endereco_numero: profile.endereco_numero || "S/N",
-        complemento: profile.complemento || "",
-        bairro: profile.neighborhood || "",
-        estado: profile.state,
-        cidade: profile.city,
-        cep: profile.zip_code?.replace(/\D/g, '') || "",
-        contribuinte: profile.contribuinte || "2",
-        pessoa_fisica: profile.pessoa_fisica ? "S" : "N",
-        optante_simples_nacional: profile.optante_simples_nacional ? "S" : "N",
-        inativo: profile.inativo ? "S" : "N",
-        bloqueado: profile.bloqueado ? "S" : "N",
-        exterior: profile.exterior ? "S" : "N",
-        tipo_atividade: profile.tipo_atividade || "0",
+        codigo_cliente_integracao: customerProfile.id,
+        email: customerProfile.email,
+        razao_social: customerProfile.full_name,
+        nome_fantasia: customerProfile.nome_fantasia || customerProfile.full_name,
+        cnpj_cpf: cpfCnpj,
+        telefone1_ddd: telefone1_ddd,
+        telefone1_numero: telefone1_numero,
+        endereco: customerProfile.address,
+        endereco_numero: customerProfile.endereco_numero || "S/N",
+        complemento: customerProfile.complemento || "",
+        bairro: customerProfile.neighborhood,
+        estado: customerProfile.state,
+        cidade: customerProfile.city,
+        cep: customerProfile.zip_code,
+        pessoa_fisica: customerProfile.pessoa_fisica ? "S" : "N",
+        contribuinte: customerProfile.contribuinte || "2",
+        optante_simples_nacional: customerProfile.optante_simples_nacional ? "S" : "N",
+        inativo: customerProfile.inativo ? "S" : "N",
+        tipo_atividade: customerProfile.tipo_atividade || "0",
+        exterior: customerProfile.exterior ? "S" : "N",
+        bloqueado: customerProfile.bloqueado ? "S" : "N"
       }]
     }
 
-    console.log('Dados para Omie:', JSON.stringify(customerData, null, 2))
+    console.log('Enviando cliente para o OMIE:', JSON.stringify(omieCustomer, null, 2))
 
-    // Send request to Omie API
+    // Enviar para OMIE
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(customerData)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(omieCustomer)
     })
 
-    if (!omieResponse.ok) {
-      const errorText = await omieResponse.text()
-      console.error('Resposta de erro Omie:', errorText)
-      throw new Error(`Falha na requisição Omie: ${omieResponse.status} ${errorText}`)
-    }
-
     const omieResult = await omieResponse.json()
+    console.log('Resposta do OMIE:', omieResult)
 
-    // Log the result
-    console.log('Resposta Omie API:', JSON.stringify(omieResult, null, 2))
-
-    // Verificar por erros específicos do Omie
     if (omieResult.faultstring) {
-      throw new Error(`Erro Omie: ${omieResult.faultstring}`)
+      throw new Error(`Erro do OMIE: ${omieResult.faultstring}`)
     }
 
-    // Update the profile with Omie code
-    if (omieResult.codigo_cliente_omie) {
-      const { error: updateError } = await supabaseClient
-        .from('profiles')
-        .update({ 
-          omie_code: omieResult.codigo_cliente_omie.toString(),
-          omie_sync: true 
-        })
-        .eq('id', profile_id)
+    // Atualizar usuário com o código do OMIE
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ 
+        omie_code: omieResult.codigo_cliente_omie,
+        omie_sync: true 
+      })
+      .eq('id', customerProfile.id)
 
-      if (updateError) {
-        console.error('Erro ao atualizar perfil:', updateError)
-        throw new Error(`Cliente criado no Omie mas erro ao atualizar perfil: ${updateError.message}`)
-      }
-
-      console.log('Perfil atualizado com código Omie:', omieResult.codigo_cliente_omie)
-    }
+    if (updateError) throw updateError
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        omie_code: omieResult.codigo_cliente_omie,
-        message: 'Cliente criado com sucesso no Omie'
+        omie_code: omieResult.codigo_cliente_omie 
       }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        },
-        status: 200
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     console.error('Erro:', error)
+    
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
-      }),
+      JSON.stringify({ error: error.message || 'Erro desconhecido' }),
       { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        },
-        status: 400
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }

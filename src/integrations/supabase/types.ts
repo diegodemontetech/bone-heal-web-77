@@ -645,6 +645,7 @@ export type Database = {
           phone: string | null
           razao_social: string | null
           receive_news: boolean | null
+          role: string | null
           specialty: string | null
           state: string | null
           telefone1_ddd: string | null
@@ -683,6 +684,7 @@ export type Database = {
           phone?: string | null
           razao_social?: string | null
           receive_news?: boolean | null
+          role?: string | null
           specialty?: string | null
           state?: string | null
           telefone1_ddd?: string | null
@@ -721,6 +723,7 @@ export type Database = {
           phone?: string | null
           razao_social?: string | null
           receive_news?: boolean | null
+          role?: string | null
           specialty?: string | null
           state?: string | null
           telefone1_ddd?: string | null
@@ -851,6 +854,27 @@ export type Database = {
           last_processed_code?: number | null
           stats?: Json | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: string
+          user_id?: string | null
         }
         Relationships: []
       }
