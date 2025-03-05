@@ -1,194 +1,202 @@
 
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Star, StarOff } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
-import { Product } from "@/types/product";
-import { useToast } from "@/components/ui/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { StarIcon } from "lucide-react";
 
 interface ProductReviewsProps {
-  product: Product;
+  productId: string;
 }
 
-interface Review {
-  id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  user_id: string;
-  profiles: {
-    full_name: string;
-  } | null;
-}
-
-const ProductReviews = ({ product }: ProductReviewsProps) => {
+const ProductReviews = ({ productId }: ProductReviewsProps) => {
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userReview, setUserReview] = useState("");
+  const [userRating, setUserRating] = useState(5);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const session = useSession();
   const { toast } = useToast();
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: reviews, refetch } = useQuery({
-    queryKey: ["reviews", product.id],
-    queryFn: async () => {
+  useEffect(() => {
+    fetchReviews();
+  }, [productId]);
+
+  const fetchReviews = async () => {
+    setLoading(true);
+    try {
+      // Corrigindo a consulta para buscar avaliações sem tentar fazer join na tabela profiles
       const { data, error } = await supabase
-        .from("product_reviews")
-        .select(`
-          *,
-          profiles:profiles(full_name)
-        `)
-        .eq("product_id", product.id)
-        .order("created_at", { ascending: false });
+        .from('product_reviews')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Review[];
-    },
-  });
+      
+      // Depois de obter as avaliações, buscar os nomes dos usuários separadamente
+      const reviewsWithUserNames = await Promise.all(
+        data.map(async (review) => {
+          const { data: userData } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', review.user_id)
+            .single();
+          
+          return {
+            ...review,
+            user_name: userData?.full_name || 'Usuário'
+          };
+        })
+      );
+      
+      setReviews(reviewsWithUserNames);
+    } catch (error) {
+      console.error("Erro ao buscar avaliações:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleSubmitReview = async () => {
+  const submitReview = async () => {
     if (!session) {
       toast({
         title: "Login necessário",
-        description: "Faça login para avaliar o produto",
-        variant: "destructive",
+        description: "Você precisa estar logado para enviar uma avaliação",
+        variant: "destructive"
       });
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase.from("product_reviews").insert({
-        product_id: product.id,
-        user_id: session.user.id,
-        rating,
-        comment,
+    if (!userReview.trim()) {
+      toast({
+        title: "Avaliação vazia",
+        description: "Por favor, escreva sua avaliação",
+        variant: "destructive"
       });
+      return;
+    }
+
+    setSubmitLoading(true);
+    try {
+      const { error } = await supabase
+        .from('product_reviews')
+        .insert({
+          product_id: productId,
+          user_id: session.user.id,
+          rating: userRating,
+          comment: userReview
+        });
 
       if (error) throw error;
 
       toast({
         title: "Avaliação enviada",
-        description: "Obrigado por avaliar este produto!",
+        description: "Obrigado pela sua avaliação!"
       });
 
-      setComment("");
-      setRating(5);
-      refetch();
-    } catch (error: any) {
+      setUserReview("");
+      setUserRating(5);
+      fetchReviews();
+    } catch (error) {
+      console.error("Erro ao enviar avaliação:", error);
       toast({
-        title: "Erro ao enviar avaliação",
-        description: error.message,
-        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível enviar sua avaliação",
+        variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
+      setSubmitLoading(false);
     }
   };
 
-  const renderStars = (rating: number) => {
+  const StarRating = ({ rating, setRating }: { rating: number, setRating?: (value: number) => void }) => {
     return (
-      <div className="flex items-center gap-0.5">
-        {[...Array(5)].map((_, index) => (
-          index < rating ? (
-            <Star key={index} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-          ) : (
-            <StarOff key={index} className="w-4 h-4 text-gray-300" />
-          )
+      <div className="flex items-center">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button 
+            key={star}
+            type="button"
+            onClick={() => setRating && setRating(star)}
+            className={`${setRating ? 'cursor-pointer' : 'cursor-default'}`}
+            disabled={!setRating}
+          >
+            <StarIcon 
+              className={`h-5 w-5 ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} 
+            />
+          </button>
         ))}
       </div>
     );
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold">Avaliações</h3>
+      
+      {/* Form para adicionar avaliação */}
       {session && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Avaliar Produto</CardTitle>
-            <CardDescription>Compartilhe sua experiência com este produto</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Sua avaliação:</span>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <button
-                      key={value}
-                      onClick={() => setRating(value)}
-                      className="focus:outline-none"
-                    >
-                      {value <= rating ? (
-                        <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-                      ) : (
-                        <StarOff className="w-6 h-6 text-gray-300" />
-                      )}
-                    </button>
-                  ))}
+        <div className="border rounded-lg p-4 bg-gray-50 space-y-3">
+          <h4 className="text-md font-medium">Adicionar Avaliação</h4>
+          <div className="flex items-center mb-2">
+            <span className="mr-2">Sua avaliação:</span>
+            <StarRating rating={userRating} setRating={setUserRating} />
+          </div>
+          <Textarea 
+            placeholder="Escreva sua avaliação aqui..."
+            value={userReview}
+            onChange={(e) => setUserReview(e.target.value)}
+            className="bg-white"
+          />
+          <Button 
+            onClick={submitReview}
+            disabled={submitLoading}
+            className="bg-primary hover:bg-primary/90 text-white"
+          >
+            {submitLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : "Enviar Avaliação"}
+          </Button>
+        </div>
+      )}
+      
+      {/* Lista de avaliações */}
+      <div className="space-y-4">
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : reviews.length > 0 ? (
+          reviews.map((review) => (
+            <div key={review.id} className="border rounded-lg p-4">
+              <div className="flex items-start gap-3 mb-2">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback>{review.user_name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{review.user_name}</span>
+                    <span className="text-sm text-gray-500">
+                      {new Date(review.created_at).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <StarRating rating={review.rating} />
+                  <p className="mt-2 text-gray-700">{review.comment}</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Compartilhe sua opinião sobre o produto..."
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={4}
-                />
-              </div>
-              <Button 
-                onClick={handleSubmitReview} 
-                disabled={isSubmitting || !comment.trim()}
-              >
-                Enviar Avaliação
-              </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Avaliações dos Clientes ({reviews?.length || 0})
-        </h3>
-        {reviews?.length === 0 ? (
-          <p className="text-muted-foreground">
-            Este produto ainda não possui avaliações.
-          </p>
+          ))
         ) : (
-          <div className="space-y-4">
-            {reviews?.map((review) => (
-              <Card key={review.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-base">
-                        {review.profiles?.full_name || "Usuário"}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {renderStars(review.rating)}
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{review.comment}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <p className="text-center py-6 text-gray-500">
+            Sem avaliações ainda. Seja o primeiro a avaliar este produto!
+          </p>
         )}
       </div>
     </div>

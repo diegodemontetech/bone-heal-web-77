@@ -1,131 +1,34 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Menu, Book, Mail, Newspaper, Info, User } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth-context";
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import NavItems from "./NavItems";
 
-interface MobileMenuProps {
-  session: any;
-}
-
-export const MobileMenu = ({ session }: MobileMenuProps) => {
-  const navigate = useNavigate();
+const MobileMenu = () => {
   const [open, setOpen] = useState(false);
-  const { isAdmin, profile } = useAuth();
-  
-  // Determina se o usuário está realmente autenticado verificando se há um usuário ativo na sessão fornecida
-  // Ou se há um perfil de usuário no contexto de autenticação
-  const isAuthenticated = !!session?.user?.id || !!profile?.id;
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast.success("Logout realizado com sucesso");
-      navigate("/");
-      setOpen(false);
-    } catch (error: any) {
-      toast.error("Erro ao sair: " + error.message);
-    }
-  };
-
-  const handleAreaClick = () => {
-    if (isAdmin) {
-      navigate("/admin/dashboard");
-    } else {
-      navigate("/profile");
-    }
-    setOpen(false);
-  };
-
-  const handleLoginClick = () => {
-    navigate("/login");
-    setOpen(false);
-  };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger className="md:hidden">
-        <Button variant="outline" size="icon">
-          <Menu />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="sm:max-w-sm">
-        <SheetHeader>
-          <SheetTitle>Menu</SheetTitle>
-          <SheetDescription>
-            Navegue pelo site da BoneHeal
-          </SheetDescription>
-        </SheetHeader>
-        <div className="grid gap-4 py-4">
-          <Link to="/products" onClick={() => setOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Book className="w-4 h-4" />
-              Produtos
-            </Button>
-          </Link>
-          <Link to="/contact" onClick={() => setOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Mail className="w-4 h-4" />
-              Contato
-            </Button>
-          </Link>
-          <Link to="/about" onClick={() => setOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Info className="w-4 h-4" />
-              Sobre
-            </Button>
-          </Link>
-          <Link to="/news" onClick={() => setOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Newspaper className="w-4 h-4" />
-              Notícias
-            </Button>
-          </Link>
-          <Link to="/studies" onClick={() => setOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Book className="w-4 h-4" />
-              Artigos Científicos
-            </Button>
-          </Link>
-          {isAuthenticated ? (
-            <>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start gap-2" 
-                onClick={handleAreaClick}
-              >
-                <User className="w-4 h-4" />
-                {isAdmin ? "Painel Admin" : "Meu Perfil"}
-              </Button>
-              <Button 
-                variant="destructive" 
-                className="w-full" 
-                onClick={handleSignOut}
-              >
-                Sair
-              </Button>
-            </>
-          ) : (
-            <Button 
-              className="w-full" 
-              onClick={handleLoginClick}
-            >
-              Área do Dentista
-            </Button>
-          )}
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <div>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-6 w-6" />
+            <span className="sr-only">Abrir menu</span>
+          </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm border-none">
+        <div className="flex flex-col space-y-3 text-center sm:text-left">
+          <NavItems mobile />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
+
+export default MobileMenu;
