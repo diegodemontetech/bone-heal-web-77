@@ -1,10 +1,10 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Helmet } from "react-helmet";
-import { NewsHero } from "@/components/NewsHero";
-import { NewsCategories } from "@/components/NewsCategories";
-import { NewsList } from "@/components/NewsList";
+import { Helmet } from "react-helmet-async";
+import NewsHero from "@/components/NewsHero";
+import NewsCategories from "@/components/NewsCategories";
+import NewsList from "@/components/NewsList";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
