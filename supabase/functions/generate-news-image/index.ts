@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2'
 
@@ -33,7 +34,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error generating image:', error)
     return new Response(
-      JSON.stringify({ error: 'Error generating image', details: error.message }),
+      JSON.stringify({ error: error.message || 'Erro desconhecido na geração de imagem' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
   }

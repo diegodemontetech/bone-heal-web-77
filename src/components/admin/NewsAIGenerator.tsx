@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { toast } from "sonner";
 export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => void }) => {
   const [url, setUrl] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const generateNews = async () => {
     if (!url) {
@@ -24,18 +24,33 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
           body: { url }
         });
 
-      if (generationError) throw generationError;
+      if (generationError) {
+        console.error('Erro ao gerar conteúdo:', generationError);
+        throw new Error(`Erro ao gerar conteúdo: ${generationError.message}`);
+      }
+
+      if (!generatedContent || !generatedContent.title) {
+        throw new Error('Conteúdo gerado inválido ou vazio');
+      }
+
+      console.log('Conteúdo gerado:', generatedContent);
 
       // Generate an image based on the title
       const { data: imageData, error: imageError } = await supabase.functions
         .invoke('generate-news-image', {
-          body: { prompt: `News article image about: ${generatedContent.title}` }
+          body: { prompt: `Imagem para notícia sobre: ${generatedContent.title}` }
         });
 
       if (imageError) {
-        console.error('Error generating image:', imageError);
+        console.error('Erro ao gerar imagem:', imageError);
         toast.error("Erro ao gerar imagem, mas continuando com o texto");
       }
+
+      // Criar o slug baseado no título
+      const slug = generatedContent.title.toLowerCase()
+        .replace(/[^\w\sàáâãéêíóôõúüçÀÁÂÃÉÊÍÓÔÕÚÜÇ-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
 
       // Create the news entry
       const { error: insertError } = await supabase
@@ -43,9 +58,7 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
         .insert([
           {
             title: generatedContent.title,
-            slug: generatedContent.title.toLowerCase()
-              .replace(/[^\w\s-]/g, '')
-              .replace(/\s+/g, '-'),
+            slug: slug,
             summary: generatedContent.summary,
             content: generatedContent.content,
             tags: generatedContent.tags,
@@ -54,37 +67,19 @@ export const NewsAIGenerator = ({ onNewsGenerated }: { onNewsGenerated: () => vo
           }
         ]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Erro ao inserir notícia:', insertError);
+        throw insertError;
+      }
 
       toast.success("Notícia gerada e publicada com sucesso!");
       setUrl("");
       onNewsGenerated();
     } catch (error: any) {
-      console.error('Error generating news:', error);
+      console.error('Erro completo ao gerar notícia:', error);
       toast.error("Erro ao gerar notícia: " + error.message);
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const generateImageForExisting = async (title: string) => {
-    setIsGeneratingImage(true);
-    try {
-      const { data: imageData, error: imageError } = await supabase.functions
-        .invoke('generate-news-image', {
-          body: { prompt: `News article image about: ${title}` }
-        });
-
-      if (imageError) throw imageError;
-
-      toast.success("Imagem gerada com sucesso!");
-      return imageData.image;
-    } catch (error: any) {
-      console.error('Error generating image:', error);
-      toast.error("Erro ao gerar imagem: " + error.message);
-      return null;
-    } finally {
-      setIsGeneratingImage(false);
     }
   };
 

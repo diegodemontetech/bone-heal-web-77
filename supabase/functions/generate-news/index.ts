@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
@@ -30,16 +31,15 @@ serve(async (req) => {
     const htmlContent = await response.text();
     console.log('Raw HTML content length:', htmlContent.length);
 
-    // Aggressive cleaning of the HTML content
+    // Aggressive cleaning of the HTML content to avoid injection issues
     const cleanContent = htmlContent
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ') // Remove script tags
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')   // Remove style tags
       .replace(/<[^>]*>/g, ' ') // Remove HTML tags
       .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
-      .replace(/[^\x20-\x7E\xA0-\xFF]/g, '') // Only keep printable characters
       .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/['"]/g, '') // Remove quotes
-      .replace(/[\\]/g, '') // Remove backslashes
       .trim()
-      .substring(0, 5000); // Limit input size
+      .substring(0, 5000); // Limit input size to avoid token limits
 
     console.log('Cleaned content length:', cleanContent.length);
     console.log('Processing content with Gemini');
@@ -48,28 +48,28 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY') || '');
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    // Generate content using Gemini with a more structured prompt
+    // Generate content using Gemini with a structured prompt
     const prompt = `
-      You are a professional content writer. I want you to read the following article and create a new version of it:
+      Você é um redator profissional. Leia o artigo a seguir e crie uma nova versão dele:
       
-      Important Guidelines:
-      1. The content should be between 800 and 1,500 words
-      2. Make it detailed enough to cover the topic thoroughly but not excessively long
-      3. Paraphrase the content to make it unique while maintaining the key information
-      4. Create a concise title that captures the main point
-      5. Write a brief summary (2-3 sentences)
-      6. Generate relevant tags (comma-separated)
-      7. VERY IMPORTANT: If the content is in any language other than Portuguese (PT-BR), translate everything to Portuguese (PT-BR)
+      Diretrizes importantes:
+      1. O conteúdo deve ter entre 800 e 1.500 palavras
+      2. Seja detalhado o suficiente para cobrir o assunto completamente, mas não excessivamente longo
+      3. Parafraseie o conteúdo para torná-lo único, mantendo as informações principais
+      4. Crie um título conciso que capture o ponto principal
+      5. Escreva um breve resumo (2-3 frases)
+      6. Gere tags relevantes (separadas por vírgula)
+      7. MUITO IMPORTANTE: Se o conteúdo estiver em qualquer idioma que não seja o português (PT-BR), traduza tudo para o português (PT-BR)
       
-      Return ONLY a valid JSON object with this exact structure (no additional text):
+      Retorne APENAS um objeto JSON válido com esta estrutura exata (nenhum texto adicional):
       {
-        "title": "The title",
-        "summary": "The summary",
-        "content": "The full content",
+        "title": "O título",
+        "summary": "O resumo",
+        "content": "O conteúdo completo",
         "tags": "tag1, tag2, tag3"
       }
 
-      Here's the article to process:
+      Aqui está o artigo para processar:
       ${cleanContent}
     `;
 
@@ -77,66 +77,59 @@ serve(async (req) => {
     const response_text = result.response.text();
     
     console.log('Generated content successfully');
-    console.log('Response text length:', response_text.length);
-
-    // Helper function to clean JSON string
-    const cleanJsonString = (str: string) => {
-      return str
-        .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control characters
-        .replace(/\\/g, '\\\\') // Escape backslashes
-        .replace(/\n/g, ' ') // Replace newlines with spaces
-        .replace(/\r/g, ' ') // Replace carriage returns with spaces
-        .replace(/\t/g, ' ') // Replace tabs with spaces
-        .replace(/\s+/g, ' ') // Normalize spaces
-        .replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3') // Ensure property names are quoted
-        .trim();
-    };
-
+    
+    // Extrair e validar o JSON da resposta
     try {
-      // First attempt: direct parsing
-      console.log('Attempting direct JSON parse');
-      const generatedContent = JSON.parse(response_text);
+      // Primeiro, tentar encontrar o padrão JSON na resposta
+      const jsonMatch = response_text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Não foi possível encontrar um JSON válido na resposta');
+      }
+      
+      const jsonString = jsonMatch[0];
+      const generatedContent = JSON.parse(jsonString);
+      
+      // Verificar se o JSON tem a estrutura esperada
+      if (!generatedContent.title || !generatedContent.content) {
+        throw new Error('O JSON gerado não contém os campos necessários');
+      }
+      
       return new Response(JSON.stringify(generatedContent), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    } catch (firstError) {
-      console.log('Direct parsing failed:', firstError.message);
+    } catch (jsonError) {
+      console.error('Erro ao processar JSON:', jsonError);
       
-      // Second attempt: extract JSON pattern and clean
-      console.log('Attempting to extract JSON pattern');
-      const jsonMatch = response_text.match(/\{[\s\S]*\}/);
-      
-      if (!jsonMatch) {
-        console.error('No JSON pattern found in response');
-        console.log('Response text:', response_text);
-        throw new Error('No valid JSON found in response');
-      }
-
-      const extractedJson = jsonMatch[0];
-      console.log('Extracted JSON length:', extractedJson.length);
-      
-      const cleanedJson = cleanJsonString(extractedJson);
-      console.log('Cleaned JSON length:', cleanedJson.length);
-
+      // Se falhar, fazer uma tentativa mais agressiva de parsing
       try {
-        const generatedContent = JSON.parse(cleanedJson);
-        return new Response(JSON.stringify(generatedContent), {
+        // Limpar e construir um JSON manualmente
+        let title = response_text.match(/["']title["']\s*:\s*["']([^"']+)["']/i)?.[1] || "Título gerado";
+        let summary = response_text.match(/["']summary["']\s*:\s*["']([^"']+)["']/i)?.[1] || "Resumo gerado automaticamente.";
+        let content = response_text.match(/["']content["']\s*:\s*["']([^"']+)["']/i)?.[1] || 
+                     response_text.replace(/[{}"']/g, '').substring(0, 1000);
+        let tags = response_text.match(/["']tags["']\s*:\s*["']([^"']+)["']/i)?.[1] || "notícia, gerada, automaticamente";
+        
+        const fallbackContent = {
+          title,
+          summary,
+          content,
+          tags
+        };
+        
+        return new Response(JSON.stringify(fallbackContent), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
-      } catch (secondError) {
-        console.error('Failed to parse cleaned JSON:', secondError.message);
-        console.log('Cleaned JSON string:', cleanedJson);
-        throw new Error(`JSON parsing failed after cleaning: ${secondError.message}`);
+      } catch (fallbackError) {
+        throw new Error(`Falha completa no parsing do JSON: ${fallbackError.message}`);
       }
     }
   } catch (error) {
-    console.error('Error in generate-news function:', error);
-    console.error('Error details:', error.stack);
+    console.error('Erro na função generate-news:', error);
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack
+        details: error.stack || 'Sem detalhes adicionais'
       }), 
       { 
         status: 500,
