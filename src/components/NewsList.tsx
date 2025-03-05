@@ -10,7 +10,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
-const NewsList = () => {
+interface NewsListProps {
+  news?: any[];
+}
+
+const NewsList = ({ news: initialNews }: NewsListProps) => {
   const navigate = useNavigate();
   
   const { data: news, isLoading, error, refetch } = useQuery({
@@ -35,6 +39,8 @@ const NewsList = () => {
         throw err;
       }
     },
+    initialData: initialNews,
+    enabled: !initialNews || initialNews.length === 0,
     retry: 1,
     meta: {
       errorMessage: "Erro ao carregar notícias"
@@ -78,7 +84,9 @@ const NewsList = () => {
     );
   }
 
-  if (!news || news.length === 0) {
+  const displayNews = news || [];
+  
+  if (displayNews.length === 0) {
     return (
       <div className="text-center p-8">
         <div className="text-neutral-600 mb-4">
@@ -90,7 +98,7 @@ const NewsList = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {news.map((item, index) => (
+      {displayNews.map((item, index) => (
         <motion.div
           key={item.id}
           initial={{ opacity: 0, y: 20 }}
