@@ -27,7 +27,7 @@ export const useProductForm = (
       name: product?.name || "",
       slug: product?.slug || "",
       omie_code: product?.omie_code || "",
-      weight: product?.weight?.toString() || "0.5",
+      weight: product?.weight?.toString() || "0.2",
       short_description: product?.short_description || "",
       description: product?.description || "",
       video_url: product?.video_url || "",
