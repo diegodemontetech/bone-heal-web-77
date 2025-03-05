@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,21 +17,25 @@ import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, isLoading, profile, isAdmin } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
+    // Verificar se viemos de alguma rota específica
+    const from = location.state?.from?.pathname || "/products";
+    
     // Redirecionar com base no tipo de usuário somente se estiver autenticado
     if (profile) {
       if (isAdmin) {
         navigate("/admin");
       } else {
-        navigate("/products");
+        navigate(from);
       }
     }
-  }, [profile, isAdmin, navigate]);
+  }, [profile, isAdmin, navigate, location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

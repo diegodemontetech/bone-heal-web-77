@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole, UserPermission, UserProfile } from '@/types/auth';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   profile: UserProfile | null;
@@ -20,7 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
@@ -69,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setPermissions(userPermissions);
     } catch (error: any) {
       console.error('Erro ao buscar perfil:', error);
+      toast.error('Erro ao buscar perfil: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -101,11 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     } catch (error: any) {
-      toast({
-        title: "Erro ao fazer login",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Erro ao fazer login: " + error.message);
       throw error;
     }
   };
@@ -125,19 +123,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) throw error;
       
-      toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Verifique seu e-mail para confirmar o cadastro.",
-      });
+      toast.success("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar o cadastro.");
 
       // Retornando os dados para que possamos utilizar o ID do usuário para integrações
       return data;
     } catch (error: any) {
-      toast({
-        title: "Erro ao cadastrar",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Erro ao cadastrar: " + error.message);
       throw error;
     }
   };
@@ -146,12 +137,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      toast.success("Logout realizado com sucesso");
     } catch (error: any) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error("Erro ao sair: " + error.message);
       throw error;
     }
   };
