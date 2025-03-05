@@ -21,6 +21,11 @@ serve(async (req) => {
   }
 
   try {
+    // Validar chaves Omie
+    if (!OMIE_APP_KEY || !OMIE_APP_SECRET) {
+      throw new Error('Chaves da API Omie não configuradas')
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -28,6 +33,13 @@ serve(async (req) => {
 
     // Get the profile ID from the request
     const { profile_id }: OmieCustomerRequest = await req.json()
+    
+    // Validar ID do perfil
+    if (!profile_id) {
+      throw new Error('ID do perfil não fornecido')
+    }
+
+    console.log('Iniciando sincronização de cliente Omie para perfil:', profile_id)
     
     // Fetch the profile data
     const { data: profile, error: profileError } = await supabaseClient
@@ -37,8 +49,11 @@ serve(async (req) => {
       .single()
 
     if (profileError || !profile) {
-      throw new Error('Profile not found')
+      console.error('Erro ao buscar perfil:', profileError)
+      throw new Error('Perfil não encontrado')
     }
+
+    console.log('Perfil encontrado:', JSON.stringify(profile, null, 2))
 
     // Prepare Omie customer data
     const customerData = {
@@ -47,9 +62,9 @@ serve(async (req) => {
       app_secret: OMIE_APP_SECRET,
       param: [{
         codigo_cliente_integracao: profile.id,
-        razao_social: profile.full_name,
-        cnpj_cpf: profile.cnpj || profile.cpf,
-        nome_fantasia: profile.full_name,
+        razao_social: profile.pessoa_fisica ? profile.full_name : profile.razao_social,
+        cnpj_cpf: profile.pessoa_fisica ? profile.cpf : profile.cnpj,
+        nome_fantasia: profile.pessoa_fisica ? profile.full_name : (profile.nome_fantasia || profile.razao_social),
         telefone1_numero: profile.phone?.replace(/\D/g, '') || "",
         email: profile.email,
         endereco: profile.address || "",
@@ -69,6 +84,8 @@ serve(async (req) => {
       }]
     }
 
+    console.log('Dados para Omie:', JSON.stringify(customerData, null, 2))
+
     // Send request to Omie API
     const omieResponse = await fetch('https://app.omie.com.br/api/v1/geral/clientes/', {
       method: 'POST',
@@ -78,42 +95,57 @@ serve(async (req) => {
       body: JSON.stringify(customerData)
     })
 
+    if (!omieResponse.ok) {
+      const errorText = await omieResponse.text()
+      console.error('Resposta de erro Omie:', errorText)
+      throw new Error(`Falha na requisição Omie: ${omieResponse.status} ${errorText}`)
+    }
+
     const omieResult = await omieResponse.json()
 
     // Log the result
-    console.log('Omie API Response:', omieResult)
+    console.log('Resposta Omie API:', JSON.stringify(omieResult, null, 2))
 
-    if (!omieResponse.ok) {
-      throw new Error('Failed to create customer in Omie')
+    // Verificar por erros específicos do Omie
+    if (omieResult.faultstring) {
+      throw new Error(`Erro Omie: ${omieResult.faultstring}`)
     }
 
     // Update the profile with Omie code
     if (omieResult.codigo_cliente_omie) {
-      await supabaseClient
+      const { error: updateError } = await supabaseClient
         .from('profiles')
         .update({ 
           omie_code: omieResult.codigo_cliente_omie.toString(),
           omie_sync: true 
         })
         .eq('id', profile_id)
+
+      if (updateError) {
+        console.error('Erro ao atualizar perfil:', updateError)
+        throw new Error(`Cliente criado no Omie mas erro ao atualizar perfil: ${updateError.message}`)
+      }
+
+      console.log('Perfil atualizado com código Omie:', omieResult.codigo_cliente_omie)
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         omie_code: omieResult.codigo_cliente_omie,
-        message: 'Customer created successfully in Omie'
+        message: 'Cliente criado com sucesso no Omie'
       }),
       { 
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json'
-        } 
+        },
+        status: 200
       }
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Erro:', error)
     return new Response(
       JSON.stringify({ 
         success: false, 

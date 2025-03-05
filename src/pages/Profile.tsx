@@ -7,76 +7,82 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useSession } from "@supabase/auth-helpers-react";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
-
-interface Profile {
-  id: string;
-  full_name: string;
-  specialty?: string;
-  crm?: string;
-  phone?: string;
-  address?: string;
-}
+import { useAuth } from "@/hooks/use-auth-context";
 
 const Profile = () => {
-  const session = useSession();
+  const { profile, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    specialty: '',
+    cro: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    neighborhood: '',
+  });
 
   useEffect(() => {
-    if (!session) {
+    if (!isLoading && !profile) {
       navigate("/login");
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        specialty: profile.specialty || '',
+        cro: profile.cro || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        zip_code: profile.zip_code || '',
+        neighborhood: profile.neighborhood || '',
+      });
+    }
+  }, [isLoading, profile, navigate]);
 
-        if (error) throw error;
-        setProfile(data);
-      } catch (error: any) {
-        toast({
-          title: "Erro ao carregar perfil",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [session, navigate, toast]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!profile?.id) return;
+    
     setIsSaving(true);
 
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: profile?.full_name,
-          specialty: profile?.specialty,
-          crm: profile?.crm,
-          phone: profile?.phone,
-          address: profile?.address,
+          full_name: formData.full_name,
+          specialty: formData.specialty,
+          cro: formData.cro,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zip_code: formData.zip_code,
+          neighborhood: formData.neighborhood,
         })
-        .eq("id", session?.user?.id);
+        .eq("id", profile.id);
 
       if (error) throw error;
+
+      // Atualizar o perfil no contexto
+      await refreshProfile();
 
       toast({
         title: "Perfil atualizado",
@@ -120,8 +126,8 @@ const Profile = () => {
                 <Label htmlFor="full_name">Nome Completo</Label>
                 <Input
                   id="full_name"
-                  value={profile?.full_name || ""}
-                  onChange={(e) => setProfile(prev => ({ ...prev!, full_name: e.target.value }))}
+                  value={formData.full_name}
+                  onChange={handleChange}
                   required
                 />
               </div>
@@ -130,17 +136,17 @@ const Profile = () => {
                 <Label htmlFor="specialty">Especialidade</Label>
                 <Input
                   id="specialty"
-                  value={profile?.specialty || ""}
-                  onChange={(e) => setProfile(prev => ({ ...prev!, specialty: e.target.value }))}
+                  value={formData.specialty}
+                  onChange={handleChange}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="crm">CRM</Label>
+                <Label htmlFor="cro">CRO</Label>
                 <Input
-                  id="crm"
-                  value={profile?.crm || ""}
-                  onChange={(e) => setProfile(prev => ({ ...prev!, crm: e.target.value }))}
+                  id="cro"
+                  value={formData.cro}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -148,8 +154,8 @@ const Profile = () => {
                 <Label htmlFor="phone">Telefone</Label>
                 <Input
                   id="phone"
-                  value={profile?.phone || ""}
-                  onChange={(e) => setProfile(prev => ({ ...prev!, phone: e.target.value }))}
+                  value={formData.phone}
+                  onChange={handleChange}
                 />
               </div>
 
@@ -157,10 +163,59 @@ const Profile = () => {
                 <Label htmlFor="address">Endereço</Label>
                 <Input
                   id="address"
-                  value={profile?.address || ""}
-                  onChange={(e) => setProfile(prev => ({ ...prev!, address: e.target.value }))}
+                  value={formData.address}
+                  onChange={handleChange}
                 />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="state">Estado</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="zip_code">CEP</Label>
+                  <Input
+                    id="zip_code"
+                    value={formData.zip_code}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="neighborhood">Bairro</Label>
+                <Input
+                  id="neighborhood"
+                  value={formData.neighborhood}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {profile?.omie_code && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <p className="text-green-700 font-medium">
+                    Cliente sincronizado com Omie
+                  </p>
+                  <p className="text-sm text-green-600">
+                    Código Omie: {profile.omie_code}
+                  </p>
+                </div>
+              )}
 
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? (

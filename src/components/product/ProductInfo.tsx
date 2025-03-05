@@ -41,6 +41,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       name: product.name,
       price: price,
       image: product.image || '',
+      quantity: quantity
     });
   };
 

@@ -1,88 +1,56 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { UserRole } from "@/types/auth";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const { signIn, isLoading, profile, isAdmin } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
-    const checkExistingSession = async () => {
-      try {
-        setIsLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", session.user.id)
-            .single();
-
-          if (profile?.is_admin) {
-            navigate("/admin");
-          } else {
-            navigate("/products");
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao verificar sessão:", error);
-      } finally {
-        setIsLoading(false);
+    // Redirecionar com base no tipo de usuário
+    if (profile) {
+      if (isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate("/products");
       }
-    };
+    }
+  }, [profile, isAdmin, navigate]);
 
-    checkExistingSession();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error("Por favor, preencha todos os campos");
+      return;
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
-
-      if (event === "SIGNED_IN" && session?.user) {
-        try {
-          const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", session.user.id)
-            .single();
-
-          if (error) throw error;
-
-          const destination = profile?.is_admin ? "/admin" : "/products";
-          
-          toast({
-            title: "Login realizado com sucesso!",
-            description: profile?.is_admin ? "Bem-vindo à área administrativa." : "Bem-vindo à área do dentista.",
-          });
-
-          navigate(destination);
-        } catch (error: any) {
-          console.error("Erro ao verificar perfil:", error);
-          toast({
-            title: "Erro ao carregar perfil",
-            description: "Ocorreu um erro ao carregar seu perfil. Redirecionando para a área padrão.",
-            variant: "destructive",
-          });
-          navigate("/products"); // Fallback para rota padrão
-        }
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate, toast]);
+    try {
+      setLoginLoading(true);
+      await signIn(email, password);
+    } catch (error) {
+      // Erro já tratado no hook
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -106,34 +74,50 @@ const Login = () => {
             </TabsList>
 
             <TabsContent value="login">
-              <Auth
-                supabaseClient={supabase}
-                appearance={{
-                  theme: ThemeSupa,
-                  variables: {
-                    default: {
-                      colors: {
-                        brand: '#8B1F41',
-                        brandAccent: '#4A0404',
-                      },
-                    },
-                  },
-                }}
-                localization={{
-                  variables: {
-                    sign_in: {
-                      email_label: 'Email',
-                      password_label: 'Senha',
-                      button_label: 'Entrar',
-                      loading_button_label: 'Entrando...',
-                      email_input_placeholder: 'Seu email',
-                      password_input_placeholder: 'Sua senha',
-                    },
-                  },
-                }}
-                providers={[]}
-                view="sign_in"
-              />
+              <Card>
+                <CardContent className="pt-6">
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Seu email"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Sua senha"
+                        required
+                      />
+                    </div>
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={loginLoading}
+                    >
+                      {loginLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Entrando...
+                        </>
+                      ) : (
+                        "Entrar"
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="register">

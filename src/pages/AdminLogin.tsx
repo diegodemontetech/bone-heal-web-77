@@ -1,118 +1,63 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isChecking, setIsChecking] = useState(true);
+  const { signIn, isLoading, profile, isAdmin } = useAuth();
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
 
-  // Single check for existing session
+  // Verificar se já está logado como admin
   useEffect(() => {
-    let isSubscribed = true;
-
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.log("No session found during initial check");
-          if (isSubscribed) setIsChecking(false);
-          return;
-        }
-
-        // Log the user information for debugging
-        console.log("Session found during initial check:", session.user.email);
-
-        // TEMPORARY WORKAROUND:
-        // Hardcoded admin emails until RLS policy is fixed
-        const adminEmails = ['boneheal.ti@gmail.com']; 
-        const isAdmin = adminEmails.includes(session.user.email || '');
-
-        console.log("Admin check (initial) - Email:", session.user.email, "Is admin:", isAdmin);
-
-        if (isAdmin) {
-          console.log("Admin access granted during initial check, redirecting to admin dashboard");
-          if (isSubscribed) navigate("/admin");
-        } else {
-          console.log("User is not in admin list:", session.user.email);
-          if (isSubscribed) {
-            setIsChecking(false);
-            toast({
-              title: "Acesso negado",
-              description: "Você não tem permissão para acessar a área administrativa.",
-              variant: "destructive",
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-        if (isSubscribed) setIsChecking(false);
+    if (profile) {
+      if (isAdmin) {
+        navigate("/admin");
+      } else {
+        toast({
+          title: "Acesso negado",
+          description: "Você não tem permissão para acessar a área administrativa.",
+          variant: "destructive",
+        });
       }
-    };
+    }
+  }, [profile, isAdmin, navigate, toast]);
 
-    checkSession();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Cleanup function
-    return () => {
-      isSubscribed = false;
-    };
-  }, [navigate, toast]);
-
-  // Auth state change listener
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, "User:", session?.user?.email);
+    try {
+      setLoginLoading(true);
+      await signIn(email, password);
       
-      if (event === "SIGNED_IN" && session) {
-        try {
-          console.log("Sign in detected, checking admin status");
-          
-          // TEMPORARY WORKAROUND:
-          // Hardcoded admin emails until RLS policy is fixed
-          const adminEmails = ['boneheal.ti@gmail.com']; 
-          const isAdmin = adminEmails.includes(session.user.email || '');
+      // O redirecionamento será feito pelo useEffect quando o perfil for carregado
+    } catch (error: any) {
+      // Erro já tratado no hook
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
-          console.log("Admin check (after sign in) - Email:", session.user.email, "Is admin:", isAdmin);
-
-          if (isAdmin) {
-            console.log("Admin login confirmed, navigating to admin dashboard");
-            toast({
-              title: "Login bem-sucedido",
-              description: "Bem-vindo à área administrativa!",
-            });
-            navigate("/admin");
-          } else {
-            console.log("User is not an admin:", session.user.email);
-            toast({
-              title: "Acesso negado",
-              description: "Você não tem permissão para acessar a área administrativa.",
-              variant: "destructive",
-            });
-            await supabase.auth.signOut();
-          }
-        } catch (error) {
-          console.error("Error checking admin status after sign in:", error);
-          toast({
-            title: "Erro",
-            description: "Ocorreu um erro ao verificar suas permissões.",
-            variant: "destructive",
-          });
-        }
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate, toast]);
-
-  if (isChecking) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -122,39 +67,52 @@ const AdminLogin = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+      <Card className="max-w-md w-full">
+        <CardContent className="p-8">
           <h1 className="text-2xl font-bold text-center mb-8">Área Administrativa</h1>
-          <Auth
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: '#8B1F41',
-                    brandAccent: '#4A0404',
-                  },
-                },
-              },
-            }}
-            localization={{
-              variables: {
-                sign_in: {
-                  email_label: 'Email',
-                  password_label: 'Senha',
-                  button_label: 'Entrar',
-                  loading_button_label: 'Entrando...',
-                  email_input_placeholder: 'Seu email',
-                  password_input_placeholder: 'Sua senha',
-                },
-              },
-            }}
-            providers={[]}
-            view="sign_in"
-          />
-        </div>
-      </div>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email" 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu-email@exemplo.com" 
+                required 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <Input 
+                id="password" 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Sua senha" 
+                required 
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loginLoading}
+            >
+              {loginLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : (
+                "Entrar"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

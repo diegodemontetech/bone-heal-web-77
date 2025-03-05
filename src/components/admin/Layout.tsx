@@ -1,194 +1,217 @@
 
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Menu, LogOut } from "lucide-react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import React, { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import React, { ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  ChevronRight,
+  Store,
+  Package,
+  ShoppingCart,
+  Users,
+  Settings,
+  BarChart3,
+  FileText,
+  MessageSquare,
+  LogOut,
+  LifeBuoy,
+  Truck,
+  TagIcon,
+  Sync,
+  Newspaper,
+  Microscope,
+  User,
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth-context";
+import { UserPermission } from "@/types/auth";
 
 interface LayoutProps {
-  children: React.ReactNode;
-  adminEmail?: string | null;
+  children: ReactNode;
 }
 
-const Layout = ({ children, adminEmail: propAdminEmail }: LayoutProps) => {
+const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
-  const [adminEmail, setAdminEmail] = useState<string | null>(propAdminEmail || null);
+  const { profile, signOut, hasPermission, isAdminMaster } = useAuth();
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.log("No session in Layout component, redirecting to login");
-          navigate("/admin/login");
-          return;
-        }
-        
-        // TEMPORARY WORKAROUND:
-        // Hardcoded admin emails until RLS policy is fixed
-        const adminEmails = ['boneheal.ti@gmail.com'];
-        const isAdmin = adminEmails.includes(session.user.email || '');
-
-        console.log("Layout admin check - Email:", session.user.email, "Is admin:", isAdmin);
-        
-        if (!isAdmin) {
-          console.log("User not admin in Layout component, redirecting to login. Email:", session.user.email);
-          toast({
-            title: "Acesso negado",
-            description: "Você não tem permissão para acessar a área administrativa.",
-            variant: "destructive",
-          });
-          navigate("/admin/login");
-          return;
-        }
-        
-        setAdminEmail(session.user.email);
-        console.log("Admin access confirmed in Layout for:", session.user.email);
-      } catch (error) {
-        console.error("Error in Layout admin check:", error);
-        toast({
-          title: "Erro",
-          description: "Ocorreu um erro ao verificar suas permissões.",
-          variant: "destructive",
-        });
-        navigate("/admin/login");
-      }
-    };
-    
-    if (!propAdminEmail) {
-      checkSession();
-    }
-  }, [navigate, toast, propAdminEmail]);
-  
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Logout realizado",
-        description: "Você saiu da área administrativa.",
-      });
-      navigate("/admin/login");
-    } catch (error) {
-      console.error("Error signing out:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao tentar sair. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-    }
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/admin/login");
   };
 
-  const menuItems = [
-    { label: "Dashboard", path: "/admin" },
-    { label: "Usuários", path: "/admin/users" },
-    { label: "Produtos", path: "/admin/products" },
-    { label: "Pedidos", path: "/admin/orders" },
-    { label: "Sincronização", path: "/admin/sync" },
-    { label: "Notícias", path: "/admin/news" },
-    { label: "Artigos", path: "/admin/studies" },
-    { label: "Fretes", path: "/admin/shipping-rates" },
-    { label: "WhatsApp", path: "/admin/whatsapp" },
-    { label: "Leads", path: "/admin/leads" },
-  ];
-
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar (hidden on small screens) */}
-      <aside className="hidden md:flex flex-col w-64 bg-gray-800 text-white">
-        <div className="p-4">
-          <h1 className="text-2xl font-bold">Admin Panel</h1>
-          {adminEmail && (
-            <p className="text-gray-400 text-sm mt-1">{adminEmail}</p>
-          )}
-        </div>
-        <nav className="flex-1">
-          <ul>
-            {menuItems.map((item) => (
-              <li key={item.label} className="px-4 py-2">
-                <Link
-                  to={item.path}
-                  className={`block p-2 hover:bg-gray-700 rounded ${
-                    location.pathname === item.path ? "bg-gray-700" : ""
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="p-4 border-t border-gray-700">
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-white hover:bg-gray-700" 
-            onClick={handleSignOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </Button>
-        </div>
-      </aside>
-
-      {/* Mobile Sidebar */}
-      <Sheet>
-        <SheetTrigger className="md:hidden absolute top-4 left-4">
-          <Menu />
-        </SheetTrigger>
-        <SheetContent className="w-64 bg-gray-800 text-white">
-          <SheetHeader className="p-4">
-            <SheetTitle className="text-2xl font-bold text-white">Admin Panel</SheetTitle>
-            <SheetDescription className="text-gray-400">
-              Navegue pelo painel administrativo.
-            </SheetDescription>
-            {adminEmail && (
-              <p className="text-gray-400 text-sm mt-1">{adminEmail}</p>
-            )}
-          </SheetHeader>
-          <nav className="flex-1">
-            <ul>
-              {menuItems.map((item) => (
-                <li key={item.label} className="p-2">
-                  <Link
-                    to={item.path}
-                    className={`block p-2 hover:bg-gray-700 rounded ${
-                      location.pathname === item.path ? "bg-gray-700" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          <div className="p-4 border-t border-gray-700">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start text-white hover:bg-gray-700" 
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
+    <div className="flex h-screen overflow-hidden bg-gray-100">
+      {/* Sidebar */}
+      <div className="hidden md:flex md:w-64 md:flex-col">
+        <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r">
+          <div className="flex items-center flex-shrink-0 px-4 mb-5">
+            <Link to="/admin" className="flex items-center">
+              <h1 className="text-xl font-bold">Bone Heal Admin</h1>
+            </Link>
           </div>
-        </SheetContent>
-      </Sheet>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-4">
-        {children}
-      </main>
+          <ScrollArea className="flex-1 px-3">
+            <div className="space-y-1">
+              <p className="px-4 pt-5 text-xs font-semibold text-gray-400 uppercase">
+                Principal
+              </p>
+
+              <Link to="/admin">
+                <Button variant="ghost" className="w-full justify-start">
+                  <BarChart3 className="w-4 h-4 mr-3" />
+                  Dashboard
+                </Button>
+              </Link>
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_PRODUCTS)) && (
+                <Link to="/admin/products">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Package className="w-4 h-4 mr-3" />
+                    Produtos
+                  </Button>
+                </Link>
+              )}
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_ORDERS)) && (
+                <Link to="/admin/orders">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <ShoppingCart className="w-4 h-4 mr-3" />
+                    Pedidos
+                  </Button>
+                </Link>
+              )}
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_CUSTOMERS)) && (
+                <Link to="/admin/customers">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Users className="w-4 h-4 mr-3" />
+                    Clientes
+                  </Button>
+                </Link>
+              )}
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_USERS)) && (
+                <Link to="/admin/users">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <User className="w-4 h-4 mr-3" />
+                    Usuários
+                  </Button>
+                </Link>
+              )}
+
+              <p className="px-4 pt-5 text-xs font-semibold text-gray-400 uppercase">
+                Catálogo
+              </p>
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_PRODUCTS)) && (
+                <>
+                  <Link to="/admin/studies">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Microscope className="w-4 h-4 mr-3" />
+                      Estudos Científicos
+                    </Button>
+                  </Link>
+
+                  <Link to="/admin/news">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Newspaper className="w-4 h-4 mr-3" />
+                      Notícias
+                    </Button>
+                  </Link>
+                </>
+              )}
+
+              <p className="px-4 pt-5 text-xs font-semibold text-gray-400 uppercase">
+                Marketing
+              </p>
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_SETTINGS)) && (
+                <>
+                  <Link to="/admin/vouchers">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <TagIcon className="w-4 h-4 mr-3" />
+                      Cupons
+                    </Button>
+                  </Link>
+
+                  <Link to="/admin/whatsapp">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <MessageSquare className="w-4 h-4 mr-3" />
+                      WhatsApp
+                    </Button>
+                  </Link>
+                </>
+              )}
+
+              <p className="px-4 pt-5 text-xs font-semibold text-gray-400 uppercase">
+                Integrações
+              </p>
+
+              {(isAdminMaster || hasPermission(UserPermission.MANAGE_INTEGRATIONS)) && (
+                <>
+                  <Link to="/admin/sync">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Sync className="w-4 h-4 mr-3" />
+                      Sincronização Omie
+                    </Button>
+                  </Link>
+
+                  <Link to="/admin/shipping-rates">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <Truck className="w-4 h-4 mr-3" />
+                      Fretes
+                    </Button>
+                  </Link>
+                </>
+              )}
+
+              <p className="px-4 pt-5 text-xs font-semibold text-gray-400 uppercase">
+                Sistema
+              </p>
+
+              {isAdminMaster && (
+                <Link to="/admin/security">
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Settings className="w-4 h-4 mr-3" />
+                    Segurança
+                  </Button>
+                </Link>
+              )}
+
+              <Link to="/admin/leads">
+                <Button variant="ghost" className="w-full justify-start">
+                  <FileText className="w-4 h-4 mr-3" />
+                  Leads
+                </Button>
+              </Link>
+
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-4 h-4 mr-3" />
+                Sair
+              </Button>
+            </div>
+          </ScrollArea>
+
+          <div className="p-4 mt-auto border-t">
+            <div className="flex items-center">
+              <div className="ml-3">
+                <p className="text-sm font-medium">{profile?.full_name}</p>
+                <p className="text-xs text-gray-500">{profile?.email}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          {children}
+        </div>
+      </div>
     </div>
   );
 };

@@ -9,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth-context";
+import { UserRole } from "@/types/auth";
 
 export interface FormData {
   email: string;
@@ -20,7 +22,7 @@ export interface FormData {
   cpf: string;
   cnpj: string;
   address: string;
-  addressNumber: string; // Added addressNumber field
+  addressNumber: string;
   omie_city_code: string;
   cro: string;
   specialty: string;
@@ -37,6 +39,7 @@ export default function RegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -49,7 +52,7 @@ export default function RegistrationForm() {
       cpf: "",
       cnpj: "",
       address: "",
-      addressNumber: "", // Added default value for addressNumber
+      addressNumber: "",
       omie_city_code: "",
       cro: "",
       specialty: "",
@@ -119,35 +122,27 @@ export default function RegistrationForm() {
       setLoading(true);
       setError(null);
 
-      const { error: signUpError } = await supabase.auth.signUp({
+      await signUp({
         email: values.email,
         password: values.password,
-        options: {
-          data: {
-            full_name: values.fullName,
-            cpf: values.cpf,
-            cnpj: values.cnpj,
-            razao_social: values.razao_social,
-            nome_fantasia: values.nome_fantasia,
-            address: values.address,
-            address_number: values.addressNumber, // Use addressNumber instead of number
-            cro: values.cro,
-            specialty: values.specialty,
-            city: values.city,
-            state: values.state,
-            neighborhood: values.neighborhood,
-            zip_code: values.zipCode,
-            phone: values.phone,
-            receive_news: values.receiveNews,
-            omie_city_code: values.omie_city_code,
-            pessoa_fisica: values.pessoa_tipo === 'fisica'
-          }
-        }
+        full_name: values.fullName,
+        cpf: values.cpf,
+        cnpj: values.cnpj,
+        razao_social: values.razao_social,
+        nome_fantasia: values.nome_fantasia,
+        address: values.address,
+        addressNumber: values.addressNumber,
+        cro: values.cro,
+        specialty: values.specialty,
+        city: values.city,
+        state: values.state,
+        neighborhood: values.neighborhood,
+        zip_code: values.zipCode,
+        phone: values.phone,
+        pessoa_tipo: values.pessoa_tipo
       });
-
-      if (signUpError) throw signUpError;
       
-      toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
+      toast.success('Cadastro realizado com sucesso! Você receberá um email para confirmação.');
       navigate('/login');
     } catch (error: any) {
       console.error('Erro no cadastro:', error);
