@@ -9,7 +9,11 @@ import {
 } from "@/components/ui/dialog";
 import { NavItems } from "./NavItems";
 
-export const MobileMenu = () => {
+interface MobileMenuProps {
+  session?: any;
+}
+
+export const MobileMenu = ({ session }: MobileMenuProps) => {
   const [open, setOpen] = useState(false);
 
   return (
