@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,12 +12,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth-context";
+import { Loader2, MapPin } from "lucide-react";
+import { UserRole } from "@/types/auth";
+import { brazilianStates } from "@/utils/states";
+import { dentistSpecialties } from "@/utils/specialties";
+import { fetchAddressFromCep } from "@/utils/address";
+import { toast } from "sonner";
 
 const phoneRegex = new RegExp(
-  /^([+]?[\s0-9]+)?(\d{3}|[\s(-]?[0-9]{3}))?([-]?[\s]?[0-9]{3})?([-]?[\s]?[0-9]{2,4})+$/
+  /^([+]?[\s0-9]+)?(\d{3}|[\s(-]?[0-9]{3})?([(-]?[\s]?[0-9]{3})?([(-]?[\s]?[0-9]{2,4})+$/
 );
 
-const DentistSignUpSchema = z.object({
+export const DentistSignUpSchema = z.object({
   fullName: z.string().min(2, {
     message: "Nome completo deve ter pelo menos 2 caracteres.",
   }),
@@ -35,7 +44,9 @@ const DentistSignUpSchema = z.object({
   address: z.string().min(5, {
     message: "Endereço deve ter pelo menos 5 caracteres.",
   }),
-  endereco_numero: z.string().optional(),
+  endereco_numero: z.string().min(1, {
+    message: "Número é obrigatório",
+  }),
   complemento: z.string().optional(),
   city: z.string().min(3, {
     message: "Cidade deve ter pelo menos 3 caracteres.",
@@ -46,7 +57,7 @@ const DentistSignUpSchema = z.object({
   neighborhood: z.string().min(3, {
     message: "Bairro deve ter pelo menos 3 caracteres.",
   }),
-  zipCode: z.string().length(8, {
+  zipCode: z.string().min(8, {
     message: "CEP deve ter 8 caracteres.",
   }),
   phone: z.string().regex(phoneRegex, {
@@ -55,20 +66,22 @@ const DentistSignUpSchema = z.object({
   cnpj: z.string().optional(),
   cpf: z.string().optional(),
   receiveNews: z.boolean().default(false),
-})
+});
 
-type DentistSignUpData = z.infer<typeof DentistSignUpSchema>;
+export type FormData = z.infer<typeof DentistSignUpSchema>;
 
 interface RegistrationFormProps {
   isDentist?: boolean;
 }
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist = true }) => {
   const [submitting, setSubmitting] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
+  const { signUp } = useAuth();
 
-  const form = useForm<DentistSignUpData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(DentistSignUpSchema),
     defaultValues: {
       fullName: "",
@@ -77,6 +90,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
       cro: "",
       specialty: "",
       address: "",
+      endereco_numero: "",
+      complemento: "",
       city: "",
       state: "",
       neighborhood: "",
@@ -88,7 +103,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
     },
   });
 
-  const onSubmit = async (data: DentistSignUpData) => {
+  const handleCepBlur = async (cep: string) => {
+    if (cep.length === 8) {
+      setAddressLoading(true);
+      try {
+        const addressData = await fetchAddressFromCep(cep);
+        if (addressData) {
+          form.setValue('address', addressData.logradouro || '');
+          form.setValue('neighborhood', addressData.bairro || '');
+          form.setValue('city', addressData.localidade || '');
+          form.setValue('state', addressData.uf || '');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar endereço:', error);
+        toast.error("Não foi possível encontrar o endereço para este CEP");
+      } finally {
+        setAddressLoading(false);
+      }
+    }
+  };
+
+  const onSubmit = async (data: FormData) => {
     try {
       setSubmitting(true);
       
@@ -106,7 +141,8 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
         cpf: data.cpf,
         complemento: data.complemento,
         endereco_numero: data.endereco_numero,
-        receive_news: data.receiveNews
+        receive_news: data.receiveNews,
+        role: UserRole.DENTIST
       });
       
       // Redirecionar para a página de verificação ou login
@@ -116,35 +152,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
       console.error('Erro no cadastro:', error);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const signUp = async (email: string, password: string, userData: any) => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            ...userData,
-            role: 'dentist' // Novo usuário sempre começa como dentista
-          }
-        }
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Verifique seu e-mail para confirmar o cadastro.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao cadastrar",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
     }
   };
 
@@ -216,9 +223,23 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Especialidade</FormLabel>
-                <FormControl>
-                  <Input placeholder="Sua especialidade" {...field} />
-                </FormControl>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione sua especialidade" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {dentistSpecialties.map((specialty) => (
+                      <SelectItem key={specialty.value} value={specialty.value}>
+                        {specialty.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -241,17 +262,52 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="address"
+            name="zipCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Endereço</FormLabel>
+                <FormLabel>CEP</FormLabel>
                 <FormControl>
-                  <Input placeholder="Rua, Avenida..." {...field} />
+                  <div className="relative">
+                    <Input 
+                      placeholder="00000000" 
+                      {...field} 
+                      onBlur={(e) => handleCepBlur(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        field.onChange(value);
+                      }}
+                      maxLength={8}
+                    />
+                    {addressLoading && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Endereço</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input placeholder="Rua, Avenida..." {...field} />
+                    <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="endereco_numero"
@@ -265,9 +321,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
               </FormItem>
             )}
           />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="complemento"
@@ -275,12 +328,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
               <FormItem>
                 <FormLabel>Complemento</FormLabel>
                 <FormControl>
-                  <Input placeholder="Complemento" {...field} />
+                  <Input placeholder="Complemento (opcional)" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="neighborhood"
@@ -294,9 +350,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
               </FormItem>
             )}
           />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
             name="city"
@@ -310,94 +363,64 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="state"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Estado</FormLabel>
-                <FormControl>
-                  <Select>
+                <Select 
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="AC">Acre</SelectItem>
-                      <SelectItem value="AL">Alagoas</SelectItem>
-                      <SelectItem value="AP">Amapá</SelectItem>
-                      <SelectItem value="AM">Amazonas</SelectItem>
-                      <SelectItem value="BA">Bahia</SelectItem>
-                      <SelectItem value="CE">Ceará</SelectItem>
-                      <SelectItem value="DF">Distrito Federal</SelectItem>
-                      <SelectItem value="ES">Espírito Santo</SelectItem>
-                      <SelectItem value="GO">Goiás</SelectItem>
-                      <SelectItem value="MA">Maranhão</SelectItem>
-                      <SelectItem value="MT">Mato Grosso</SelectItem>
-                      <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
-                      <SelectItem value="MG">Minas Gerais</SelectItem>
-                      <SelectItem value="PA">Pará</SelectItem>
-                      <SelectItem value="PB">Paraíba</SelectItem>
-                      <SelectItem value="PR">Paraná</SelectItem>
-                      <SelectItem value="PE">Pernambuco</SelectItem>
-                      <SelectItem value="PI">Piauí</SelectItem>
-                      <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-                      <SelectItem value="RN">Rio Grande do Norte</SelectItem>
-                      <SelectItem value="RS">Rio Grande do Sul</SelectItem>
-                      <SelectItem value="RO">Rondônia</SelectItem>
-                      <SelectItem value="RR">Roraima</SelectItem>
-                      <SelectItem value="SC">Santa Catarina</SelectItem>
-                      <SelectItem value="SP">São Paulo</SelectItem>
-                      <SelectItem value="SE">Sergipe</SelectItem>
-                      <SelectItem value="TO">Tocantins</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
+                  </FormControl>
+                  <SelectContent>
+                    {brazilianStates.map((state) => (
+                      <SelectItem key={state.value} value={state.value}>
+                        {state.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="zipCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CEP</FormLabel>
-                <FormControl>
-                  <Input placeholder="XXXXX-XXX" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="cnpj"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CNPJ (Opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Seu CNPJ" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="cpf"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CPF (Opcional)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Seu CPF" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="cpf"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Seu CPF" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="cnpj"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CNPJ (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Seu CNPJ" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         <FormField
@@ -424,7 +447,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist }) => {
         />
 
         <Button type="submit" disabled={submitting} className="w-full">
-          Cadastrar
+          {submitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Cadastrando...
+            </>
+          ) : (
+            "Cadastrar"
+          )}
         </Button>
       </form>
     </Form>

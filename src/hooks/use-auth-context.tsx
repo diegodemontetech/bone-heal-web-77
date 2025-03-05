@@ -10,6 +10,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: any) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isDentist: boolean;
   isAdmin: boolean;
   isAdminMaster: boolean;
@@ -24,56 +25,56 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          setProfile(null);
-          setPermissions([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Buscar perfil do usuário
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileError) throw profileError;
-        
-        // Buscar permissões do usuário
-        const { data: permissionsData, error: permissionsError } = await supabase
-          .from('user_permissions')
-          .select('permission')
-          .eq('user_id', session.user.id);
-          
-        if (permissionsError) throw permissionsError;
-        
-        const userPermissions = permissionsData.map(p => p.permission as UserPermission);
-        
-        // Montar o perfil completo
-        const userProfile: UserProfile = {
-          ...profileData,
-          id: session.user.id,
-          email: session.user.email || '',
-          role: (profileData.role as UserRole) || UserRole.DENTIST,
-          permissions: userPermissions
-        };
-        
-        setProfile(userProfile);
-        setPermissions(userPermissions);
-      } catch (error: any) {
-        console.error('Erro ao buscar perfil:', error);
-      } finally {
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        setProfile(null);
+        setPermissions([]);
         setIsLoading(false);
+        return;
       }
-    };
+      
+      // Buscar perfil do usuário
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (profileError) throw profileError;
+      
+      // Buscar permissões do usuário
+      const { data: permissionsData, error: permissionsError } = await supabase
+        .from('user_permissions')
+        .select('permission')
+        .eq('user_id', session.user.id);
+        
+      if (permissionsError) throw permissionsError;
+      
+      const userPermissions = permissionsData.map(p => p.permission as UserPermission);
+      
+      // Montar o perfil completo
+      const userProfile: UserProfile = {
+        ...profileData,
+        id: session.user.id,
+        email: session.user.email || '',
+        role: (profileData.role as UserRole) || UserRole.DENTIST,
+        permissions: userPermissions
+      };
+      
+      setProfile(userProfile);
+      setPermissions(userPermissions);
+    } catch (error: any) {
+      console.error('Erro ao buscar perfil:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchProfile();
     
     // Configurar listener para mudanças de autenticação
@@ -90,6 +91,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  const refreshProfile = async () => {
+    await fetchProfile();
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -113,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         options: {
           data: {
             ...userData,
-            role: UserRole.DENTIST // Novo usuário sempre começa como dentista
+            role: userData.role || UserRole.DENTIST // Novo usuário sempre começa como dentista, a menos que especificado
           }
         }
       });
@@ -164,6 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn,
       signUp,
       signOut,
+      refreshProfile,
       isDentist,
       isAdmin,
       isAdminMaster,

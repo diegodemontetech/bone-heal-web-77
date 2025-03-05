@@ -1,12 +1,12 @@
 
 import React from 'react';
-import Routes from './Routes';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider } from '@/hooks/use-auth-context';
+import RoutesComponent from './Routes';
 
 // Criar query client para o TanStack Query
 const queryClient = new QueryClient({
@@ -28,7 +28,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <Routes />
+          <RoutesComponent />
         </BrowserRouter>
         <Toaster />
         <SonnerToaster position="top-right" richColors />
