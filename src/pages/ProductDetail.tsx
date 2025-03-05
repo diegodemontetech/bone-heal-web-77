@@ -34,7 +34,7 @@ const ProductDetail = () => {
         .select("*")
         .eq("slug", slug)
         .eq("active", true)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Erro ao buscar produto:', error);
@@ -50,7 +50,7 @@ const ProductDetail = () => {
       return data as Product;
     },
     enabled: !!slug,
-    retry: false,
+    retry: 2, // Aumentando o número de retentativas
     meta: {
       errorMessage: "Erro ao carregar produto"
     },
@@ -60,7 +60,8 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (error) {
-      toast.error("Erro ao carregar produto");
+      console.error("Erro detalhado:", error);
+      toast.error("Erro ao carregar produto: Verifique se o slug está correto");
     }
   }, [error]);
 
@@ -92,7 +93,8 @@ const ProductDetail = () => {
               Produto não encontrado
             </h1>
             <p className="text-neutral-600 mb-8">
-              O produto que você está procurando não existe ou foi removido.
+              O produto que você está procurando não existe ou foi removido. 
+              Erro: {error ? (error instanceof Error ? error.message : JSON.stringify(error)) : "Produto não encontrado"}
             </p>
           </div>
         </div>

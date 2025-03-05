@@ -14,13 +14,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
     currency: "BRL",
   }).format(product.price || 0);
 
-  // Usar o slug original do produto sem modificações
-  const productUrl = product.slug ? `/products/${encodeURIComponent(product.slug)}` : "/products";
-
-  // Se não tiver slug, logar o erro mas ainda mostrar o card
+  // Verificar se o produto tem um slug válido
   if (!product.slug) {
     console.warn('Produto sem slug:', product);
   }
+  
+  // Garantir que o slug seja codificado corretamente para a URL
+  const productUrl = product.slug 
+    ? `/products/${encodeURIComponent(product.slug)}` 
+    : "/products";
 
   return (
     <Card className="relative group">
@@ -29,7 +31,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <CardContent className="pt-4">
           <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg">
             <img
-              src={product.main_image || product.default_image_url}
+              src={product.main_image || product.default_image_url || "/placeholder.svg"}
               alt={product.name}
               className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105"
             />

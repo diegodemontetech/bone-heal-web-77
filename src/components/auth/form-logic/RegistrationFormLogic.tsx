@@ -46,8 +46,15 @@ export const useRegistrationFormLogic = () => {
       if (signUpResult && signUpResult.user) {
         console.log("Usuário cadastrado com sucesso:", signUpResult.user.id);
         
-        // Tentar sincronizar com o Omie
-        await syncWithOmie(signUpResult.user.id);
+        try {
+          // Tentar sincronizar com o Omie
+          await syncWithOmie(signUpResult.user.id);
+          console.log("Sincronização com Omie realizada com sucesso");
+        } catch (omieError) {
+          console.error("Erro ao sincronizar com Omie:", omieError);
+          // Não iremos interromper o fluxo de cadastro se a sincronização falhar
+          toast.error("Aviso: Não foi possível sincronizar com o sistema Omie. Seu cadastro foi realizado, mas será necessário sincronizar posteriormente.");
+        }
         
         // Mostrar mensagem de sucesso
         toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.");

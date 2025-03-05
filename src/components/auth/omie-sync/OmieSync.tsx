@@ -1,10 +1,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-
-interface OmieSyncProps {
-  userId: string;
-}
+import { supabase } from "@/integrations/supabase/client";
 
 export const useOmieSync = () => {
   const [syncingWithOmie, setSyncingWithOmie] = useState(false);
@@ -14,34 +11,28 @@ export const useOmieSync = () => {
       setSyncingWithOmie(true);
       console.log("Sincronizando usuário com Omie:", userId);
       
-      const response = await fetch(`${window.location.origin}/api/omie-customer`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ user_id: userId }),
+      // Usando a função do Supabase para evitar problemas com CORS
+      const { data, error } = await supabase.functions.invoke('omie-customer', {
+        body: { user_id: userId }
       });
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Resposta de erro do servidor:", errorText);
-        throw new Error(`Erro na resposta do servidor: ${response.status} ${response.statusText}`);
+      if (error) {
+        console.error("Erro na função do Supabase:", error);
+        throw new Error(`Erro na resposta do Supabase: ${error.message}`);
       }
       
-      const result = await response.json();
+      console.log("Resposta da sincronização com Omie:", data);
       
-      if (result.success) {
+      if (data && data.success) {
         toast.success("Perfil sincronizado com o Omie");
         return true;
       } else {
-        console.error("Erro ao sincronizar com o Omie:", result.error);
-        toast.error("Erro ao sincronizar com o Omie: " + (result.error || "Erro desconhecido"));
-        return false;
+        console.error("Erro retornado pelo Omie:", data?.error || "Erro desconhecido");
+        throw new Error(data?.error || "Erro desconhecido na comunicação com o Omie");
       }
     } catch (omieError) {
       console.error("Erro ao fazer requisição para o Omie:", omieError);
-      toast.error("Erro ao sincronizar com o Omie: " + (omieError instanceof Error ? omieError.message : "Erro na comunicação"));
-      return false;
+      throw omieError;
     } finally {
       setSyncingWithOmie(false);
     }
