@@ -1,6 +1,22 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { ProductFormValues } from "@/validators/product-schema";
+import { Product } from "@/types/product";
+
+export const fetchProductBySlug = async (slug: string): Promise<Product | null> => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("slug", slug)
+    .single();
+
+  if (error) {
+    console.error("Erro ao buscar produto:", error);
+    return null;
+  }
+
+  return data as Product;
+};
 
 export const checkExistingProduct = async (omieCode: string, productId?: string) => {
   const query = supabase

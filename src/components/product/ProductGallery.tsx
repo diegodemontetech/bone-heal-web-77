@@ -1,28 +1,27 @@
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Product } from "@/types/product";
 
 interface ProductGalleryProps {
-  product: Product;
+  mainImage: string;
+  gallery: string[];
 }
 
-const ProductGallery = ({ product }: ProductGalleryProps) => {
-  const [selectedImage, setSelectedImage] = useState(product.main_image || product.default_image_url);
+const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
+  const [selectedImage, setSelectedImage] = useState(mainImage);
 
   return (
     <div className="space-y-4">
       <div className="aspect-square rounded-xl overflow-hidden bg-gray-100">
         <img
           src={selectedImage || "/placeholder.svg"}
-          alt={product.name}
+          alt="Imagem do produto"
           className="w-full h-full object-contain"
         />
       </div>
       
-      {product.gallery && product.gallery.length > 0 && (
+      {gallery && gallery.length > 0 && (
         <div className="grid grid-cols-5 gap-4">
-          {[product.main_image || product.default_image_url, ...product.gallery].map((image, index) => (
+          {[mainImage, ...gallery].map((image, index) => (
             <button
               key={index}
               onClick={() => setSelectedImage(image)}
@@ -32,7 +31,7 @@ const ProductGallery = ({ product }: ProductGalleryProps) => {
             >
               <img
                 src={image || "/placeholder.svg"}
-                alt={`${product.name} - Imagem ${index + 1}`}
+                alt={`Imagem ${index + 1}`}
                 className="w-full h-full object-contain p-2"
               />
             </button>
