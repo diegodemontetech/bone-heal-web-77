@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth-context";
 
 interface MobileMenuProps {
   session: any;
@@ -21,6 +22,7 @@ interface MobileMenuProps {
 export const MobileMenu = ({ session }: MobileMenuProps) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const { isAdmin } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -31,6 +33,15 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
     } catch (error: any) {
       toast.error("Erro ao sair: " + error.message);
     }
+  };
+
+  const handleAreaClick = () => {
+    if (isAdmin) {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/profile");
+    }
+    setOpen(false);
   };
 
   return (
@@ -80,12 +91,14 @@ export const MobileMenu = ({ session }: MobileMenuProps) => {
           </Link>
           {session ? (
             <>
-              <Link to="/profile" onClick={() => setOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start gap-2">
-                  <User className="w-4 h-4" />
-                  Meu Perfil
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start gap-2" 
+                onClick={handleAreaClick}
+              >
+                <User className="w-4 h-4" />
+                {isAdmin ? "Painel Admin" : "Meu Perfil"}
+              </Button>
               <Button 
                 variant="destructive" 
                 className="w-full" 

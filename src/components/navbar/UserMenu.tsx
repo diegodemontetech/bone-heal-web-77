@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth-context";
 
 interface UserMenuProps {
   session: any;
@@ -19,6 +20,7 @@ interface UserMenuProps {
 
 export const UserMenu = ({ session }: UserMenuProps) => {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   const handleSignOut = async () => {
     try {
@@ -30,10 +32,24 @@ export const UserMenu = ({ session }: UserMenuProps) => {
     }
   };
 
+  const handleAreaClick = () => {
+    if (session) {
+      // Se já está logado, vá para a área apropriada
+      if (isAdmin) {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/profile");
+      }
+    } else {
+      // Se não está logado, vá para o login
+      navigate("/login");
+    }
+  };
+
   if (!session) {
     return (
       <div className="hidden md:flex gap-2">
-        <Button variant="outline" onClick={() => navigate("/login")}>
+        <Button variant="outline" onClick={handleAreaClick}>
           Área do Dentista
         </Button>
       </div>
@@ -53,8 +69,8 @@ export const UserMenu = ({ session }: UserMenuProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => navigate("/profile")}>
-          Meu Perfil
+        <DropdownMenuItem onClick={() => navigate(isAdmin ? "/admin/dashboard" : "/profile")}>
+          {isAdmin ? "Painel Admin" : "Meu Perfil"}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate("/orders")}>
           Meus Pedidos

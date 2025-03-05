@@ -24,18 +24,22 @@ const Login = () => {
   const [loginLoading, setLoginLoading] = useState(false);
 
   useEffect(() => {
-    // Verificar se viemos de alguma rota específica
-    const from = location.state?.from?.pathname || "/products";
-    
-    // Redirecionar com base no tipo de usuário somente se estiver autenticado
-    if (profile) {
+    // Verificar se o usuário está autenticado e redirecionar apropriadamente
+    if (!isLoading && profile) {
+      console.log("Usuário já logado:", profile, "isAdmin:", isAdmin);
+      
+      // Verificar o tipo de usuário e redirecionar
       if (isAdmin) {
-        navigate("/admin");
+        console.log("Redirecionando admin para /admin");
+        navigate("/admin/dashboard");
       } else {
+        // Para usuários normais, redirecionar para a página específica ou para produtos
+        const from = location.state?.from?.pathname || "/profile";
+        console.log("Redirecionando usuário normal para:", from);
         navigate(from);
       }
     }
-  }, [profile, isAdmin, navigate, location]);
+  }, [isLoading, profile, isAdmin, navigate, location]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +64,16 @@ const Login = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Se o usuário já estiver logado, mostra apenas o loader enquanto redireciona
+  if (profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="ml-2">Redirecionando...</p>
       </div>
     );
   }
