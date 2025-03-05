@@ -29,6 +29,9 @@ import Studies from "@/pages/admin/Studies";
 import NewsPage from "@/pages/News";
 import NewsDetail from "@/pages/NewsDetail";
 import StudiesPage from "@/pages/Studies";
+import AdminOrders from "@/pages/admin/Orders";
+import AdminLeads from "@/pages/admin/Leads";
+import AdminWhatsApp from "@/pages/admin/Whatsapp";
 
 const router = createBrowserRouter([
   {
@@ -100,6 +103,10 @@ const router = createBrowserRouter([
     element: <AdminProducts />,
   },
   {
+    path: "/admin/orders",
+    element: <AdminOrders />,
+  },
+  {
     path: "/admin/security",
     element: <Security />,
   },
@@ -110,6 +117,10 @@ const router = createBrowserRouter([
   {
     path: "/admin/sync",
     element: <Sync />,
+  },
+  {
+    path: "/admin/shipping-rates",
+    element: <ShippingRates />,
   },
   {
     path: "/admin/shipping",
@@ -130,6 +141,14 @@ const router = createBrowserRouter([
   {
     path: "/admin/studies",
     element: <Studies />,
+  },
+  {
+    path: "/admin/leads",
+    element: <AdminLeads />,
+  },
+  {
+    path: "/admin/whatsapp",
+    element: <AdminWhatsApp />,
   },
   {
     path: "/news",

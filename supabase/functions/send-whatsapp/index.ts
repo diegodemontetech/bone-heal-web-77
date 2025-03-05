@@ -23,9 +23,9 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
-    const { phone, message } = await req.json()
+    const { phone, message, name } = await req.json()
 
-    console.log('Sending WhatsApp message:', { phone, message })
+    console.log('Sending WhatsApp message:', { phone, message, name })
 
     const response = await fetch(`https://api.z-api.io/instances/${zApiInstanceId}/token/${zApiToken}/send-text`, {
       method: 'POST',
@@ -43,6 +43,18 @@ serve(async (req) => {
     }
 
     const result = await response.json()
+
+    // Registrar contato no banco de dados para CRM
+    if (name) {
+      await supabase.from('leads').upsert({
+        phone, 
+        name, 
+        last_contact: new Date().toISOString(),
+        source: 'whatsapp_widget'
+      }, {
+        onConflict: 'phone'
+      })
+    }
 
     return new Response(
       JSON.stringify({ success: true, data: result }),

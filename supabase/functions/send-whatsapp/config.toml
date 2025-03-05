@@ -1,2 +1,6 @@
 
-project_id = "kurpshcdafxbyqnzxvxu"
+project_id = "boneheal-platform"
+cors_enabled = true
+
+[functions.send-whatsapp]
+verify_jwt = false
