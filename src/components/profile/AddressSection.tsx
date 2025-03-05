@@ -80,6 +80,21 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="address">Endereço</Label>
+        <div className="relative">
+          <Input
+            id="address"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            readOnly
+            className="bg-gray-100"
+          />
+          <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="endereco_numero">Número</Label>
@@ -100,21 +115,6 @@ export const AddressSection: React.FC<AddressSectionProps> = ({
             onChange={handleChange}
             placeholder="Apartamento, bloco, etc."
           />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="address">Endereço</Label>
-        <div className="relative">
-          <Input
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            readOnly
-            className="bg-gray-100"
-          />
-          <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         </div>
       </div>
 

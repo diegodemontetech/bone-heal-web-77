@@ -67,6 +67,28 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
           </FormItem>
         )}
       />
+      
+      <FormField
+        control={form.control}
+        name="address"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Endereço</FormLabel>
+            <FormControl>
+              <div className="relative">
+                <Input 
+                  placeholder="Rua, Avenida..." 
+                  {...field} 
+                  readOnly 
+                  className="bg-gray-100" 
+                />
+                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
@@ -96,28 +118,6 @@ const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
           )}
         />
       </div>
-
-      <FormField
-        control={form.control}
-        name="address"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Endereço</FormLabel>
-            <FormControl>
-              <div className="relative">
-                <Input 
-                  placeholder="Rua, Avenida..." 
-                  {...field} 
-                  readOnly 
-                  className="bg-gray-100" 
-                />
-                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField

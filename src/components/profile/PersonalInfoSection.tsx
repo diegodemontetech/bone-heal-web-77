@@ -12,7 +12,7 @@ interface PersonalInfoSectionProps {
     cro: string;
     cpf: string;
     cnpj: string;
-    phone?: string; // Adicionando phone aos dados do formulário
+    phone?: string;
   };
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange: (field: string, value: string) => void;
@@ -119,15 +119,16 @@ export const PersonalInfoSection: React.FC<PersonalInfoSectionProps> = ({
             onChange={handleChange}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="cnpj">CNPJ</Label>
-          <Input
-            id="cnpj"
-            name="cnpj"
-            value={formData.cnpj}
-            onChange={handleChange}
-          />
-        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="cnpj">CNPJ</Label>
+        <Input
+          id="cnpj"
+          name="cnpj"
+          value={formData.cnpj}
+          onChange={handleChange}
+        />
       </div>
     </div>
   );
