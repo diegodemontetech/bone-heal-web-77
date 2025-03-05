@@ -8,6 +8,8 @@ import NewsList from "@/components/NewsList";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const News = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -53,35 +55,43 @@ const News = () => {
         <meta name="description" content="Fique por dentro das novidades do setor odontológico e as últimas atualizações da Boneheal." />
       </Helmet>
 
-      <NewsHero />
+      <Navbar />
 
-      {categories && categories.length > 0 && (
-        <NewsCategories 
-          categories={categories} 
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-        />
-      )}
+      <div className="min-h-screen">
+        <NewsHero />
 
-      {error && (
-        <div className="container mx-auto py-8">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erro</AlertTitle>
-            <AlertDescription>
-              Não foi possível carregar as notícias. Por favor, tente novamente mais tarde.
-            </AlertDescription>
-          </Alert>
+        {categories && categories.length > 0 && (
+          <NewsCategories 
+            categories={categories} 
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+          />
+        )}
+
+        <div className="container mx-auto px-4 py-12">
+          {error && (
+            <div className="container mx-auto py-8">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erro</AlertTitle>
+                <AlertDescription>
+                  Não foi possível carregar as notícias. Por favor, tente novamente mais tarde.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="container mx-auto py-12 flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <NewsList news={news || []} />
+          )}
         </div>
-      )}
+      </div>
 
-      {isLoading ? (
-        <div className="container mx-auto py-12 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <NewsList news={news || []} />
-      )}
+      <Footer />
     </>
   );
 };
