@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -24,6 +25,7 @@ interface CartSummaryProps {
   session: any;
   isAuthenticated?: boolean;
   shippingCalculated?: boolean;
+  resetShipping?: () => void;
 }
 
 export const CartSummary = ({
@@ -37,7 +39,8 @@ export const CartSummary = ({
   handleCheckout,
   session,
   isAuthenticated = false,
-  shippingCalculated = false
+  shippingCalculated = false,
+  resetShipping
 }: CartSummaryProps) => {
   const navigate = useNavigate();
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -47,6 +50,11 @@ export const CartSummary = ({
     // Permitir apenas números e limitar a 8 dígitos
     const value = e.target.value.replace(/\D/g, "").slice(0, 8);
     setZipCode(value);
+    
+    // Se o CEP mudar, resetar o cálculo de frete
+    if (value !== zipCode && resetShipping) {
+      resetShipping();
+    }
   };
 
   const handleZipCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -67,6 +75,27 @@ export const CartSummary = ({
     }
     
     handleCheckout(cartItems, subtotal, total);
+  };
+
+  // Calcular frete automaticamente quando o CEP tiver 8 dígitos
+  useEffect(() => {
+    if (zipCode.length === 8 && !shippingCalculated && !isCalculatingShipping) {
+      calculateShipping();
+    }
+  }, [zipCode, shippingCalculated, isCalculatingShipping, calculateShipping]);
+
+  // Calcular frete quando o carrinho carrega se já tiver um CEP válido
+  useEffect(() => {
+    if (zipCode.length === 8 && !shippingCalculated && !isCalculatingShipping && cartItems.length > 0) {
+      calculateShipping();
+    }
+  }, [cartItems]);
+
+  const handleRecalculateClick = () => {
+    if (resetShipping) {
+      resetShipping();
+    }
+    calculateShipping();
   };
 
   return (
@@ -91,15 +120,15 @@ export const CartSummary = ({
                 />
               </div>
               <Button
-                onClick={calculateShipping}
-                disabled={isCalculatingShipping || zipCode.length !== 8 || (shippingCalculated && !!shippingCost)}
+                onClick={shippingCalculated ? handleRecalculateClick : calculateShipping}
+                disabled={isCalculatingShipping || zipCode.length !== 8}
                 variant="outline"
                 className="min-w-[100px]"
               >
                 {isCalculatingShipping ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 ) : shippingCalculated && shippingCost ? (
-                  <RotateCw className="w-4 h-4 mr-2" />
+                  <><RotateCw className="w-4 h-4 mr-2" />Recalcular</>
                 ) : (
                   "Calcular"
                 )}

@@ -11,6 +11,7 @@ export const useShipping = () => {
   const [loading, setLoading] = useState(false);
   const [zipCode, setZipCode] = useState("");
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [calculationCompleted, setCalculationCompleted] = useState(false);
   const session = useSession();
   const { toast } = useToast();
 
@@ -34,28 +35,40 @@ export const useShipping = () => {
 
   // Função para calcular o frete
   const calculateShipping = async (zipCodeInput: string) => {
-    if (!zipCodeInput) return;
+    if (!zipCodeInput || calculationCompleted) return;
     
     setLoading(true);
+    
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/correios-shipping`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      console.log(`Calculando frete para CEP: ${zipCodeInput}`);
+      
+      const { data, error } = await supabase.functions.invoke("correios-shipping", {
+        body: {
+          zipCode: zipCodeInput,
+          zipCodeDestination: zipCodeInput,
         },
-        body: JSON.stringify({ zipCode: zipCodeInput })
       });
 
-      if (!response.ok) throw new Error('Falha ao calcular o frete');
+      if (error) {
+        console.error("Erro na resposta da função:", error);
+        throw error;
+      }
+
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        console.error("Resposta inválida:", data);
+        throw new Error("Resposta inválida do serviço de frete");
+      }
+
+      console.log("Resposta do cálculo de frete:", data);
       
-      const rates = await response.json();
-      setShippingRates(rates);
+      setShippingRates(data);
       
       // Se houver apenas uma opção de frete, seleciona automaticamente
-      if (rates.length === 1) {
-        setSelectedShippingRate(rates[0]);
+      if (data.length === 1) {
+        setSelectedShippingRate(data[0]);
       }
+      
+      setCalculationCompleted(true);
     } catch (error) {
       console.error('Erro ao calcular frete:', error);
       toast({
@@ -64,6 +77,7 @@ export const useShipping = () => {
         variant: "destructive"
       });
       setShippingRates([]);
+      setCalculationCompleted(false);
     } finally {
       setLoading(false);
     }
@@ -84,6 +98,20 @@ export const useShipping = () => {
 
     loadUserShipping();
   }, [session?.user?.id, hasAttemptedFetch]);
+
+  // Função para resetar o estado do cálculo de frete
+  const resetShippingCalculation = () => {
+    setCalculationCompleted(false);
+    setShippingRates([]);
+    setSelectedShippingRate(null);
+  };
+
+  // Efeito para resetar o cálculo quando o CEP mudar
+  useEffect(() => {
+    if (zipCode) {
+      resetShippingCalculation();
+    }
+  }, [zipCode]);
 
   // Calcula a data estimada de entrega
   const getDeliveryDate = () => {
@@ -113,6 +141,8 @@ export const useShipping = () => {
     shippingFee,
     deliveryDate,
     availableShippingRates,
-    handleShippingRateChange
+    handleShippingRateChange,
+    calculationCompleted,
+    resetShippingCalculation
   };
 };

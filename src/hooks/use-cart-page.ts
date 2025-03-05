@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth-context";
+import { toast } from "sonner";
 
 export function useCartPage() {
   const navigate = useNavigate();
@@ -39,6 +40,12 @@ export function useCartPage() {
     if (zipCode.length > 0) {
       setShippingError(null);
     }
+    
+    // Resetar cálculo de frete quando o CEP muda
+    if (zipCode.length !== 8) {
+      setShippingCalculated(false);
+      setShippingCost(null);
+    }
   }, [zipCode]);
 
   // Determina se o usuário está autenticado verificando tanto a sessão quanto o perfil
@@ -50,8 +57,9 @@ export function useCartPage() {
       return;
     }
 
+    // Evita recálculos desnecessários
     if (shippingCalculated && shippingCost) {
-      return; // Evita recalcular se já temos um valor e não houve mudança no CEP
+      return;
     }
 
     setIsCalculatingShipping(true);
@@ -96,13 +104,20 @@ export function useCartPage() {
     }
   };
 
+  const resetShipping = () => {
+    setShippingCalculated(false);
+    setShippingCost(null);
+  }
+
   const handleCheckout = (cartItems: CartItem[], subtotal: number, total: number) => {
     // Verificar se há itens no carrinho
     if (cartItems.length === 0) {
+      toast.error("Seu carrinho está vazio");
       return;
     }
 
     if (!shippingCost) {
+      toast.error("Por favor, calcule o frete antes de finalizar a compra");
       return;
     }
 
@@ -126,6 +141,7 @@ export function useCartPage() {
     shippingError,
     calculateShipping,
     handleCheckout,
-    shippingCalculated
+    shippingCalculated,
+    resetShipping
   };
 }
