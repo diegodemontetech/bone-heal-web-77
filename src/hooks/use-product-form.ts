@@ -2,35 +2,27 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { productFormSchema, ProductFormValues } from "@/validators/product-schema";
+import { checkExistingProduct, createProduct, updateProduct } from "@/api/product-api";
+import { useProductImages } from "@/hooks/use-product-images";
+import { useProductNotifications } from "@/utils/product-notifications";
+import { Product } from "@/types/product";
 
-const formSchema = z.object({
-  name: z.string().min(1, "Nome é obrigatório"),
-  slug: z.string().min(1, "Slug é obrigatório"),
-  omie_code: z.string().min(1, "Código Omie é obrigatório"),
-  weight: z.string().transform(val => parseFloat(val || "0")),
-  short_description: z.string().optional(),
-  description: z.string().optional(),
-  video_url: z.string().optional(),
-});
-
-export type ProductFormValues = z.infer<typeof formSchema>;
+export type { ProductFormValues };
 
 export const useProductForm = (
-  product?: any,
+  product?: Product,
   onSuccess?: () => void,
   onClose?: () => void
 ) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [images, setImages] = useState<string[]>(
-    product?.gallery ? [product.main_image, ...product.gallery] : []
+  const { images, setImages } = useProductImages(
+    product?.gallery ? [product.main_image, ...product.gallery].filter(Boolean) as string[] : []
   );
-  const { toast } = useToast();
+  const { notifyProductCreated, notifyProductUpdated, notifyProductError } = useProductNotifications();
 
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(productFormSchema),
     defaultValues: {
       name: product?.name || "",
       slug: product?.slug || "",
@@ -46,12 +38,10 @@ export const useProductForm = (
     setIsLoading(true);
     try {
       // Verificar se já existe um produto com o mesmo código Omie
-      const { data: existingProduct, error: checkError } = await supabase
-        .from("products")
-        .select("id")
-        .eq('omie_code', values.omie_code)
-        .neq('id', product?.id || '')
-        .single();
+      const { data: existingProduct, error: checkError } = await checkExistingProduct(
+        values.omie_code, 
+        product?.id
+      );
 
       if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = não encontrou nenhum registro
         throw checkError;
@@ -75,37 +65,18 @@ export const useProductForm = (
       };
 
       if (product) {
-        const { error } = await supabase
-          .from("products")
-          .update(data)
-          .eq("id", product.id);
-
+        const { error } = await updateProduct(product.id, data);
         if (error) throw error;
-
-        toast({
-          title: "Produto atualizado com sucesso!",
-          description: "O produto foi atualizado e está sincronizado com o Omie."
-        });
+        notifyProductUpdated();
       } else {
-        const { error } = await supabase
-          .from("products")
-          .insert([data]);
-
+        const { error } = await createProduct(data);
         if (error) throw error;
-
-        toast({
-          title: "Produto criado com sucesso!",
-          description: "O produto foi cadastrado e está sincronizado com o Omie."
-        });
+        notifyProductCreated();
       }
 
       if (onSuccess) onSuccess();
     } catch (error: any) {
-      toast({
-        title: "Erro ao salvar produto",
-        description: error.message,
-        variant: "destructive",
-      });
+      notifyProductError(error);
     } finally {
       setIsLoading(false);
     }

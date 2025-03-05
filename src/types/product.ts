@@ -19,4 +19,5 @@ export interface Product {
   omie_sync?: boolean;
   omie_last_update?: string;
   active?: boolean;
+  weight?: number;
 }
