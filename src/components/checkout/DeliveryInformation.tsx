@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tag, Truck } from "lucide-react";
+import { Tag, Truck, Loader2 } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
 
 interface ShippingRate {
@@ -74,9 +74,12 @@ const DeliveryInformation = ({
               ))}
             </RadioGroup>
           ) : (
-            <p className="text-sm text-gray-500">
-              {session ? "Calculando opções de frete..." : "Nenhuma opção de frete disponível para sua região."}
-            </p>
+            <div className="text-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
+              <p className="text-sm text-gray-500">
+                Calculando opções de frete...
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
