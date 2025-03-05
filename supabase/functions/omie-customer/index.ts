@@ -14,13 +14,30 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, profile } = await req.json()
+    let requestData;
+    try {
+      requestData = await req.json();
+    } catch (parseError) {
+      console.error("Erro ao processar JSON do request:", parseError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Formato de requisição inválido' 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+    
+    const { user_id, profile } = requestData;
     
     if (!user_id && !profile) {
       throw new Error('ID do usuário ou perfil não fornecido')
     }
 
-    console.log('Recebida solicitação para sincronizar usuário:', user_id)
+    console.log('Recebida solicitação para sincronizar usuário:', user_id);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -139,6 +156,14 @@ serve(async (req) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(omieCustomer)
       })
+
+      // Verificar se a resposta é JSON antes de chamar .json()
+      const contentType = omieResponse.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await omieResponse.text();
+        console.error('Resposta não-JSON do OMIE:', text);
+        throw new Error(`Resposta inesperada do Omie: ${text.substring(0, 100)}...`);
+      }
 
       const omieResult = await omieResponse.json()
       console.log('Resposta do OMIE:', omieResult)

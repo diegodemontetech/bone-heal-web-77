@@ -24,8 +24,10 @@ serve(async (req) => {
     
     let atualizados = 0;
     let erros = 0;
+    let naoEncontrados = 0;
     let pagina = 1;
     let totalPaginas = 1;
+    let produtosAtualizados = [];
 
     do {
       console.log(`Buscando página ${pagina}...`);
@@ -50,6 +52,14 @@ serve(async (req) => {
         const error = await response.text();
         console.error(`Erro na requisição ao Omie: ${response.status} - ${error}`);
         throw new Error(`Erro na requisição ao Omie: ${response.status}`);
+      }
+
+      // Verificar formato da resposta antes de processar
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error('Resposta não-JSON do OMIE:', text);
+        throw new Error(`Resposta inesperada do Omie: ${text.substring(0, 100)}...`);
       }
 
       const data = await response.json();
@@ -92,7 +102,7 @@ serve(async (req) => {
 
           const { data: produtoExistente, error: selectError } = await supabase
             .from('products')
-            .select('price, active')
+            .select('id, price, active, name')
             .eq('omie_code', produto.codigo)
             .maybeSingle();
 
@@ -104,12 +114,15 @@ serve(async (req) => {
 
           if (!produtoExistente) {
             console.log(`Produto ${produto.codigo} não encontrado no banco de dados`);
+            naoEncontrados++;
             continue;
           }
 
           const isAtivo = produto.inativo === "N";
           
           console.log(`Atualizando produto ${produto.codigo}:`, {
+            id: produtoExistente.id,
+            nome: produtoExistente.name,
             precoAtual: produtoExistente.price,
             precoNovo: preco,
             ativoAtual: produtoExistente.active,
@@ -133,6 +146,12 @@ serve(async (req) => {
           }
 
           atualizados++;
+          produtosAtualizados.push({
+            codigo: produto.codigo,
+            nome: produtoExistente.name,
+            preco_antigo: produtoExistente.price,
+            preco_novo: preco
+          });
           console.log(`Produto ${produto.codigo} atualizado com sucesso`);
         } catch (error) {
           console.error(`Erro ao processar produto ${produto.codigo}:`, error);
@@ -145,8 +164,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Sincronização concluída. ${atualizados} produtos atualizados. ${erros} erros encontrados.`,
-      stats: { atualizados, erros }
+      message: `Sincronização concluída. ${atualizados} produtos atualizados. ${erros} erros encontrados. ${naoEncontrados} produtos não encontrados.`,
+      stats: { atualizados, erros, naoEncontrados },
+      produtos_atualizados: produtosAtualizados
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

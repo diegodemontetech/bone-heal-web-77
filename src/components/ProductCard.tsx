@@ -14,34 +14,38 @@ const ProductCard = ({ product }: ProductCardProps) => {
     currency: "BRL",
   }).format(product.price || 0);
 
-  // Verificar se o produto tem um slug válido
-  if (!product.slug) {
-    console.warn('Produto sem slug:', product);
-  }
+  // Verificar e garantir que o produto tenha um slug válido
+  const slug = product.slug && product.slug.trim() !== "" 
+    ? product.slug 
+    : `produto-${product.id}`;
   
   // Garantir que o slug seja codificado corretamente para a URL
-  const productUrl = product.slug 
-    ? `/products/${encodeURIComponent(product.slug)}` 
-    : "/products";
+  const productUrl = `/products/${encodeURIComponent(slug)}`;
+
+  // Garantir que a imagem tenha um fallback válido
+  const productImage = product.main_image || product.default_image_url || "/placeholder.svg";
 
   return (
-    <Card className="relative group">
+    <Card className="relative group h-full">
       <FavoriteButton product={product} variant="icon" />
-      <Link to={productUrl}>
-        <CardContent className="pt-4">
-          <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg">
+      <Link to={productUrl} className="flex flex-col h-full">
+        <CardContent className="pt-4 flex-shrink-0">
+          <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg overflow-hidden">
             <img
-              src={product.main_image || product.default_image_url || "/placeholder.svg"}
+              src={productImage}
               alt={product.name}
-              className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105"
+              className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/placeholder.svg";
+              }}
             />
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-start">
+        <CardFooter className="flex-col items-start flex-grow">
           <div className="w-full">
-            <h3 className="font-semibold text-lg">{product.name}</h3>
+            <h3 className="font-semibold text-lg line-clamp-2">{product.name || "Produto sem nome"}</h3>
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {product.short_description}
+              {product.short_description || "Sem descrição"}
             </p>
             <div className="mt-2 font-semibold text-lg">
               {formattedPrice}

@@ -46,29 +46,52 @@ export const useRegistrationFormLogic = () => {
       if (signUpResult && signUpResult.user) {
         console.log("Usuário cadastrado com sucesso:", signUpResult.user.id);
         
+        let omieSync = false;
         try {
           // Tentar sincronizar com o Omie
           await syncWithOmie(signUpResult.user.id);
           console.log("Sincronização com Omie realizada com sucesso");
-        } catch (omieError) {
+          omieSync = true;
+        } catch (omieError: any) {
           console.error("Erro ao sincronizar com Omie:", omieError);
-          // Não iremos interromper o fluxo de cadastro se a sincronização falhar
-          toast.error("Aviso: Não foi possível sincronizar com o sistema Omie. Seu cadastro foi realizado, mas será necessário sincronizar posteriormente.");
+          
+          // Verificar se o erro foi no parsing de JSON (possível resposta HTML em vez de JSON)
+          const errorMessage = omieError?.message || "";
+          if (errorMessage.includes("Unexpected token") || errorMessage.includes("is not valid JSON")) {
+            toast.error("Erro de comunicação com o sistema Omie. Tente novamente mais tarde.");
+          } else {
+            // Outros erros
+            toast.error("Aviso: Não foi possível sincronizar com o sistema Omie. Seu cadastro foi realizado, mas será necessário sincronizar posteriormente.");
+          }
         }
         
         // Mostrar mensagem de sucesso
-        toast.success("Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.");
+        toast.success(`Cadastro realizado com sucesso! ${omieSync ? 'Perfil sincronizado com Omie.' : ''} Verifique seu email para confirmar a conta.`);
         
         // Redirecionar para a página de login
-        navigate('/login');
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000);
       } else {
         console.error("Erro no cadastro: não foi possível obter ID do usuário");
         toast.error("Erro ao finalizar o cadastro. Por favor, tente novamente.");
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro no cadastro:', error);
-      toast.error("Erro ao realizar cadastro: " + (error instanceof Error ? error.message : "Erro desconhecido"));
+      
+      // Mensagens de erro mais amigáveis
+      let errorMessage = "Erro ao realizar cadastro";
+      
+      if (error.message.includes("Email already registered")) {
+        errorMessage = "Este email já está cadastrado. Tente recuperar sua senha ou usar outro email.";
+      } else if (error.message.includes("Password should be at least")) {
+        errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+      } else {
+        errorMessage += ": " + (error.message || "Erro desconhecido");
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

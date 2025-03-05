@@ -10,17 +10,20 @@ import ProductGallery from "@/components/product/ProductGallery";
 import ProductInfo from "@/components/product/ProductInfo";
 import ProductTabs from "@/components/product/ProductTabs";
 import { useBrowseHistory } from "@/hooks/use-browse-history";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { addToHistory } = useBrowseHistory();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const [retryCount, setRetryCount] = useState(0);
 
   const { data: product, isLoading, error } = useQuery({
-    queryKey: ["product", slug],
+    queryKey: ["product", slug, retryCount],
     queryFn: async () => {
       console.log('Buscando produto com slug:', slug);
       
@@ -38,6 +41,10 @@ const ProductDetail = () => {
 
       if (error) {
         console.error('Erro ao buscar produto:', error);
+        if (error.code === 'PGRST116') {
+          // PGRST116 significa que nenhum resultado foi encontrado
+          return null;
+        }
         throw error;
       }
 
@@ -50,7 +57,7 @@ const ProductDetail = () => {
       return data as Product;
     },
     enabled: !!slug,
-    retry: 2, // Aumentando o número de retentativas
+    retry: 1,
     meta: {
       errorMessage: "Erro ao carregar produto"
     },
@@ -58,10 +65,19 @@ const ProductDetail = () => {
     staleTime: 1000 * 60 * 1 // 1 minute
   });
 
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    toast.info("Tentando carregar o produto novamente...");
+  };
+
+  const handleBackToProducts = () => {
+    navigate('/products');
+  };
+
   useEffect(() => {
     if (error) {
       console.error("Erro detalhado:", error);
-      toast.error("Erro ao carregar produto: Verifique se o slug está correto");
+      toast.error("Erro ao carregar produto. Por favor, tente novamente mais tarde.");
     }
   }, [error]);
 
@@ -88,14 +104,27 @@ const ProductDetail = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
-          <div className="text-center">
+          <div className="text-center p-8">
             <h1 className="text-2xl font-bold text-neutral-900 mb-4">
               Produto não encontrado
             </h1>
             <p className="text-neutral-600 mb-8">
-              O produto que você está procurando não existe ou foi removido. 
-              Erro: {error ? (error instanceof Error ? error.message : JSON.stringify(error)) : "Produto não encontrado"}
+              O produto que você está procurando não existe ou foi removido.
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleRetry}
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Tentar novamente
+              </button>
+              <button
+                onClick={handleBackToProducts}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                Voltar para produtos
+              </button>
+            </div>
           </div>
         </div>
         <Footer />

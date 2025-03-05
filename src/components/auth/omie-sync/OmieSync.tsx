@@ -24,6 +24,20 @@ export const useOmieSync = () => {
       console.log("Resposta da sincronização com Omie:", data);
       
       if (data && data.success) {
+        // Verificar se o cliente realmente foi sincronizado consultando perfil
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('omie_code, omie_sync')
+          .eq('id', userId)
+          .single();
+          
+        if (profileError) {
+          console.error("Erro ao verificar perfil após sincronização:", profileError);
+        } else if (!profile.omie_code || !profile.omie_sync) {
+          console.error("Perfil não foi corretamente sincronizado com Omie");
+          throw new Error("Não foi possível confirmar a sincronização com o Omie");
+        }
+        
         toast.success("Perfil sincronizado com o Omie");
         return true;
       } else {
