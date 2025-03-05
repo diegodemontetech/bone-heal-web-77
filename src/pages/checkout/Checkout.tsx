@@ -1,31 +1,29 @@
 
-import { useEffect, useState, useRef } from "react";
-import { useCart } from "@/hooks/use-cart";
-import { useSession } from "@supabase/auth-helpers-react";
-import { useNavigate } from "react-router-dom";
-import { ShoppingBag, CheckCircle2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import DeliveryInformation from "@/components/checkout/DeliveryInformation";
-import OrderTotal from "@/components/checkout/OrderTotal";
 import { useShipping } from "@/hooks/use-shipping";
 import { useVoucher } from "@/hooks/use-voucher";
 import { useCheckout } from "@/hooks/use-checkout";
+import { useCheckoutPage } from "@/hooks/use-checkout-page";
+import { ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import DeliveryInformation from "@/components/checkout/DeliveryInformation";
+import OrderTotal from "@/components/checkout/OrderTotal";
+import CheckoutLoading from "@/components/checkout/CheckoutLoading";
+import PaymentRedirect from "@/components/checkout/PaymentRedirect";
+import EmptyCartMessage from "@/components/checkout/EmptyCartMessage";
 
 const Checkout = () => {
-  const { cartItems, clear } = useCart();
-  const session = useSession();
-  const navigate = useNavigate();
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
-  const [hasValidSession, setHasValidSession] = useState(false);
-  const authCheckRef = useRef(false);
+  const {
+    isInitialized,
+    isAuthChecked,
+    hasValidSession,
+    cartItems,
+    session,
+    clear
+  } = useCheckoutPage();
   
   const {
     shippingRates,
@@ -56,45 +54,6 @@ const Checkout = () => {
     orderId
   } = useCheckout();
 
-  // Verificar a sessão apenas uma vez no carregamento
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      if (authCheckRef.current) return;
-      authCheckRef.current = true;
-
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        console.log("Verificando sessão na página de checkout:", data);
-        
-        if (!error && data.session) {
-          setHasValidSession(true);
-          setIsAuthChecked(true);
-          setIsInitialized(true);
-        } else {
-          console.log("Nenhuma sessão válida encontrada no checkout");
-          setIsAuthChecked(true);
-          toast.error("Você precisa estar logado para finalizar a compra");
-          navigate("/login", { state: { from: "/checkout" } });
-        }
-      } catch (err) {
-        console.error("Erro ao verificar autenticação:", err);
-        setIsAuthChecked(true);
-      }
-    };
-    
-    if (!isAuthChecked) {
-      checkAuthStatus();
-    }
-  }, [navigate, isAuthChecked]);
-
-  // Verificar carrinho vazio apenas após confirmar que o usuário está autenticado
-  useEffect(() => {
-    if (isInitialized && hasValidSession && cartItems.length === 0) {
-      console.log("Carrinho vazio, redirecionando para /cart");
-      navigate("/cart");
-    }
-  }, [isInitialized, hasValidSession, cartItems.length, navigate]);
-
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   const handleVoucherApply = () => {
@@ -109,7 +68,6 @@ const Checkout = () => {
     
     if (!session?.user) {
       toast.error("Você precisa estar logado para finalizar a compra");
-      navigate("/login", { state: { from: "/checkout" } });
       return;
     }
     
@@ -118,77 +76,18 @@ const Checkout = () => {
 
   // Mostra um loading simples enquanto inicializa
   if (!isInitialized || !isAuthChecked) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="container mx-auto p-4 flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <ShoppingBag className="w-12 h-12 mx-auto text-primary animate-pulse mb-4" />
-            <p className="text-gray-500">Carregando checkout...</p>
-          </div>
-        </div>
-        <Footer />
-        <WhatsAppWidget />
-      </div>
-    );
+    return <CheckoutLoading />;
   }
 
   // Se temos URL de pagamento, realizar redirect
   if (paymentUrl && orderId) {
     clear(); // Limpar o carrinho após o checkout
-    
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="container mx-auto p-4 py-12 flex-1">
-          <div className="max-w-2xl mx-auto">
-            <Alert className="mb-8 border-green-200 bg-green-50">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <AlertTitle>Pedido realizado com sucesso!</AlertTitle>
-              <AlertDescription className="mt-2">
-                Seu pedido foi registrado. Agora você será redirecionado para concluir o pagamento.
-              </AlertDescription>
-            </Alert>
-            
-            <div className="text-center space-y-6 p-6 border rounded-lg bg-white">
-              <p className="text-lg">Você será redirecionado para a página de pagamento em instantes...</p>
-              <Button 
-                onClick={() => window.location.href = paymentUrl}
-                className="bg-primary hover:bg-primary/90 text-white"
-                size="lg"
-              >
-                Ir para pagamento agora
-              </Button>
-            </div>
-          </div>
-        </div>
-        <Footer />
-        <WhatsAppWidget />
-      </div>
-    );
+    return <PaymentRedirect paymentUrl={paymentUrl} />;
   }
 
   // Se o carrinho estiver vazio, mostrar mensagem e link para produtos
   if (!cartItems.length) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="container mx-auto p-4 flex-1">
-          <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
-            <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">Seu carrinho está vazio</p>
-            <Button 
-              onClick={() => navigate("/products")}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              Continuar comprando
-            </Button>
-          </div>
-        </div>
-        <Footer />
-        <WhatsAppWidget />
-      </div>
-    );
+    return <EmptyCartMessage />;
   }
 
   return (
