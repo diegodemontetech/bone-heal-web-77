@@ -10,7 +10,7 @@ import { ProductGrid } from "@/components/products/ProductGrid";
 import { Loader2 } from "lucide-react";
 
 const initialFilters: FilterValues = {
-  sortBy: "price-asc",
+  categories: ["todos"],
 };
 
 export default function Products() {
@@ -24,12 +24,25 @@ export default function Products() {
       try {
         let query = supabase
           .from("products")
-          .select("*");
+          .select("*")
+          .eq("active", true);
 
-        // Apply sorting
+        // Aplicar filtragem por categoria se não for "todos"
+        if (!filters.categories.includes("todos") && filters.categories.length > 0) {
+          // Assumindo que temos uma coluna "categories" no banco de dados
+          // Precisamos verificar se qualquer uma das categorias selecionadas está presente
+          query = query.or(
+            filters.categories.map(cat => `categories.cs.{${cat}}`).join(",")
+          );
+        }
+
+        // Aplicar ordenação
         if (filters.sortBy) {
           const [field, direction] = filters.sortBy.split("-");
           query = query.order(field, { ascending: direction === "asc" });
+        } else {
+          // Ordenação padrão
+          query = query.order("name", { ascending: true });
         }
 
         const { data, error } = await query;

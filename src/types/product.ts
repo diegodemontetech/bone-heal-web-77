@@ -20,4 +20,5 @@ export interface Product {
   omie_last_update?: string;
   active?: boolean;
   weight?: number;
+  categories?: string[];
 }

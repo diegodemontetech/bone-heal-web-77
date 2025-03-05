@@ -31,6 +31,7 @@ export const useProductForm = (
       short_description: product?.short_description || "",
       description: product?.description || "",
       video_url: product?.video_url || "",
+      categories: product?.categories || [],
     },
   });
 
@@ -62,6 +63,7 @@ export const useProductForm = (
         main_image: images[0] || null,
         gallery: images.slice(1),
         active: true,
+        categories: values.categories,
       };
 
       console.log("Dados do produto a serem salvos:", data);

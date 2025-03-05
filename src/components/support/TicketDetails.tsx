@@ -1,118 +1,64 @@
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-interface TicketDetailsProps {
-  ticketId: string;
+interface Message {
+  id: string;
+  message: string;
+  created_at: string;
+  user: {
+    full_name: string;
+    is_admin: boolean;
+  };
 }
 
-const TicketDetails = ({ ticketId }: TicketDetailsProps) => {
-  const [newMessage, setNewMessage] = useState("");
-  const queryClient = useQueryClient();
-
-  const { data: ticket, isLoading: ticketLoading } = useQuery({
-    queryKey: ["ticket", ticketId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select(`
-          *,
-          messages:ticket_messages(*)
-        `)
-        .eq("id", ticketId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const addMessageMutation = useMutation({
-    mutationFn: async (message: string) => {
-      const { data: user } = await supabase.auth.getUser();
-      const { error } = await supabase.from("ticket_messages").insert([
-        {
-          ticket_id: ticketId,
-          user_id: user.user?.id,
-          message,
-        },
-      ]);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setNewMessage("");
-      queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] });
-      toast.success("Mensagem enviada com sucesso!");
-    },
-    onError: (error: any) => {
-      toast.error("Erro ao enviar mensagem: " + error.message);
-    },
-  });
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMessage.trim()) {
-      addMessageMutation.mutate(newMessage);
-    }
+interface TicketDetailsProps {
+  ticket: {
+    id: string;
+    number: number;
+    subject: string;
+    description: string;
+    status: string;
+    priority: string;
+    created_at: string;
   };
+  messages: Message[];
+}
 
-  if (ticketLoading) {
-    return <div>Carregando...</div>;
-  }
-
-  if (!ticket) {
-    return <div>Chamado não encontrado</div>;
-  }
+export function TicketDetails({ ticket, messages }: TicketDetailsProps) {
+  if (!ticket) return null;
 
   return (
     <div className="space-y-6">
-      <div className="border-b pb-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold">#{ticket.number}</h2>
-            <p className="text-lg">{ticket.subject}</p>
-          </div>
-          <Badge variant="outline">{ticket.status}</Badge>
-        </div>
-        <p className="mt-4 text-gray-600">{ticket.description}</p>
-      </div>
-
-      <div className="space-y-4">
-        <h3 className="font-semibold">Mensagens</h3>
-        <div className="space-y-4">
-          {ticket.messages?.map((message: any) => (
-            <div
-              key={message.id}
-              className="bg-gray-50 p-4 rounded-lg space-y-2"
-            >
-              <p className="text-sm text-gray-500">
-                {new Date(message.created_at).toLocaleString()}
-              </p>
-              <p>{message.message}</p>
+      {messages.map((message) => (
+        <div 
+          key={message.id} 
+          className={`flex ${
+            message.user?.is_admin ? 'justify-start' : 'justify-end'
+          }`}
+        >
+          <div 
+            className={`max-w-[80%] rounded-lg p-4 ${
+              message.user?.is_admin
+                ? 'bg-gray-200 text-gray-800'
+                : 'bg-primary text-white'
+            }`}
+          >
+            <div className="font-medium text-sm mb-1">
+              {message.user?.is_admin 
+                ? 'Atendente' 
+                : 'Você'}
             </div>
-          ))}
+            <p className="whitespace-pre-wrap">{message.message}</p>
+            <div className="text-xs mt-2 opacity-70">
+              {formatDistanceToNow(new Date(message.created_at), { 
+                addSuffix: true,
+                locale: ptBR
+              })}
+            </div>
+          </div>
         </div>
-
-        <form onSubmit={handleSendMessage} className="flex gap-2">
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Digite sua mensagem..."
-            className="flex-1"
-          />
-          <Button type="submit" disabled={addMessageMutation.isPending}>
-            Enviar
-          </Button>
-        </form>
-      </div>
+      ))}
     </div>
   );
-};
-
-export default TicketDetails;
+}
