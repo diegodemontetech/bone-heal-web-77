@@ -4,12 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
+import { toast } from "sonner";
 
 export function useCheckout() {
   const session = useSession();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("credit");
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const saveOrder = async (
     orderId: string, 
@@ -42,7 +45,7 @@ export function useCheckout() {
           shipping_address: {
             zip_code: zipCode
           },
-          payment_method: 'mercadopago'
+          payment_method: paymentMethod
         });
 
       if (orderError) throw orderError;
@@ -54,7 +57,7 @@ export function useCheckout() {
           order_id: orderId,
           status: 'pending',
           amount: total_amount,
-          payment_method: 'mercadopago'
+          payment_method: paymentMethod
         });
 
       if (paymentError) throw paymentError;
@@ -65,35 +68,71 @@ export function useCheckout() {
           .update({ current_uses: (appliedVoucher.current_uses || 0) + 1 })
           .eq('id', appliedVoucher.id);
       }
+      
+      return orderId;
     } catch (error) {
       console.error("Erro ao salvar pedido:", error);
       throw error;
     }
   };
 
-  const listenToPaymentStatus = async (orderId: string) => {
-    const channel = supabase
-      .channel('payment-status')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `id=eq.${orderId}`,
-        },
-        (payload) => {
-          const status = payload.new.status;
-          if (status === 'paid') {
-            navigate(`/orders`);
+  const createMercadoPagoCheckout = async (
+    orderId: string,
+    cartItems: CartItem[],
+    shippingFee: number,
+    discount: number
+  ) => {
+    try {
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const total = Math.max(0, subtotal + shippingFee - discount);
+      
+      if (!session?.user) throw new Error("Usuário não está autenticado");
+      
+      const items = cartItems.map(item => ({
+        title: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        unit_price: item.price
+      }));
+      
+      const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
+        body: {
+          orderId,
+          items,
+          shipping_cost: shippingFee,
+          buyer: {
+            email: session.user.email,
+            name: session.user.user_metadata?.name || "Cliente"
           }
         }
-      )
-      .subscribe();
+      });
+      
+      if (error) throw error;
+      
+      if (!data || !data.init_point) {
+        throw new Error("Não foi possível gerar o link de pagamento");
+      }
+      
+      return data.init_point;
+    } catch (error) {
+      console.error("Erro ao criar checkout do Mercado Pago:", error);
+      throw error;
+    }
+  };
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  const handleProcessPayment = async () => {
+    if (!orderId) return;
+    
+    try {
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        toast.error("Erro ao processar pagamento. Tente novamente.");
+      }
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      toast.error("Erro ao processar pagamento. Tente novamente.");
+    }
   };
 
   const handleCheckout = async (
@@ -118,30 +157,30 @@ export function useCheckout() {
     try {
       setLoading(true);
 
-      const orderId = crypto.randomUUID();
+      const newOrderId = crypto.randomUUID();
+      setOrderId(newOrderId);
       
-      const subtotal = cartItems.reduce((acc, item) => 
-        acc + (Number(item.price) * item.quantity), 0
+      // Salvar o pedido
+      await saveOrder(newOrderId, cartItems, shippingFee, discount, zipCode, appliedVoucher);
+      
+      // Criar checkout do Mercado Pago
+      const checkoutUrl = await createMercadoPagoCheckout(
+        newOrderId, 
+        cartItems, 
+        shippingFee, 
+        discount
       );
-      const shippingCost = Number(shippingFee) || 0;
-      const discountValue = Number(discount) || 0;
-      const total = Math.max(0, Number((subtotal + shippingCost - discountValue).toFixed(2)));
-
-      if (total <= 0) return;
-
-      await saveOrder(orderId, cartItems, shippingFee, discount, zipCode, appliedVoucher);
-
-      // Redireciona para a página do pedido
-      navigate(`/orders/${orderId}`, {
-        state: { 
-          showPaymentButton: true,
-          paymentMethod,
-          orderTotal: total
-        }
-      });
+      
+      setPaymentUrl(checkoutUrl);
+      
+      // Se método de pagamento for processado no front-end
+      if (paymentMethod === 'credit' || paymentMethod === 'pix' || paymentMethod === 'boleto') {
+        window.location.href = checkoutUrl;
+      }
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
+      toast.error("Erro ao processar o checkout: " + (error.message || "Tente novamente"));
       setLoading(false);
     }
   };
@@ -150,6 +189,9 @@ export function useCheckout() {
     loading,
     paymentMethod,
     setPaymentMethod,
-    handleCheckout
+    handleCheckout,
+    handleProcessPayment,
+    paymentUrl,
+    orderId
   };
 }

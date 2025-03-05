@@ -7,6 +7,8 @@ import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
+import { Separator } from "@/components/ui/separator";
+import { ShoppingBag } from "lucide-react";
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeItem } = useCart();
@@ -19,7 +21,8 @@ const Cart = () => {
     shippingCost,
     shippingError,
     calculateShipping,
-    handleCheckout
+    handleCheckout,
+    shippingCalculated
   } = useCartPage();
 
   if (!cartItems.length) {
@@ -36,10 +39,14 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8 text-primary">Carrinho</h1>
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        <div className="flex items-center mb-6">
+          <ShoppingBag className="h-6 w-6 mr-2 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">Seu Carrinho</h1>
+        </div>
+        <Separator className="mb-8" />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
@@ -66,6 +73,7 @@ const Cart = () => {
             handleCheckout={handleCheckout}
             session={session}
             isAuthenticated={isAuthenticated}
+            shippingCalculated={shippingCalculated}
           />
         </div>
       </div>

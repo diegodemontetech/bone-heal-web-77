@@ -14,6 +14,7 @@ export function useCartPage() {
   const [shippingCost, setShippingCost] = useState<number | null>(null);
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
+  const [shippingCalculated, setShippingCalculated] = useState(false);
 
   // Verifica o status da sessão ao carregar o componente
   useEffect(() => {
@@ -22,11 +23,16 @@ export function useCartPage() {
         setHasAttemptedFetch(true);
         const { data } = await supabase.auth.getSession();
         setSession(data.session);
+        
+        // Se o usuário tem um profile, tenta preencher o CEP automaticamente
+        if (profile?.zip_code) {
+          setZipCode(profile.zip_code);
+        }
       }
     };
     
     checkSession();
-  }, [hasAttemptedFetch]);
+  }, [hasAttemptedFetch, profile]);
 
   useEffect(() => {
     // Limpar erro de frete quando o CEP muda
@@ -44,6 +50,10 @@ export function useCartPage() {
       return;
     }
 
+    if (shippingCalculated && shippingCost) {
+      return; // Evita recalcular se já temos um valor e não houve mudança no CEP
+    }
+
     setIsCalculatingShipping(true);
     setShippingError(null);
     
@@ -53,7 +63,7 @@ export function useCartPage() {
       const { data, error } = await supabase.functions.invoke("correios-shipping", {
         body: {
           zipCode: zipCode,
-          zipCodeDestination: zipCode, // Adicionando como fallback
+          zipCodeDestination: zipCode,
         },
       });
 
@@ -75,10 +85,12 @@ export function useCartPage() {
       );
       
       setShippingCost(cheapestRate.rate);
+      setShippingCalculated(true);
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
       setShippingError("Erro ao calcular o frete. Por favor, tente novamente.");
       setShippingCost(null);
+      setShippingCalculated(false);
     } finally {
       setIsCalculatingShipping(false);
     }
@@ -113,6 +125,7 @@ export function useCartPage() {
     shippingCost,
     shippingError,
     calculateShipping,
-    handleCheckout
+    handleCheckout,
+    shippingCalculated
   };
 }

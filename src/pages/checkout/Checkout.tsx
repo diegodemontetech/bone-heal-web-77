@@ -1,8 +1,9 @@
 
+import { useEffect } from "react";
 import { useCart } from "@/hooks/use-cart";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DeliveryInformation from "@/components/checkout/DeliveryInformation";
 import OrderTotal from "@/components/checkout/OrderTotal";
@@ -12,7 +13,8 @@ import { useCheckout } from "@/hooks/use-checkout";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
-import { useEffect } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
@@ -25,7 +27,8 @@ const Checkout = () => {
     loading: shippingLoading,
     shippingFee,
     deliveryDate,
-    handleShippingRateChange
+    handleShippingRateChange,
+    zipCode
   } = useShipping();
 
   const {
@@ -42,7 +45,9 @@ const Checkout = () => {
     loading,
     paymentMethod,
     setPaymentMethod,
-    handleCheckout: processCheckout
+    handleCheckout: processCheckout,
+    paymentUrl,
+    orderId
   } = useCheckout();
 
   // Redirecionar para o carrinho se não houver itens
@@ -59,7 +64,7 @@ const Checkout = () => {
   };
 
   const handleCheckout = () => {
-    if (selectedShippingRate) {
+    if (selectedShippingRate && session?.user) {
       processCheckout(cartItems, selectedShippingRate.zipCode, shippingFee, discount, appliedVoucher);
     }
   };
@@ -86,11 +91,51 @@ const Checkout = () => {
     );
   }
 
+  // Se temos URL de pagamento, realizar redirect
+  if (paymentUrl && orderId) {
+    clear(); // Limpar o carrinho após o checkout
+    
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="container mx-auto p-4 py-12 flex-1">
+          <div className="max-w-2xl mx-auto">
+            <Alert className="mb-8 border-green-200 bg-green-50">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <AlertTitle>Pedido realizado com sucesso!</AlertTitle>
+              <AlertDescription className="mt-2">
+                Seu pedido foi registrado. Agora você será redirecionado para concluir o pagamento.
+              </AlertDescription>
+            </Alert>
+            
+            <div className="text-center space-y-6 p-6 border rounded-lg bg-white">
+              <p className="text-lg">Você será redirecionado para a página de pagamento em instantes...</p>
+              <Button 
+                onClick={() => window.location.href = paymentUrl}
+                className="bg-primary hover:bg-primary/90 text-white"
+                size="lg"
+              >
+                Ir para pagamento agora
+              </Button>
+            </div>
+          </div>
+        </div>
+        <Footer />
+        <WhatsAppWidget />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <div className="container mx-auto p-4 py-8 flex-1">
-        <h1 className="text-3xl font-bold mb-8 text-primary">Finalizar Compra</h1>
+        <div className="flex items-center mb-6">
+          <ShoppingBag className="h-6 w-6 mr-2 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-bold text-primary">Finalizar Compra</h1>
+        </div>
+        <Separator className="mb-8" />
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-6">
             <DeliveryInformation
@@ -115,6 +160,8 @@ const Checkout = () => {
             hasZipCode={!!selectedShippingRate}
             onCheckout={handleCheckout}
             deliveryDate={deliveryDate}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
           />
         </div>
       </div>

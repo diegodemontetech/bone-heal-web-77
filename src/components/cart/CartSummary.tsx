@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShoppingBag, RotateCw, TruckIcon } from "lucide-react";
 import { CartItem } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
-import ProductLoading from "@/components/product/ProductLoading";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -21,6 +23,7 @@ interface CartSummaryProps {
   handleCheckout: (cartItems: CartItem[], subtotal: number, total: number) => void;
   session: any;
   isAuthenticated?: boolean;
+  shippingCalculated?: boolean;
 }
 
 export const CartSummary = ({
@@ -33,7 +36,8 @@ export const CartSummary = ({
   calculateShipping,
   handleCheckout,
   session,
-  isAuthenticated = false
+  isAuthenticated = false,
+  shippingCalculated = false
 }: CartSummaryProps) => {
   const navigate = useNavigate();
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -46,114 +50,139 @@ export const CartSummary = ({
   };
 
   const handleZipCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && zipCode.length === 8 && !shippingCalculated) {
       calculateShipping();
     }
   };
 
-  const handleLoginClick = () => {
-    navigate("/login", { state: { from: "/cart" } });
+  const handleCheckoutClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: "/cart" } });
+      return;
+    }
+    
+    if (!shippingCost) {
+      toast.error("Por favor, calcule o frete antes de continuar");
+      return;
+    }
+    
+    handleCheckout(cartItems, subtotal, total);
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow space-y-6">
-      <h2 className="text-xl font-bold text-primary">Resumo do Pedido</h2>
+    <Card className="bg-white shadow-md border rounded-lg">
+      <CardContent className="p-6 space-y-6">
+        <h2 className="text-xl font-bold text-primary border-b pb-2">Resumo do Pedido</h2>
 
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="zipCode">Calcular Frete</Label>
-          <div className="flex gap-2 mt-1">
-            <Input
-              id="zipCode"
-              placeholder="CEP (somente números)"
-              value={zipCode}
-              onChange={handleZipCodeChange}
-              onKeyDown={handleZipCodeKeyDown}
-              maxLength={8}
-              className={shippingError ? "border-red-500" : ""}
-            />
-            <Button
-              onClick={calculateShipping}
-              disabled={isCalculatingShipping || zipCode.length !== 8}
-              className="bg-primary hover:bg-primary/90 text-white"
-            >
-              {isCalculatingShipping ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Calcular"
-              )}
-            </Button>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="zipCode" className="text-sm font-medium">Calcular Frete</Label>
+            <div className="flex gap-2 mt-1">
+              <div className="relative flex-1">
+                <TruckIcon className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+                <Input
+                  id="zipCode"
+                  placeholder="Digite seu CEP"
+                  value={zipCode}
+                  onChange={handleZipCodeChange}
+                  onKeyDown={handleZipCodeKeyDown}
+                  maxLength={8}
+                  className={`pl-9 ${shippingError ? "border-red-500" : ""}`}
+                />
+              </div>
+              <Button
+                onClick={calculateShipping}
+                disabled={isCalculatingShipping || zipCode.length !== 8 || (shippingCalculated && !!shippingCost)}
+                variant="outline"
+                className="min-w-[100px]"
+              >
+                {isCalculatingShipping ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : shippingCalculated && shippingCost ? (
+                  <RotateCw className="w-4 h-4 mr-2" />
+                ) : (
+                  "Calcular"
+                )}
+              </Button>
+            </div>
+            {shippingError && (
+              <Alert variant="destructive" className="mt-2 py-2">
+                <AlertDescription className="text-sm">{shippingError}</AlertDescription>
+              </Alert>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              Digite apenas os 8 números do seu CEP
+            </p>
           </div>
-          {shippingError && (
-            <Alert variant="destructive" className="mt-2">
-              <AlertDescription className="text-sm">{shippingError}</AlertDescription>
-            </Alert>
-          )}
-          <p className="text-xs text-muted-foreground mt-1">
-            Digite apenas os 8 números do seu CEP
-          </p>
-        </div>
 
-        {isCalculatingShipping && (
-          <div className="flex justify-center items-center p-4 bg-gray-50 rounded-md">
-            <div className="flex flex-col items-center space-y-2">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              <p className="text-sm text-gray-600">Calculando opções de frete...</p>
+          {isCalculatingShipping ? (
+            <div className="flex justify-center items-center p-4 bg-gray-50 rounded-md">
+              <div className="flex flex-col items-center space-y-2">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                <p className="text-sm text-gray-600">Calculando opções de frete...</p>
+              </div>
+            </div>
+          ) : shippingCost ? (
+            <div className="bg-green-50 p-3 rounded-md border border-green-100">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium flex items-center">
+                  <TruckIcon className="h-4 w-4 mr-2 text-green-600" />
+                  Frete calculado
+                </span>
+                <Badge variant="outline" className="bg-green-100">
+                  {formatCurrency(shippingCost)}
+                </Badge>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">
+                Entrega em até 7 dias úteis
+              </p>
+            </div>
+          ) : null}
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Subtotal ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})</span>
+              <span className="font-medium">{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Frete</span>
+              <span className="font-medium">
+                {shippingCost ? formatCurrency(shippingCost) : "Calculando..."}
+              </span>
+            </div>
+            <Separator />
+            <div className="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span className="text-primary">{formatCurrency(total)}</span>
             </div>
           </div>
-        )}
 
-        <Separator />
-
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Frete</span>
-            <span>
-              {shippingCost ? formatCurrency(shippingCost) : "-"}
-            </span>
-          </div>
-          <Separator />
-          <div className="flex justify-between font-bold">
-            <span>Total</span>
-            <span>{formatCurrency(total)}</span>
-          </div>
-        </div>
-
-        {!isAuthenticated ? (
-          <>
-            <Button
-              className="w-full bg-primary hover:bg-primary/90 text-white"
-              size="lg"
-              onClick={handleLoginClick}
-            >
-              Fazer login para continuar
-            </Button>
-            <p className="text-sm text-gray-600 text-center">
-              Faça login para continuar com a compra
-            </p>
-          </>
-        ) : (
-          <>
-            <Button
-              className="w-full bg-primary hover:bg-primary/90 text-white"
-              size="lg"
-              onClick={() => handleCheckout(cartItems, subtotal, total)}
-              disabled={!shippingCost}
-            >
-              Finalizar Compra
-            </Button>
-            {!shippingCost && (
-              <p className="text-sm text-gray-600 text-center">
-                Calcule o frete antes de continuar
-              </p>
+          <Button
+            className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-base"
+            onClick={handleCheckoutClick}
+            disabled={!shippingCost || isCalculatingShipping}
+          >
+            {!isAuthenticated ? (
+              "Entrar para continuar"
+            ) : !shippingCost ? (
+              "Calcule o frete para continuar"
+            ) : (
+              <>
+                <ShoppingBag className="mr-2 h-5 w-5" />
+                Finalizar Compra
+              </>
             )}
-          </>
-        )}
-      </div>
-    </div>
+          </Button>
+
+          {!shippingCost && (
+            <p className="text-sm text-center text-gray-600">
+              Informe seu CEP para calcular o frete
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
