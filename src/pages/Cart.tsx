@@ -39,7 +39,7 @@ const Cart = () => {
     <div className="min-h-screen">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Carrinho</h1>
+        <h1 className="text-4xl font-bold mb-8 text-primary">Carrinho</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}

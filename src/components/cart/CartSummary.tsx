@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,7 @@ import { CartItem } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
+import ProductLoading from "@/components/product/ProductLoading";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -57,7 +57,7 @@ export const CartSummary = ({
 
   return (
     <div className="bg-white p-6 rounded-lg shadow space-y-6">
-      <h2 className="text-xl font-bold">Resumo do Pedido</h2>
+      <h2 className="text-xl font-bold text-primary">Resumo do Pedido</h2>
 
       <div className="space-y-4">
         <div>
@@ -73,9 +73,9 @@ export const CartSummary = ({
               className={shippingError ? "border-red-500" : ""}
             />
             <Button
-              variant="outline"
               onClick={calculateShipping}
               disabled={isCalculatingShipping || zipCode.length !== 8}
+              className="bg-primary hover:bg-primary/90 text-white"
             >
               {isCalculatingShipping ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -93,6 +93,15 @@ export const CartSummary = ({
             Digite apenas os 8 números do seu CEP
           </p>
         </div>
+
+        {isCalculatingShipping && (
+          <div className="flex justify-center items-center p-4 bg-gray-50 rounded-md">
+            <div className="flex flex-col items-center space-y-2">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <p className="text-sm text-gray-600">Calculando opções de frete...</p>
+            </div>
+          </div>
+        )}
 
         <Separator />
 
@@ -117,20 +126,20 @@ export const CartSummary = ({
         {!isAuthenticated ? (
           <>
             <Button
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90 text-white"
               size="lg"
               onClick={handleLoginClick}
             >
               Fazer login para continuar
             </Button>
-            <p className="text-sm text-red-500 text-center">
+            <p className="text-sm text-gray-600 text-center">
               Faça login para continuar com a compra
             </p>
           </>
         ) : (
           <>
             <Button
-              className="w-full"
+              className="w-full bg-primary hover:bg-primary/90 text-white"
               size="lg"
               onClick={() => handleCheckout(cartItems, subtotal, total)}
               disabled={!shippingCost}
@@ -138,7 +147,7 @@ export const CartSummary = ({
               Finalizar Compra
             </Button>
             {!shippingCost && (
-              <p className="text-sm text-amber-600 text-center">
+              <p className="text-sm text-gray-600 text-center">
                 Calcule o frete antes de continuar
               </p>
             )}

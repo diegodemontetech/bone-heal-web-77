@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { CartItem } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth-context";
 
@@ -37,7 +36,6 @@ export function useCartPage() {
 
   const calculateShipping = async () => {
     if (!zipCode || zipCode.length !== 8) {
-      toast.error("Por favor, insira um CEP válido com 8 dígitos");
       setShippingError("Por favor, insira um CEP válido com 8 dígitos");
       return;
     }
@@ -73,11 +71,9 @@ export function useCartPage() {
       );
       
       setShippingCost(cheapestRate.rate);
-      toast.success(`Frete calculado: entrega em ${cheapestRate.delivery_days} dias úteis`);
     } catch (error) {
       console.error("Erro ao calcular frete:", error);
       setShippingError("Erro ao calcular o frete. Por favor, tente novamente.");
-      toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
       setShippingCost(null);
     } finally {
       setIsCalculatingShipping(false);
@@ -87,18 +83,15 @@ export function useCartPage() {
   const handleCheckout = (cartItems: CartItem[], subtotal: number, total: number) => {
     // Verificar se há itens no carrinho
     if (cartItems.length === 0) {
-      toast.error("Seu carrinho está vazio");
       return;
     }
 
     if (!shippingCost) {
-      toast.error("Por favor, calcule o frete antes de continuar");
       return;
     }
 
     // Verificar se o usuário está autenticado
     if (!isAuthenticated) {
-      toast.error("Por favor, faça login para continuar");
       navigate("/login", { state: { from: "/cart" } });
       return;
     }

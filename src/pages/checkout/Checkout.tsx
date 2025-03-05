@@ -9,6 +9,9 @@ import OrderTotal from "@/components/checkout/OrderTotal";
 import { useShipping } from "@/hooks/use-shipping";
 import { useVoucher } from "@/hooks/use-voucher";
 import { useCheckout } from "@/hooks/use-checkout";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 const Checkout = () => {
   const { cartItems, clear } = useCart();
@@ -55,46 +58,60 @@ const Checkout = () => {
 
   if (!cartItems.length) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
-          <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 mb-4">Seu carrinho está vazio</p>
-          <Button onClick={() => navigate("/products")}>
-            Continuar comprando
-          </Button>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="container mx-auto p-4 flex-1">
+          <div className="max-w-md mx-auto bg-white rounded-lg shadow p-6 text-center">
+            <ShoppingBag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-500 mb-4">Seu carrinho está vazio</p>
+            <Button 
+              onClick={() => navigate("/products")}
+              className="bg-primary hover:bg-primary/90 text-white"
+            >
+              Continuar comprando
+            </Button>
+          </div>
         </div>
+        <Footer />
+        <WhatsAppWidget />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-6">
-          <DeliveryInformation
-            voucherCode={voucherCode}
-            setVoucherCode={setVoucherCode}
-            voucherLoading={voucherLoading}
-            appliedVoucher={appliedVoucher}
-            applyVoucher={handleVoucherApply}
-            removeVoucher={removeVoucher}
-            shippingRates={shippingRates}
-            selectedShippingRate={selectedShippingRate}
-            onShippingRateChange={handleShippingRateChange}
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="container mx-auto p-4 py-8 flex-1">
+        <h1 className="text-3xl font-bold mb-8 text-primary">Finalizar Compra</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <DeliveryInformation
+              voucherCode={voucherCode}
+              setVoucherCode={setVoucherCode}
+              voucherLoading={voucherLoading}
+              appliedVoucher={appliedVoucher}
+              applyVoucher={handleVoucherApply}
+              removeVoucher={removeVoucher}
+              shippingRates={shippingRates}
+              selectedShippingRate={selectedShippingRate}
+              onShippingRateChange={handleShippingRateChange}
+            />
+          </div>
+
+          <OrderTotal
+            cartItems={cartItems}
+            shippingFee={shippingFee}
+            discount={discount}
+            loading={loading}
+            isLoggedIn={!!session}
+            hasZipCode={!!selectedShippingRate}
+            onCheckout={handleCheckout}
+            deliveryDate={deliveryDate}
           />
         </div>
-
-        <OrderTotal
-          cartItems={cartItems}
-          shippingFee={shippingFee}
-          discount={discount}
-          loading={loading}
-          isLoggedIn={!!session}
-          hasZipCode={!!selectedShippingRate}
-          onCheckout={handleCheckout}
-          deliveryDate={deliveryDate}
-        />
       </div>
+      <Footer />
+      <WhatsAppWidget />
     </div>
   );
 };

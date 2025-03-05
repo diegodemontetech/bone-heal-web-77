@@ -63,10 +63,10 @@ const OrderTotal = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Resumo do Pedido</CardTitle>
+      <CardHeader className="bg-gray-50 border-b">
+        <CardTitle className="text-primary">Resumo do Pedido</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <OrderSummary
           items={cartItems}
           subtotal={subtotal}
@@ -83,7 +83,7 @@ const OrderTotal = ({
 
         <div className="mt-6 space-y-4">
           <div className="p-4 border rounded-lg space-y-4">
-            <h4 className="font-medium">Forma de Pagamento</h4>
+            <h4 className="font-medium text-primary">Forma de Pagamento</h4>
             
             <RadioGroup 
               value={paymentMethod} 
@@ -94,7 +94,7 @@ const OrderTotal = ({
                 <RadioGroupItem value="credit" id="credit" />
                 <Label htmlFor="credit" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="h-4 w-4 text-primary" />
                     <span>Cartão de Crédito</span>
                   </div>
                   {paymentMethod === 'credit' && (
@@ -114,7 +114,7 @@ const OrderTotal = ({
                 <RadioGroupItem value="pix" id="pix" />
                 <Label htmlFor="pix" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <QrCode className="h-4 w-4" />
+                    <QrCode className="h-4 w-4 text-primary" />
                     <span>PIX</span>
                     <span className="text-green-600 text-sm ml-auto">
                       5% de desconto
@@ -137,7 +137,7 @@ const OrderTotal = ({
                 <RadioGroupItem value="boleto" id="boleto" />
                 <Label htmlFor="boleto" className="flex-1 cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4" />
+                    <Wallet className="h-4 w-4 text-primary" />
                     <span>Boleto Bancário</span>
                   </div>
                   {paymentMethod === 'boleto' && (
@@ -154,7 +154,7 @@ const OrderTotal = ({
           </div>
 
           <Button
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90 text-white"
             size="lg"
             onClick={onCheckout}
             disabled={loading || !isLoggedIn || (isLoggedIn && shippingFee === 0)}
@@ -178,7 +178,7 @@ const OrderTotal = ({
           </Button>
 
           {!isLoggedIn && (
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-sm text-gray-600 text-center">
               Entre em sua conta para finalizar a compra
             </p>
           )}

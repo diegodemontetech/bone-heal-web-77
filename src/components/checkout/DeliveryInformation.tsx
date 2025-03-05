@@ -42,10 +42,10 @@ const DeliveryInformation = ({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Entrega</CardTitle>
+        <CardHeader className="bg-gray-50 border-b">
+          <CardTitle className="text-primary">Entrega</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {shippingRates.length > 0 ? (
             <RadioGroup 
               value={selectedShippingRate?.service_type}
@@ -61,7 +61,7 @@ const DeliveryInformation = ({
                   <Label htmlFor={rate.service_type} className="flex-1 cursor-pointer">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Truck className="h-4 w-4" />
+                        <Truck className="h-4 w-4 text-primary" />
                         <span>{rate.name}</span>
                       </div>
                       <span className="font-medium">R$ {rate.rate.toFixed(2)}</span>
@@ -74,21 +74,23 @@ const DeliveryInformation = ({
               ))}
             </RadioGroup>
           ) : (
-            <div className="text-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-              <p className="text-sm text-gray-500">
-                Calculando opções de frete...
-              </p>
+            <div className="flex justify-center items-center py-8">
+              <div className="flex flex-col items-center space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-gray-600">
+                  Calculando opções de frete...
+                </p>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Cupom de Desconto</CardTitle>
+        <CardHeader className="bg-gray-50 border-b">
+          <CardTitle className="text-primary">Cupom de Desconto</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <div className="space-y-2">
             <Label htmlFor="voucher">Tem um cupom?</Label>
             <div className="flex gap-2">
@@ -100,7 +102,7 @@ const DeliveryInformation = ({
                 disabled={!!appliedVoucher}
               />
               <Button 
-                variant="outline" 
+                className="bg-primary hover:bg-primary/90 text-white"
                 onClick={applyVoucher}
                 disabled={voucherLoading || !!appliedVoucher}
               >
@@ -114,6 +116,7 @@ const DeliveryInformation = ({
                   variant="ghost"
                   size="sm"
                   onClick={removeVoucher}
+                  className="text-primary hover:text-primary/80"
                 >
                   Remover
                 </Button>
