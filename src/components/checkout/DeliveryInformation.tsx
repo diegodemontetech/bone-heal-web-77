@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tag, Truck } from "lucide-react";
+import { useSession } from "@supabase/auth-helpers-react";
 
 interface ShippingRate {
   rate: number;
@@ -36,6 +37,8 @@ const DeliveryInformation = ({
   selectedShippingRate,
   onShippingRateChange,
 }: DeliveryInformationProps) => {
+  const session = useSession();
+
   return (
     <div className="space-y-6">
       <Card>
@@ -72,7 +75,7 @@ const DeliveryInformation = ({
             </RadioGroup>
           ) : (
             <p className="text-sm text-gray-500">
-              Nenhuma opção de frete disponível para sua região.
+              {session ? "Calculando opções de frete..." : "Nenhuma opção de frete disponível para sua região."}
             </p>
           )}
         </CardContent>

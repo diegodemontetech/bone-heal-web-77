@@ -157,13 +157,17 @@ const OrderTotal = ({
             className="w-full"
             size="lg"
             onClick={onCheckout}
-            disabled={loading || !isLoggedIn}
+            disabled={loading || !isLoggedIn || (isLoggedIn && shippingFee === 0)}
           >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Processando...
               </>
+            ) : !isLoggedIn ? (
+              "Entre em sua conta para finalizar a compra"
+            ) : shippingFee === 0 ? (
+              "Aguarde o cálculo do frete"
             ) : (
               <>
                 Pagar {paymentMethod === 'credit' ? 'com Cartão' : 
