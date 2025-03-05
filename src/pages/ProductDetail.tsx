@@ -13,6 +13,7 @@ import { useBrowseHistory } from "@/hooks/use-browse-history";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -94,6 +95,7 @@ const ProductDetail = () => {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
         <Footer />
+        <WhatsAppWidget />
       </div>
     );
   }
@@ -127,6 +129,7 @@ const ProductDetail = () => {
           </div>
         </div>
         <Footer />
+        <WhatsAppWidget />
       </div>
     );
   }
@@ -157,6 +160,7 @@ const ProductDetail = () => {
       </main>
 
       <Footer />
+      <WhatsAppWidget />
     </div>
   );
 };

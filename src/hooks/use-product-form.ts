@@ -55,7 +55,7 @@ export const useProductForm = (
         name: values.name,
         slug: values.slug,
         omie_code: values.omie_code,
-        weight: values.weight, // Já é convertido para número pelo Zod
+        weight: Number(values.weight), // Garantir que seja número
         short_description: values.short_description,
         description: values.description,
         video_url: values.video_url,
@@ -63,6 +63,8 @@ export const useProductForm = (
         gallery: images.slice(1),
         active: true,
       };
+
+      console.log("Dados do produto a serem salvos:", data);
 
       if (product) {
         const { error } = await updateProduct(product.id, data);
@@ -76,6 +78,7 @@ export const useProductForm = (
 
       if (onSuccess) onSuccess();
     } catch (error: any) {
+      console.error("Erro ao salvar produto:", error);
       notifyProductError(error);
     } finally {
       setIsLoading(false);
