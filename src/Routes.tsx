@@ -26,6 +26,9 @@ import Vouchers from "@/pages/admin/Vouchers";
 import Users from "@/pages/admin/Users";
 import News from "@/pages/admin/News";
 import Studies from "@/pages/admin/Studies";
+import NewsPage from "@/pages/News";
+import NewsDetail from "@/pages/NewsDetail";
+import StudiesPage from "@/pages/Studies";
 
 const router = createBrowserRouter([
   {
@@ -127,6 +130,18 @@ const router = createBrowserRouter([
   {
     path: "/admin/studies",
     element: <Studies />,
+  },
+  {
+    path: "/news",
+    element: <NewsPage />,
+  },
+  {
+    path: "/news/:slug",
+    element: <NewsDetail />,
+  },
+  {
+    path: "/studies",
+    element: <StudiesPage />,
   },
 ]);
 
