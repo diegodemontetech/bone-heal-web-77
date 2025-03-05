@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { RouterProvider } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider } from '@/hooks/use-auth-context';
-import Routes from './Routes';
+import router from './Routes';
 
 // Criar query client para o TanStack Query
 const queryClient = new QueryClient({
@@ -27,10 +27,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
-          {/* O erro estava aqui, Routes estava sendo importado incorretamente */}
-          <Routes />
-        </BrowserRouter>
+        <RouterProvider router={router} />
         <Toaster />
         <SonnerToaster position="top-right" richColors />
       </AuthProvider>
