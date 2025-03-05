@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Download, Calendar, AlertCircle } from "lucide-react";
+import { ArrowRight, Download, Calendar, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -13,7 +13,7 @@ const StudiesPreview = () => {
     queryKey: ["studies-preview"],
     queryFn: async () => {
       try {
-        console.log("Fetching studies preview...");
+        console.log("Buscando estudos para preview...");
         const { data, error } = await supabase
           .from("scientific_studies")
           .select("*")
@@ -21,18 +21,18 @@ const StudiesPreview = () => {
           .limit(3);
         
         if (error) {
-          console.error("Error fetching studies preview:", error);
+          console.error("Erro ao buscar estudos para preview:", error);
           throw error;
         }
         
-        console.log("Studies preview fetched successfully:", data);
+        console.log("Estudos para preview recuperados:", data);
         return data;
       } catch (error) {
-        console.error("Failed to fetch studies preview:", error);
+        console.error("Falha ao buscar estudos para preview:", error);
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutos
     retry: 2,
   });
 
@@ -55,7 +55,7 @@ const StudiesPreview = () => {
         </motion.div>
 
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive" className="mb-6 max-w-lg mx-auto">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Erro</AlertTitle>
             <AlertDescription>
@@ -66,7 +66,8 @@ const StudiesPreview = () => {
 
         {isLoading ? (
           <div className="flex justify-center items-center min-h-[200px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+            <span>Carregando estudos...</span>
           </div>
         ) : studies && studies.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">

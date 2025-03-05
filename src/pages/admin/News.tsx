@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { NewsAIGenerator } from "@/components/admin/NewsAIGenerator";
+import { toast } from "sonner";
 
 const AdminNews = () => {
   const { toast } = useToast();
@@ -42,15 +44,21 @@ const AdminNews = () => {
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
-  const { data: news, refetch } = useQuery({
+  const { data: news, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-news"],
     queryFn: async () => {
+      console.log("Buscando notícias do banco de dados...");
       const { data, error } = await supabase
         .from("news")
         .select("*")
         .order("published_at", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar notícias:", error);
+        throw error;
+      }
+      
+      console.log("Notícias recuperadas:", data);
       return data;
     },
   });
@@ -116,24 +124,32 @@ const AdminNews = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase
-      .from("news")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
+    try {
+      const { error } = await supabase
+        .from("news")
+        .delete()
+        .eq("id", id);
+  
+      if (error) {
+        toast({
+          title: "Erro ao excluir notícia",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      toast({
+        title: "Notícia excluída com sucesso",
+      });
+      refetch();
+    } catch (error: any) {
       toast({
         title: "Erro ao excluir notícia",
         description: error.message,
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Notícia excluída com sucesso",
-    });
-    refetch();
   };
 
   const handleImageUpload = async (file: File) => {
@@ -220,37 +236,46 @@ const AdminNews = () => {
       }
     }
 
-    if (editingId) {
-      updateNewsMutation.mutate({
-        ...formData,
-        featured_image,
-        id: editingId,
-      });
-    } else {
-      const { error } = await supabase
-        .from("news")
-        .insert([
-          {
-            ...formData,
-            featured_image,
-            slug: formData.title.toLowerCase().replace(/ /g, "-"),
-          },
-        ]);
-
-      if (error) {
-        toast({
-          title: "Erro ao criar notícia",
-          description: error.message,
-          variant: "destructive",
+    try {
+      if (editingId) {
+        updateNewsMutation.mutate({
+          ...formData,
+          featured_image,
+          id: editingId,
         });
-        return;
+      } else {
+        const { error } = await supabase
+          .from("news")
+          .insert([
+            {
+              ...formData,
+              featured_image,
+              slug: formData.title.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, "-"),
+              published_at: new Date().toISOString(),
+            },
+          ]);
+  
+        if (error) {
+          toast({
+            title: "Erro ao criar notícia",
+            description: error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+  
+        toast({
+          title: "Notícia criada com sucesso",
+        });
+        handleCloseForm();
+        refetch();
       }
-
+    } catch (error: any) {
       toast({
-        title: "Notícia criada com sucesso",
+        title: "Erro ao salvar notícia",
+        description: error.message,
+        variant: "destructive",
       });
-      handleCloseForm();
-      refetch();
     }
   };
 
@@ -268,53 +293,71 @@ const AdminNews = () => {
         <NewsAIGenerator onNewsGenerated={refetch} />
 
         <div className="bg-white rounded-lg shadow">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Imagem</TableHead>
-                <TableHead>Título</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Data de Publicação</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {news?.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    {item.featured_image && (
-                      <img
-                        src={item.featured_image}
-                        alt={item.title}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    )}
-                  </TableCell>
-                  <TableCell>{item.title}</TableCell>
-                  <TableCell>{item.category}</TableCell>
-                  <TableCell>
-                    {new Date(item.published_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center items-center p-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+              <span>Carregando notícias...</span>
+            </div>
+          ) : error ? (
+            <div className="p-8 text-center text-red-500">
+              Erro ao carregar notícias. Por favor, tente novamente.
+            </div>
+          ) : news && news.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Imagem</TableHead>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Data de Publicação</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {news.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>
+                      {item.featured_image && (
+                        <img
+                          src={item.featured_image}
+                          alt={item.title}
+                          className="w-16 h-16 object-cover rounded"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/100x100/png?text=Sem+Imagem";
+                          }}
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell>{item.title}</TableCell>
+                    <TableCell>{item.category}</TableCell>
+                    <TableCell>
+                      {new Date(item.published_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleEdit(item)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              Nenhuma notícia encontrada. Clique em "Nova Notícia" para criar uma.
+            </div>
+          )}
         </div>
 
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -358,6 +401,9 @@ const AdminNews = () => {
                       src={formData.featured_image}
                       alt="Preview"
                       className="w-full h-48 object-cover rounded-lg"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://placehold.co/800x400/png?text=Preview+indisponível";
+                      }}
                     />
                   )}
                   <div className="flex gap-4">

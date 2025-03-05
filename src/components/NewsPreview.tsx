@@ -2,10 +2,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Calendar } from "lucide-react";
+import { ArrowRight, Calendar, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const NewsPreview = () => {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ const NewsPreview = () => {
     queryKey: ["news-preview"],
     queryFn: async () => {
       try {
-        console.log("Fetching news preview...");
+        console.log("Buscando notícias para preview...");
         const { data, error } = await supabase
           .from("news")
           .select("*")
@@ -21,17 +22,19 @@ const NewsPreview = () => {
           .limit(3);
         
         if (error) {
-          console.error("Error fetching news preview:", error);
+          console.error("Erro ao buscar notícias para preview:", error);
           throw error;
         }
         
+        console.log("Notícias para preview recuperadas:", data);
         return data || [];
       } catch (err) {
-        console.error("Failed to fetch news preview:", err);
+        console.error("Falha ao buscar notícias para preview:", err);
         return [];
       }
     },
     retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
   const handleNewsClick = (slug: string) => {
@@ -43,6 +46,7 @@ const NewsPreview = () => {
       <section className="py-24 bg-neutral-50">
         <div className="container mx-auto px-8">
           <div className="text-center">
+            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
             <p>Carregando notícias...</p>
           </div>
         </div>
@@ -54,9 +58,13 @@ const NewsPreview = () => {
     return (
       <section className="py-24 bg-neutral-50">
         <div className="container mx-auto px-8">
-          <div className="text-center">
-            <p className="text-red-500">Erro ao carregar notícias. Por favor, tente novamente mais tarde.</p>
-          </div>
+          <Alert variant="destructive" className="max-w-lg mx-auto">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erro</AlertTitle>
+            <AlertDescription>
+              Não foi possível carregar as notícias. Por favor, tente novamente mais tarde.
+            </AlertDescription>
+          </Alert>
         </div>
       </section>
     );
@@ -67,7 +75,7 @@ const NewsPreview = () => {
       <section className="py-24 bg-neutral-50">
         <div className="container mx-auto px-8">
           <div className="text-center">
-            <p>Nenhuma notícia disponível no momento.</p>
+            <p className="text-neutral-500">Nenhuma notícia disponível no momento.</p>
           </div>
         </div>
       </section>
@@ -110,7 +118,7 @@ const NewsPreview = () => {
                     alt={item.title}
                     className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80";
+                      (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&q=80";
                     }}
                   />
                 </div>
@@ -119,7 +127,7 @@ const NewsPreview = () => {
                     <Calendar className="w-4 h-4 mr-2" />
                     {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
                   </div>
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                  <h3 className="text-xl font-bold mb-2 hover:text-primary transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-neutral-600 mb-4 line-clamp-2">

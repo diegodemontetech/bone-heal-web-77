@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Upload, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -44,21 +44,21 @@ const AdminStudies = () => {
     queryKey: ["admin-studies"],
     queryFn: async () => {
       try {
-        console.log("Fetching admin studies...");
+        console.log("Buscando estudos científicos...");
         const { data, error } = await supabase
           .from("scientific_studies")
           .select("*")
           .order("published_date", { ascending: false });
         
         if (error) {
-          console.error("Error fetching studies:", error);
+          console.error("Erro ao buscar estudos:", error);
           throw error;
         }
         
-        console.log("Admin studies fetched:", data);
+        console.log("Estudos científicos recuperados:", data);
         return data;
       } catch (error) {
-        console.error("Failed to fetch studies:", error);
+        console.error("Falha ao buscar estudos:", error);
         throw error;
       }
     },
@@ -66,13 +66,13 @@ const AdminStudies = () => {
 
   const createStudyMutation = useMutation({
     mutationFn: async (studyData: typeof formData & { file_url: string }) => {
-      console.log("Creating new study:", studyData);
+      console.log("Criando novo estudo:", studyData);
       const { error } = await supabase
         .from("scientific_studies")
         .insert([studyData]);
 
       if (error) {
-        console.error("Error creating study:", error);
+        console.error("Erro ao criar estudo:", error);
         throw error;
       }
     },
@@ -94,7 +94,7 @@ const AdminStudies = () => {
 
   const updateStudyMutation = useMutation({
     mutationFn: async (studyData: typeof formData & { id: string }) => {
-      console.log("Updating study:", studyData);
+      console.log("Atualizando estudo:", studyData);
       const { error } = await supabase
         .from("scientific_studies")
         .update({
@@ -106,7 +106,7 @@ const AdminStudies = () => {
         .eq("id", studyData.id);
 
       if (error) {
-        console.error("Error updating study:", error);
+        console.error("Erro ao atualizar estudo:", error);
         throw error;
       }
     },
@@ -128,14 +128,14 @@ const AdminStudies = () => {
 
   const deleteStudyMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log("Deleting study:", id);
+      console.log("Excluindo estudo:", id);
       const { error } = await supabase
         .from("scientific_studies")
         .delete()
         .eq("id", id);
 
       if (error) {
-        console.error("Error deleting study:", error);
+        console.error("Erro ao excluir estudo:", error);
         throw error;
       }
     },
@@ -208,7 +208,7 @@ const AdminStudies = () => {
         });
         
         if (createBucketError) {
-          console.error("Error creating bucket:", createBucketError);
+          console.error("Erro ao criar bucket:", createBucketError);
           throw createBucketError;
         }
       }
@@ -218,7 +218,7 @@ const AdminStudies = () => {
         .upload(filePath, file);
 
       if (uploadError) {
-        console.error("Error uploading file:", uploadError);
+        console.error("Erro ao fazer upload do arquivo:", uploadError);
         throw uploadError;
       }
 
@@ -226,7 +226,7 @@ const AdminStudies = () => {
         .from('studies_files')
         .getPublicUrl(filePath);
 
-      console.log("File uploaded successfully:", publicUrl);
+      console.log("Arquivo enviado com sucesso:", publicUrl);
       return publicUrl;
     } catch (error: any) {
       toast({
@@ -304,7 +304,10 @@ const AdminStudies = () => {
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-primary mr-2" />
+                      <span>Carregando estudos...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : studies?.length === 0 ? (
@@ -406,7 +409,7 @@ const AdminStudies = () => {
                     required={!editingStudy || !formData.file_url}
                   />
                   {isUploading && (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   )}
                 </div>
                 {formData.file_url && (
