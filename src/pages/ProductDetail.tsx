@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ShoppingCart, Check, Loader2, Shield, Truck, CreditCard } from "lucide-react";
+import { ChevronLeft, ShoppingCart, Check, Loader2, Shield, Award, FileCheck, Factory } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { fetchProductBySlug } from "@/api/product-api";
@@ -16,6 +16,7 @@ import WhatsAppWidget from "@/components/WhatsAppWidget";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth-context";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -105,7 +106,7 @@ const ProductDetail = () => {
 
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-lg shadow-sm">
-              <Badge variant="outline" className="mb-2 bg-primary/10 text-primary border-primary/20">Produto Médico</Badge>
+              <Badge variant="medical" className="mb-2">Produto Médico</Badge>
               
               <h1 className="text-2xl font-heading font-bold mb-2">{product.name}</h1>
               
@@ -134,14 +135,14 @@ const ProductDetail = () => {
                 <>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-gray-500">Preço</span>
-                    <span className="text-3xl font-bold text-primary">
-                      R$ {product.price?.toFixed(2)}
+                    <span className="text-3xl font-bold text-black">
+                      {formatCurrency(product.price || 0)}
                     </span>
                   </div>
                   
                   <div className="space-y-4">
                     <Button
-                      className="w-full py-6 text-base bg-green-600 hover:bg-green-700"
+                      className="w-full py-6 text-base bg-green-600 hover:bg-green-700 text-white font-bold"
                       size="lg"
                       onClick={handleAddToCart}
                       disabled={added}
@@ -161,13 +162,13 @@ const ProductDetail = () => {
                       <Button
                         variant="outline"
                         size="lg"
-                        className="py-6 text-base border-primary text-primary hover:bg-primary/10"
+                        className="py-6 text-base border-black text-black hover:bg-black/5"
                         onClick={() => navigate("/products")}
                       >
                         Continuar Comprando
                       </Button>
                       <Button
-                        className="py-6 text-base bg-primary hover:bg-primary/90"
+                        className="py-6 text-base bg-black hover:bg-black/90 text-white font-bold"
                         size="lg"
                         onClick={() => navigate("/cart")}
                       >
@@ -177,16 +178,16 @@ const ProductDetail = () => {
                     
                     <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
                       <div className="flex flex-col items-center text-center">
-                        <Truck className="h-5 w-5 text-gray-500 mb-1" />
-                        <span className="text-xs text-gray-600">Envio em 24h</span>
+                        <Award className="h-5 w-5 text-gray-500 mb-1" />
+                        <span className="text-xs text-gray-600">Produto Patenteado</span>
                       </div>
                       <div className="flex flex-col items-center text-center">
-                        <Shield className="h-5 w-5 text-gray-500 mb-1" />
-                        <span className="text-xs text-gray-600">Produto original</span>
+                        <FileCheck className="h-5 w-5 text-gray-500 mb-1" />
+                        <span className="text-xs text-gray-600">Produto Anvisa</span>
                       </div>
                       <div className="flex flex-col items-center text-center">
-                        <CreditCard className="h-5 w-5 text-gray-500 mb-1" />
-                        <span className="text-xs text-gray-600">Pagamento seguro</span>
+                        <Factory className="h-5 w-5 text-gray-500 mb-1" />
+                        <span className="text-xs text-gray-600">Direto da Indústria</span>
                       </div>
                     </div>
                   </div>
@@ -209,16 +210,16 @@ const ProductDetail = () => {
                   
                   <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
                     <div className="flex flex-col items-center text-center">
-                      <Truck className="h-5 w-5 text-gray-500 mb-1" />
-                      <span className="text-xs text-gray-600">Envio em 24h</span>
+                      <Award className="h-5 w-5 text-gray-500 mb-1" />
+                      <span className="text-xs text-gray-600">Produto Patenteado</span>
                     </div>
                     <div className="flex flex-col items-center text-center">
-                      <Shield className="h-5 w-5 text-gray-500 mb-1" />
-                      <span className="text-xs text-gray-600">Produto original</span>
+                      <FileCheck className="h-5 w-5 text-gray-500 mb-1" />
+                      <span className="text-xs text-gray-600">Produto Anvisa</span>
                     </div>
                     <div className="flex flex-col items-center text-center">
-                      <CreditCard className="h-5 w-5 text-gray-500 mb-1" />
-                      <span className="text-xs text-gray-600">Pagamento seguro</span>
+                      <Factory className="h-5 w-5 text-gray-500 mb-1" />
+                      <span className="text-xs text-gray-600">Direto da Indústria</span>
                     </div>
                   </div>
                 </div>
