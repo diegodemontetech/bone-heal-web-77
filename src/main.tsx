@@ -7,7 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/hooks/use-auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
-import router from "./Routes";
+import { router } from "./Routes";
 import "./index.css";
 
 // Cria uma instância do cliente de consulta

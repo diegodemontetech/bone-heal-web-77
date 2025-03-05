@@ -10,11 +10,19 @@ import AdminProducts from "./pages/admin/Products";
 import Tickets from "./pages/support/Tickets";
 import TicketDetails from "./pages/support/TicketDetails";
 import AdminTickets from "./pages/admin/Tickets";
-
-// Importações substituídas ou que estão faltando
 import Index from "./pages/Index";
 import { default as Checkout } from "./pages/checkout/Checkout";
-import AdminDashboard from "./pages/admin/Dashboard";
+
+// Criamos um componente placeholder para o AdminDashboard
+import React from "react";
+const AdminDashboard = () => {
+  return (
+    <div className="container mx-auto p-8">
+      <h1 className="text-2xl font-bold mb-4">Painel Administrativo</h1>
+      <p>Conteúdo do dashboard em desenvolvimento.</p>
+    </div>
+  );
+};
 
 export const routes = [
   {
