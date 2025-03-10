@@ -4,14 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserRole, UserPermission, UserProfile } from '@/types/auth';
 import { toast } from 'sonner';
 import { AuthContextType, AuthState } from './auth-types';
-import { 
-  fetchSession, 
-  fetchUserProfile, 
-  fetchUserPermissions,
-  signInWithEmail,
-  signUpWithEmail,
-  signOutUser
-} from './auth-service';
+import { fetchSession } from './auth-service';
+import { usePermissions } from './use-permissions';
+import { useProfileProcessor } from './use-profile-processor';
+import { useAuthFunctions } from './use-auth-functions';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -22,6 +18,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading: true,
     permissions: []
   });
+
+  const { hasPermission } = usePermissions();
+  const { processUserProfile } = useProfileProcessor();
+  const { signIn, signUp, signOut } = useAuthFunctions();
 
   const fetchProfileData = async () => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
@@ -39,50 +39,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const userId = currentSession.user.id;
-      const profileData = await fetchUserProfile(userId);
-      const userPermissions = await fetchUserPermissions(userId);
-      
-      console.log("Perfil carregado:", profileData);
-      console.log("Permissões carregadas:", userPermissions);
-      
-      // Verificar se o usuário é admin através do campo role ou is_admin
-      const isAdmin = profileData?.role === UserRole.ADMIN || 
-                      profileData?.role === UserRole.ADMIN_MASTER || 
-                      profileData?.is_admin === true;
-      
-      // Se não tiver permissões mas for admin, adiciona permissões padrão
-      const finalPermissions = userPermissions.length > 0 
-        ? userPermissions 
-        : (isAdmin 
-            ? [
-                UserPermission.MANAGE_USERS,
-                UserPermission.MANAGE_PRODUCTS,
-                UserPermission.MANAGE_ORDERS,
-                UserPermission.MANAGE_CUSTOMERS,
-                UserPermission.MANAGE_SETTINGS,
-                UserPermission.MANAGE_INTEGRATIONS,
-                UserPermission.MANAGE_SUPPORT
-              ] 
-            : []);
-      
-      console.log("Permissões finais:", finalPermissions);
-      
-      // Montar o perfil completo
-      const userProfile: UserProfile = profileData ? {
-        ...profileData,
-        id: userId,
-        email: currentSession.user.email || '',
-        role: (profileData.role as UserRole) || UserRole.DENTIST,
-        permissions: finalPermissions,
-        is_admin: isAdmin // Garantir que is_admin está definido no perfil
-      } : null;
+      const { profile, permissions } = await processUserProfile(currentSession);
       
       setAuthState({
-        profile: userProfile,
+        profile,
         session: currentSession,
         isLoading: false,
-        permissions: finalPermissions
+        permissions
       });
     } catch (error: any) {
       console.error('Erro ao buscar perfil:', error);
@@ -120,42 +83,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await fetchProfileData();
   };
 
-  const signIn = async (email: string, password: string) => {
+  const handleSignIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await signInWithEmail(email, password);
-      
-      if (error) throw error;
+      const { data } = await signIn(email, password);
       
       if (data?.session) {
         setAuthState(prev => ({ ...prev, session: data.session }));
         await fetchProfileData();
       }
-    } catch (error: any) {
-      toast.error("Erro ao fazer login: " + error.message);
+    } catch (error) {
+      // Error already handled in signIn
       throw error;
     }
   };
 
-  const signUp = async (email: string, password: string, userData: any) => {
-    try {
-      const { data, error } = await signUpWithEmail(email, password, userData);
-      
-      if (error) throw error;
-      
-      toast.success("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar o cadastro.");
-
-      // Retornando os dados para que possamos utilizar o ID do usuário para integrações
-      return data;
-    } catch (error: any) {
-      toast.error("Erro ao cadastrar: " + error.message);
-      throw error;
-    }
+  const handleSignUp = async (email: string, password: string, userData: any) => {
+    return signUp(email, password, userData);
   };
 
-  const signOut = async () => {
+  const handleSignOut = async () => {
     try {
-      const { error } = await signOutUser();
-      if (error) throw error;
+      await signOut();
       
       setAuthState({
         profile: null,
@@ -163,10 +111,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading: false,
         permissions: []
       });
-      
-      toast.success("Logout realizado com sucesso");
-    } catch (error: any) {
-      toast.error("Erro ao sair: " + error.message);
+    } catch (error) {
+      // Error already handled in signOut
       throw error;
     }
   };
@@ -177,15 +123,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAdmin = profile?.role === UserRole.ADMIN || profile?.role === UserRole.ADMIN_MASTER;
   const isAdminMaster = profile?.role === UserRole.ADMIN_MASTER;
 
-  const hasPermission = (permission: UserPermission) => {
-    // Para debug
-    console.log(`Verificando permissão ${permission}:`, isAdminMaster || permissions.includes(permission));
-    
-    // Administradores master sempre têm todas as permissões
-    if (isAdminMaster) return true;
-    
-    // Verificar se a permissão existe no array de permissões
-    return permissions.includes(permission);
+  const checkPermission = (permission: UserPermission) => {
+    return hasPermission(permissions, permission, isAdminMaster);
   };
 
   return (
@@ -193,14 +132,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       profile,
       isLoading,
       session: authState.session,
-      signIn,
-      signUp,
-      signOut,
+      signIn: handleSignIn,
+      signUp: handleSignUp,
+      signOut: handleSignOut,
       refreshProfile,
       isDentist,
       isAdmin,
       isAdminMaster,
-      hasPermission
+      hasPermission: checkPermission
     }}>
       {children}
     </AuthContext.Provider>
