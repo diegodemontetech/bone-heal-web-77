@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth-context";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { signIn, isLoading, profile, isAdmin } = useAuth();
   
   const [email, setEmail] = useState("");
@@ -22,26 +21,18 @@ const AdminLogin = () => {
   useEffect(() => {
     if (profile) {
       if (isAdmin) {
-        navigate("/admin");
+        navigate("/admin/dashboard");
       } else {
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar a área administrativa.",
-          variant: "destructive",
-        });
+        toast.error("Acesso negado. Você não tem permissão para acessar a área administrativa.");
       }
     }
-  }, [profile, isAdmin, navigate, toast]);
+  }, [profile, isAdmin, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos",
-        variant: "destructive",
-      });
+      toast.error("Por favor, preencha todos os campos");
       return;
     }
 

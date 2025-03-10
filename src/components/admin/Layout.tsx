@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Outlet } from "react-router-dom";
 import { 
   Users, Package, ShoppingCart, 
   Settings, FileText, Bell, BarChart3,
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth-context";
 import { UserPermission } from "@/types/auth";
 
-export function Layout({ children }: { children: React.ReactNode }) {
+const Layout = ({ children }: { children: React.ReactNode }) => {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const { signOut, isAdminMaster, hasPermission } = useAuth();
@@ -31,7 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const navigation = [
     {
       title: 'Painel',
-      href: '/admin',
+      href: '/admin/dashboard',
       icon: BarChart3,
       permission: null
     },
@@ -106,13 +106,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
       href: '/admin/security',
       icon: Lock,
       permission: UserPermission.MANAGE_SETTINGS
+    },
+    {
+      title: 'Suporte',
+      href: '/admin/tickets',
+      icon: MessageSquare,
+      permission: UserPermission.MANAGE_SUPPORT
     }
   ];
 
   const sidebar = (
     <div className="flex h-full flex-col bg-white">
       <div className="px-3.5 py-2 flex items-center justify-between border-b">
-        <Link to="/admin" className="font-semibold text-lg">
+        <Link to="/admin/dashboard" className="font-semibold text-lg">
           Bone Heal Admin
         </Link>
         <Button 
@@ -190,9 +196,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </SheetContent>
         </Sheet>
       </div>
-      <main className="flex-1 bg-gray-50">{children}</main>
+      <main className="flex-1 bg-gray-50">
+        {children || <Outlet />}
+      </main>
     </div>
   );
-}
+};
 
 export default Layout;

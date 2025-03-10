@@ -7,6 +7,7 @@ import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
 import ProductDetail from "./pages/ProductDetail";
+import AdminLogin from "./pages/AdminLogin"; // Importando o AdminLogin
 
 // Lazy imports
 const About = lazy(() => import("./pages/About"));
@@ -16,6 +17,9 @@ const OrderDetails = lazy(() => import("./pages/orders/OrderDetails"));
 const Checkout = lazy(() => import("./pages/checkout/Checkout"));
 const CheckoutSuccess = lazy(() => import("./pages/checkout/Success"));
 const Studies = lazy(() => import("./pages/Studies"));
+
+// Layout do Admin
+const AdminLayout = lazy(() => import("./components/admin/Layout"));
 
 // Criando o roteador
 export const router = createBrowserRouter([
@@ -112,6 +116,22 @@ export const router = createBrowserRouter([
     element: (
       <Suspense fallback={<>Loading...</>}>
         <OrderDetails />
+      </Suspense>
+    ),
+  },
+  // Adicionando a rota para a área administrativa de login
+  {
+    path: "/admin/login",
+    element: <AdminLogin />
+  },
+  // Adicionando as rotas admin com o layout apropriado
+  {
+    path: "/admin/*",
+    element: (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>}>
+        <AdminLayout>{/* O layout do admin irá carregar as rotas filhas */}</AdminLayout>
       </Suspense>
     ),
   },
