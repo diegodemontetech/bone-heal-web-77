@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import TicketFilters from "@/components/admin/tickets/TicketFilters";
 import TicketsList from "@/components/admin/tickets/TicketsList";

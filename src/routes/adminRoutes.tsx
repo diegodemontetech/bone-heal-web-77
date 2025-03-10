@@ -55,9 +55,7 @@ export const adminRoutes: RouteObject = {
           path: "dashboard",
           element: (
             <Suspense fallback={<AdminLoader />}>
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
+              <Dashboard />
             </Suspense>
           )
         },
@@ -105,9 +103,7 @@ export const adminRoutes: RouteObject = {
           path: "news",
           element: (
             <Suspense fallback={<AdminLoader />}>
-              <ProtectedRoute>
-                <AdminNews />
-              </ProtectedRoute>
+              <AdminNews />
             </Suspense>
           )
         },
@@ -115,9 +111,7 @@ export const adminRoutes: RouteObject = {
           path: "studies",
           element: (
             <Suspense fallback={<AdminLoader />}>
-              <ProtectedRoute>
-                <AdminStudies />
-              </ProtectedRoute>
+              <AdminStudies />
             </Suspense>
           )
         },
@@ -135,9 +129,7 @@ export const adminRoutes: RouteObject = {
           path: "whatsapp",
           element: (
             <Suspense fallback={<AdminLoader />}>
-              <ProtectedRoute>
-                <AdminWhatsapp />
-              </ProtectedRoute>
+              <AdminWhatsapp />
             </Suspense>
           )
         },
@@ -145,9 +137,7 @@ export const adminRoutes: RouteObject = {
           path: "email-templates",
           element: (
             <Suspense fallback={<AdminLoader />}>
-              <ProtectedRoute>
-                <AdminEmailTemplates />
-              </ProtectedRoute>
+              <AdminEmailTemplates />
             </Suspense>
           )
         },
