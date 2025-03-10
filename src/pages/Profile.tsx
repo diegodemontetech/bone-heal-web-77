@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -15,6 +16,7 @@ const Profile = () => {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [hasValidSession, setHasValidSession] = useState(false);
   const [redirectAttempted, setRedirectAttempted] = useState(false);
+  const [sessionCheckComplete, setSessionCheckComplete] = useState(false);
 
   // Verificar a sessão do Supabase diretamente
   useEffect(() => {
@@ -31,6 +33,7 @@ const Profile = () => {
         console.error("Erro ao verificar sessão:", error);
       } finally {
         setSessionLoading(false);
+        setSessionCheckComplete(true);
       }
     };
     
@@ -39,19 +42,19 @@ const Profile = () => {
 
   // Redirecionar para login se não estiver autenticado
   useEffect(() => {
+    // Só verificamos após completar as duas verificações (profile e sessão)
+    if (!sessionCheckComplete || !isLoading === false) return;
+    
     // Evitar múltiplas tentativas de redirecionamento
     if (redirectAttempted) return;
     
-    // Verificar se a página já carregou completamente (ambos, profile e sessão)
-    if (!isLoading && !sessionLoading) {
-      // Verificar se o usuário não está autenticado de nenhuma forma
-      if (!profile && !hasValidSession) {
-        console.log("Usuário não autenticado, redirecionando para login");
-        setRedirectAttempted(true);
-        navigate("/login", { state: { from: location.pathname } });
-      }
+    // Se não há autenticação por nenhum dos métodos, redirecionar para login
+    if (!profile && !hasValidSession) {
+      console.log("Usuário não autenticado em Profile, redirecionando para login");
+      setRedirectAttempted(true);
+      navigate("/login", { state: { from: location.pathname } });
     }
-  }, [isLoading, profile, navigate, sessionLoading, hasValidSession, location.pathname, redirectAttempted]);
+  }, [isLoading, profile, navigate, sessionLoading, hasValidSession, location.pathname, redirectAttempted, sessionCheckComplete]);
 
   // Mostrar loading enquanto verificamos autenticação
   if (isLoading || sessionLoading) {

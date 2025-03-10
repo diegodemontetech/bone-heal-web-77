@@ -17,6 +17,7 @@ export const useCheckoutPage = () => {
   const authCheckRef = useRef(false);
   const [directSession, setDirectSession] = useState<any>(null);
   const [redirectAttempted, setRedirectAttempted] = useState(false);
+  const [authErrorShown, setAuthErrorShown] = useState(false);
 
   // Verificar diretamente a sessão do Supabase além do hook de sessão
   useEffect(() => {
@@ -24,31 +25,45 @@ export const useCheckoutPage = () => {
       const { data } = await supabase.auth.getSession();
       if (data?.session) {
         setDirectSession(data.session);
+        setHasValidSession(true);
       }
     };
     
     checkDirectSession();
   }, []);
 
-  // Verificar a sessão apenas uma vez no carregamento
+  // Verificar a sessão apenas uma vez no carregamento inicial
   useEffect(() => {
     if (authCheckRef.current) return;
-    authCheckRef.current = true;
-
+    
     const checkAuth = async () => {
       console.log("Verificando sessão na página de checkout:", session || directSession);
       
-      // Se tivermos sessão por qualquer um dos métodos
+      // Se temos sessão por qualquer método, marcamos como autenticado
       if (session?.user?.id || directSession?.user?.id) {
         setHasValidSession(true);
         setIsAuthChecked(true);
         setIsInitialized(true);
+        authCheckRef.current = true;
       } else {
         console.log("Nenhuma sessão válida encontrada no checkout");
+        
+        // Verificar novamente a sessão diretamente para ter certeza
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          setDirectSession(data.session);
+          setHasValidSession(true);
+          setIsAuthChecked(true);
+          setIsInitialized(true);
+          authCheckRef.current = true;
+          return;
+        }
+        
         setIsAuthChecked(true);
         
-        // Evitamos redirecionar múltiplas vezes
-        if (!redirectAttempted) {
+        // Mostramos o erro apenas uma vez e apenas se não há sessão válida
+        if (!authErrorShown && !redirectAttempted) {
+          setAuthErrorShown(true);
           setRedirectAttempted(true);
           
           // Salva a página atual para redirecionamento após login
@@ -59,7 +74,7 @@ export const useCheckoutPage = () => {
     };
     
     checkAuth();
-  }, [session, directSession, navigate, location.pathname, redirectAttempted]);
+  }, [session, directSession, navigate, location.pathname, redirectAttempted, authErrorShown]);
 
   // Verificar carrinho vazio apenas após confirmar que o usuário está autenticado
   useEffect(() => {

@@ -19,6 +19,7 @@ export function useCartPage() {
   const [shippingCalculated, setShippingCalculated] = useState(false);
   const [lastCalculatedZip, setLastCalculatedZip] = useState<string>("");
   const calculationInProgress = useRef(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   // Verifica o status da sessão ao carregar o componente
   useEffect(() => {
@@ -135,8 +136,11 @@ export function useCartPage() {
 
     // Verificar se o usuário está autenticado
     if (!isAuthenticated) {
-      // Armazenar a URL atual para redirecionar de volta após o login
-      navigate("/login", { state: { from: location.pathname } });
+      if (!redirectAttempted) {
+        setRedirectAttempted(true);
+        // Armazenar a URL atual para redirecionar de volta após o login
+        navigate("/login", { state: { from: location.pathname } });
+      }
       return;
     }
 
