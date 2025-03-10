@@ -1,8 +1,11 @@
 
+import { useEffect } from "react";
 import ShippingRatesTable from "@/components/admin/shipping/ShippingRatesTable";
 
 const AdminShippingRates = () => {
-  console.log("Renderizando página de taxas de frete");
+  useEffect(() => {
+    console.log("Renderizando página de taxas de frete");
+  }, []);
   
   return (
     <div className="p-8">

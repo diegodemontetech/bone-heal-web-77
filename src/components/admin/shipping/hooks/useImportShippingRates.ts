@@ -16,16 +16,27 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
       setIsImporting(true);
       console.log(`Iniciando importação de ${rates.length} taxas de frete`);
       
-      const { error } = await supabase
+      // Log para verificar os dados que estão sendo enviados
+      console.log("Amostra de dados para importação:", rates.slice(0, 2));
+      
+      const { data, error } = await supabase
         .from("shipping_rates")
         .upsert(rates, {
-          onConflict: 'state,service_type,region_type'
+          onConflict: 'state,service_type,region_type',
+          ignoreDuplicates: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao importar taxas de frete:", error);
+        toast.error("Erro ao importar taxas de frete. Tente novamente.");
+        throw error;
+      }
 
+      console.log("Importação concluída com sucesso!");
+      
+      // Invalidar a consulta para buscar os dados atualizados
       queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
-      toast.success("Tabela de fretes importada com sucesso!");
+      toast.success(`${rates.length} taxas de frete importadas com sucesso!`);
       
     } catch (error: any) {
       console.error("Erro ao importar taxas de frete:", error);
