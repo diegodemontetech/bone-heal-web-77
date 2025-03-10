@@ -78,18 +78,17 @@ serve(async (req) => {
     // Configurar o método de pagamento baseado no tipo solicitado
     if (paymentType === 'transparent') {
       console.log("Configurando pagamento PIX");
-      // Para pagamento PIX, usamos a configuração específica para PIX
+      
+      // Para pagamento PIX, usamos configuração própria sem excluí-lo
       Object.assign(config, {
         payment_methods: {
           default_payment_method_id: "pix",
-          excluded_payment_methods: [],
           excluded_payment_types: [
             { id: "credit_card" },
             { id: "ticket" },
             { id: "atm" },
             { id: "debit_card" }
-          ],
-          installments: 1
+          ]
         }
       });
     } 
