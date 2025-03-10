@@ -25,9 +25,14 @@ const CheckoutButton = ({
   const navigate = useNavigate();
 
   const handleCheckoutClick = () => {
-    // Removendo esta verificação, já que a pessoa já está logada neste ponto
-    // De qualquer forma, adicionando log para debug
+    // Log para verificar o status de autenticação
     console.log("Status de autenticação ao finalizar compra:", isAuthenticated);
+    
+    if (!isAuthenticated) {
+      toast.error("É necessário estar logado para finalizar a compra");
+      navigate("/login", { state: { from: "/cart" } });
+      return;
+    }
     
     if (!shippingCost) {
       toast.error("Por favor, calcule o frete antes de continuar");

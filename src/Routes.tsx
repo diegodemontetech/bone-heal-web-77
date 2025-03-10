@@ -13,6 +13,8 @@ const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Orders = lazy(() => import("./pages/orders/Orders"));
 const OrderDetails = lazy(() => import("./pages/orders/OrderDetails"));
+const Checkout = lazy(() => import("./pages/checkout/Checkout"));
+const CheckoutSuccess = lazy(() => import("./pages/checkout/Success"));
 
 // Criando o roteador
 export const router = createBrowserRouter([
@@ -42,11 +44,23 @@ export const router = createBrowserRouter([
   },
   {
     path: "/checkout",
-    element: <Cart />,
+    element: (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>}>
+        <Checkout />
+      </Suspense>
+    ),
   },
   {
     path: "/checkout/success",
-    element: <Cart />, // Usando Cart provisoriamente
+    element: (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>}>
+        <CheckoutSuccess />
+      </Suspense>
+    ),
   },
   {
     path: "/profile",
