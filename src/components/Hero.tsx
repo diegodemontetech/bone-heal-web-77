@@ -76,7 +76,7 @@ const Hero = () => {
                 </motion.span>
               </motion.a>
               <motion.a
-                href="/how-it-works"
+                href="/register"
                 className="inline-flex items-center justify-center px-8 py-4 bg-primary-light hover:bg-primary border border-white/20 transition-all duration-300 rounded-full text-white font-semibold text-lg group shadow-lg hover:shadow-xl backdrop-blur-sm"
                 whileHover={{ 
                   scale: 1.05,
@@ -85,7 +85,7 @@ const Hero = () => {
                 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Como Funciona
+                Torne-se Cliente
                 <motion.span
                   className="inline-block ml-2"
                   whileHover={{ x: 5 }}
