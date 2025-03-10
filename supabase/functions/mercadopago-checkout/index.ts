@@ -88,12 +88,31 @@ serve(async (req) => {
             { id: "ticket" },
             { id: "atm" },
             { id: "debit_card" }
-          ]
+          ],
         }
       });
     } 
+    else if (paymentType === 'credit_card') {
+      console.log("Configurando pagamento com cartão de crédito");
+      
+      // Para pagamento com cartão, configuramos para aceitar apenas cartão
+      Object.assign(config, {
+        payment_methods: {
+          default_payment_method_id: "credit_card",
+          excluded_payment_types: [
+            { id: "ticket" },
+            { id: "atm" },
+            { id: "debit_card" },
+            { id: "pix" }
+          ],
+          installments: 12
+        }
+      });
+    }
     else if (paymentType === 'standard') {
       // Para checkout padrão, configuramos URLs de redirecionamento
+      console.log("Configurando checkout padrão");
+      
       Object.assign(config, {
         payment_methods: {
           excluded_payment_types: [],

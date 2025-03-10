@@ -55,12 +55,18 @@ export const usePaymentProcessor = ({
         email: profile?.email || ''
       };
 
+      // Determinar o tipo de pagamento para o MercadoPago
+      const mpPaymentType = 
+        paymentMethod === 'pix' ? 'transparent' : 
+        paymentMethod === 'credit_card' ? 'credit_card' : 
+        'standard';
+
       console.log("Dados para processamento:", {
         orderId,
         items: orderItems,
         shipping_cost: shippingInfo?.cost || 0,
         buyer: buyerInfo,
-        paymentType: paymentMethod === 'standard' ? 'standard' : 'transparent'
+        paymentType: mpPaymentType
       });
 
       // Chamar a Edge Function do MercadoPago
@@ -70,7 +76,7 @@ export const usePaymentProcessor = ({
           items: orderItems,
           shipping_cost: shippingInfo?.cost || 0,
           buyer: buyerInfo,
-          paymentType: paymentMethod === 'standard' ? 'standard' : 'transparent'
+          paymentType: mpPaymentType
         }
       });
 
@@ -102,8 +108,13 @@ export const usePaymentProcessor = ({
           throw new Error("Dados do PIX não retornados pelo MercadoPago. Por favor, tente novamente ou escolha outro método de pagamento.");
         }
       } else if (paymentMethod === 'credit_card') {
-        // Implementação futura para pagamento com cartão de crédito
-        toast.info("Pagamento com cartão de crédito será implementado em breve");
+        // Processar pagamento com cartão
+        if (data?.init_point) {
+          // Redirecionar para o Mercado Pago para processar o cartão
+          window.location.href = data.init_point;
+        } else {
+          toast.error("Não foi possível processar o pagamento com cartão. Tente novamente.");
+        }
       }
 
     } catch (error: any) {

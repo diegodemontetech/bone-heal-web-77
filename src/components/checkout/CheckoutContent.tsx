@@ -49,6 +49,7 @@ const CheckoutContent: React.FC<CheckoutContentProps> = ({
               pixCode={pixCode}
               pixQrCodeImage={pixQrCodeImage}
               orderId={orderId}
+              cartTotal={cartTotal}
             />
           </CardContent>
         </Card>
