@@ -63,6 +63,7 @@ serve(async (req) => {
       throw new Error("O valor total do pedido deve ser maior que zero")
     }
 
+    // Configuração base da preferência
     let config = {
       items: preferenceItems,
       payer: {
@@ -74,8 +75,23 @@ serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     };
 
-    // Se for checkout transparente, não usamos redirect URLs
-    if (paymentType === 'standard') {
+    // Configuração específica para PIX quando solicitado
+    if (paymentType === 'transparent') {
+      Object.assign(config, {
+        payment_methods: {
+          // Garantir que o PIX está habilitado
+          excluded_payment_types: [
+            { id: "credit_card" },
+            { id: "ticket" },
+            { id: "atm" },
+            { id: "debit_card" }
+          ],
+          default_payment_method_id: "pix"
+        }
+      });
+    }
+    // Configuração para checkout padrão
+    else if (paymentType === 'standard') {
       Object.assign(config, {
         payment_methods: {
           excluded_payment_types: [],
@@ -93,6 +109,7 @@ serve(async (req) => {
 
     console.log("Preferência a ser enviada:", JSON.stringify(config, null, 2))
 
+    // Chama a API do MercadoPago para criar a preferência
     const response = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
       {

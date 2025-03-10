@@ -138,8 +138,8 @@ const Checkout = () => {
         shipping_address: {
           zip_code: shippingInfo?.zipCode || ''
         },
-        shipping_cost: shippingInfo?.cost || 0,
-        total: cartTotal + (shippingInfo?.cost || 0)
+        shipping_fee: shippingInfo?.cost || 0,
+        total_amount: cartTotal + (shippingInfo?.cost || 0)
       });
 
       if (orderError) throw orderError;
