@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -88,7 +87,8 @@ const ShippingRatesTable = () => {
       const { data, error } = await supabase
         .from("shipping_rates")
         .upsert([newRate], {
-          onConflict: 'state,service_type,region_type'
+          onConflict: 'state,service_type,region_type',
+          ignoreDuplicates: false
         });
 
       if (error) {
@@ -342,7 +342,7 @@ const ShippingRatesTable = () => {
           .from("shipping_rates")
           .upsert(defaultRates, {
             onConflict: 'state,service_type,region_type',
-            returning: 'minimal'
+            ignoreDuplicates: false
           });
         
         if (error) {
@@ -364,7 +364,7 @@ const ShippingRatesTable = () => {
               .from("shipping_rates")
               .upsert(batch, {
                 onConflict: 'state,service_type,region_type',
-                returning: 'minimal'
+                ignoreDuplicates: false
               });
             
             if (error) {
@@ -609,26 +609,3 @@ const ShippingRatesTable = () => {
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <Trash className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </TableCell>
-                      </>
-                    )}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
-                    Nenhuma taxa de frete encontrada. Use o botão "Importar Tabela Padrão" acima para importar as taxas.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-export default ShippingRatesTable;
