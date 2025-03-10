@@ -61,7 +61,13 @@ const QuotationsList = () => {
         throw new Error("Não foi possível carregar os orçamentos");
       }
       
-      return data || [];
+      // Transformar a resposta para garantir que customer seja um objeto e não um array
+      return data?.map(quotation => ({
+        ...quotation,
+        customer: Array.isArray(quotation.customer) && quotation.customer.length > 0 
+          ? quotation.customer[0] 
+          : quotation.customer
+      })) || [];
     },
   });
 
@@ -160,8 +166,8 @@ const QuotationsList = () => {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{quotation.customer.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{quotation.customer.email}</p>
+                      <p className="font-medium">{quotation.customer?.full_name || "Cliente não identificado"}</p>
+                      <p className="text-sm text-muted-foreground">{quotation.customer?.email || "Email não informado"}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -187,7 +193,7 @@ const QuotationsList = () => {
                         size="icon"
                         title="Enviar por e-mail"
                         disabled={quotation.sent_by_email}
-                        onClick={() => handleSendEmail(quotation.id, quotation.customer.email)}
+                        onClick={() => handleSendEmail(quotation.id, quotation.customer?.email || "")}
                       >
                         <Mail className="h-4 w-4" />
                       </Button>
