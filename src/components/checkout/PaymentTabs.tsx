@@ -12,6 +12,7 @@ interface PaymentTabsProps {
   isProcessing: boolean;
   pixCode: string;
   pixQrCodeImage: string;
+  orderId?: string;
 }
 
 const PaymentTabs = ({
@@ -20,7 +21,8 @@ const PaymentTabs = ({
   processPayment,
   isProcessing,
   pixCode,
-  pixQrCodeImage
+  pixQrCodeImage,
+  orderId
 }: PaymentTabsProps) => {
   return (
     <>
@@ -43,7 +45,8 @@ const PaymentTabs = ({
         <TabsContent value="pix">
           <PixPayment 
             pixCode={pixCode} 
-            pixQrCodeImage={pixQrCodeImage} 
+            pixQrCodeImage={pixQrCodeImage}
+            orderId={orderId}
           />
         </TabsContent>
         

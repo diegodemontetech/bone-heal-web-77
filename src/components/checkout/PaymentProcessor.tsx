@@ -17,6 +17,7 @@ interface PaymentProcessorProps {
   paymentMethod: string;
   setPixCode: (code: string) => void;
   setPixQrCodeImage: (image: string) => void;
+  setOrderId: (id: string) => void;
 }
 
 export const usePaymentProcessor = ({
@@ -26,7 +27,8 @@ export const usePaymentProcessor = ({
   shippingInfo,
   paymentMethod,
   setPixCode,
-  setPixQrCodeImage
+  setPixQrCodeImage,
+  setOrderId
 }: PaymentProcessorProps) => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -38,6 +40,7 @@ export const usePaymentProcessor = ({
     try {
       // Criar um ID de pedido único
       const orderId = crypto.randomUUID();
+      setOrderId(orderId);
       
       // Preparar os itens para o MercadoPago
       const orderItems = cartItems.map(item => ({

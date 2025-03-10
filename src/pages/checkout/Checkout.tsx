@@ -17,6 +17,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [pixCode, setPixCode] = useState("");
   const [pixQrCodeImage, setPixQrCodeImage] = useState("");
+  const [orderId, setOrderId] = useState<string | undefined>(undefined);
   
   // Obter informações de frete passadas do carrinho
   const shippingInfo = location.state?.shipping || null;
@@ -29,7 +30,8 @@ const Checkout = () => {
     shippingInfo,
     paymentMethod,
     setPixCode,
-    setPixQrCodeImage
+    setPixQrCodeImage,
+    setOrderId
   });
 
   useEffect(() => {
@@ -64,6 +66,7 @@ const Checkout = () => {
         isProcessing={isProcessing}
         pixCode={pixCode}
         pixQrCodeImage={pixQrCodeImage}
+        orderId={orderId}
       />
     </CheckoutLayout>
   );

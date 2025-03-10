@@ -18,6 +18,7 @@ interface CheckoutContentProps {
   isProcessing: boolean;
   pixCode: string;
   pixQrCodeImage: string;
+  orderId?: string;
 }
 
 const CheckoutContent: React.FC<CheckoutContentProps> = ({
@@ -29,7 +30,8 @@ const CheckoutContent: React.FC<CheckoutContentProps> = ({
   processPayment,
   isProcessing,
   pixCode,
-  pixQrCodeImage
+  pixQrCodeImage,
+  orderId
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -46,6 +48,7 @@ const CheckoutContent: React.FC<CheckoutContentProps> = ({
               isProcessing={isProcessing}
               pixCode={pixCode}
               pixQrCodeImage={pixQrCodeImage}
+              orderId={orderId}
             />
           </CardContent>
         </Card>
