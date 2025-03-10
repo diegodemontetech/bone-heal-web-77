@@ -73,9 +73,10 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
       
       console.log("Tabela limpa com sucesso, inserindo novas taxas...");
       
-      // Inserir novas taxas em lotes menores (10 por vez para evitar problemas)
-      const batchSize = 10;
+      // Inserir novas taxas em lotes menores (5 por vez para evitar problemas)
+      const batchSize = 5;
       let successCount = 0;
+      let errorCount = 0;
       
       for (let i = 0; i < validRates.length; i += batchSize) {
         const batch = validRates.slice(i, i + batchSize);
@@ -84,35 +85,39 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
         // Log detalhado dos dados sendo inseridos
         console.log("Exemplo dos dados sendo inseridos:", batch[0]);
         
+        // Usar upsert para evitar problemas com chaves duplicadas
         const { data, error } = await supabase
           .from("shipping_rates")
-          .insert(batch)
+          .upsert(batch, {
+            onConflict: 'state,region_type,service_type',
+            ignoreDuplicates: false
+          })
           .select();
 
         if (error) {
-          console.error(`Erro ao importar lote ${i/batchSize + 1}:`, error);
+          console.error(`Erro ao importar lote ${Math.floor(i/batchSize) + 1}:`, error);
           console.error("Detalhes do erro:", error.details, error.hint, error.message, error.code);
           
-          // Informação mais específica para o caso de violação de restrição única
-          if (error.code === '23505') { // Código para violação de chave única
-            console.error("Violação de chave única. Verifique se há duplicatas nas combinações (estado, tipo_região, tipo_serviço)");
-            
-            // Tentar identificar qual item está causando o conflito
-            console.error("Items do lote atual que podem estar causando conflito:", batch);
-          }
+          errorCount++;
           
-          throw new Error(`Erro ao importar taxas: ${error.message}`);
+          // Continuar com o próximo lote mesmo se houver erro
+          continue;
         }
         
         successCount += (data?.length || 0);
         console.log(`Lote ${Math.floor(i/batchSize) + 1} importado com sucesso: ${data?.length || 0} registros`);
       }
 
-      console.log(`Importação concluída: ${successCount} taxas de frete inseridas`);
+      console.log(`Importação concluída: ${successCount} taxas de frete inseridas, ${errorCount} lotes com erro`);
       
       // Invalidar a consulta para buscar os dados atualizados
       queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
-      toast.success(`${successCount} taxas de frete importadas com sucesso!`);
+      
+      if (errorCount > 0) {
+        toast.warning(`Importação concluída com ${successCount} taxas inseridas, mas houve ${errorCount} erros.`);
+      } else {
+        toast.success(`${successCount} taxas de frete importadas com sucesso!`);
+      }
       
     } catch (error: any) {
       console.error("Erro ao importar taxas de frete:", error);
