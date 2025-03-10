@@ -57,6 +57,7 @@ const ShippingRatesTable = () => {
   const { data: shippingRates, isLoading } = useQuery({
     queryKey: ["shipping-rates"],
     queryFn: async () => {
+      console.log("Buscando taxas de frete...");
       const { data, error } = await supabase
         .from("shipping_rates")
         .select("*")
@@ -64,7 +65,11 @@ const ShippingRatesTable = () => {
         .order("region_type", { ascending: true })
         .order("service_type", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar taxas:", error);
+        throw error;
+      }
+      console.log("Taxas encontradas:", data?.length || 0);
       return data as ShippingRate[];
     },
   });
@@ -459,84 +464,92 @@ const ShippingRatesTable = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {shippingRates?.map((rate) => (
-                <TableRow key={rate.id}>
-                  <TableCell>{rate.state}</TableCell>
-                  <TableCell>{rate.region_type}</TableCell>
-                  <TableCell>
-                    {serviceTypes.find(t => t.value === rate.service_type)?.label || rate.service_type}
+              {shippingRates && shippingRates.length > 0 ? (
+                shippingRates.map((rate) => (
+                  <TableRow key={rate.id}>
+                    <TableCell>{rate.state}</TableCell>
+                    <TableCell>{rate.region_type}</TableCell>
+                    <TableCell>
+                      {serviceTypes.find(t => t.value === rate.service_type)?.label || rate.service_type}
+                    </TableCell>
+                    
+                    {editingRate?.id === rate.id ? (
+                      <>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editRate}
+                            onChange={(e) => setEditRate(e.target.value)}
+                            className="w-24"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={editDeliveryDays}
+                            onChange={(e) => setEditDeliveryDays(e.target.value)}
+                            className="w-16"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={handleSaveEdit}
+                            disabled={updateRateMutation.isPending}
+                          >
+                            {updateRateMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Save className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={handleCancelEdit}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell>R$ {rate.rate.toFixed(2)}</TableCell>
+                        <TableCell>{rate.delivery_days} dias</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditClick(rate)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleDeleteRate(rate.id)}
+                            disabled={deleteRateMutation.isPending}
+                          >
+                            {deleteRateMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                    Nenhuma taxa de frete encontrada. Use o botão "Importar Tabela Padrão" acima para importar as taxas.
                   </TableCell>
-                  
-                  {editingRate?.id === rate.id ? (
-                    <>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={editRate}
-                          onChange={(e) => setEditRate(e.target.value)}
-                          className="w-24"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          value={editDeliveryDays}
-                          onChange={(e) => setEditDeliveryDays(e.target.value)}
-                          className="w-16"
-                        />
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={handleSaveEdit}
-                          disabled={updateRateMutation.isPending}
-                        >
-                          {updateRateMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Save className="w-4 h-4" />
-                          )}
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={handleCancelEdit}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </TableCell>
-                    </>
-                  ) : (
-                    <>
-                      <TableCell>R$ {rate.rate.toFixed(2)}</TableCell>
-                      <TableCell>{rate.delivery_days} dias</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEditClick(rate)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleDeleteRate(rate.id)}
-                          disabled={deleteRateMutation.isPending}
-                        >
-                          {deleteRateMutation.isPending ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Trash className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                    </>
-                  )}
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>

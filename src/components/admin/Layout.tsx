@@ -1,6 +1,6 @@
 
-import { ReactNode } from "react";
-import { Outlet } from "react-router-dom";
+import { ReactNode, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import { AdminSidebar } from "./navigation/AdminSidebar";
 import { AdminMobileNav } from "./navigation/AdminMobileNav";
 
@@ -9,6 +9,12 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    console.log("Admin Layout renderizado. Rota atual:", location.pathname);
+  }, [location.pathname]);
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Desktop Sidebar - Visível apenas em telas médias e maiores */}
