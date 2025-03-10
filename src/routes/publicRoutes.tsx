@@ -9,7 +9,6 @@ import Products from "@/pages/Products";
 import Cart from "@/pages/Cart";
 import Profile from "@/pages/Profile";
 import ProductDetail from "@/pages/ProductDetail";
-import AdminLogin from "@/pages/AdminLogin";
 
 // Lazy imports
 const About = lazy(() => import("@/pages/About"));
@@ -115,9 +114,5 @@ export const publicRoutes: RouteObject[] = [
         <OrderDetails />
       </Suspense>
     ),
-  },
-  {
-    path: "/admin/login",
-    element: <AdminLogin />
   }
 ];
