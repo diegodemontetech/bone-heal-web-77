@@ -1,6 +1,6 @@
 
-import { UserRole, UserPermission, UserProfile } from '@/types/auth';
 import { Session } from '@supabase/supabase-js';
+import { UserPermission, UserProfile } from '@/types/auth';
 
 export interface AuthState {
   profile: UserProfile | null;
@@ -11,8 +11,8 @@ export interface AuthState {
 
 export interface AuthContextType {
   profile: UserProfile | null;
-  isLoading: boolean;
   session: Session | null;
+  isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: any) => Promise<any>;
   signOut: () => Promise<void>;

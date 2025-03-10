@@ -1,11 +1,13 @@
 
 import { Loader2 } from "lucide-react";
 import TicketItem from "./TicketItem";
+import TicketStatusBadge from "./TicketStatusBadge";
+import TicketPriorityBadge from "./TicketPriorityBadge";
 
 interface TicketsListProps {
   tickets: any[] | null;
   isLoading: boolean;
-  categoryLabels: Record<string, string>;
+  categoryLabels: Record<string, Record<string, string>>;
 }
 
 const TicketsList = ({ tickets, isLoading, categoryLabels }: TicketsListProps) => {

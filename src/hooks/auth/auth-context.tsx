@@ -43,6 +43,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const profileData = await fetchUserProfile(userId);
       const userPermissions = await fetchUserPermissions(userId);
       
+      console.log("Perfil carregado:", profileData);
+      console.log("Permissões carregadas:", userPermissions);
+      
       // Montar o perfil completo
       const userProfile: UserProfile = profileData ? {
         ...profileData,
@@ -152,7 +155,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAdminMaster = profile?.role === UserRole.ADMIN_MASTER;
 
   const hasPermission = (permission: UserPermission) => {
+    // Administradores master sempre têm todas as permissões
     if (isAdminMaster) return true;
+    
+    // Verificar se a permissão existe no array de permissões
     return permissions.includes(permission);
   };
 
