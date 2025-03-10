@@ -15,6 +15,7 @@ import { adminRoutes } from "@/routes/adminRoutes";
 import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
 import { AdminRoute } from "@/routes/admin/adminLoader"; 
+import Layout from "@/components/admin/Layout";
 
 export function Routes() {
   return (
@@ -35,7 +36,11 @@ export function Routes() {
         <Route path="/orders/:id" element={<OrderDetails />} />
 
         {/* Rotas de Admin */}
-        <Route path="/admin/*" element={<AdminRoute>{adminRoutes}</AdminRoute>} />
+        <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
+          {adminRoutes.map((route, index) => (
+            <Route key={index} path={route.path} element={route.element} />
+          ))}
+        </Route>
         
         {/* Rotas de Suporte */}
         <Route path="/support/tickets" element={<Support />} />

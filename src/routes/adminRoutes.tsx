@@ -11,16 +11,14 @@ import { crmRoutes } from "./admin/crmRoutes";
 import { configRoutes } from "./admin/configRoutes";
 import { supportRoutes } from "./admin/supportRoutes";
 
-// Exporta todas as rotas de admin combinadas
-export const adminRoutes = (
-  <>
-    {dashboardRoutes}
-    {userRoutes}
-    {productRoutes}
-    {orderRoutes}
-    {contentRoutes}
-    {crmRoutes}
-    {configRoutes}
-    {supportRoutes}
-  </>
-);
+// Combinar todas as rotas de admin em um array
+export const adminRoutes: RouteObject[] = [
+  ...dashboardRoutes,
+  ...userRoutes,
+  ...productRoutes,
+  ...orderRoutes,
+  ...contentRoutes,
+  ...crmRoutes,
+  ...configRoutes,
+  ...supportRoutes
+];
