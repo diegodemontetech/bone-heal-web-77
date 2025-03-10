@@ -2,6 +2,8 @@
 import ShippingRatesTable from "@/components/admin/ShippingRatesTable";
 
 const AdminShippingRates = () => {
+  console.log("Renderizando página de taxas de frete");
+  
   return (
     <div className="p-8">
       <h1 className="text-2xl font-bold mb-6">Gerenciamento de Fretes</h1>

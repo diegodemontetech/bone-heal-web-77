@@ -3,18 +3,12 @@ import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { UserPermission } from "@/types/auth";
+import { AdminLoader } from "@/routes/admin/adminLoader";
 
 // Config-related pages
 const AdminShippingRates = lazy(() => import("@/pages/admin/ShippingRates"));
 const AdminSync = lazy(() => import("@/pages/admin/Sync"));
 const AdminSecurity = lazy(() => import("@/pages/admin/Security"));
-
-// Loader para componentes com lazy loading
-const AdminLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
 
 export const configRoutes: RouteObject[] = [
   {

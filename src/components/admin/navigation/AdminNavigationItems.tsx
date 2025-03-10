@@ -77,7 +77,7 @@ export const adminNavigationItems = [
     title: "Taxas de Envio",
     href: "/admin/shipping-rates",
     icon: Truck,
-    permission: UserPermission.MANAGE_SETTINGS
+    permission: null  // Removendo a restrição para que todos os admins possam acessar
   },
   {
     title: "Sincronização",

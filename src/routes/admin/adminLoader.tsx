@@ -7,11 +7,14 @@ export const AdminLoader = () => (
   </div>
 );
 
-export const AdminRoute = ({ children }: { children?: ReactNode }) => (
-  <Suspense fallback={<AdminLoader />}>
-    {children}
-  </Suspense>
-);
+export const AdminRoute = ({ children }: { children?: ReactNode }) => {
+  console.log("AdminRoute renderizado");
+  return (
+    <Suspense fallback={<AdminLoader />}>
+      {children}
+    </Suspense>
+  );
+};
 
 export const withAdminLoader = (Component: React.ComponentType) => {
   return (props: any) => (
