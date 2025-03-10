@@ -50,23 +50,31 @@ const VoucherForm = ({ onSuccess }: { onSuccess: () => void }) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Garantindo que todos os valores numéricos sejam tratados corretamente
+      const preparedData = {
+        ...formData,
+        code: formData.code.toUpperCase(),
+        discount_value: Number(formData.discount_value) || 0,
+        max_uses: formData.max_uses ? Number(formData.max_uses) : null,
+        min_amount: formData.min_amount ? Number(formData.min_amount) : null,
+        min_items: formData.min_items ? Number(formData.min_items) : null,
+        current_uses: 0
+      };
+      
+      // Log para debug
+      console.log("Dados do cupom a serem inseridos:", preparedData);
+      
+      const { error, data } = await supabase
         .from('vouchers')
-        .insert([{
-          ...formData,
-          code: formData.code.toUpperCase(),
-          discount_value: Number(formData.discount_value) || 0,
-          max_uses: formData.max_uses ? Number(formData.max_uses) : null,
-          min_amount: formData.min_amount ? Number(formData.min_amount) : null,
-          min_items: formData.min_items ? Number(formData.min_items) : null,
-          current_uses: 0
-        }]);
+        .insert([preparedData])
+        .select();
 
       if (error) {
         console.error("Erro ao criar cupom:", error);
         throw error;
       }
 
+      console.log("Cupom criado com sucesso:", data);
       toast.success("Cupom criado com sucesso!");
       onSuccess();
     } catch (error) {
