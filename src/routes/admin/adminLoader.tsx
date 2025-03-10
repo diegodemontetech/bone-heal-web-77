@@ -1,5 +1,5 @@
 
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 
 export const AdminLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
