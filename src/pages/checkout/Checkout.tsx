@@ -14,8 +14,13 @@ import OrderTotal from "@/components/checkout/OrderTotal";
 import CheckoutLoading from "@/components/checkout/CheckoutLoading";
 import PaymentRedirect from "@/components/checkout/PaymentRedirect";
 import EmptyCartMessage from "@/components/checkout/EmptyCartMessage";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 const Checkout = () => {
+  const location = useLocation();
+  const shippingFromCart = location.state?.shipping || null;
+  
   const {
     isInitialized,
     isAuthChecked,
@@ -33,7 +38,8 @@ const Checkout = () => {
     deliveryDate,
     handleShippingRateChange,
     zipCode,
-    setZipCode
+    setZipCode,
+    calculateShipping
   } = useShipping(cartItems);
 
   const {
@@ -54,6 +60,24 @@ const Checkout = () => {
     paymentUrl,
     orderId
   } = useCheckout();
+
+  // Usar informações de frete que vieram do carrinho, se disponíveis
+  useEffect(() => {
+    // Se temos dados de frete do carrinho e ainda não temos CEP na página de checkout
+    if (shippingFromCart?.zipCode && zipCode.length === 0) {
+      console.log("Usando informações de frete do carrinho:", shippingFromCart);
+      
+      // Definir o CEP do carrinho
+      setZipCode(shippingFromCart.zipCode);
+      
+      // Forçar um cálculo de frete se não tivermos ainda
+      if (shippingRates.length === 0) {
+        setTimeout(() => {
+          calculateShipping(shippingFromCart.zipCode);
+        }, 500);
+      }
+    }
+  }, [shippingFromCart, zipCode, shippingRates.length, setZipCode, calculateShipping]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 

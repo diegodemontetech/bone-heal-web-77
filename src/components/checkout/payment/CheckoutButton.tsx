@@ -48,7 +48,7 @@ const CheckoutButton = ({
         ) : !isLoggedIn ? (
           "Entre em sua conta para finalizar a compra"
         ) : !hasZipCode ? (
-          "Aguarde o cálculo do frete"
+          "Calcule o frete antes de continuar"
         ) : (
           <>
             Pagar {amount.toFixed(2)} {getPaymentMethodLabel(paymentMethod)} 

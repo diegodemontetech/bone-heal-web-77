@@ -1,6 +1,7 @@
 
 import { useCart } from "@/hooks/use-cart";
 import { useCartPage } from "@/hooks/use-cart-page";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { EmptyCart } from "@/components/cart/EmptyCart";
 import { CartItem } from "@/components/cart/CartItem";
@@ -12,6 +13,8 @@ import { ShoppingBag } from "lucide-react";
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeItem } = useCart();
+  const navigate = useNavigate();
+
   const {
     session,
     isAuthenticated,
@@ -21,10 +24,28 @@ const Cart = () => {
     shippingCost,
     shippingError,
     calculateShipping,
-    handleCheckout,
+    handleCheckout: originalHandleCheckout,
     shippingCalculated,
     resetShipping
   } = useCartPage();
+
+  // Modificar o handleCheckout para passar informações de frete para a página de checkout
+  const handleCheckout = (cartItems, subtotal, total) => {
+    // Se o frete foi calculado, vamos passar as informações para o checkout
+    if (shippingCalculated && zipCode) {
+      navigate("/checkout", { 
+        state: { 
+          shipping: {
+            zipCode: zipCode,
+            cost: shippingCost
+          }
+        }
+      });
+    } else {
+      // Comportamento padrão
+      originalHandleCheckout(cartItems, subtotal, total);
+    }
+  };
 
   if (!cartItems.length) {
     return (
