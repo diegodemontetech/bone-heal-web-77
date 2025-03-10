@@ -37,14 +37,14 @@ export const useImportShippingRates = (initialRates: Omit<ShippingRate, 'id'>[])
         uniqueCombos.set(key, rate);
       });
       
-      // Converter de volta para array
+      // Converter de volta para array e validar
       const validRates = Array.from(uniqueCombos.values()).filter(rate => {
         const isValid = rate.state && 
-                        rate.region_type && 
-                        rate.service_type && 
-                        typeof rate.rate === 'number' && 
-                        typeof rate.delivery_days === 'number';
-                        
+                       rate.region_type && 
+                       rate.service_type && 
+                       typeof rate.rate === 'number' && 
+                       typeof rate.delivery_days === 'number';
+        
         if (!isValid) {
           console.warn("Taxa de frete inválida detectada:", rate);
         }
@@ -73,7 +73,7 @@ export const useImportShippingRates = (initialRates: Omit<ShippingRate, 'id'>[])
       
       console.log("Tabela limpa com sucesso, inserindo novas taxas...");
       
-      // Inserir novas taxas em lotes menores (5 por vez para evitar problemas)
+      // Inserir novas taxas em lotes menores
       const batchSize = 5;
       let successCount = 0;
       let errorCount = 0;
@@ -82,10 +82,8 @@ export const useImportShippingRates = (initialRates: Omit<ShippingRate, 'id'>[])
         const batch = validRates.slice(i, i + batchSize);
         console.log(`Importando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(validRates.length/batchSize)}, ${batch.length} taxas`);
         
-        // Log detalhado dos dados sendo inseridos
         console.log("Exemplo dos dados sendo inseridos:", batch[0]);
         
-        // Usar upsert para evitar problemas com chaves duplicadas
         const { data, error } = await supabase
           .from("shipping_rates")
           .upsert(batch, {
@@ -97,10 +95,7 @@ export const useImportShippingRates = (initialRates: Omit<ShippingRate, 'id'>[])
         if (error) {
           console.error(`Erro ao importar lote ${Math.floor(i/batchSize) + 1}:`, error);
           console.error("Detalhes do erro:", error.details, error.hint, error.message, error.code);
-          
           errorCount++;
-          
-          // Continuar com o próximo lote mesmo se houver erro
           continue;
         }
         
@@ -121,16 +116,12 @@ export const useImportShippingRates = (initialRates: Omit<ShippingRate, 'id'>[])
       
     } catch (error: any) {
       console.error("Erro ao importar taxas de frete:", error);
-      
-      // Logar detalhes mais específicos do erro
       if (error.code) {
         console.error(`Código do erro: ${error.code}`);
       }
       if (error.details) {
         console.error(`Detalhes do erro: ${error.details}`);
       }
-      
-      // Mensagem de erro mais informativa
       const errorMessage = error.message || "Erro ao importar taxas de frete";
       toast.error(`Erro: ${errorMessage}. Verifique o console para mais detalhes.`);
     } finally {
