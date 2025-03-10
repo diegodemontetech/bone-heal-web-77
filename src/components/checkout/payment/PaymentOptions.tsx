@@ -1,9 +1,9 @@
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import CartaoCredito from "./CartaoCredito";
-import PixOption from "./PixOption";
-import BoletoOption from "./BoletoOption";
+import OpcoesCartao from "./OpcoesCartao";
+import OpcaoPix from "./OpcaoPix";
+import OpcaoBoleto from "./OpcaoBoleto";
 
 interface PaymentOptionsProps {
   paymentMethod: string;
@@ -32,7 +32,7 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
         <div className="flex items-center space-x-2 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
           <RadioGroupItem value="credit" id="credit" />
           <Label htmlFor="credit" className="flex-1 cursor-pointer">
-            <CartaoCredito 
+            <OpcoesCartao 
               isSelected={paymentMethod === 'credit'} 
               total={total} 
             />
@@ -42,7 +42,7 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
         <div className="flex items-center space-x-2 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
           <RadioGroupItem value="pix" id="pix" />
           <Label htmlFor="pix" className="flex-1 cursor-pointer">
-            <PixOption 
+            <OpcaoPix 
               isSelected={paymentMethod === 'pix'} 
               total={total}
               pixCode={pixCode}
@@ -54,7 +54,7 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
         <div className="flex items-center space-x-2 p-3 rounded-lg border cursor-pointer hover:bg-gray-50 transition-colors">
           <RadioGroupItem value="boleto" id="boleto" />
           <Label htmlFor="boleto" className="flex-1 cursor-pointer">
-            <BoletoOption 
+            <OpcaoBoleto 
               isSelected={paymentMethod === 'boleto'} 
               total={total}
               boletoUrl={boletoUrl}
