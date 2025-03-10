@@ -75,11 +75,11 @@ serve(async (req) => {
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     };
 
-    // Configuração específica para PIX quando solicitado
+    // Configurar o método de pagamento baseado no tipo solicitado
     if (paymentType === 'transparent') {
+      // Para PIX, simplificamos os métodos de pagamento aceitos
       Object.assign(config, {
         payment_methods: {
-          // Garantir que o PIX está habilitado
           excluded_payment_types: [
             { id: "credit_card" },
             { id: "ticket" },
@@ -89,9 +89,9 @@ serve(async (req) => {
           default_payment_method_id: "pix"
         }
       });
-    }
-    // Configuração para checkout padrão
+    } 
     else if (paymentType === 'standard') {
+      // Para checkout padrão, configuramos URLs de redirecionamento
       Object.assign(config, {
         payment_methods: {
           excluded_payment_types: [],

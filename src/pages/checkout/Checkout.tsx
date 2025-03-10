@@ -100,22 +100,21 @@ const Checkout = () => {
         // Redirecionar para checkout do MercadoPago
         window.location.href = data.init_point;
       } else if (paymentMethod === 'pix') {
-        // Exibir informações do PIX
-        if (data.point_of_interaction?.transaction_data?.qr_code) {
+        // Verificar se a resposta contém os dados do PIX
+        if (data?.point_of_interaction?.transaction_data?.qr_code) {
+          // Extrair os dados do PIX
           setPixCode(data.point_of_interaction.transaction_data.qr_code);
           setPixQrCodeImage(data.point_of_interaction.transaction_data.qr_code_base64);
           
-          // Salvar o pedido como aguardando pagamento e redirecionar após alguns segundos
-          setTimeout(() => {
-            clear();
-            navigate('/checkout/success');
-          }, 5000);
+          // Não redireciona automaticamente, deixa o usuário copiar o código PIX
+          toast.success("PIX gerado com sucesso! Escaneie o QR code ou copie o código.");
         } else {
-          throw new Error("Dados do PIX não retornados pelo MercadoPago");
+          console.error("Dados PIX não encontrados na resposta:", data);
+          throw new Error("Dados do PIX não retornados pelo MercadoPago. Por favor, tente novamente ou escolha outro método de pagamento.");
         }
       } else if (paymentMethod === 'credit_card') {
         // Implementação futura para pagamento com cartão de crédito
-        alert("Pagamento com cartão de crédito será implementado em breve");
+        toast.info("Pagamento com cartão de crédito será implementado em breve");
       }
 
     } catch (error) {
@@ -229,7 +228,7 @@ const Checkout = () => {
                           </Button>
                           
                           <div className="mt-4 text-sm text-center text-green-600">
-                            Após o pagamento, você será redirecionado.
+                            Após o pagamento, você receberá a confirmação e poderá acompanhar o pedido na área "Meus Pedidos".
                           </div>
                         </div>
                       ) : (
@@ -278,13 +277,15 @@ const Checkout = () => {
                   <Button 
                     className="w-full h-12"
                     onClick={processPayment}
-                    disabled={isProcessing}
+                    disabled={isProcessing || pixCode}
                   >
                     {isProcessing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Processando...
                       </>
+                    ) : pixCode ? (
+                      <>Pagamento PIX gerado</>
                     ) : (
                       <>Finalizar compra</>
                     )}
