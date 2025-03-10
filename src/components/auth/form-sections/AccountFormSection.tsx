@@ -7,9 +7,10 @@ import { FormData } from "../RegistrationForm";
 
 interface AccountFormSectionProps {
   form: UseFormReturn<FormData>;
+  showPassword?: boolean;
 }
 
-const AccountFormSection: React.FC<AccountFormSectionProps> = ({ form }) => {
+const AccountFormSection: React.FC<AccountFormSectionProps> = ({ form, showPassword = true }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <FormField

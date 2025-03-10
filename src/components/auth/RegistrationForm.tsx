@@ -106,7 +106,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <AccountFormSection form={form} />
+        <AccountFormSection form={form} showPassword={true} />
         
         <ProfessionalFormSection form={form} />
         

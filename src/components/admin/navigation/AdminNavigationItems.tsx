@@ -40,7 +40,7 @@ export const adminNavigationItems = [
   {
     title: "Cupons",
     href: "/admin/vouchers",
-    icon: Tag,
+    icon: Ticket,
     permission: UserPermission.MANAGE_PRODUCTS
   },
   {
@@ -98,4 +98,3 @@ export const adminNavigationItems = [
     permission: UserPermission.MANAGE_SUPPORT
   }
 ];
-
