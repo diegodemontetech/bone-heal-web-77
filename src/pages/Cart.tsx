@@ -29,8 +29,13 @@ const Cart = () => {
     resetShipping
   } = useCartPage();
 
+  // Adicionar log de debug para verificar o status de autenticação
+  console.log("Status de autenticação na página de carrinho:", isAuthenticated, !!session?.user?.id);
+
   // Modificar o handleCheckout para passar informações de frete para a página de checkout
   const handleCheckout = (cartItems, subtotal, total) => {
+    console.log("Iniciando checkout com frete calculado:", shippingCalculated, "CEP:", zipCode);
+    
     // Se o frete foi calculado, vamos passar as informações para o checkout
     if (shippingCalculated && zipCode) {
       navigate("/checkout", { 
@@ -91,7 +96,7 @@ const Cart = () => {
             isCalculatingShipping={isCalculatingShipping}
             shippingCost={shippingCost}
             shippingError={shippingError}
-            calculateShipping={calculateShipping} // A função wrapper agora não precisa de argumentos
+            calculateShipping={calculateShipping}
             handleCheckout={handleCheckout}
             session={session}
             isAuthenticated={isAuthenticated}

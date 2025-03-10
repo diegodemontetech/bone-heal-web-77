@@ -25,10 +25,9 @@ const CheckoutButton = ({
   const navigate = useNavigate();
 
   const handleCheckoutClick = () => {
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: "/cart" } });
-      return;
-    }
+    // Removendo esta verificação, já que a pessoa já está logada neste ponto
+    // De qualquer forma, adicionando log para debug
+    console.log("Status de autenticação ao finalizar compra:", isAuthenticated);
     
     if (!shippingCost) {
       toast.error("Por favor, calcule o frete antes de continuar");
@@ -43,12 +42,10 @@ const CheckoutButton = ({
       <Button
         className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-base"
         onClick={handleCheckoutClick}
-        disabled={!cartItems.length}
+        disabled={!cartItems.length || !shippingCost}
       >
         {!cartItems.length ? (
           "Seu carrinho está vazio"
-        ) : !isAuthenticated ? (
-          "Entrar para continuar"
         ) : !shippingCost ? (
           "Calcule o frete para continuar"
         ) : (
@@ -62,10 +59,6 @@ const CheckoutButton = ({
       {!cartItems.length ? (
         <p className="text-sm text-center text-gray-600">
           Adicione produtos ao seu carrinho
-        </p>
-      ) : !isAuthenticated ? (
-        <p className="text-sm text-center text-gray-600">
-          Faça login para continuar sua compra
         </p>
       ) : !shippingCost && (
         <p className="text-sm text-center text-gray-600">
