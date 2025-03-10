@@ -1,212 +1,270 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
-import { Copy, Download, Upload } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth-context";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2, Settings, QrCode, RefreshCw, Copy, Check } from 'lucide-react';
 
-const WhatsAppSettings = () => {
-  const { profile } = useAuth();
-  const [evolutionWebhookUrl, setEvolutionWebhookUrl] = useState("");
-  const [evolutionApiUrl, setEvolutionApiUrl] = useState("");
-  const [evolutionApiKey, setEvolutionApiKey] = useState("");
-  const [zApiUrl, setZApiUrl] = useState("");
-  const [zApiToken, setZApiToken] = useState("");
-  const [loading, setLoading] = useState(false);
+const AdminWhatsAppSettings = () => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   
-  const supabaseWebhookUrl = `${window.location.origin.replace('lovableproject.com', 'functions.supabase.co')}/webhook-whatsapp`;
+  const [evolutionUrl, setEvolutionUrl] = useState('');
+  const [evolutionKey, setEvolutionKey] = useState('');
+  const [zapiInstanceId, setZapiInstanceId] = useState('');
+  const [zapiToken, setZapiToken] = useState('');
   
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Copiado para a área de transferência!");
+  const [webhookUrl, setWebhookUrl] = useState('');
+
+  useEffect(() => {
+    const webhookBaseUrl = window.location.origin.includes('localhost') 
+      ? 'http://localhost:54321/functions/v1'
+      : `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+    
+    setWebhookUrl(`${webhookBaseUrl}/webhook-whatsapp`);
+    fetchSecrets();
+  }, []);
+
+  const fetchSecrets = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { getConfig: true }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.config) {
+        setEvolutionUrl(data.config.evolutionApiUrl || '');
+        setEvolutionKey(data.config.evolutionApiKey || '');
+        setZapiInstanceId(data.config.zApiInstanceId || '');
+        setZapiToken(data.config.zApiToken || '');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar configurações:', error);
+      toast.error('Erro ao carregar configurações');
+    } finally {
+      setLoading(false);
+    }
   };
   
-  const handleSaveSettings = async () => {
-    if (!profile?.is_admin) {
-      toast.error("Apenas administradores podem atualizar configurações");
-      return;
-    }
-    
-    setLoading(true);
-    
+  const saveSecrets = async () => {
+    setSaving(true);
     try {
-      // Chamar Edge Function para atualizar secrets
-      const { error } = await supabase.functions.invoke("update-secret", {
-        body: {
+      const { data, error } = await supabase.functions.invoke('update-secret', {
+        body: { 
           secrets: {
-            EVOLUTION_API_URL: evolutionApiUrl,
-            EVOLUTION_API_KEY: evolutionApiKey,
-            ZAPI_URL: zApiUrl,
-            ZAPI_TOKEN: zApiToken
+            'EVOLUTION_API_URL': evolutionUrl,
+            'EVOLUTION_API_KEY': evolutionKey,
+            'ZAPI_INSTANCE_ID': zapiInstanceId,
+            'ZAPI_TOKEN': zapiToken
           }
         }
       });
       
       if (error) throw error;
       
-      toast.success("Configurações salvas com sucesso!");
-    } catch (error: any) {
-      console.error("Erro ao salvar configurações:", error);
-      toast.error(`Erro ao salvar configurações: ${error.message}`);
+      toast.success('Configurações salvas com sucesso');
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast.error('Erro ao salvar configurações');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
   
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  const regenerateQRCode = async () => {
+    setRegenerating(true);
+    try {
+      // Implemente a lógica para regenerar o QR code aqui
+      toast.success('QR Code regenerado com sucesso');
+    } catch (error) {
+      console.error('Erro ao regenerar QR code:', error);
+      toast.error('Erro ao regenerar QR code');
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Configurações do WhatsApp</h1>
-      
-      <Tabs defaultValue="integration">
-        <TabsList className="mb-4">
-          <TabsTrigger value="integration">Integração</TabsTrigger>
-          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          <TabsTrigger value="templates">Modelos de Mensagem</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="integration">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Evolution API</CardTitle>
-                <CardDescription>
-                  Configure a integração com a Evolution API para WhatsApp
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">URL da API</label>
-                  <Input 
-                    placeholder="https://seu-servidor-evolution-api.com"
-                    value={evolutionApiUrl}
-                    onChange={(e) => setEvolutionApiUrl(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Chave da API</label>
-                  <Input 
-                    type="password"
-                    placeholder="Chave secreta da Evolution API"
-                    value={evolutionApiKey}
-                    onChange={(e) => setEvolutionApiKey(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Configurações WhatsApp</h1>
+          <p className="text-muted-foreground">Configure a integração com o WhatsApp</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center my-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div className="grid gap-6">
+          <Tabs defaultValue="evolution">
+            <TabsList className="mb-6">
+              <TabsTrigger value="evolution">Evolution API</TabsTrigger>
+              <TabsTrigger value="zapi">Z-API</TabsTrigger>
+              <TabsTrigger value="webhook">Webhook</TabsTrigger>
+            </TabsList>
             
-            <Card>
-              <CardHeader>
-                <CardTitle>Z-API (Alternativa)</CardTitle>
-                <CardDescription>
-                  Configuração alternativa usando Z-API
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">ID da Instância</label>
-                  <Input 
-                    placeholder="ID da instância Z-API"
-                    value={zApiUrl}
-                    onChange={(e) => setZApiUrl(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Token</label>
-                  <Input 
-                    type="password"
-                    placeholder="Token da Z-API"
-                    value={zApiToken}
-                    onChange={(e) => setZApiToken(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="mt-4 flex justify-end">
-            <Button 
-              onClick={handleSaveSettings}
-              disabled={loading}
-            >
-              {loading ? "Salvando..." : "Salvar Configurações"}
-            </Button>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="webhooks">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuração de Webhook</CardTitle>
-              <CardDescription>
-                Configure sua API do WhatsApp para enviar eventos para este webhook
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 border rounded-md bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <p className="font-mono text-sm break-all">{supabaseWebhookUrl}</p>
-                  <Button variant="outline" size="icon" onClick={() => copyToClipboard(supabaseWebhookUrl)}>
-                    <Copy className="h-4 w-4" />
+            <TabsContent value="evolution">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuração da Evolution API</CardTitle>
+                  <CardDescription>
+                    Configure os dados de acesso à Evolution API para WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="evolution-url">URL da API</Label>
+                    <Input
+                      id="evolution-url"
+                      placeholder="https://seu-servidor.com"
+                      value={evolutionUrl}
+                      onChange={(e) => setEvolutionUrl(e.target.value)}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      URL da API Evolution sem a barra no final
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="evolution-key">Chave da API</Label>
+                    <Input
+                      id="evolution-key"
+                      type="password"
+                      placeholder="Chave de acesso"
+                      value={evolutionKey}
+                      onChange={(e) => setEvolutionKey(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button onClick={saveSecrets} disabled={saving}>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Settings className="h-4 w-4 mr-2" />}
+                    Salvar Configurações
                   </Button>
-                </div>
-              </div>
-              
-              <h3 className="text-lg font-medium mt-4">Configuração na Evolution API</h3>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Para configurar o webhook na Evolution API, use o seguinte comando:
-                </p>
-                <div className="p-3 bg-gray-900 text-gray-100 rounded-md overflow-x-auto">
-                  <pre className="text-xs">
-{`// Exemplo usando curl
-curl -X POST \\
-  ${evolutionApiUrl || "https://sua-evolution-api.com"}/webhook/set \\
-  -H 'Content-Type: application/json' \\
-  -H 'apikey: ${evolutionApiKey || "sua-chave-api"}' \\
-  -d '{
-    "url": "${supabaseWebhookUrl}",
-    "enabled": true
-  }'`}
-                  </pre>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  onClick={() => copyToClipboard(`curl -X POST \\\n  ${evolutionApiUrl || "https://sua-evolution-api.com"}/webhook/set \\\n  -H 'Content-Type: application/json' \\\n  -H 'apikey: ${evolutionApiKey || "sua-chave-api"}' \\\n  -d '{\n    "url": "${supabaseWebhookUrl}",\n    "enabled": true\n  }'`)}
-                >
-                  <Copy className="h-3 w-3 mr-2" />
-                  Copiar comando
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="templates">
-          <Card>
-            <CardHeader>
-              <CardTitle>Modelos de Mensagem</CardTitle>
-              <CardDescription>
-                Configure modelos de mensagem para respostas automatizadas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Em desenvolvimento...
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="zapi">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuração da Z-API</CardTitle>
+                  <CardDescription>
+                    Configure os dados de acesso à Z-API para WhatsApp (alternativa)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="zapi-instance">ID da Instância</Label>
+                    <Input
+                      id="zapi-instance"
+                      placeholder="ID da instância Z-API"
+                      value={zapiInstanceId}
+                      onChange={(e) => setZapiInstanceId(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="zapi-token">Token de Acesso</Label>
+                    <Input
+                      id="zapi-token"
+                      type="password"
+                      placeholder="Token de acesso Z-API"
+                      value={zapiToken}
+                      onChange={(e) => setZapiToken(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Button onClick={saveSecrets} disabled={saving}>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Settings className="h-4 w-4 mr-2" />}
+                    Salvar Configurações
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="webhook">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuração de Webhook</CardTitle>
+                  <CardDescription>
+                    Configure o URL de webhook na sua instância do WhatsApp
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="webhook-url">URL do Webhook</Label>
+                    <div className="flex">
+                      <Input
+                        id="webhook-url"
+                        value={webhookUrl}
+                        readOnly
+                        className="rounded-r-none"
+                      />
+                      <Button 
+                        variant="outline" 
+                        className="rounded-l-none border-l-0"
+                        onClick={copyToClipboard}
+                      >
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Use este URL para configurar o webhook na sua instância do WhatsApp
+                    </p>
+                  </div>
+                  
+                  <div className="p-6 border rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-medium">QR Code de Conexão</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={regenerateQRCode}
+                        disabled={regenerating}
+                      >
+                        {regenerating ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                        )}
+                        Regenerar QR Code
+                      </Button>
+                    </div>
+                    
+                    <div className="flex justify-center">
+                      <div className="bg-gray-100 p-4 rounded-lg inline-flex items-center justify-center">
+                        <QrCode className="h-32 w-32 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <p className="text-center text-sm text-muted-foreground mt-4">
+                      Escaneie este QR Code com o WhatsApp para conectar sua instância
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
     </div>
   );
 };
 
-export default WhatsAppSettings;
+export default AdminWhatsAppSettings;

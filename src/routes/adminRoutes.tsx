@@ -1,24 +1,28 @@
 
 import { RouteObject } from "react-router-dom";
-
-// Importar rotas por categoria
-import { dashboardRoutes } from "./admin/dashboardRoutes";
-import { userRoutes } from "./admin/userRoutes";
+import AdminLayout from "@/components/admin/Layout";
+import { adminDashboardRoutes } from "./admin/dashboardRoutes";
 import { productRoutes } from "./admin/productRoutes";
 import { orderRoutes } from "./admin/orderRoutes";
+import { userRoutes } from "./admin/userRoutes";
 import { contentRoutes } from "./admin/contentRoutes";
-import { crmRoutes } from "./admin/crmRoutes";
 import { configRoutes } from "./admin/configRoutes";
+import { crmRoutes } from "./admin/crmRoutes";
 import { supportRoutes } from "./admin/supportRoutes";
+import { whatsappRoutes } from "./admin/whatsappRoutes";
 
-// Combinar todas as rotas de admin em um array
-export const adminRoutes: RouteObject[] = [
-  ...dashboardRoutes,
-  ...userRoutes,
-  ...productRoutes,
-  ...orderRoutes,
-  ...contentRoutes,
-  ...crmRoutes,
-  ...configRoutes,
-  ...supportRoutes
-];
+export const adminRoutes: RouteObject = {
+  path: "/admin",
+  element: <AdminLayout />,
+  children: [
+    ...adminDashboardRoutes,
+    ...productRoutes,
+    ...orderRoutes,
+    ...userRoutes,
+    ...contentRoutes,
+    ...configRoutes,
+    ...crmRoutes,
+    ...supportRoutes,
+    ...whatsappRoutes
+  ]
+};
