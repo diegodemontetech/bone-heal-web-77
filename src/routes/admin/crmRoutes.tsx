@@ -6,9 +6,7 @@ import { UserPermission } from "@/types/auth";
 
 // CRM-related pages
 const AdminLeads = lazy(() => import("@/pages/admin/Leads"));
-const AdminLeadsKanban = lazy(() => import("@/pages/admin/LeadsKanban"));
-const AdminWhatsapp = lazy(() => import("@/pages/admin/Whatsapp"));
-const AdminEmailTemplates = lazy(() => import("@/pages/admin/EmailTemplates"));
+const LeadsKanbanPage = lazy(() => import("@/pages/admin/LeadsKanban"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -29,28 +27,12 @@ export const crmRoutes: RouteObject[] = [
     )
   },
   {
-    path: "leads-kanban",
+    path: "leads/kanban",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
-          <AdminLeadsKanban />
+          <LeadsKanbanPage />
         </ProtectedRoute>
-      </Suspense>
-    )
-  },
-  {
-    path: "whatsapp",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <AdminWhatsapp />
-      </Suspense>
-    )
-  },
-  {
-    path: "email-templates",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <AdminEmailTemplates />
       </Suspense>
     )
   }

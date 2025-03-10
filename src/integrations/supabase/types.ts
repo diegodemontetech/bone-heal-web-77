@@ -862,6 +862,7 @@ export type Database = {
           insurance_percentage: number
           price_per_kg: number
           rate: number
+          region_type: string
           service_type: string
           state: string
           updated_at: string
@@ -874,6 +875,7 @@ export type Database = {
           insurance_percentage?: number
           price_per_kg?: number
           rate: number
+          region_type?: string
           service_type?: string
           state: string
           updated_at?: string
@@ -886,6 +888,7 @@ export type Database = {
           insurance_percentage?: number
           price_per_kg?: number
           rate?: number
+          region_type?: string
           service_type?: string
           state?: string
           updated_at?: string
