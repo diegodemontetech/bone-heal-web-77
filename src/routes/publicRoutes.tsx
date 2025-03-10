@@ -1,4 +1,3 @@
-
 import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 
@@ -9,6 +8,7 @@ import Products from "@/pages/Products";
 import Cart from "@/pages/Cart";
 import Profile from "@/pages/Profile";
 import ProductDetail from "@/pages/ProductDetail";
+import Index from "@/pages/Index"; // Importando a página Index
 
 // Lazy imports
 const About = lazy(() => import("@/pages/About"));
@@ -29,7 +29,7 @@ const PageLoader = () => (
 export const publicRoutes: RouteObject[] = [
   {
     path: "/",
-    element: <Products />, // Usando Products como Home provisoriamente
+    element: <Index />, // Corrigindo para usar a página Index como home
   },
   {
     path: "/login",
