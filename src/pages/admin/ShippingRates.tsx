@@ -1,5 +1,5 @@
 
-import ShippingRatesTable from "@/components/admin/ShippingRatesTable";
+import ShippingRatesTable from "@/components/admin/shipping/ShippingRatesTable";
 
 const AdminShippingRates = () => {
   console.log("Renderizando página de taxas de frete");
