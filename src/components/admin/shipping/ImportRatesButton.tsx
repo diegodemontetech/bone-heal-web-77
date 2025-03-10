@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FileUp, Loader2 } from "lucide-react";
@@ -139,11 +138,10 @@ export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
       
       // Primeiro tentar importar em uma única operação
       try {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("shipping_rates")
           .upsert(defaultRates, {
-            onConflict: 'state,service_type,region_type',
-            ignoreDuplicates: false
+            onConflict: 'state,service_type,region_type'
           });
         
         if (error) {
@@ -164,8 +162,7 @@ export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
             const { error } = await supabase
               .from("shipping_rates")
               .upsert(batch, {
-                onConflict: 'state,service_type,region_type',
-                ignoreDuplicates: false
+                onConflict: 'state,service_type,region_type'
               });
             
             if (error) {
