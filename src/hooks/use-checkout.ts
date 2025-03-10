@@ -28,18 +28,21 @@ export function useCheckout() {
       const total_amount = Math.max(0, subtotal + shippingFee - discount);
 
       // Verificar autenticação
-      if (!session?.user?.id) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = session?.user?.id || sessionData?.session?.user?.id;
+
+      if (!userId) {
         console.error("Usuário não autenticado ao salvar pedido");
         throw new Error("É necessário estar logado para finalizar a compra");
       }
 
-      console.log("Salvando pedido:", orderId, "para usuário:", session.user.id);
+      console.log("Salvando pedido:", orderId, "para usuário:", userId);
 
       const { error: orderError } = await supabase
         .from('orders')
         .insert({
           id: orderId,
-          user_id: session.user.id,
+          user_id: userId,
           items: cartItems.map(item => ({
             product_id: item.id,
             quantity: item.quantity,
@@ -102,7 +105,11 @@ export function useCheckout() {
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const total = Math.max(0, subtotal + shippingFee - discount);
       
-      if (!session?.user) {
+      // Verificar autenticação de duas formas para garantir
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userSession = session || sessionData?.session;
+      
+      if (!userSession?.user) {
         console.error("Usuário não autenticado ao criar checkout");
         throw new Error("Usuário não está autenticado");
       }
@@ -122,8 +129,8 @@ export function useCheckout() {
           items,
           shipping_cost: shippingFee,
           buyer: {
-            email: session.user.email,
-            name: session.user.user_metadata?.name || "Cliente"
+            email: userSession.user.email,
+            name: userSession.user.user_metadata?.name || "Cliente"
           },
           paymentType: 'transparent'
         }
@@ -159,19 +166,23 @@ export function useCheckout() {
     }
 
     // Verificação de autenticação
-    if (!session?.user) {
-      console.error("Usuário não autenticado no handleCheckout");
-      toast.error("É necessário estar logado para finalizar a compra.");
-      navigate("/login");
-      return;
-    }
-
-    if (!zipCode) {
-      toast.error("Selecione uma opção de frete para continuar.");
-      return;
-    }
-
     try {
+      // Verificar sessão diretamente para garantir
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = session?.user?.id || sessionData?.session?.user?.id;
+      
+      if (!userId) {
+        console.error("Usuário não autenticado no handleCheckout");
+        toast.error("É necessário estar logado para finalizar a compra.");
+        navigate("/login");
+        return;
+      }
+
+      if (!zipCode) {
+        toast.error("Selecione uma opção de frete para continuar.");
+        return;
+      }
+
       setLoading(true);
       console.log("Iniciando processo de checkout transparente...");
 

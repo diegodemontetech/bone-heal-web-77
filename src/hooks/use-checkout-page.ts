@@ -31,6 +31,8 @@ export const useCheckoutPage = () => {
         if (data?.session) {
           setDirectSession(data.session);
           setHasValidSession(true);
+          setIsAuthChecked(true);
+          setIsInitialized(true);
         }
       } catch (error) {
         console.error("Erro ao verificar sessão direta:", error);

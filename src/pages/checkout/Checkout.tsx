@@ -15,6 +15,7 @@ import CheckoutLoading from "@/components/checkout/CheckoutLoading";
 import EmptyCartMessage from "@/components/checkout/EmptyCartMessage";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Checkout = () => {
   const location = useLocation();
@@ -59,6 +60,22 @@ const Checkout = () => {
     orderId
   } = useCheckout();
 
+  // Verificar autenticação diretamente uma vez
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (!session?.user) {
+        const { data, error } = await supabase.auth.getSession();
+        console.log("[Checkout] Verificação direta adicional:", data?.session?.user);
+        
+        if (error) {
+          console.error("Erro ao verificar autenticação:", error);
+        }
+      }
+    };
+    
+    checkAuth();
+  }, [session]);
+
   // Usar informações de frete que vieram do carrinho, se disponíveis
   useEffect(() => {
     if (shippingFromCart?.zipCode && zipCode.length === 0) {
@@ -90,7 +107,7 @@ const Checkout = () => {
     applyVoucher(subtotal, shippingFee);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     // Log para depuração
     console.log("Checkout iniciado. Estado de autenticação:", {
       session: !!session, 
@@ -103,7 +120,11 @@ const Checkout = () => {
       return;
     }
     
-    if (!session?.user && !hasValidSession) {
+    // Verificar autenticação diretamente para garantir
+    const { data: currentSession } = await supabase.auth.getSession();
+    const isAuthenticated = !!session?.user || !!currentSession?.session?.user;
+    
+    if (!isAuthenticated) {
       console.error("Usuário não autenticado ao tentar finalizar compra");
       toast.error("É necessário estar logado para finalizar a compra.");
       return;

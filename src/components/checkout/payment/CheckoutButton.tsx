@@ -48,6 +48,8 @@ const CheckoutButton = ({
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Processando...
           </>
+        ) : !isLoggedIn ? (
+          "Faça login para continuar"
         ) : !hasZipCode ? (
           "Selecione uma opção de frete para continuar"
         ) : amount <= 0 ? (
@@ -60,7 +62,12 @@ const CheckoutButton = ({
         )}
       </Button>
 
-      {!hasZipCode && (
+      {!isLoggedIn && (
+        <p className="text-sm text-red-600 text-center mt-2">
+          É necessário estar logado para finalizar a compra
+        </p>
+      )}
+      {isLoggedIn && !hasZipCode && (
         <p className="text-sm text-gray-600 text-center mt-2">
           Informe seu CEP e selecione uma opção de frete
         </p>
