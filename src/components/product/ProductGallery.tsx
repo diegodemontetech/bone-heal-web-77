@@ -7,21 +7,32 @@ interface ProductGalleryProps {
 }
 
 const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
-  const [selectedImage, setSelectedImage] = useState(mainImage);
+  // Imagem de fallback para quando não houver imagem disponível
+  const fallbackImage = "https://images.unsplash.com/photo-1616763355548-1b606f439f86?q=80&w=1470&auto=format&fit=crop";
+  const safeMainImage = mainImage || fallbackImage;
+  const [selectedImage, setSelectedImage] = useState(safeMainImage);
+
+  // Garantir que a galeria seja um array válido
+  const safeGallery = Array.isArray(gallery) && gallery.length > 0 
+    ? gallery.filter(Boolean) 
+    : [];
 
   return (
     <div className="space-y-4">
       <div className="aspect-square rounded-xl overflow-hidden bg-gray-100">
         <img
-          src={selectedImage || "/placeholder.svg"}
+          src={selectedImage || fallbackImage}
           alt="Imagem do produto"
           className="w-full h-full object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = fallbackImage;
+          }}
         />
       </div>
       
-      {gallery && gallery.length > 0 && (
+      {(safeMainImage || safeGallery.length > 0) && (
         <div className="grid grid-cols-5 gap-4">
-          {[mainImage, ...gallery].map((image, index) => (
+          {[safeMainImage, ...safeGallery].filter(Boolean).map((image, index) => (
             <button
               key={index}
               onClick={() => setSelectedImage(image)}
@@ -30,9 +41,12 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
               }`}
             >
               <img
-                src={image || "/placeholder.svg"}
+                src={image || fallbackImage}
                 alt={`Imagem ${index + 1}`}
                 className="w-full h-full object-contain p-2"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = fallbackImage;
+                }}
               />
             </button>
           ))}

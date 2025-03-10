@@ -23,7 +23,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const productUrl = `/products/${encodeURIComponent(slug)}`;
 
   // Garantir que a imagem tenha um fallback válido
-  const productImage = product.main_image || product.default_image_url || "/placeholder.svg";
+  const fallbackImage = "https://images.unsplash.com/photo-1616763355548-1b606f439f86?q=80&w=1470&auto=format&fit=crop";
+  const productImage = product.main_image || product.default_image_url || fallbackImage;
 
   return (
     <Card className="relative group h-full">
@@ -36,7 +37,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
               alt={product.name}
               className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = "/placeholder.svg";
+                (e.target as HTMLImageElement).src = fallbackImage;
               }}
             />
           </div>
