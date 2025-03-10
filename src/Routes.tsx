@@ -1,5 +1,5 @@
 
-import { BrowserRouter, Route, Routes as RoutesList, createBrowserRouter } from "react-router-dom";
+import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
 import Home from "@/pages/Index";
 import About from "@/pages/About";
 import Products from "@/pages/Products";
@@ -14,7 +14,7 @@ import OrderDetails from "@/pages/orders/OrderDetails";
 import { adminRoutes } from "@/routes/adminRoutes";
 import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
-import AdminRoute from "@/routes/admin/adminLoader"; 
+import { AdminRoute } from "@/routes/admin/adminLoader"; 
 
 export function Routes() {
   return (
@@ -35,8 +35,7 @@ export function Routes() {
         <Route path="/orders/:id" element={<OrderDetails />} />
 
         {/* Rotas de Admin */}
-        <Route path="/admin/*" element={<AdminRoute />} />
-        <Route path="/admin/*" element={adminRoutes} />
+        <Route path="/admin/*" element={<AdminRoute>{adminRoutes}</AdminRoute>} />
         
         {/* Rotas de Suporte */}
         <Route path="/support/tickets" element={<Support />} />
@@ -46,59 +45,3 @@ export function Routes() {
     </BrowserRouter>
   );
 }
-
-// Criar um router para uso com RouterProvider
-export const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Home />,
-  },
-  {
-    path: "/about",
-    element: <About />,
-  },
-  {
-    path: "/products",
-    element: <Products />,
-  },
-  {
-    path: "/studies",
-    element: <Studies />,
-  },
-  {
-    path: "/news",
-    element: <News />,
-  },
-  {
-    path: "/contact",
-    element: <Contact />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-  },
-  {
-    path: "/profile",
-    element: <Profile />,
-  },
-  {
-    path: "/orders",
-    element: <Orders />,
-  },
-  {
-    path: "/orders/:id",
-    element: <OrderDetails />,
-  },
-  {
-    path: "/support/tickets",
-    element: <Support />,
-  },
-  {
-    path: "/support/tickets/:id",
-    element: <TicketDetails />,
-  },
-]);

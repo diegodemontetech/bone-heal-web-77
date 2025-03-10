@@ -120,7 +120,7 @@ DialogDescription.displayName = DialogPrimitive.Description.displayName
 const DialogWithBlur = ({ children, ...props }: DialogPrimitive.DialogProps) => {
   return (
     <Dialog {...props}>
-      <DialogOverlay />
+      <DialogOverlay className="bg-black/40 backdrop-blur-sm" />
       <DialogContent className="bg-white/95 backdrop-blur-sm">
         {children}
       </DialogContent>
