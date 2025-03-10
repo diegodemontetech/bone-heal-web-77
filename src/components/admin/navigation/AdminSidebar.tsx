@@ -25,7 +25,14 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
 
   // Filtra os itens de navegação baseados nas permissões do usuário
   const filteredNavigationItems = adminNavigationItems.filter(item => {
-    return item.permission === null || isAdminMaster || (item.permission && hasPermission(item.permission));
+    // Se não houver permissão específica, mostra para todos os admins
+    if (!item.permission) return true;
+    
+    // Se for admin master, mostra tudo
+    if (isAdminMaster) return true;
+    
+    // Se precisar de permissão específica, verifica se o usuário tem
+    return hasPermission(item.permission);
   });
 
   return (
