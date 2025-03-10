@@ -16,31 +16,29 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
       setIsImporting(true);
       console.log(`Iniciando importação de ${rates.length} taxas de frete`);
       
-      // Log detalhado dos dados para diagnóstico
-      console.log("Estrutura dos dados para importação:", 
-        rates.slice(0, 2).map(rate => ({
-          state: rate.state,
-          region_type: rate.region_type,
-          service_type: rate.service_type,
-          rate: rate.rate,
-          delivery_days: rate.delivery_days
-        }))
-      );
+      // Validar dados antes da importação
+      const validRates = rates.filter(rate => {
+        const isValid = rate.state && 
+                       rate.region_type && 
+                       rate.service_type && 
+                       typeof rate.rate === 'number' && 
+                       typeof rate.delivery_days === 'number';
+                       
+        if (!isValid) {
+          console.warn("Taxa de frete inválida detectada:", rate);
+        }
+        
+        return isValid;
+      });
       
-      // Verificar se há valores inválidos nos dados
-      const validRates = rates.filter(rate => 
-        rate.state && 
-        rate.region_type && 
-        rate.service_type && 
-        typeof rate.rate === 'number' && 
-        typeof rate.delivery_days === 'number'
-      );
+      console.log(`Taxas válidas para importação: ${validRates.length}/${rates.length}`);
       
-      if (validRates.length !== rates.length) {
-        console.warn(`Atenção: ${rates.length - validRates.length} taxas de frete possuem dados inválidos e foram filtradas`);
+      if (validRates.length === 0) {
+        throw new Error("Nenhuma taxa de frete válida para importação");
       }
       
       // Limpar registros existentes antes de importar novos
+      console.log("Tentando limpar tabela de fretes existentes...");
       const { error: deleteError } = await supabase
         .from("shipping_rates")
         .delete()
@@ -48,37 +46,55 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
         
       if (deleteError) {
         console.error("Erro ao limpar taxas de frete existentes:", deleteError);
-        toast.error("Erro ao preparar importação. Tente novamente.");
-        throw deleteError;
+        console.error("Detalhes adicionais:", deleteError.details, deleteError.message, deleteError.code);
+        throw new Error(`Erro ao limpar tabela: ${deleteError.message}`);
       }
       
       console.log("Tabela limpa com sucesso, inserindo novas taxas...");
       
-      // Inserir novas taxas
-      const { data, error } = await supabase
-        .from("shipping_rates")
-        .insert(validRates)
-        .select();
+      // Inserir novas taxas em lotes menores (50 por vez)
+      const batchSize = 50;
+      let successCount = 0;
+      
+      for (let i = 0; i < validRates.length; i += batchSize) {
+        const batch = validRates.slice(i, i + batchSize);
+        console.log(`Importando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(validRates.length/batchSize)}, ${batch.length} taxas`);
+        
+        const { data, error } = await supabase
+          .from("shipping_rates")
+          .insert(batch)
+          .select();
 
-      if (error) {
-        console.error("Erro ao importar taxas de frete:", error);
-        console.error("Detalhes do erro:", error.details, error.hint, error.message);
-        toast.error("Erro ao importar taxas de frete. Tente novamente.");
-        throw error;
+        if (error) {
+          console.error(`Erro ao importar lote ${i/batchSize + 1}:`, error);
+          console.error("Detalhes do erro:", error.details, error.hint, error.message, error.code);
+          throw new Error(`Erro ao importar taxas: ${error.message}`);
+        }
+        
+        successCount += (data?.length || 0);
+        console.log(`Lote ${Math.floor(i/batchSize) + 1} importado com sucesso: ${data?.length || 0} registros`);
       }
 
-      console.log("Importação concluída com sucesso! Registros inseridos:", data?.length || 0);
+      console.log(`Importação concluída: ${successCount} taxas de frete inseridas`);
       
       // Invalidar a consulta para buscar os dados atualizados
       queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
-      toast.success(`${validRates.length} taxas de frete importadas com sucesso!`);
+      toast.success(`${successCount} taxas de frete importadas com sucesso!`);
       
     } catch (error: any) {
       console.error("Erro ao importar taxas de frete:", error);
+      
+      // Logar detalhes mais específicos do erro
       if (error.code) {
-        console.error(`Código do erro: ${error.code}, Detalhes: ${error.details || error.message}`);
+        console.error(`Código do erro: ${error.code}`);
       }
-      toast.error("Erro ao importar taxas de frete. Tente novamente.");
+      if (error.details) {
+        console.error(`Detalhes do erro: ${error.details}`);
+      }
+      
+      // Mensagem de erro mais informativa
+      const errorMessage = error.message || "Erro ao importar taxas de frete";
+      toast.error(`Erro: ${errorMessage}. Verifique o console para mais detalhes.`);
     } finally {
       setIsImporting(false);
     }

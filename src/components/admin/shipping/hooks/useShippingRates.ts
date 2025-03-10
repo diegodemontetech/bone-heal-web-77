@@ -18,6 +18,14 @@ export const useShippingRates = () => {
       console.log("Buscando taxas de frete do Supabase...");
       
       try {
+        // Testar conexão básica primeiro
+        const healthCheck = await supabase.rpc('version');
+        if (healthCheck.error) {
+          throw new Error(`Falha na conexão com Supabase: ${healthCheck.error.message}`);
+        }
+        
+        console.log("Conexão com Supabase estabelecida, buscando dados...");
+        
         const { data, error, status, statusText } = await supabase
           .from("shipping_rates")
           .select("*")
@@ -28,8 +36,14 @@ export const useShippingRates = () => {
         if (error) {
           console.error("Erro ao buscar taxas de frete:", error);
           console.error("Status HTTP:", status, statusText);
-          console.error("Detalhes do erro:", error.details, error.hint, error.message);
-          toast.error(`Erro ao carregar taxas de frete: ${error.message}`);
+          console.error("Detalhes completos do erro:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+          
+          toast.error(`Erro ao carregar taxas: ${error.message}`);
           throw error;
         }
         
@@ -42,12 +56,15 @@ export const useShippingRates = () => {
         
         return data as ShippingRate[];
       } catch (err: any) {
-        console.error("Erro na consulta:", err);
-        toast.error("Falha na comunicação com o banco de dados");
+        console.error("Erro completo na consulta:", err);
+        const errorMessage = err.message || "Erro na comunicação com o banco de dados";
+        console.error("Detalhes:", errorMessage);
+        toast.error(errorMessage);
         throw err;
       }
     },
-    retry: 1,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 
   // Monitorar quando os dados são carregados
@@ -60,7 +77,11 @@ export const useShippingRates = () => {
   // Se encontrar um erro na busca das taxas, exibir no console
   useEffect(() => {
     if (isError && error) {
-      console.error("Erro na query de taxas de frete:", error);
+      console.error("Erro detalhado na query de taxas de frete:", error);
+      if (error instanceof Error) {
+        console.error("Mensagem de erro:", error.message);
+        console.error("Stack trace:", error.stack);
+      }
     }
   }, [isError, error]);
 
