@@ -41,7 +41,7 @@ const CheckoutButton = ({
         className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-base"
         size="lg"
         onClick={onCheckout}
-        disabled={loading || !hasZipCode || amount <= 0}
+        disabled={loading || !hasZipCode || amount <= 0 || !isLoggedIn}
       >
         {loading ? (
           <>
