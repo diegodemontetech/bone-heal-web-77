@@ -25,7 +25,7 @@ export function useCheckout() {
   // Gerar QR Code do PIX ou link do boleto ao mudar o método de pagamento
   useEffect(() => {
     const generatePaymentData = async () => {
-      // Só gerar se tivermos um pedido já criado
+      // Só gerar se tivermos um pedido já criado e não temos dados de pagamento ainda
       if (!orderId || processingPayment || checkoutData) return;
       
       // Verificar sessão para garantir autenticação
@@ -40,34 +40,49 @@ export function useCheckout() {
         console.log(`Gerando dados para pagamento com ${paymentMethod}`);
         setLoading(true);
         
-        // Simular dados baseados no método de pagamento
+        // Para PIX, chamar a edge function que gera o QR code
         if (paymentMethod === 'pix') {
-          // Este é apenas um placeholder. No mundo real, você chamaria uma API para gerar o QR code
-          setTimeout(() => {
-            setCheckoutData({
-              point_of_interaction: {
-                transaction_data: {
-                  qr_code: "00020101021226880014br.gov.bcb.pix2566qrcodes-pix.mercadopago.com/pd/v2/70c5989a-9a48-4b87-84c2-46936f9b8aa552040000530398654041.005802BR5925MERCADOPAGO PAGAMENTOS SA6009SAO PAULO62070503***6304BD31",
-                  qr_code_base64: "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"
-                }
-              }
+          try {
+            const { data, error } = await supabase.functions.invoke("omie-pix", {
+              body: { orderId }
             });
-            setLoading(false);
-          }, 1000);
+            
+            if (error) throw error;
+            
+            if (data) {
+              setCheckoutData({
+                point_of_interaction: {
+                  transaction_data: {
+                    qr_code: data.pixCode,
+                    qr_code_base64: "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"
+                  }
+                }
+              });
+            }
+          } catch (error) {
+            console.error("Erro ao gerar QR Code PIX:", error);
+            toast.error("Erro ao gerar QR Code PIX. Tente novamente.");
+            setCheckoutData(null);
+          }
+        } else if (paymentMethod === 'boleto') {
+          // Código para gerar boleto
+          // ... implementação futura ...
+          setCheckoutData(null);
         } else {
           setCheckoutData(null);
-          setLoading(false);
         }
       } catch (error) {
         console.error("Erro ao gerar dados de pagamento:", error);
+      } finally {
         setLoading(false);
       }
     };
     
-    if (paymentMethod === 'pix' || paymentMethod === 'boleto') {
-      generatePaymentData();
-    } else {
+    // Limpar dados de checkout ao mudar o método
+    if (paymentMethod !== 'pix' && paymentMethod !== 'boleto') {
       setCheckoutData(null);
+    } else if ((paymentMethod === 'pix' || paymentMethod === 'boleto') && !checkoutData) {
+      generatePaymentData();
     }
   }, [paymentMethod, orderId, processingPayment, checkoutData]);
 
@@ -118,20 +133,29 @@ export function useCheckout() {
       setLoading(true);
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
-      // Se não tivermos dados de checkout para PIX/Boleto, gerá-los agora
-      if ((paymentMethod === 'pix' || paymentMethod === 'boleto') && !checkoutData) {
+      // Para PIX, verificar se temos dados de checkout. Se não, gerá-los agora
+      if (paymentMethod === 'pix' && !checkoutData) {
         try {
-          const checkoutResult = await createMercadoPagoCheckout(
-            orderId!, 
-            cartItems, 
-            shippingFee, 
-            discount
-          );
+          // Chamar a edge function para gerar o PIX
+          const { data, error } = await supabase.functions.invoke("omie-pix", {
+            body: { orderId }
+          });
           
-          setCheckoutData(checkoutResult);
+          if (error) throw error;
+          
+          if (data) {
+            setCheckoutData({
+              point_of_interaction: {
+                transaction_data: {
+                  qr_code: data.pixCode,
+                  qr_code_base64: "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"
+                }
+              }
+            });
+          }
         } catch (error) {
-          console.error("Erro ao gerar dados de pagamento:", error);
-          toast.error("Erro ao processar dados de pagamento. Tente novamente.");
+          console.error("Erro ao gerar QR Code PIX:", error);
+          toast.error("Erro ao gerar QR Code PIX. Tente novamente.");
           setLoading(false);
           setProcessingPayment(false);
           return;

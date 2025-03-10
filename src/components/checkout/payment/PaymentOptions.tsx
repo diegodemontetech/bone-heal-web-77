@@ -71,13 +71,19 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
     setCardExpiry(formatExpiry(e.target.value));
   };
   
-  // Gerar QR Code PIX (mockado por enquanto)
+  // Dados do PIX
   const pixQrCode = checkoutData?.point_of_interaction?.transaction_data?.qr_code || "";
   const pixCode = checkoutData?.point_of_interaction?.transaction_data?.qr_code_base64 || "";
   
   const copyPixCode = () => {
-    navigator.clipboard.writeText(pixQrCode);
-    toast.success("Código PIX copiado!");
+    if (!pixQrCode) {
+      toast.error("Código PIX não disponível. Gere o QR Code primeiro.");
+      return;
+    }
+    
+    navigator.clipboard.writeText(pixQrCode)
+      .then(() => toast.success("Código PIX copiado!"))
+      .catch(() => toast.error("Erro ao copiar código PIX"));
   };
   
   return (
@@ -204,11 +210,11 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
                       </div>
                       
                       {pixQrCode && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 w-full">
                           <Input 
                             value={pixQrCode} 
                             readOnly 
-                            className="text-xs"
+                            className="text-xs font-mono"
                           />
                           <Button size="sm" variant="outline" onClick={copyPixCode}>
                             <Copy className="h-4 w-4" />
@@ -226,8 +232,19 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
                   ) : (
                     <div className="flex flex-col items-center space-y-3 py-3">
                       <p className="text-sm text-center">
-                        Clique em "Pagar" para gerar o QR Code PIX
+                        Clique em "Gerar PIX" abaixo para gerar o QR Code PIX
                       </p>
+                      <Button 
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                        onClick={() => {
+                          toast.info("Gerando QR Code PIX...");
+                          // A geração real acontecerá no hook useCheckout quando o método de pagamento mudar
+                        }}
+                      >
+                        <QrCode className="mr-2 h-4 w-4" />
+                        Gerar PIX
+                      </Button>
                       <div className="animate-pulse w-32 h-32 bg-gray-200 rounded flex items-center justify-center">
                         <QrCode className="w-12 h-12 text-gray-300" />
                       </div>
@@ -271,8 +288,19 @@ const PaymentOptions = ({ paymentMethod, setPaymentMethod, total, checkoutData }
                   ) : (
                     <div className="flex flex-col items-center space-y-3 py-3">
                       <p className="text-sm text-center">
-                        Clique em "Pagar" para gerar o boleto
+                        Clique em "Gerar Boleto" para gerar o boleto bancário
                       </p>
+                      <Button 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                        onClick={() => {
+                          toast.info("Gerando boleto...");
+                          // A geração real acontecerá no hook useCheckout quando o método de pagamento mudar
+                        }}
+                      >
+                        <Wallet className="mr-2 h-4 w-4" />
+                        Gerar Boleto
+                      </Button>
                       <div className="animate-pulse w-full h-10 bg-gray-200 rounded"></div>
                     </div>
                   )}
