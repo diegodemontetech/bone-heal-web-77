@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,8 +12,10 @@ import { supabase } from "@/integrations/supabase/client";
 const Profile = () => {
   const { profile, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sessionLoading, setSessionLoading] = useState(true);
   const [hasValidSession, setHasValidSession] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   // Verificar a sessão do Supabase diretamente
   useEffect(() => {
@@ -38,15 +40,20 @@ const Profile = () => {
 
   // Redirecionar para login se não estiver autenticado
   useEffect(() => {
+    // Evitar múltiplas tentativas de redirecionamento
+    if (redirectAttempted) return;
+    
     // Verificar se a página já carregou completamente (ambos, profile e sessão)
     if (!isLoading && !sessionLoading) {
+      setRedirectAttempted(true);
+      
       // Verificar se o usuário não está autenticado de nenhuma forma
       if (!profile && !hasValidSession) {
         console.log("Usuário não autenticado, redirecionando para login");
-        navigate("/login");
+        navigate("/login", { state: { from: location.pathname } });
       }
     }
-  }, [isLoading, profile, navigate, sessionLoading, hasValidSession]);
+  }, [isLoading, profile, navigate, sessionLoading, hasValidSession, location.pathname, redirectAttempted]);
 
   // Mostrar loading enquanto verificamos autenticação
   if (isLoading || sessionLoading) {

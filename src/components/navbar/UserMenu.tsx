@@ -20,7 +20,7 @@ interface UserMenuProps {
 
 export const UserMenu = ({ session }: UserMenuProps) => {
   const navigate = useNavigate();
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin, profile, signOut } = useAuth();
 
   // Determina se o usuário está realmente autenticado verificando se há um usuário ativo na sessão fornecida
   // Ou se há um perfil de usuário no contexto de autenticação
@@ -28,8 +28,7 @@ export const UserMenu = ({ session }: UserMenuProps) => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      toast.success("Logout realizado com sucesso");
+      await signOut();
       navigate("/");
     } catch (error: any) {
       toast.error("Erro ao sair: " + error.message);
@@ -45,8 +44,8 @@ export const UserMenu = ({ session }: UserMenuProps) => {
         navigate("/profile");
       }
     } else {
-      // Se não está logado, vá para o login
-      navigate("/login");
+      // Se não está logado, vá para o login com volta para a página atual
+      navigate("/login", { state: { from: window.location.pathname } });
     }
   };
 

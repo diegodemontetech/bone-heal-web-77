@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -87,7 +86,7 @@ export const CartSummary = ({
       calculateShipping();
       calculationRequested.current = true;
     }
-  }, [zipCode, cartItems.length]);
+  }, [zipCode, cartItems.length, shippingCalculated, isCalculatingShipping, calculateShipping]);
 
   const handleRecalculateClick = () => {
     if (resetShipping) {

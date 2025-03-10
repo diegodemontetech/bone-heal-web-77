@@ -27,7 +27,8 @@ const Login = () => {
   const [currentSession, setCurrentSession] = useState<any>(null);
   const [redirectAttempted, setRedirectAttempted] = useState(false);
 
-  const from = location.state?.from?.pathname || location.state?.from || "/profile";
+  // Obter o caminho de redirecionamento da navegação
+  const fromPath = location.state?.from || "/profile";
 
   // Verificar a sessão atual usando diretamente o cliente Supabase
   useEffect(() => {
@@ -71,11 +72,11 @@ const Login = () => {
         navigate("/admin/dashboard");
       } else {
         // Para usuários normais, redirecionar para a página específica ou para profile
-        console.log("Redirecionando usuário normal para:", from);
-        navigate(from);
+        console.log(`Redirecionando usuário normal para: ${fromPath}`);
+        navigate(fromPath);
       }
     }
-  }, [isLoading, profile, isAdmin, navigate, from, sessionLoading, currentSession, redirectAttempted]);
+  }, [isLoading, profile, isAdmin, navigate, fromPath, sessionLoading, currentSession, redirectAttempted]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

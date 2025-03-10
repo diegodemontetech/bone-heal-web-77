@@ -4,12 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { UserRole, UserPermission, UserProfile } from '@/types/auth';
 import { toast } from 'sonner';
+import { Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
   profile: UserProfile | null;
   isLoading: boolean;
+  session: Session | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, userData: any) => Promise<any>; // Alterada para retornar os dados do signup
+  signUp: (email: string, password: string, userData: any) => Promise<any>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isDentist: boolean;
@@ -23,15 +25,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast: uiToast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [permissions, setPermissions] = useState<UserPermission[]>([]);
+
+  const fetchSession = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    } catch (error) {
+      console.error("Erro ao buscar sessão:", error);
+      return null;
+    }
+  };
 
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const currentSession = await fetchSession();
+      setSession(currentSession);
       
-      if (!session) {
+      if (!currentSession) {
         setProfile(null);
         setPermissions([]);
         setIsLoading(false);
@@ -42,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', currentSession.user.id)
         .single();
         
       if (profileError) throw profileError;
@@ -51,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: permissionsData, error: permissionsError } = await supabase
         .from('user_permissions')
         .select('permission')
-        .eq('user_id', session.user.id);
+        .eq('user_id', currentSession.user.id);
         
       if (permissionsError) throw permissionsError;
       
@@ -60,8 +74,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Montar o perfil completo
       const userProfile: UserProfile = {
         ...profileData,
-        id: session.user.id,
-        email: session.user.email || '',
+        id: currentSession.user.id,
+        email: currentSession.user.email || '',
         role: (profileData.role as UserRole) || UserRole.DENTIST,
         permissions: userPermissions
       };
@@ -80,12 +94,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchProfile();
     
     // Configurar listener para mudanças de autenticação
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log("Evento de autenticação:", event, newSession?.user?.id);
+      
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setSession(newSession);
         fetchProfile();
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);
         setPermissions([]);
+        setSession(null);
       }
     });
 
@@ -100,8 +118,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
       if (error) throw error;
+      
+      if (data?.session) {
+        setSession(data.session);
+        await fetchProfile();
+      }
     } catch (error: any) {
       toast.error("Erro ao fazer login: " + error.message);
       throw error;
@@ -137,6 +161,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      setProfile(null);
+      setSession(null);
+      setPermissions([]);
+      
       toast.success("Logout realizado com sucesso");
     } catch (error: any) {
       toast.error("Erro ao sair: " + error.message);
@@ -157,6 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       profile,
       isLoading,
+      session,
       signIn,
       signUp,
       signOut,

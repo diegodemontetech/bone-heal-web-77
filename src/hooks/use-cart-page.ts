@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth-context";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 export function useCartPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [session, setSession] = useState<any>(null);
   const { profile } = useAuth();
   const [zipCode, setZipCode] = useState("");
@@ -134,7 +135,8 @@ export function useCartPage() {
 
     // Verificar se o usuário está autenticado
     if (!isAuthenticated) {
-      navigate("/login", { state: { from: "/cart" } });
+      // Armazenar a URL atual para redirecionar de volta após o login
+      navigate("/login", { state: { from: location.pathname } });
       return;
     }
 
