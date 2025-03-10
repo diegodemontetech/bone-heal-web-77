@@ -1,101 +1,103 @@
-
-import { createBrowserRouter } from "react-router-dom";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
-import Profile from "./pages/Profile";
+import { lazy, Suspense } from "react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Products from "./pages/Products";
+import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
-import AdminProducts from "./pages/admin/Products";
-import AdminDashboard from "./pages/admin/Dashboard";
-import Tickets from "./pages/support/Tickets";
-import TicketDetails from "./pages/support/TicketDetails";
-import AdminTickets from "./pages/admin/Tickets";
-import Index from "./pages/Index";
-import { default as Checkout } from "./pages/checkout/Checkout";
-import CheckoutSuccess from "./pages/checkout/Success";
-import ContactPage from "./pages/Contact";
-import AboutPage from "./pages/About";
-import NewsPage from "./pages/News";
-import StudiesPage from "./pages/Studies";
+import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
 
-export const routes = [
-  {
-    path: "/",
-    element: <Index />,
-  },
-  {
-    path: "/products",
-    element: <Products />,
-  },
-  {
-    path: "/products/:slug",
-    element: <ProductDetail />,
-  },
-  {
-    path: "/profile",
-    element: <Profile />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-  },
-  {
-    path: "/cart",
-    element: <Cart />,
-  },
-  {
-    path: "/checkout",
-    element: <Checkout />,
-  },
-  {
-    path: "/checkout/success",
-    element: <CheckoutSuccess />,
-  },
-  {
-    path: "/admin/products",
-    element: <AdminProducts />,
-  },
-  {
-    path: "/admin",
-    element: <AdminDashboard />,
-  },
-  {
-    path: "/admin/dashboard",
-    element: <AdminDashboard />,
-  },
-  {
-    path: "/support/tickets",
-    element: <Tickets />,
-  },
-  {
-    path: "/support/tickets/:id",
-    element: <TicketDetails />,
-  },
-  {
-    path: "/admin/tickets",
-    element: <AdminTickets />,
-  },
-  {
-    path: "/contact",
-    element: <ContactPage />,
-  },
-  {
-    path: "/about",
-    element: <AboutPage />,
-  },
-  {
-    path: "/news",
-    element: <NewsPage />,
-  },
-  {
-    path: "/studies",
-    element: <StudiesPage />,
-  },
-];
+// Importações preguiçosas (lazy) para melhorar performance
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
 
-export const router = createBrowserRouter(routes);
+// Página de pedidos
+const Orders = lazy(() => import("./pages/orders/Orders"));
+const OrderDetails = lazy(() => import("./pages/orders/OrderDetails"));
+
+const Routes = () => {
+  return (
+    <RouterProvider
+      router={createBrowserRouter([
+        {
+          path: "/",
+          element: <Home />,
+        },
+        {
+          path: "/login",
+          element: <Login />,
+        },
+        {
+          path: "/register",
+          element: <Register />,
+        },
+        {
+          path: "/products",
+          element: <Products />,
+        },
+        {
+          path: "/products/:id",
+          element: <ProductDetails />,
+        },
+        {
+          path: "/cart",
+          element: <Cart />,
+        },
+        {
+          path: "/checkout",
+          element: <Cart />,
+        },
+        {
+          path: "/checkout/success",
+          element: <CheckoutSuccess />,
+        },
+        {
+          path: "/profile",
+          element: <Profile />,
+        },
+        {
+          path: "/profile/edit",
+          element: <EditProfile />,
+        },
+        {
+          path: "/about",
+          element: (
+            <Suspense fallback={<>Loading...</>}>
+              <About />
+            </Suspense>
+          ),
+        },
+        {
+          path: "/contact",
+          element: (
+            <Suspense fallback={<>Loading...</>}>
+              <Contact />
+            </Suspense>
+          ),
+        },
+        // Rota para a página de pedidos
+        {
+          path: "/orders",
+          element: (
+            <Suspense fallback={<>Loading...</>}>
+              <Orders />
+            </Suspense>
+          ),
+        },
+        {
+          path: "/orders/:id",
+          element: (
+            <Suspense fallback={<>Loading...</>}>
+              <OrderDetails />
+            </Suspense>
+          ),
+        },
+      ])}
+    />
+  );
+};
+
+export default Routes;
