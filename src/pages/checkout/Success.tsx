@@ -99,7 +99,7 @@ const Success = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/orders">
+              <Link to="/profile">
                 <Button variant="outline" className="w-full">
                   Ver Meus Pedidos
                 </Button>

@@ -1,5 +1,5 @@
 
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CheckoutButtonProps {
@@ -24,9 +24,9 @@ const CheckoutButton = ({
       case 'credit':
         return 'com Cartão';
       case 'pix':
-        return 'com PIX';
+        return 'via PIX';
       case 'boleto':
-        return 'com Boleto';
+        return 'via Boleto';
       default:
         return '';
     }
@@ -39,6 +39,32 @@ const CheckoutButton = ({
   if (!isLoggedIn) {
     console.warn("Usuário não autenticado no momento do checkout");
   }
+
+  const getButtonText = () => {
+    if (loading) {
+      return "Processando...";
+    }
+    
+    if (!isLoggedIn) {
+      return "Faça login para continuar";
+    }
+    
+    if (!hasZipCode) {
+      return "Selecione uma opção de frete para continuar";
+    }
+    
+    if (amount <= 0) {
+      return "Não há valor a pagar";
+    }
+    
+    // Para PIX, quando já temos o QR code gerado, mudamos o texto
+    if (paymentMethod === 'pix') {
+      return `Finalizar Compra ${getPaymentMethodLabel(paymentMethod)}`;
+    }
+    
+    // Para outros métodos ou quando ainda não temos dados
+    return `Pagar R$ ${amount.toFixed(2)} ${getPaymentMethodLabel(paymentMethod)}`;
+  };
 
   return (
     <>
@@ -53,16 +79,10 @@ const CheckoutButton = ({
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Processando...
           </>
-        ) : !isLoggedIn ? (
-          "Faça login para continuar"
-        ) : !hasZipCode ? (
-          "Selecione uma opção de frete para continuar"
-        ) : amount <= 0 ? (
-          "Não há valor a pagar"
         ) : (
           <>
-            Pagar R$ {amount.toFixed(2)} {getPaymentMethodLabel(paymentMethod)} 
-            <ArrowRight className="ml-2 h-4 w-4" />
+            {getButtonText()} 
+            {!loading && <ArrowRight className="ml-2 h-4 w-4" />}
           </>
         )}
       </Button>

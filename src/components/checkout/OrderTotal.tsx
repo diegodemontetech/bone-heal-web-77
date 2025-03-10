@@ -17,6 +17,7 @@ interface OrderTotalProps {
   deliveryDate: Date | null;
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
+  checkoutData: any;
 }
 
 const OrderTotal = ({
@@ -29,7 +30,8 @@ const OrderTotal = ({
   onCheckout,
   deliveryDate,
   paymentMethod,
-  setPaymentMethod
+  setPaymentMethod,
+  checkoutData
 }: OrderTotalProps) => {
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const total = subtotal + shippingFee - discount;
@@ -64,6 +66,7 @@ const OrderTotal = ({
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
             total={total}
+            checkoutData={checkoutData}
           />
 
           <CheckoutButton 

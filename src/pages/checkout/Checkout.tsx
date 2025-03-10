@@ -57,7 +57,8 @@ const Checkout = () => {
     paymentMethod,
     setPaymentMethod,
     handleCheckout: processCheckout,
-    orderId
+    orderId,
+    checkoutData
   } = useCheckout();
 
   // Verificar autenticação diretamente uma vez
@@ -183,6 +184,7 @@ const Checkout = () => {
             deliveryDate={deliveryDate}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
+            checkoutData={checkoutData}
           />
         </div>
       </div>

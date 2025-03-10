@@ -13,6 +13,7 @@ import TicketDetails from "./pages/support/TicketDetails";
 import AdminTickets from "./pages/admin/Tickets";
 import Index from "./pages/Index";
 import { default as Checkout } from "./pages/checkout/Checkout";
+import CheckoutSuccess from "./pages/checkout/Success";
 import ContactPage from "./pages/Contact";
 import AboutPage from "./pages/About";
 import NewsPage from "./pages/News";
@@ -50,6 +51,10 @@ export const routes = [
   {
     path: "/checkout",
     element: <Checkout />,
+  },
+  {
+    path: "/checkout/success",
+    element: <CheckoutSuccess />,
   },
   {
     path: "/admin/products",
