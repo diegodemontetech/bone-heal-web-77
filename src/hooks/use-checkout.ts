@@ -31,8 +31,14 @@ export function useCheckout() {
     // Verificação de autenticação
     try {
       // Verificar sessão diretamente para garantir
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
+      
+      if (sessionError) {
+        console.error("Erro ao verificar sessão:", sessionError);
+        toast.error("Ocorreu um erro ao verificar sua autenticação. Tente novamente.");
+        return;
+      }
       
       if (!userId) {
         console.error("Usuário não autenticado no handleCheckout");

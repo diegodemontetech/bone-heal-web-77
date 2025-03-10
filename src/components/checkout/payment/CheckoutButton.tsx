@@ -35,6 +35,11 @@ const CheckoutButton = ({
   // Verificação para debug
   console.log("CheckoutButton props:", { isLoggedIn, hasZipCode, loading, amount });
 
+  // Log adicional para debug de autenticação
+  if (!isLoggedIn) {
+    console.warn("Usuário não autenticado no momento do checkout");
+  }
+
   return (
     <>
       <Button

@@ -27,11 +27,12 @@ export const saveOrder = async (
 
     console.log("Salvando pedido:", orderId, "para usuário:", userId);
 
+    // Garantir que o user_id seja explicitamente definido
     const { error: orderError } = await supabase
       .from('orders')
       .insert({
         id: orderId,
-        user_id: userId,
+        user_id: userId, // Garantir que o ID do usuário esteja definido
         items: cartItems.map(item => ({
           product_id: item.id,
           quantity: item.quantity,
