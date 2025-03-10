@@ -734,6 +734,65 @@ export type Database = {
         }
         Relationships: []
       }
+      quotations: {
+        Row: {
+          created_at: string
+          customer_info: Json | null
+          discount_amount: number | null
+          discount_type: string | null
+          id: string
+          items: Json | null
+          notes: string | null
+          payment_method: string | null
+          sent_by_email: boolean | null
+          status: string
+          subtotal_amount: number
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_info?: Json | null
+          discount_amount?: number | null
+          discount_type?: string | null
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          payment_method?: string | null
+          sent_by_email?: boolean | null
+          status?: string
+          subtotal_amount: number
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_info?: Json | null
+          discount_amount?: number | null
+          discount_type?: string | null
+          id?: string
+          items?: Json | null
+          notes?: string | null
+          payment_method?: string | null
+          sent_by_email?: boolean | null
+          status?: string
+          subtotal_amount?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scientific_studies: {
         Row: {
           created_at: string

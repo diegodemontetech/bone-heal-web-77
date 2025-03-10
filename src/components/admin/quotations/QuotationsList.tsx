@@ -16,6 +16,26 @@ import { Search, Mail, Eye, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+// Definir interface para os dados do cliente
+interface CustomerProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+}
+
+// Definir interface para os dados do orçamento
+interface Quotation {
+  id: string;
+  created_at: string;
+  customer: CustomerProfile;
+  status: string;
+  total_amount: number;
+  discount_amount: number;
+  payment_method: string;
+  sent_by_email: boolean;
+}
+
 const QuotationsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -73,7 +93,7 @@ const QuotationsList = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusStyles = {
+    const statusStyles: Record<string, string> = {
       draft: "bg-gray-200 text-gray-800",
       sent: "bg-blue-200 text-blue-800",
       accepted: "bg-green-200 text-green-800",
@@ -81,7 +101,7 @@ const QuotationsList = () => {
       expired: "bg-yellow-200 text-yellow-800"
     };
 
-    const statusLabels = {
+    const statusLabels: Record<string, string> = {
       draft: "Rascunho",
       sent: "Enviado",
       accepted: "Aceito",
