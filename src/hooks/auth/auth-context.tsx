@@ -12,6 +12,8 @@ interface AuthContextType {
   hasPermission: (permission: UserPermission) => boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<any>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,6 +110,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // Função para atualizar o perfil - adicionada
+  const refreshProfile = useCallback(async () => {
+    return loadUserProfile();
+  }, [loadUserProfile]);
+
   // Inicializar e atualizar ao montar o componente
   useEffect(() => {
     loadUserProfile();
@@ -140,6 +147,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Método de registro - adicionado
+  const signUp = async (email: string, password: string, userData: any) => {
+    try {
+      // Registrar o usuário com Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userData, // Metadados do usuário que serão salvos
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error("Erro ao registrar:", error);
+      toast.error(`Erro ao registrar: ${error.message}`);
+      throw error;
+    }
+  };
+
   // Logout
   const signOut = async () => {
     try {
@@ -159,7 +187,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isAdminMaster,
     hasPermission,
     signIn,
-    signOut
+    signOut,
+    signUp,
+    refreshProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
