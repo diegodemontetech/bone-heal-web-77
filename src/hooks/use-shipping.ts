@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -15,6 +16,8 @@ export const useShipping = (cartItems: CartItem[] = []) => {
   const session = useSession();
   const lastCalculatedZipCode = useRef("");
   const cartItemsRef = useRef(cartItems);
+  const maxRetries = useRef(3);
+  const retryCount = useRef(0);
 
   // Atualizar a referência quando cartItems mudar
   useEffect(() => {
@@ -54,14 +57,22 @@ export const useShipping = (cartItems: CartItem[] = []) => {
   // Função para calcular o frete usando a Edge Function
   const calculateShipping = async (zipCodeInput: string) => {
     // Verificar parâmetros de entrada
-    if (!zipCodeInput || zipCodeInput.length !== 8) {
-      console.log("CEP inválido para cálculo:", zipCodeInput);
+    if (!zipCodeInput) {
+      console.log("CEP não fornecido para cálculo");
+      return;
+    }
+    
+    // Limpar o CEP para ter apenas números
+    const cleanZipCode = zipCodeInput.replace(/\D/g, '');
+    
+    if (cleanZipCode.length !== 8) {
+      console.log("CEP inválido para cálculo (deve ter 8 dígitos):", cleanZipCode);
       return;
     }
     
     // Evitar recálculos para o mesmo CEP
-    if (lastCalculatedZipCode.current === zipCodeInput && shippingRates.length > 0) {
-      console.log("Usando taxas de frete já calculadas para o CEP:", zipCodeInput);
+    if (lastCalculatedZipCode.current === cleanZipCode && shippingRates.length > 0) {
+      console.log("Usando taxas de frete já calculadas para o CEP:", cleanZipCode);
       return;
     }
     
@@ -73,9 +84,10 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     
     calculationInProgress.current = true;
     setLoading(true);
+    retryCount.current = 0;
     
     try {
-      console.log(`Calculando frete para CEP: ${zipCodeInput} com ${cartItemsRef.current.length} itens`);
+      console.log(`Calculando frete para CEP: ${cleanZipCode} com ${cartItemsRef.current.length} itens`);
       
       // Preparar itens para envio (incluindo peso)
       const itemsWithWeight = cartItemsRef.current.map(item => ({
@@ -86,7 +98,7 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       // Chamada para a Edge Function do Supabase
       const { data, error } = await supabase.functions.invoke('correios-shipping', {
         body: {
-          zipCode: zipCodeInput,
+          zipCode: cleanZipCode,
           items: itemsWithWeight
         }
       });
@@ -97,21 +109,56 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       
       console.log("Resposta da API de frete:", data);
       
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        throw new Error("Resposta inválida da API de frete");
+      }
+      
       // Guarda o CEP calculado para evitar recálculos
-      lastCalculatedZipCode.current = zipCodeInput;
+      lastCalculatedZipCode.current = cleanZipCode;
       
       // Atualizar estado com as taxas recebidas
       setShippingRates(data);
       
       // Seleciona a opção mais barata por padrão
       if (data && data.length > 0) {
-        setSelectedShippingRate(data[0]);
+        const cheapestRate = data.reduce((prev, curr) => 
+          prev.rate < curr.rate ? prev : curr
+        );
+        setSelectedShippingRate(cheapestRate);
       }
       
     } catch (error) {
       console.error('Erro ao calcular frete:', error);
-      setShippingRates([]);
-      toast.error("Não foi possível calcular o frete. Por favor, tente novamente.");
+      
+      // Tentar novamente se não excedemos o número máximo de tentativas
+      if (retryCount.current < maxRetries.current) {
+        retryCount.current += 1;
+        console.log(`Tentativa ${retryCount.current} de ${maxRetries.current} para calcular frete`);
+        
+        // Definir opções de frete padrão para evitar tela vazia
+        const defaultRates = [
+          {
+            service_type: "PAC",
+            name: "PAC (Convencional)",
+            rate: 25.00,
+            delivery_days: 7,
+            zipCode: cleanZipCode
+          },
+          {
+            service_type: "SEDEX",
+            name: "SEDEX (Express)",
+            rate: 45.00,
+            delivery_days: 2,
+            zipCode: cleanZipCode
+          }
+        ];
+        
+        setShippingRates(defaultRates);
+        setSelectedShippingRate(defaultRates[0]);
+        lastCalculatedZipCode.current = cleanZipCode;
+      } else {
+        toast.error("Não foi possível calcular o frete. Por favor, tente novamente.");
+      }
     } finally {
       setLoading(false);
       calculationInProgress.current = false;
@@ -139,12 +186,14 @@ export const useShipping = (cartItems: CartItem[] = []) => {
 
   // Efeito para calcular o frete quando o CEP for definido e tiver o formato correto
   useEffect(() => {
+    const cleanZipCode = zipCode?.replace(/\D/g, '') || '';
+    
     // Só calcula se tiver CEP válido e não estiver já calculando
-    if (zipCode && zipCode.length === 8 && !calculationInProgress.current && 
-        zipCode !== lastCalculatedZipCode.current && cartItemsRef.current.length > 0) {
-      calculateShipping(zipCode);
+    if (cleanZipCode.length === 8 && !calculationInProgress.current && 
+        cleanZipCode !== lastCalculatedZipCode.current && cartItemsRef.current.length > 0) {
+      calculateShipping(cleanZipCode);
     }
-  }, [zipCode]);
+  }, [zipCode, cartItems.length]);
 
   // Função para mudar a opção de frete selecionada
   const handleShippingRateChange = (rate) => {

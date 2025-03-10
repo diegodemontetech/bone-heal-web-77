@@ -114,6 +114,8 @@ const Checkout = () => {
               selectedShippingRate={selectedShippingRate}
               onShippingRateChange={handleShippingRateChange}
               shippingLoading={shippingLoading}
+              zipCode={zipCode}
+              setZipCode={setZipCode}
             />
           </div>
 

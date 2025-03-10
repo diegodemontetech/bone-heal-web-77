@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tag, Truck, Loader2 } from "lucide-react";
 import { useSession } from "@supabase/auth-helpers-react";
+import { useState, useEffect } from "react";
+import { fetchAddressFromCep } from "@/utils/address";
+import { toast } from "@/components/ui/use-toast";
 
 interface ShippingRate {
   rate: number;
@@ -25,6 +28,8 @@ interface DeliveryInformationProps {
   selectedShippingRate: ShippingRate | null;
   onShippingRateChange: (rate: ShippingRate) => void;
   shippingLoading?: boolean;
+  zipCode?: string;
+  setZipCode?: (zipCode: string) => void;
 }
 
 const DeliveryInformation = ({
@@ -38,8 +43,28 @@ const DeliveryInformation = ({
   selectedShippingRate,
   onShippingRateChange,
   shippingLoading = false,
+  zipCode = "",
+  setZipCode
 }: DeliveryInformationProps) => {
   const session = useSession();
+  const [localZipCode, setLocalZipCode] = useState(zipCode);
+
+  // Atualizar o CEP local quando o CEP prop mudar
+  useEffect(() => {
+    if (zipCode) {
+      setLocalZipCode(zipCode);
+    }
+  }, [zipCode]);
+
+  // Função para lidar com a mudança do CEP
+  const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "").slice(0, 8);
+    setLocalZipCode(value);
+    
+    if (setZipCode && value.length === 8) {
+      setZipCode(value);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -48,6 +73,26 @@ const DeliveryInformation = ({
           <CardTitle className="text-primary">Entrega</CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
+          {/* Campo de CEP */}
+          {setZipCode && (
+            <div className="mb-6">
+              <Label htmlFor="shipping-zipcode">CEP</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="shipping-zipcode"
+                  placeholder="Digite seu CEP"
+                  value={localZipCode}
+                  onChange={handleZipCodeChange}
+                  maxLength={8}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Digite apenas os 8 números do seu CEP
+              </p>
+            </div>
+          )}
+          
           {shippingLoading ? (
             <div className="flex justify-center items-center py-8">
               <div className="flex flex-col items-center space-y-3">
@@ -57,7 +102,7 @@ const DeliveryInformation = ({
                 </p>
               </div>
             </div>
-          ) : shippingRates.length > 0 ? (
+          ) : shippingRates && shippingRates.length > 0 ? (
             <RadioGroup 
               value={selectedShippingRate?.service_type}
               onValueChange={(value) => {
