@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Products from "./pages/Products";
 import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
+import ProductDetail from "./pages/ProductDetail";
 
 // Lazy imports
 const About = lazy(() => import("./pages/About"));
@@ -32,8 +33,8 @@ export const router = createBrowserRouter([
     element: <Products />,
   },
   {
-    path: "/products/:id",
-    element: <Products />, // Usando Products temporariamente
+    path: "/products/:slug",
+    element: <ProductDetail />, // Agora usando o componente ProductDetail
   },
   {
     path: "/cart",
