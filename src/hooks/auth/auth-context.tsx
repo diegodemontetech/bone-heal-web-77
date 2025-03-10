@@ -46,20 +46,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Perfil carregado:", profileData);
       console.log("Permissões carregadas:", userPermissions);
       
+      // Se não tiver permissões mas for admin, adiciona permissões padrão
+      const finalPermissions = userPermissions.length > 0 
+        ? userPermissions 
+        : (profileData?.is_admin 
+            ? [
+                UserPermission.MANAGE_USERS,
+                UserPermission.MANAGE_PRODUCTS,
+                UserPermission.MANAGE_ORDERS,
+                UserPermission.MANAGE_CUSTOMERS,
+                UserPermission.MANAGE_SETTINGS,
+                UserPermission.MANAGE_INTEGRATIONS,
+                UserPermission.MANAGE_SUPPORT
+              ] 
+            : []);
+      
+      console.log("Permissões finais:", finalPermissions);
+      
       // Montar o perfil completo
       const userProfile: UserProfile = profileData ? {
         ...profileData,
         id: userId,
         email: currentSession.user.email || '',
         role: (profileData.role as UserRole) || UserRole.DENTIST,
-        permissions: userPermissions
+        permissions: finalPermissions
       } : null;
       
       setAuthState({
         profile: userProfile,
         session: currentSession,
         isLoading: false,
-        permissions: userPermissions
+        permissions: finalPermissions
       });
     } catch (error: any) {
       console.error('Erro ao buscar perfil:', error);
@@ -155,6 +172,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAdminMaster = profile?.role === UserRole.ADMIN_MASTER;
 
   const hasPermission = (permission: UserPermission) => {
+    // Para debug
+    console.log(`Verificando permissão ${permission}:`, isAdminMaster || permissions.includes(permission));
+    
     // Administradores master sempre têm todas as permissões
     if (isAdminMaster) return true;
     
