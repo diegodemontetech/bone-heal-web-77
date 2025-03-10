@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -45,6 +45,7 @@ export const CartSummary = ({
   const navigate = useNavigate();
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + (shippingCost || 0);
+  const calculationRequested = useRef(false);
 
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Permitir apenas números e limitar a 8 dígitos
@@ -54,12 +55,14 @@ export const CartSummary = ({
     // Se o CEP mudar, resetar o cálculo de frete
     if (value !== zipCode && resetShipping) {
       resetShipping();
+      calculationRequested.current = false;
     }
   };
 
   const handleZipCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && zipCode.length === 8 && !shippingCalculated) {
+    if (e.key === 'Enter' && zipCode.length === 8 && !isCalculatingShipping) {
       calculateShipping();
+      calculationRequested.current = true;
     }
   };
 
@@ -79,22 +82,18 @@ export const CartSummary = ({
 
   // Calcular frete automaticamente quando o CEP tiver 8 dígitos
   useEffect(() => {
-    if (zipCode.length === 8 && !shippingCalculated && !isCalculatingShipping) {
+    if (zipCode.length === 8 && !shippingCalculated && !isCalculatingShipping && 
+        !calculationRequested.current && cartItems.length > 0) {
       calculateShipping();
+      calculationRequested.current = true;
     }
-  }, [zipCode, shippingCalculated, isCalculatingShipping, calculateShipping]);
-
-  // Calcular frete quando o carrinho carrega se já tiver um CEP válido
-  useEffect(() => {
-    if (zipCode.length === 8 && !shippingCalculated && !isCalculatingShipping && cartItems.length > 0) {
-      calculateShipping();
-    }
-  }, [cartItems]);
+  }, [zipCode, cartItems.length]);
 
   const handleRecalculateClick = () => {
     if (resetShipping) {
       resetShipping();
     }
+    calculationRequested.current = true;
     calculateShipping();
   };
 

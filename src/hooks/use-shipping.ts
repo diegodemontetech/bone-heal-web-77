@@ -15,6 +15,12 @@ export const useShipping = (cartItems: CartItem[] = []) => {
   const calculationInProgress = useRef(false);
   const session = useSession();
   const lastCalculatedZipCode = useRef("");
+  const cartItemsRef = useRef(cartItems);
+
+  // Atualizar a referência quando cartItems mudar
+  useEffect(() => {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
 
   // Função para buscar o CEP do usuário
   const fetchUserZipCode = async () => {
@@ -48,18 +54,21 @@ export const useShipping = (cartItems: CartItem[] = []) => {
 
   // Função para calcular o frete usando a Edge Function
   const calculateShipping = async (zipCodeInput: string) => {
-    // Evitar cálculos desnecessários
+    // Verificar parâmetros de entrada
     if (!zipCodeInput || zipCodeInput.length !== 8) {
+      console.log("CEP inválido para cálculo:", zipCodeInput);
       return;
     }
     
     // Evitar recálculos para o mesmo CEP
     if (lastCalculatedZipCode.current === zipCodeInput && shippingRates.length > 0) {
+      console.log("Usando taxas de frete já calculadas para o CEP:", zipCodeInput);
       return;
     }
     
     // Evitar cálculos simultâneos
     if (calculationInProgress.current) {
+      console.log("Cálculo de frete já em andamento, ignorando nova solicitação");
       return;
     }
     
@@ -67,13 +76,19 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     setLoading(true);
     
     try {
-      console.log(`Calculando frete para CEP: ${zipCodeInput}`);
+      console.log(`Calculando frete para CEP: ${zipCodeInput} com ${cartItemsRef.current.length} itens`);
+      
+      // Preparar itens para envio (incluindo peso)
+      const itemsWithWeight = cartItemsRef.current.map(item => ({
+        ...item,
+        weight: item.weight || 0.5 // Peso padrão de 500g se não especificado
+      }));
       
       // Chamada para a Edge Function do Supabase
       const { data, error } = await supabase.functions.invoke('correios-shipping', {
         body: {
           zipCode: zipCodeInput,
-          items: cartItems
+          items: itemsWithWeight
         }
       });
       
@@ -86,6 +101,7 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       // Guarda o CEP calculado para evitar recálculos
       lastCalculatedZipCode.current = zipCodeInput;
       
+      // Atualizar estado com as taxas recebidas
       setShippingRates(data);
       
       // Seleciona a opção mais barata por padrão
@@ -103,7 +119,7 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     }
   };
 
-  // Efeito para carregar o CEP do usuário
+  // Efeito para carregar o CEP do usuário - executado apenas uma vez quando o componente monta
   useEffect(() => {
     const loadUserShipping = async () => {
       // Se já carregamos o CEP, não precisamos carregar novamente
@@ -116,21 +132,20 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       if (userZipCode && userZipCode.length === 8) {
         console.log("CEP do usuário carregado:", userZipCode);
         setZipCode(userZipCode);
-        // Não chamamos calculateShipping aqui para evitar loops
       }
     };
 
     loadUserShipping();
   }, [session?.user?.id, zipCodeFetched]);
 
-  // Efeito para calcular o frete quando o CEP for definido
+  // Efeito para calcular o frete quando o CEP for definido e tiver o formato correto
   useEffect(() => {
-    // Só calcula se: tiver CEP válido, não estiver calculando e tiver itens no carrinho
+    // Só calcula se tiver CEP válido e não estiver já calculando
     if (zipCode && zipCode.length === 8 && !calculationInProgress.current && 
-        zipCode !== lastCalculatedZipCode.current) {
+        zipCode !== lastCalculatedZipCode.current && cartItemsRef.current.length > 0) {
       calculateShipping(zipCode);
     }
-  }, [zipCode, cartItems]);
+  }, [zipCode]);
 
   // Função para mudar a opção de frete selecionada
   const handleShippingRateChange = (rate) => {

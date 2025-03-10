@@ -23,16 +23,22 @@ serve(async (req) => {
       throw new Error("CEP inválido");
     }
 
-    console.log(`Calculando frete para CEP: ${zipCode}`);
+    console.log(`Calculando frete para CEP: ${zipCode} com ${items.length} itens`);
     
     // Calcular peso total dos itens (se disponível)
     let totalWeight = 0;
     if (items.length > 0) {
-      totalWeight = items.reduce((acc, item) => acc + ((item.weight || 0.5) * item.quantity), 0);
+      totalWeight = items.reduce((acc, item) => {
+        const itemWeight = item.weight || 0.5;  // Peso padrão de 0.5kg se não especificado
+        const quantity = item.quantity || 1;    // Quantidade padrão 1 se não especificada
+        return acc + (itemWeight * quantity);
+      }, 0);
     } else {
       // Peso padrão se não houver itens
       totalWeight = 0.5;
     }
+    
+    console.log(`Peso total calculado: ${totalWeight}kg`);
     
     // Cálculo simplificado baseado no CEP e peso
     const cepPrefix = parseInt(zipCode.substring(0, 3));
