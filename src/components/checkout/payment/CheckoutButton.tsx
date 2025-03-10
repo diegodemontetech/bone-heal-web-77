@@ -38,17 +38,17 @@ const CheckoutButton = ({
         className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-base"
         size="lg"
         onClick={onCheckout}
-        disabled={loading || !isLoggedIn || !hasZipCode}
+        disabled={loading || !hasZipCode || !amount}
       >
         {loading ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Processando...
           </>
-        ) : !isLoggedIn ? (
-          "Entre em sua conta para finalizar a compra"
         ) : !hasZipCode ? (
-          "Calcule o frete antes de continuar"
+          "Selecione uma opção de frete para continuar"
+        ) : !amount ? (
+          "Não há valor a pagar"
         ) : (
           <>
             Pagar {amount.toFixed(2)} {getPaymentMethodLabel(paymentMethod)} 
@@ -57,9 +57,9 @@ const CheckoutButton = ({
         )}
       </Button>
 
-      {!isLoggedIn && (
-        <p className="text-sm text-gray-600 text-center">
-          Entre em sua conta para finalizar a compra
+      {!hasZipCode && (
+        <p className="text-sm text-gray-600 text-center mt-2">
+          Informe seu CEP e selecione uma opção de frete
         </p>
       )}
     </>

@@ -23,6 +23,7 @@ export const useCheckoutPage = () => {
   useEffect(() => {
     const checkDirectSession = async () => {
       const { data } = await supabase.auth.getSession();
+      console.log("Verificando sessão direta:", data);
       if (data?.session) {
         setDirectSession(data.session);
         setHasValidSession(true);
@@ -41,6 +42,7 @@ export const useCheckoutPage = () => {
       
       // Se temos sessão por qualquer método, marcamos como autenticado
       if (session?.user?.id || directSession?.user?.id) {
+        console.log("Sessão válida encontrada:", session?.user?.id || directSession?.user?.id);
         setHasValidSession(true);
         setIsAuthChecked(true);
         setIsInitialized(true);
@@ -50,7 +52,10 @@ export const useCheckoutPage = () => {
         
         // Verificar novamente a sessão diretamente para ter certeza
         const { data } = await supabase.auth.getSession();
+        console.log("Resultado de verificação adicional:", data);
+        
         if (data?.session) {
+          console.log("Sessão válida encontrada na verificação adicional");
           setDirectSession(data.session);
           setHasValidSession(true);
           setIsAuthChecked(true);
