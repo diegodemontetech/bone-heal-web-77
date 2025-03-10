@@ -2,7 +2,7 @@
 import { 
   LayoutDashboard, Users, Package, ShoppingCart, 
   Ticket, Tag, FileText, Megaphone, MessageSquare, 
-  Mail, Truck, RefreshCcw, Shield, LifeBuoy 
+  Mail, Truck, RefreshCcw, Shield, LifeBuoy, Calculator
 } from "lucide-react";
 import { UserPermission } from "@/types/auth";
 
@@ -29,6 +29,12 @@ export const adminNavigationItems = [
     title: "Pedidos",
     href: "/admin/orders",
     icon: ShoppingCart,
+    permission: UserPermission.MANAGE_ORDERS
+  },
+  {
+    title: "Orçamentos",
+    href: "/admin/quotations",
+    icon: Calculator,
     permission: UserPermission.MANAGE_ORDERS
   },
   {
@@ -92,3 +98,4 @@ export const adminNavigationItems = [
     permission: UserPermission.MANAGE_SUPPORT
   }
 ];
+

@@ -1,4 +1,3 @@
-
 import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -12,6 +11,7 @@ const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
 const AdminUsers = lazy(() => import("@/pages/admin/Users"));
 const AdminProducts = lazy(() => import("@/pages/admin/Products"));
 const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
+const AdminQuotations = lazy(() => import("@/pages/admin/Quotations"));
 const AdminVouchers = lazy(() => import("@/pages/admin/Vouchers"));
 const AdminNews = lazy(() => import("@/pages/admin/News"));
 const AdminStudies = lazy(() => import("@/pages/admin/Studies"));
@@ -85,6 +85,16 @@ export const adminRoutes: RouteObject = {
             <Suspense fallback={<AdminLoader />}>
               <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
                 <AdminOrders />
+              </ProtectedRoute>
+            </Suspense>
+          )
+        },
+        {
+          path: "quotations",
+          element: (
+            <Suspense fallback={<AdminLoader />}>
+              <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
+                <AdminQuotations />
               </ProtectedRoute>
             </Suspense>
           )
