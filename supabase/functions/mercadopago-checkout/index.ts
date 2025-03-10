@@ -63,6 +63,7 @@ serve(async (req) => {
       throw new Error("O valor total do pedido deve ser maior que zero")
     }
 
+    // Preparar a preferência de pagamento
     const preference = {
       items: preferenceItems,
       payer: {
@@ -75,13 +76,14 @@ serve(async (req) => {
       },
       back_urls: {
         success: `${Deno.env.get('APP_URL')}/checkout/success`,
-        failure: `${Deno.env.get('APP_URL')}/checkout/failure`
+        failure: `${Deno.env.get('APP_URL')}/checkout/failure`,
+        pending: `${Deno.env.get('APP_URL')}/checkout/pending`
       },
       external_reference: orderId,
       auto_return: "approved",
-      binary_mode: false,
+      statement_descriptor: "BONEHEAL",
       expires: false,
-      statement_descriptor: "WORKSHOP"
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     }
 
     console.log("Preferência a ser enviada:", JSON.stringify(preference, null, 2))
@@ -113,6 +115,8 @@ serve(async (req) => {
     if (!data.init_point) {
       throw new Error("URL de checkout não gerada pelo Mercado Pago")
     }
+
+    console.log("URL de checkout gerada com sucesso:", data.init_point)
 
     return new Response(
       JSON.stringify({ init_point: data.init_point }),

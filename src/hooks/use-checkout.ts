@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -88,6 +87,8 @@ export function useCheckout() {
       
       if (!session?.user) throw new Error("Usuário não está autenticado");
       
+      console.log("Criando checkout do Mercado Pago para ordem:", orderId);
+      
       const items = cartItems.map(item => ({
         title: item.name,
         quantity: item.quantity,
@@ -107,6 +108,8 @@ export function useCheckout() {
         }
       });
       
+      console.log("Resposta do checkout MP:", data, error);
+      
       if (error) throw error;
       
       if (!data || !data.init_point) {
@@ -120,21 +123,6 @@ export function useCheckout() {
     }
   };
 
-  const handleProcessPayment = async () => {
-    if (!orderId) return;
-    
-    try {
-      if (paymentUrl) {
-        window.location.href = paymentUrl;
-      } else {
-        toast.error("Erro ao processar pagamento. Tente novamente.");
-      }
-    } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
-      toast.error("Erro ao processar pagamento. Tente novamente.");
-    }
-  };
-
   const handleCheckout = async (
     cartItems: CartItem[],
     zipCode: string,
@@ -143,25 +131,35 @@ export function useCheckout() {
     appliedVoucher: any
   ) => {
     if (!cartItems.length) {
+      toast.error("Seu carrinho está vazio.");
       navigate("/products");
       return;
     }
 
     if (!session?.user) {
+      toast.error("É necessário estar logado para finalizar a compra.");
       navigate("/login");
       return;
     }
 
-    if (!zipCode) return;
+    if (!zipCode) {
+      toast.error("Selecione uma opção de frete para continuar.");
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log("Iniciando processo de checkout...");
 
+      // Gerar ID único para o pedido
       const newOrderId = crypto.randomUUID();
       setOrderId(newOrderId);
       
-      // Salvar o pedido
+      console.log("Novo pedido criado:", newOrderId);
+      
+      // Salvar o pedido no banco de dados
       await saveOrder(newOrderId, cartItems, shippingFee, discount, zipCode, appliedVoucher);
+      console.log("Pedido salvo com sucesso no banco de dados");
       
       // Criar checkout do Mercado Pago
       const checkoutUrl = await createMercadoPagoCheckout(
@@ -171,11 +169,16 @@ export function useCheckout() {
         discount
       );
       
+      console.log("URL de checkout gerada:", checkoutUrl);
       setPaymentUrl(checkoutUrl);
       
-      // Se método de pagamento for processado no front-end
-      if (paymentMethod === 'credit' || paymentMethod === 'pix' || paymentMethod === 'boleto') {
-        window.location.href = checkoutUrl;
+      // Redirecionar para a página de pagamento
+      if (checkoutUrl) {
+        // Em vez de redirecionar diretamente, mostramos a tela de redirecionamento
+        // O redirecionamento controlado permite uma melhor experiência
+        console.log("Configurando URL de pagamento:", checkoutUrl);
+      } else {
+        throw new Error("URL de checkout não foi gerada");
       }
       
     } catch (error: any) {
@@ -190,7 +193,6 @@ export function useCheckout() {
     paymentMethod,
     setPaymentMethod,
     handleCheckout,
-    handleProcessPayment,
     paymentUrl,
     orderId
   };

@@ -1,3 +1,4 @@
+
 import { useShipping } from "@/hooks/shipping";
 import { useVoucher } from "@/hooks/use-voucher";
 import { useCheckout } from "@/hooks/use-checkout";
@@ -62,7 +63,6 @@ const Checkout = () => {
 
   // Usar informações de frete que vieram do carrinho, se disponíveis
   useEffect(() => {
-    // Se temos dados de frete do carrinho e ainda não temos CEP na página de checkout
     if (shippingFromCart?.zipCode && zipCode.length === 0) {
       console.log("Usando informações de frete do carrinho:", shippingFromCart);
       
@@ -95,6 +95,7 @@ const Checkout = () => {
       return;
     }
     
+    console.log("Iniciando checkout com método:", paymentMethod);
     processCheckout(cartItems, selectedShippingRate.zipCode, shippingFee, discount, appliedVoucher);
   };
 
@@ -105,7 +106,7 @@ const Checkout = () => {
 
   // Se temos URL de pagamento, realizar redirect
   if (paymentUrl && orderId) {
-    clear(); // Limpar o carrinho após o checkout
+    console.log("Redirecionando para pagamento:", paymentUrl);
     return <PaymentRedirect paymentUrl={paymentUrl} />;
   }
 
