@@ -70,10 +70,16 @@ export type FormData = z.infer<typeof DentistSignUpSchema>;
 
 interface RegistrationFormProps {
   isDentist?: boolean;
+  isModal?: boolean;
+  onSuccess?: (customer: any) => void;
 }
 
-const RegistrationForm: React.FC<RegistrationFormProps> = ({ isDentist = true }) => {
-  const { onSubmit, submitting, syncingWithOmie } = useRegistrationFormLogic();
+const RegistrationForm: React.FC<RegistrationFormProps> = ({ 
+  isDentist = true, 
+  isModal = false,
+  onSuccess
+}) => {
+  const { onSubmit, submitting, syncingWithOmie } = useRegistrationFormLogic(isModal, onSuccess);
 
   const form = useForm<FormData>({
     resolver: zodResolver(DentistSignUpSchema),

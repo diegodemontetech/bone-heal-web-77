@@ -6,8 +6,9 @@ import { useAuth } from "@/hooks/use-auth-context";
 import { useOmieSync } from "../omie-sync/OmieSync";
 import { FormData } from "../RegistrationForm";
 import { UserRole } from "@/types/auth";
+import { supabase } from "@/integrations/supabase/client";
 
-export const useRegistrationFormLogic = () => {
+export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (customer: any) => void) => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const { signUp } = useAuth();
@@ -39,42 +40,102 @@ export const useRegistrationFormLogic = () => {
       
       console.log("Dados do formulário para cadastro:", userData);
       
-      // Fazer cadastro com autenticação
-      const signUpResult = await signUp(data.email, data.password, userData);
-      
-      // Verificar se o cadastro foi realizado com sucesso
-      if (signUpResult && signUpResult.user) {
-        console.log("Usuário cadastrado com sucesso:", signUpResult.user.id);
-        
-        let omieSync = false;
+      if (isModal) {
+        // No modo modal, inserimos diretamente no banco de dados sem autenticação
         try {
-          // Tentar sincronizar com o Omie
-          await syncWithOmie(signUpResult.user.id);
-          console.log("Sincronização com Omie realizada com sucesso");
-          omieSync = true;
-        } catch (omieError: any) {
-          console.error("Erro ao sincronizar com Omie:", omieError);
+          const { data: newCustomer, error } = await supabase
+            .from("profiles")
+            .insert({
+              ...userData,
+              email: data.email,
+              role: UserRole.DENTIST
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
           
-          // Verificar se o erro foi no parsing de JSON (possível resposta HTML em vez de JSON)
-          const errorMessage = omieError?.message || "";
-          if (errorMessage.includes("Unexpected token") || errorMessage.includes("is not valid JSON")) {
-            toast.error("Erro de comunicação com o sistema Omie. Tente novamente mais tarde.");
-          } else {
-            // Outros erros
-            toast.error("Aviso: Não foi possível sincronizar com o sistema Omie. Seu cadastro foi realizado, mas será necessário sincronizar posteriormente.");
+          console.log("Cliente cadastrado com sucesso:", newCustomer);
+          
+          // Tentar sincronizar com o Omie
+          try {
+            const response = await fetch(`${window.location.origin}/api/omie-customer`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ profile: newCustomer }),
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+              console.log("Sincronização com Omie realizada com sucesso");
+              
+              // Atualizar o cliente com o código Omie
+              const { data: updatedCustomer, error: updateError } = await supabase
+                .from("profiles")
+                .update({ omie_code: result.omie_code, omie_sync: true })
+                .eq("id", newCustomer.id)
+                .select()
+                .single();
+                
+              if (!updateError && updatedCustomer) {
+                newCustomer.omie_code = result.omie_code;
+                newCustomer.omie_sync = true;
+              }
+            }
+          } catch (omieError) {
+            console.error("Erro ao sincronizar com Omie:", omieError);
           }
+          
+          // Chamar o callback de sucesso, se fornecido
+          if (onSuccess) {
+            onSuccess(newCustomer);
+          }
+          
+        } catch (dbError: any) {
+          console.error("Erro ao criar cliente no banco de dados:", dbError);
+          toast.error("Erro ao cadastrar cliente: " + dbError.message);
         }
-        
-        // Mostrar mensagem de sucesso
-        toast.success(`Cadastro realizado com sucesso! ${omieSync ? 'Perfil sincronizado com Omie.' : ''} Verifique seu email para confirmar a conta.`);
-        
-        // Redirecionar para a página de login
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
       } else {
-        console.error("Erro no cadastro: não foi possível obter ID do usuário");
-        toast.error("Erro ao finalizar o cadastro. Por favor, tente novamente.");
+        // Fazer cadastro com autenticação (fluxo original)
+        const signUpResult = await signUp(data.email, data.password, userData);
+        
+        // Verificar se o cadastro foi realizado com sucesso
+        if (signUpResult && signUpResult.user) {
+          console.log("Usuário cadastrado com sucesso:", signUpResult.user.id);
+          
+          let omieSync = false;
+          try {
+            // Tentar sincronizar com o Omie
+            await syncWithOmie(signUpResult.user.id);
+            console.log("Sincronização com Omie realizada com sucesso");
+            omieSync = true;
+          } catch (omieError: any) {
+            console.error("Erro ao sincronizar com Omie:", omieError);
+            
+            // Verificar se o erro foi no parsing de JSON (possível resposta HTML em vez de JSON)
+            const errorMessage = omieError?.message || "";
+            if (errorMessage.includes("Unexpected token") || errorMessage.includes("is not valid JSON")) {
+              toast.error("Erro de comunicação com o sistema Omie. Tente novamente mais tarde.");
+            } else {
+              // Outros erros
+              toast.error("Aviso: Não foi possível sincronizar com o sistema Omie. Seu cadastro foi realizado, mas será necessário sincronizar posteriormente.");
+            }
+          }
+          
+          // Mostrar mensagem de sucesso
+          toast.success(`Cadastro realizado com sucesso! ${omieSync ? 'Perfil sincronizado com Omie.' : ''} Verifique seu email para confirmar a conta.`);
+          
+          // Redirecionar para a página de login
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        } else {
+          console.error("Erro no cadastro: não foi possível obter ID do usuário");
+          toast.error("Erro ao finalizar o cadastro. Por favor, tente novamente.");
+        }
       }
       
     } catch (error: any) {

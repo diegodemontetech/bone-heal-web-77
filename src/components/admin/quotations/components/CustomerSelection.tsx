@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, Search, UserPlus, X } from "lucide-react";
 import {
@@ -17,6 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { CustomerDisplay } from "../../order/CustomerDisplay";
+import RegistrationForm from "@/components/auth/RegistrationForm";
 
 interface CustomerSelectionProps {
   selectedCustomer: any;
@@ -26,15 +26,6 @@ interface CustomerSelectionProps {
 const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSelectionProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
-  const [newCustomerForm, setNewCustomerForm] = useState({
-    full_name: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    zip_code: ""
-  });
 
   // Buscar clientes
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
@@ -63,34 +54,11 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
     return fullName.includes(searchTermLower) || email.includes(searchTermLower);
   });
 
-  const handleCreateCustomer = async () => {
-    try {
-      // Validar campos obrigatórios
-      if (!newCustomerForm.full_name || !newCustomerForm.email) {
-        toast.error("Nome e e-mail são campos obrigatórios");
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .insert({
-          ...newCustomerForm,
-          role: "dentist"
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Erro ao criar cliente:", error);
-        throw error;
-      }
-
-      toast.success("Cliente criado com sucesso!");
-      setSelectedCustomer(data);
-      setCustomerDialogOpen(false);
-    } catch (error: any) {
-      toast.error("Erro ao criar cliente: " + error.message);
-    }
+  // Quando um novo cliente é registrado com sucesso
+  const handleRegistrationSuccess = (newCustomer: any) => {
+    setSelectedCustomer(newCustomer);
+    setCustomerDialogOpen(false);
+    toast.success("Cliente cadastrado com sucesso!");
   };
 
   return (
@@ -141,89 +109,16 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
                   Cadastrar Novo Cliente
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="fullName">Nome Completo*</Label>
-                      <Input
-                        id="fullName"
-                        value={newCustomerForm.full_name}
-                        onChange={(e) => setNewCustomerForm(prev => ({ ...prev, full_name: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail*</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={newCustomerForm.email}
-                        onChange={(e) => setNewCustomerForm(prev => ({ ...prev, email: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        value={newCustomerForm.phone}
-                        onChange={(e) => setNewCustomerForm(prev => ({ ...prev, phone: e.target.value }))}
-                      />
-                    </div>
-
-                    <Separator />
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Endereço</Label>
-                      <Input
-                        id="address"
-                        value={newCustomerForm.address}
-                        onChange={(e) => setNewCustomerForm(prev => ({ ...prev, address: e.target.value }))}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="city">Cidade</Label>
-                        <Input
-                          id="city"
-                          value={newCustomerForm.city}
-                          onChange={(e) => setNewCustomerForm(prev => ({ ...prev, city: e.target.value }))}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="state">Estado</Label>
-                        <Input
-                          id="state"
-                          value={newCustomerForm.state}
-                          onChange={(e) => setNewCustomerForm(prev => ({ ...prev, state: e.target.value }))}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="zipCode">CEP</Label>
-                      <Input
-                        id="zipCode"
-                        value={newCustomerForm.zip_code}
-                        onChange={(e) => setNewCustomerForm(prev => ({ ...prev, zip_code: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setCustomerDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleCreateCustomer}>
-                      Cadastrar
-                    </Button>
-                  </div>
+                <div className="py-4">
+                  <RegistrationForm 
+                    isDentist={true} 
+                    isModal={true} 
+                    onSuccess={handleRegistrationSuccess}
+                  />
                 </div>
               </DialogContent>
             </Dialog>
