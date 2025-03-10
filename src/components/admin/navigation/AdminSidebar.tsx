@@ -44,11 +44,16 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
       <ScrollArea className="flex-1 py-2">
         <nav className="grid gap-1 px-2">
           {adminNavigationItems.map((item: NavigationItem) => {
-            // Verificar se o usuário tem permissão para acessar o item
+            // Mostrar todos os itens para admin master ou verificar permissões específicas
             const hasAccess = item.permission === null || 
                              isAdminMaster || 
                              (item.permission && hasPermission(item.permission));
             
+            // Para debug temporário, vamos mostrar todos os itens
+            // Remova esta linha depois que o problema estiver resolvido
+            console.log(`Menu item: ${item.title}, Permission: ${item.permission}, Has access: ${hasAccess}`);
+            
+            // Retornar null esconde o item do menu
             if (!hasAccess) return null;
             
             return (
