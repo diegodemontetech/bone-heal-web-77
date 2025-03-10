@@ -80,15 +80,17 @@ serve(async (req) => {
       // Para pagamento PIX, configuramos corretamente
       Object.assign(config, {
         payment_methods: {
-          // Importante: não exclua o PIX como método de pagamento
-          excluded_payment_methods: [],  // Deixar vazio para não excluir nenhum método
+          // Importante: não excluir o PIX como método de pagamento
+          excluded_payment_methods: [],
           excluded_payment_types: [
             { id: "credit_card" },
             { id: "ticket" },
             { id: "atm" },
             { id: "debit_card" }
           ],
-          default_payment_method_id: "pix"
+          // Definindo o método default como PIX sem excluí-lo
+          default_payment_method_id: "pix",
+          installments: 1
         }
       });
     } 
