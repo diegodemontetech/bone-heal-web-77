@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
@@ -45,11 +44,10 @@ const Profile = () => {
     
     // Verificar se a página já carregou completamente (ambos, profile e sessão)
     if (!isLoading && !sessionLoading) {
-      setRedirectAttempted(true);
-      
       // Verificar se o usuário não está autenticado de nenhuma forma
       if (!profile && !hasValidSession) {
         console.log("Usuário não autenticado, redirecionando para login");
+        setRedirectAttempted(true);
         navigate("/login", { state: { from: location.pathname } });
       }
     }

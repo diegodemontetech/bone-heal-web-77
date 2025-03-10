@@ -16,6 +16,7 @@ export const useCheckoutPage = () => {
   const [hasValidSession, setHasValidSession] = useState(false);
   const authCheckRef = useRef(false);
   const [directSession, setDirectSession] = useState<any>(null);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
 
   // Verificar diretamente a sessão do Supabase além do hook de sessão
   useEffect(() => {
@@ -46,14 +47,19 @@ export const useCheckoutPage = () => {
         console.log("Nenhuma sessão válida encontrada no checkout");
         setIsAuthChecked(true);
         
-        // Salva a página atual para redirecionamento após login
-        toast.error("Você precisa estar logado para finalizar a compra");
-        navigate("/login", { state: { from: location.pathname } });
+        // Evitamos redirecionar múltiplas vezes
+        if (!redirectAttempted) {
+          setRedirectAttempted(true);
+          
+          // Salva a página atual para redirecionamento após login
+          toast.error("Você precisa estar logado para finalizar a compra");
+          navigate("/login", { state: { from: location.pathname } });
+        }
       }
     };
     
     checkAuth();
-  }, [session, directSession, navigate, location.pathname]);
+  }, [session, directSession, navigate, location.pathname, redirectAttempted]);
 
   // Verificar carrinho vazio apenas após confirmar que o usuário está autenticado
   useEffect(() => {
