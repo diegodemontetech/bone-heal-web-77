@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 
@@ -115,8 +116,22 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+// Componente de diálogo com fundo transparente
+const DialogWithBlur = ({ children, ...props }: DialogPrimitive.DialogProps) => {
+  return (
+    <Dialog {...props}>
+      <DialogOverlay />
+      <DialogContent className="bg-white/95 backdrop-blur-sm">
+        {children}
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export {
   Dialog,
+  DialogPortal,
+  DialogOverlay,
   DialogTrigger,
   DialogContent,
   DialogHeader,
@@ -124,18 +139,5 @@ export {
   DialogTitle,
   DialogDescription,
   DialogClose,
-  DialogOverlay,
-  DialogPortal,
-}
-
-export function Dialog({
-  children,
-  ...props
-}: DialogPrimitive.DialogProps) {
-  return (
-    <DialogPrimitive.Root {...props}>
-      <DialogOverlay />
-      <DialogContent className="bg-white/95 backdrop-blur-sm">{children}</DialogContent>
-    </DialogPrimitive.Root>
-  )
+  DialogWithBlur
 }

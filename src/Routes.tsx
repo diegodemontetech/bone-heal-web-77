@@ -1,5 +1,6 @@
-import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
-import Home from "@/pages/Home";
+
+import { BrowserRouter, Route, Routes as RoutesList, createBrowserRouter } from "react-router-dom";
+import Home from "@/pages/Index";
 import About from "@/pages/About";
 import Products from "@/pages/Products";
 import Studies from "@/pages/Studies";
@@ -8,12 +9,12 @@ import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
 import Profile from "@/pages/Profile";
-import Orders from "@/pages/Orders";
-import OrderDetails from "@/pages/OrderDetails";
-import AdminRoute from "@/components/auth/AdminRoute";
-import { adminRoutes } from "./adminRoutes";
+import Orders from "@/pages/orders/Orders";
+import OrderDetails from "@/pages/orders/OrderDetails";
+import { adminRoutes } from "@/routes/adminRoutes";
 import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
+import AdminRoute from "@/routes/admin/adminLoader"; 
 
 export function Routes() {
   return (
@@ -45,3 +46,59 @@ export function Routes() {
     </BrowserRouter>
   );
 }
+
+// Criar um router para uso com RouterProvider
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Home />,
+  },
+  {
+    path: "/about",
+    element: <About />,
+  },
+  {
+    path: "/products",
+    element: <Products />,
+  },
+  {
+    path: "/studies",
+    element: <Studies />,
+  },
+  {
+    path: "/news",
+    element: <News />,
+  },
+  {
+    path: "/contact",
+    element: <Contact />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
+  },
+  {
+    path: "/register",
+    element: <Register />,
+  },
+  {
+    path: "/profile",
+    element: <Profile />,
+  },
+  {
+    path: "/orders",
+    element: <Orders />,
+  },
+  {
+    path: "/orders/:id",
+    element: <OrderDetails />,
+  },
+  {
+    path: "/support/tickets",
+    element: <Support />,
+  },
+  {
+    path: "/support/tickets/:id",
+    element: <TicketDetails />,
+  },
+]);
