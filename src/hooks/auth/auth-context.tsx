@@ -46,10 +46,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Perfil carregado:", profileData);
       console.log("Permissões carregadas:", userPermissions);
       
+      // Verificar se o usuário é admin através do campo role ou is_admin
+      const isAdmin = profileData?.role === UserRole.ADMIN || 
+                      profileData?.role === UserRole.ADMIN_MASTER || 
+                      profileData?.is_admin === true;
+      
       // Se não tiver permissões mas for admin, adiciona permissões padrão
       const finalPermissions = userPermissions.length > 0 
         ? userPermissions 
-        : (profileData?.is_admin 
+        : (isAdmin 
             ? [
                 UserPermission.MANAGE_USERS,
                 UserPermission.MANAGE_PRODUCTS,
@@ -69,7 +74,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: userId,
         email: currentSession.user.email || '',
         role: (profileData.role as UserRole) || UserRole.DENTIST,
-        permissions: finalPermissions
+        permissions: finalPermissions,
+        is_admin: isAdmin // Garantir que is_admin está definido no perfil
       } : null;
       
       setAuthState({
