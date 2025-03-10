@@ -28,7 +28,7 @@ interface CustomerProfile {
 interface Quotation {
   id: string;
   created_at: string;
-  customer: CustomerProfile;
+  customer: CustomerProfile | null;
   status: string;
   total_amount: number;
   discount_amount: number;
@@ -62,12 +62,17 @@ const QuotationsList = () => {
       }
       
       // Transformar a resposta para garantir que customer seja um objeto e não um array
-      return data?.map(quotation => ({
-        ...quotation,
-        customer: Array.isArray(quotation.customer) && quotation.customer.length > 0 
-          ? quotation.customer[0] 
-          : quotation.customer
-      })) || [];
+      return (data || []).map(quotation => {
+        // Se customer é um array, pegue o primeiro item ou nulo se vazio
+        const customerData = Array.isArray(quotation.customer) 
+          ? (quotation.customer.length > 0 ? quotation.customer[0] : null)
+          : quotation.customer;
+          
+        return {
+          ...quotation,
+          customer: customerData
+        } as Quotation;
+      });
     },
   });
 
