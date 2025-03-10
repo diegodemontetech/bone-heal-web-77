@@ -75,6 +75,14 @@ const Checkout = () => {
         email: profile?.email || ''
       };
 
+      console.log("Dados para processamento:", {
+        orderId,
+        items: orderItems,
+        shipping_cost: shippingInfo?.cost || 0,
+        buyer: buyerInfo,
+        paymentType: paymentMethod === 'standard' ? 'standard' : 'transparent'
+      });
+
       // Chamar a Edge Function do MercadoPago
       const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
         body: {
@@ -87,6 +95,7 @@ const Checkout = () => {
       });
 
       if (error) {
+        console.error("Erro da Edge Function:", error);
         throw new Error(`Erro ao processar pagamento: ${error.message}`);
       }
 
@@ -277,7 +286,7 @@ const Checkout = () => {
                   <Button 
                     className="w-full h-12"
                     onClick={processPayment}
-                    disabled={isProcessing || pixCode}
+                    disabled={isProcessing || !!pixCode}
                   >
                     {isProcessing ? (
                       <>
