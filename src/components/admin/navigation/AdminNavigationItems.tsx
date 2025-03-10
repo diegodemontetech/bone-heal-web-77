@@ -2,7 +2,8 @@
 import { 
   LayoutDashboard, Users, Package, ShoppingCart, 
   Ticket, Tag, FileText, Megaphone, MessageSquare, 
-  Mail, Truck, RefreshCcw, Shield, LifeBuoy, Calculator
+  Mail, Truck, RefreshCcw, Shield, LifeBuoy, Calculator,
+  Percent
 } from "lucide-react";
 import { UserPermission } from "@/types/auth";
 
@@ -41,6 +42,12 @@ export const adminNavigationItems = [
     title: "Cupons",
     href: "/admin/vouchers",
     icon: Ticket,
+    permission: UserPermission.MANAGE_PRODUCTS
+  },
+  {
+    title: "Condições Comerciais",
+    href: "/admin/commercial-conditions",
+    icon: Percent,
     permission: UserPermission.MANAGE_PRODUCTS
   },
   {

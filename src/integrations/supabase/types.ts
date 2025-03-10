@@ -9,6 +9,60 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      commercial_conditions: {
+        Row: {
+          created_at: string
+          customer_group: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          free_shipping: boolean | null
+          id: string
+          is_active: boolean | null
+          min_amount: number | null
+          min_items: number | null
+          name: string
+          payment_method: string | null
+          region: string | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_group?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          free_shipping?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          min_amount?: number | null
+          min_items?: number | null
+          name: string
+          payment_method?: string | null
+          region?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_group?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          free_shipping?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          min_amount?: number | null
+          min_items?: number | null
+          name?: string
+          payment_method?: string | null
+          region?: string | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       contact_form_configs: {
         Row: {
           active: boolean | null
@@ -949,6 +1003,9 @@ export type Database = {
           discount_value: number
           id: string
           max_uses: number | null
+          min_amount: number | null
+          min_items: number | null
+          payment_method: string | null
           updated_at: string | null
           valid_from: string | null
           valid_until: string | null
@@ -961,6 +1018,9 @@ export type Database = {
           discount_value: number
           id?: string
           max_uses?: number | null
+          min_amount?: number | null
+          min_items?: number | null
+          payment_method?: string | null
           updated_at?: string | null
           valid_from?: string | null
           valid_until?: string | null
@@ -973,6 +1033,9 @@ export type Database = {
           discount_value?: number
           id?: string
           max_uses?: number | null
+          min_amount?: number | null
+          min_items?: number | null
+          payment_method?: string | null
           updated_at?: string | null
           valid_from?: string | null
           valid_until?: string | null
