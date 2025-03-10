@@ -7,7 +7,10 @@ import TicketPriorityBadge from "./TicketPriorityBadge";
 interface TicketsListProps {
   tickets: any[] | null;
   isLoading: boolean;
-  categoryLabels: Record<string, string>;
+  categoryLabels: {
+    status: Record<string, string>;
+    priority: Record<string, string>;
+  };
 }
 
 const TicketsList = ({ tickets, isLoading, categoryLabels }: TicketsListProps) => {
