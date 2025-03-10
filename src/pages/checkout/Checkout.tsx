@@ -12,7 +12,6 @@ import WhatsAppWidget from "@/components/WhatsAppWidget";
 import DeliveryInformation from "@/components/checkout/DeliveryInformation";
 import OrderTotal from "@/components/checkout/OrderTotal";
 import CheckoutLoading from "@/components/checkout/CheckoutLoading";
-import PaymentRedirect from "@/components/checkout/PaymentRedirect";
 import EmptyCartMessage from "@/components/checkout/EmptyCartMessage";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
@@ -57,7 +56,6 @@ const Checkout = () => {
     paymentMethod,
     setPaymentMethod,
     handleCheckout: processCheckout,
-    paymentUrl,
     orderId
   } = useCheckout();
 
@@ -78,6 +76,14 @@ const Checkout = () => {
     }
   }, [shippingFromCart, zipCode, shippingRates.length, setZipCode, calculateShipping]);
 
+  // Verificar autenticação ao carregar a página
+  useEffect(() => {
+    if (isInitialized && isAuthChecked && !hasValidSession) {
+      console.error("Usuário não autenticado na página de checkout");
+      toast.error("É necessário estar logado para finalizar a compra.");
+    }
+  }, [isInitialized, isAuthChecked, hasValidSession]);
+
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   const handleVoucherApply = () => {
@@ -85,13 +91,21 @@ const Checkout = () => {
   };
 
   const handleCheckout = () => {
+    // Log para depuração
+    console.log("Checkout iniciado. Estado de autenticação:", {
+      session: !!session, 
+      hasValidSession,
+      selectedShippingRate: !!selectedShippingRate
+    });
+    
     if (!selectedShippingRate) {
       toast.error("Selecione uma opção de frete para continuar");
       return;
     }
     
-    if (!session?.user) {
-      toast.error("Você precisa estar logado para finalizar a compra");
+    if (!session?.user && !hasValidSession) {
+      console.error("Usuário não autenticado ao tentar finalizar compra");
+      toast.error("É necessário estar logado para finalizar a compra.");
       return;
     }
     
@@ -102,12 +116,6 @@ const Checkout = () => {
   // Mostra um loading simples enquanto inicializa
   if (!isInitialized || !isAuthChecked) {
     return <CheckoutLoading />;
-  }
-
-  // Se temos URL de pagamento, realizar redirect
-  if (paymentUrl && orderId) {
-    console.log("Redirecionando para pagamento:", paymentUrl);
-    return <PaymentRedirect paymentUrl={paymentUrl} />;
   }
 
   // Se o carrinho estiver vazio, mostrar mensagem e link para produtos
@@ -148,7 +156,7 @@ const Checkout = () => {
             shippingFee={shippingFee}
             discount={discount}
             loading={loading}
-            isLoggedIn={!!session}
+            isLoggedIn={!!session?.user || hasValidSession}
             hasZipCode={!!selectedShippingRate}
             onCheckout={handleCheckout}
             deliveryDate={deliveryDate}

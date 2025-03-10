@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer })
+    const { orderId, items, shipping_cost, buyer, paymentType = 'standard' } = await req.json()
+    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, paymentType })
 
     const access_token = Deno.env.get('MP_ACCESS_TOKEN')
     if (!access_token) {
@@ -63,30 +63,35 @@ serve(async (req) => {
       throw new Error("O valor total do pedido deve ser maior que zero")
     }
 
-    // Preparar a preferência de pagamento
-    const preference = {
+    let config = {
       items: preferenceItems,
       payer: {
         email: buyer.email,
         name: buyer.name || 'Cliente'
       },
-      payment_methods: {
-        excluded_payment_types: [],
-        installments: 12
-      },
-      back_urls: {
-        success: `${Deno.env.get('APP_URL')}/checkout/success`,
-        failure: `${Deno.env.get('APP_URL')}/checkout/failure`,
-        pending: `${Deno.env.get('APP_URL')}/checkout/pending`
-      },
       external_reference: orderId,
-      auto_return: "approved",
       statement_descriptor: "BONEHEAL",
-      expires: false,
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
+    };
+
+    // Se for checkout transparente, não usamos redirect URLs
+    if (paymentType === 'standard') {
+      Object.assign(config, {
+        payment_methods: {
+          excluded_payment_types: [],
+          installments: 12
+        },
+        back_urls: {
+          success: `${Deno.env.get('APP_URL')}/checkout/success`,
+          failure: `${Deno.env.get('APP_URL')}/checkout/failure`,
+          pending: `${Deno.env.get('APP_URL')}/checkout/pending`
+        },
+        auto_return: "approved",
+        expires: false
+      });
     }
 
-    console.log("Preferência a ser enviada:", JSON.stringify(preference, null, 2))
+    console.log("Preferência a ser enviada:", JSON.stringify(config, null, 2))
 
     const response = await fetch(
       "https://api.mercadopago.com/checkout/preferences",
@@ -96,7 +101,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${access_token}`
         },
-        body: JSON.stringify(preference)
+        body: JSON.stringify(config)
       }
     )
 
@@ -112,14 +117,8 @@ serve(async (req) => {
       throw new Error(`Erro do Mercado Pago: ${JSON.stringify(data)}`)
     }
 
-    if (!data.init_point) {
-      throw new Error("URL de checkout não gerada pelo Mercado Pago")
-    }
-
-    console.log("URL de checkout gerada com sucesso:", data.init_point)
-
     return new Response(
-      JSON.stringify({ init_point: data.init_point }),
+      JSON.stringify(data),
       { 
         headers: { 
           ...corsHeaders, 

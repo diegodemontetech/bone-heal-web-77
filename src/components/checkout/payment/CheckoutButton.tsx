@@ -32,21 +32,22 @@ const CheckoutButton = ({
     }
   };
 
+  // Verificação para debug
+  console.log("CheckoutButton props:", { isLoggedIn, hasZipCode, loading, amount });
+
   return (
     <>
       <Button
         className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-base"
         size="lg"
         onClick={onCheckout}
-        disabled={loading || !hasZipCode || !isLoggedIn || amount <= 0}
+        disabled={loading || !hasZipCode || amount <= 0}
       >
         {loading ? (
           <>
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Processando...
           </>
-        ) : !isLoggedIn ? (
-          "Faça login para continuar"
         ) : !hasZipCode ? (
           "Selecione uma opção de frete para continuar"
         ) : amount <= 0 ? (
@@ -59,7 +60,7 @@ const CheckoutButton = ({
         )}
       </Button>
 
-      {!hasZipCode && isLoggedIn && (
+      {!hasZipCode && (
         <p className="text-sm text-gray-600 text-center mt-2">
           Informe seu CEP e selecione uma opção de frete
         </p>

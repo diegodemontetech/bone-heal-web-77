@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -10,9 +11,10 @@ export function useCheckout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("credit");
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [checkoutData, setCheckoutData] = useState<any>(null);
 
+  // Função para salvar o pedido no banco de dados
   const saveOrder = async (
     orderId: string, 
     cartItems: CartItem[], 
@@ -25,11 +27,19 @@ export function useCheckout() {
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const total_amount = Math.max(0, subtotal + shippingFee - discount);
 
+      // Verificar autenticação
+      if (!session?.user?.id) {
+        console.error("Usuário não autenticado ao salvar pedido");
+        throw new Error("É necessário estar logado para finalizar a compra");
+      }
+
+      console.log("Salvando pedido:", orderId, "para usuário:", session.user.id);
+
       const { error: orderError } = await supabase
         .from('orders')
         .insert({
           id: orderId,
-          user_id: session?.user?.id,
+          user_id: session.user.id,
           items: cartItems.map(item => ({
             product_id: item.id,
             quantity: item.quantity,
@@ -47,7 +57,10 @@ export function useCheckout() {
           payment_method: paymentMethod
         });
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("Erro ao salvar pedido:", orderError);
+        throw orderError;
+      }
 
       // Criar registro de pagamento
       const { error: paymentError } = await supabase
@@ -59,7 +72,10 @@ export function useCheckout() {
           payment_method: paymentMethod
         });
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error("Erro ao criar registro de pagamento:", paymentError);
+        throw paymentError;
+      }
 
       if (appliedVoucher) {
         await supabase
@@ -75,6 +91,7 @@ export function useCheckout() {
     }
   };
 
+  // Função para criar checkout do Mercado Pago
   const createMercadoPagoCheckout = async (
     orderId: string,
     cartItems: CartItem[],
@@ -85,7 +102,10 @@ export function useCheckout() {
       const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
       const total = Math.max(0, subtotal + shippingFee - discount);
       
-      if (!session?.user) throw new Error("Usuário não está autenticado");
+      if (!session?.user) {
+        console.error("Usuário não autenticado ao criar checkout");
+        throw new Error("Usuário não está autenticado");
+      }
       
       console.log("Criando checkout do Mercado Pago para ordem:", orderId);
       
@@ -104,7 +124,8 @@ export function useCheckout() {
           buyer: {
             email: session.user.email,
             name: session.user.user_metadata?.name || "Cliente"
-          }
+          },
+          paymentType: 'transparent'
         }
       });
       
@@ -112,17 +133,18 @@ export function useCheckout() {
       
       if (error) throw error;
       
-      if (!data || !data.init_point) {
-        throw new Error("Não foi possível gerar o link de pagamento");
+      if (!data) {
+        throw new Error("Não foi possível gerar o checkout");
       }
       
-      return data.init_point;
+      return data;
     } catch (error) {
       console.error("Erro ao criar checkout do Mercado Pago:", error);
       throw error;
     }
   };
 
+  // Função principal para processar o checkout
   const handleCheckout = async (
     cartItems: CartItem[],
     zipCode: string,
@@ -136,7 +158,9 @@ export function useCheckout() {
       return;
     }
 
+    // Verificação de autenticação
     if (!session?.user) {
+      console.error("Usuário não autenticado no handleCheckout");
       toast.error("É necessário estar logado para finalizar a compra.");
       navigate("/login");
       return;
@@ -149,7 +173,7 @@ export function useCheckout() {
 
     try {
       setLoading(true);
-      console.log("Iniciando processo de checkout...");
+      console.log("Iniciando processo de checkout transparente...");
 
       // Gerar ID único para o pedido
       const newOrderId = crypto.randomUUID();
@@ -162,24 +186,26 @@ export function useCheckout() {
       console.log("Pedido salvo com sucesso no banco de dados");
       
       // Criar checkout do Mercado Pago
-      const checkoutUrl = await createMercadoPagoCheckout(
+      const checkoutData = await createMercadoPagoCheckout(
         newOrderId, 
         cartItems, 
         shippingFee, 
         discount
       );
       
-      console.log("URL de checkout gerada:", checkoutUrl);
-      setPaymentUrl(checkoutUrl);
+      console.log("Dados de checkout recebidos:", checkoutData);
+      setCheckoutData(checkoutData);
       
-      // Redirecionar para a página de pagamento
-      if (checkoutUrl) {
-        // Em vez de redirecionar diretamente, mostramos a tela de redirecionamento
-        // O redirecionamento controlado permite uma melhor experiência
-        console.log("Configurando URL de pagamento:", checkoutUrl);
-      } else {
-        throw new Error("URL de checkout não foi gerada");
-      }
+      // Limpar carrinho após finalizar o checkout
+      localStorage.removeItem('cart');
+      
+      // Redirecionar para a página de sucesso
+      navigate("/checkout/success", { 
+        state: { 
+          orderId: newOrderId,
+          paymentMethod
+        }
+      });
       
     } catch (error: any) {
       console.error("Erro no checkout:", error);
@@ -193,7 +219,7 @@ export function useCheckout() {
     paymentMethod,
     setPaymentMethod,
     handleCheckout,
-    paymentUrl,
-    orderId
+    orderId,
+    checkoutData
   };
 }
