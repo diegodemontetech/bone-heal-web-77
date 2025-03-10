@@ -2,8 +2,8 @@
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TicketStatusBadge } from "./TicketStatusBadge";
-import { TicketPriorityBadge } from "./TicketPriorityBadge";
+import TicketStatusBadge from "./TicketStatusBadge";
+import TicketPriorityBadge from "./TicketPriorityBadge";
 import TicketItem from "./TicketItem";
 
 interface TicketsListProps {
