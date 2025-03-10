@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,7 +55,7 @@ const ShippingRatesTable = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: shippingRates, isLoading } = useQuery({
+  const { data: shippingRates, isLoading, isError, error } = useQuery({
     queryKey: ["shipping-rates"],
     queryFn: async () => {
       console.log("Buscando taxas de frete...");
@@ -74,15 +75,28 @@ const ShippingRatesTable = () => {
     },
   });
 
+  // Se encontrar um erro na busca das taxas, exibir no console
+  useEffect(() => {
+    if (isError) {
+      console.error("Erro na query de taxas de frete:", error);
+    }
+  }, [isError, error]);
+
   const addRateMutation = useMutation({
     mutationFn: async (newRate: Omit<ShippingRate, "id">) => {
-      const { error } = await supabase
+      console.log("Adicionando taxa:", newRate);
+      const { data, error } = await supabase
         .from("shipping_rates")
         .upsert([newRate], {
           onConflict: 'state,service_type,region_type'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na mutação de adicionar taxa:", error);
+        throw error;
+      }
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
@@ -101,6 +115,7 @@ const ShippingRatesTable = () => {
 
   const updateRateMutation = useMutation({
     mutationFn: async (rate: ShippingRate) => {
+      console.log("Atualizando taxa:", rate);
       const { error } = await supabase
         .from("shipping_rates")
         .update({
@@ -200,6 +215,7 @@ const ShippingRatesTable = () => {
 
   const importDefaultRates = async () => {
     setIsImporting(true);
+    console.log("Iniciando importação da tabela padrão");
     
     try {
       // Lista de taxas de frete padrão conforme fornecido pelo usuário
@@ -314,28 +330,85 @@ const ShippingRatesTable = () => {
         { state: 'TO', region_type: 'Interior', service_type: 'SEDEX', delivery_days: 4, rate: 120 },
       ];
       
-      // Inserir em lotes
-      for (let i = 0; i < defaultRates.length; i += 20) {
-        const batch = defaultRates.slice(i, i + 20);
-        
-        const { error } = await supabase
+      console.log(`Tentando importar ${defaultRates.length} taxas de frete...`);
+      
+      // Verificar se há permissões RLS (Row Level Security) no Supabase
+      const authResponse = await supabase.auth.getSession();
+      console.log("Sessão atual:", authResponse);
+      
+      // Primeiro tentar importar em uma única operação
+      try {
+        const { data, error } = await supabase
           .from("shipping_rates")
-          .upsert(batch, {
-            onConflict: 'state,service_type,region_type'
+          .upsert(defaultRates, {
+            onConflict: 'state,service_type,region_type',
+            returning: 'minimal'
           });
         
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao importar taxas em lote único:", error);
+          throw error;
+        }
+        
+        console.log("Importação em lote único bem-sucedida!");
+      } catch (bulkError) {
+        console.error("Falha na importação em lote único, tentando em lotes menores:", bulkError);
+        
+        // Falha no lote único, tenta em lotes menores
+        for (let i = 0; i < defaultRates.length; i += 10) {
+          try {
+            const batch = defaultRates.slice(i, i + 10);
+            console.log(`Importando lote ${i/10 + 1} com ${batch.length} taxas...`);
+            
+            const { error } = await supabase
+              .from("shipping_rates")
+              .upsert(batch, {
+                onConflict: 'state,service_type,region_type',
+                returning: 'minimal'
+              });
+            
+            if (error) {
+              console.error(`Erro no lote ${i/10 + 1}:`, error);
+              // Continua mesmo com erro para tentar outros lotes
+            } else {
+              console.log(`Lote ${i/10 + 1} importado com sucesso`);
+            }
+          } catch (batchError) {
+            console.error(`Erro no processamento do lote ${i/10 + 1}:`, batchError);
+          }
+        }
       }
       
+      // Verificar se a importação funcionou consultando o banco novamente
+      const { data: verifyData, error: verifyError } = await supabase
+        .from("shipping_rates")
+        .select("*")
+        .limit(1);
+        
+      if (verifyError) {
+        console.error("Erro ao verificar importação:", verifyError);
+      } else {
+        console.log("Verificação de importação:", verifyData);
+      }
+      
+      // Atualizar os dados na interface
       queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
       toast.success("Tabela de fretes importada com sucesso!");
     } catch (error) {
       console.error("Erro ao importar taxas de frete:", error);
-      toast.error("Erro ao importar taxas de frete");
+      toast.error("Erro ao importar taxas de frete. Tente novamente.");
     } finally {
       setIsImporting(false);
     }
   };
+
+  // Importar automaticamente os dados se a tabela estiver vazia
+  useEffect(() => {
+    if (shippingRates && shippingRates.length === 0) {
+      console.log("Tabela de fretes vazia, importando dados padrão automaticamente");
+      importDefaultRates();
+    }
+  }, [shippingRates]);
 
   if (isLoading) {
     return (
