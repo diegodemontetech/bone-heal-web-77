@@ -1,7 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout from "@/components/admin/Layout";
 import { useAuth } from "@/hooks/use-auth-context";
 import CreateTicketDialog from "@/components/admin/tickets/CreateTicketDialog";
 import TicketsContent from "@/components/admin/tickets/TicketsContent";
@@ -43,20 +42,18 @@ const AdminTickets = () => {
   });
 
   return (
-    <AdminLayout>
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Tickets de Suporte</h1>
-          <CreateTicketDialog onSuccess={refetch} />
-        </div>
-
-        <TicketsContent 
-          tickets={tickets} 
-          isLoading={isLoading} 
-          agents={agents} 
-        />
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Tickets de Suporte</h1>
+        <CreateTicketDialog onSuccess={refetch} />
       </div>
-    </AdminLayout>
+
+      <TicketsContent 
+        tickets={tickets} 
+        isLoading={isLoading} 
+        agents={agents} 
+      />
+    </div>
   );
 };
 

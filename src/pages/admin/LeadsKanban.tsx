@@ -1,12 +1,11 @@
 
-import AdminLayout from "@/components/admin/Layout";
 import { LeadsKanban } from "@/components/admin/kanban/LeadsKanban";
 
 const LeadsKanbanPage = () => {
   return (
-    <AdminLayout>
+    <div className="p-4">
       <LeadsKanban />
-    </AdminLayout>
+    </div>
   );
 };
 

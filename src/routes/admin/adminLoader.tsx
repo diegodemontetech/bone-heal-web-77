@@ -7,8 +7,10 @@ export const AdminLoader = () => (
   </div>
 );
 
-export const withSuspense = (Component: ReactNode) => (
-  <Suspense fallback={<AdminLoader />}>
-    {Component}
-  </Suspense>
-);
+export const withAdminLoader = (Component: React.ComponentType) => {
+  return (props: any) => (
+    <Suspense fallback={<AdminLoader />}>
+      <Component {...props} />
+    </Suspense>
+  );
+};
