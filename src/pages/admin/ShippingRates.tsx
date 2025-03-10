@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import ShippingRatesTable from "@/components/admin/shipping/ShippingRatesTable";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, ShieldAlert } from "lucide-react";
+import { useAuthContext } from "@/hooks/auth/auth-context";
 
 const AdminShippingRates = () => {
+  const { session, isAdmin } = useAuthContext();
   const [connectionStatus, setConnectionStatus] = useState<{status: string, message: string, count?: number}>({
     status: 'checking',
     message: 'Verificando conexão com o banco de dados...'
@@ -13,6 +15,8 @@ const AdminShippingRates = () => {
   
   useEffect(() => {
     console.log("Renderizando página de taxas de frete");
+    console.log("Status de autenticação:", session ? "Autenticado" : "Não autenticado");
+    console.log("É administrador:", isAdmin);
     
     // Verificar a conexão com o Supabase
     const checkConnection = async () => {
@@ -21,6 +25,20 @@ const AdminShippingRates = () => {
           status: 'checking',
           message: 'Verificando conexão com o banco de dados...'
         });
+        
+        // Verificar versão primeiro
+        const { data: versionData, error: versionError } = await supabase.rpc('version');
+        
+        if (versionError) {
+          console.error("Erro ao verificar versão:", versionError);
+          setConnectionStatus({
+            status: 'error',
+            message: `Falha na verificação de versão: ${versionError.message}`
+          });
+          return;
+        }
+        
+        console.log("Versão do banco:", versionData);
         
         // Verificar se a tabela existe
         const { data, error, count } = await supabase
@@ -57,8 +75,34 @@ const AdminShippingRates = () => {
       }
     };
     
-    checkConnection();
-  }, []);
+    if (session) {
+      checkConnection();
+    }
+  }, [session, isAdmin]);
+  
+  if (!session) {
+    return (
+      <div className="p-8">
+        <Alert variant="destructive" className="mb-4">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Acesso não autorizado</AlertTitle>
+          <AlertDescription>Você precisa estar autenticado para acessar esta página.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+  
+  if (!isAdmin) {
+    return (
+      <div className="p-8">
+        <Alert variant="destructive" className="mb-4">
+          <ShieldAlert className="h-4 w-4" />
+          <AlertTitle>Permissão negada</AlertTitle>
+          <AlertDescription>Apenas administradores podem acessar o gerenciamento de fretes.</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   
   return (
     <div className="p-8">

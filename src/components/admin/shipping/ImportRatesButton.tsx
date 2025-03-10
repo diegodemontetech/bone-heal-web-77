@@ -5,6 +5,7 @@ import { useImportShippingRates } from "./hooks/useImportShippingRates";
 import { defaultShippingRates } from "./data/defaultShippingRates";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useAuthContext } from "@/hooks/auth/auth-context";
 
 interface ImportRatesButtonProps {
   isLoading: boolean;
@@ -12,6 +13,7 @@ interface ImportRatesButtonProps {
 
 export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
   const { isImporting, importRates } = useImportShippingRates(defaultShippingRates);
+  const { isAdmin, profile } = useAuthContext();
   const [validationStatus, setValidationStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,8 +39,15 @@ export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
 
   const handleImport = () => {
     try {
+      if (!isAdmin) {
+        toast.error("Apenas administradores podem importar taxas de frete");
+        return;
+      }
+
       console.log("Iniciando processo de importação...");
       console.log(`Total de taxas para importar: ${defaultShippingRates.length}`);
+      console.log("Usuário logado:", profile?.id);
+      console.log("É administrador:", isAdmin);
       
       // Verificar se há validação antes de importar
       if (validationStatus && validationStatus.includes("Problemas")) {
@@ -53,11 +62,14 @@ export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
     }
   };
 
+  // Se não for admin, desabilitar o botão
+  const isDisabled = isImporting || isLoading || !isAdmin;
+
   return (
     <div className="flex flex-col gap-2">
       <Button 
         onClick={handleImport}
-        disabled={isImporting || isLoading}
+        disabled={isDisabled}
         variant="outline"
       >
         {isImporting ? (
@@ -67,6 +79,11 @@ export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
         )}
         {isImporting ? "Importando..." : "Importar Tabela Padrão"}
       </Button>
+      {!isAdmin && (
+        <p className="text-xs text-red-500">
+          Você precisa ser administrador para importar taxas
+        </p>
+      )}
       {validationStatus && (
         <p className="text-xs text-muted-foreground">
           {validationStatus}

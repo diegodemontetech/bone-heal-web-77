@@ -1044,6 +1044,10 @@ export type Database = {
         }
         Returns: Json
       }
+      version: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       payment_method_type: "credit_card" | "pix" | "boleto"

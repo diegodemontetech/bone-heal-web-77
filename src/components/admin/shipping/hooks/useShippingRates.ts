@@ -4,8 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShippingRate } from "../types";
+import { useAuthContext } from "@/hooks/auth/auth-context";
 
 export const useShippingRates = () => {
+  const { session } = useAuthContext();
+  
   const { 
     data: shippingRates, 
     isLoading, 
@@ -18,13 +21,19 @@ export const useShippingRates = () => {
       console.log("Buscando taxas de frete do Supabase...");
       
       try {
+        // Verificar se temos uma sessão
+        console.log("Status da sessão:", session ? "Autenticado" : "Não autenticado");
+        
         // Testar conexão básica primeiro
-        const healthCheck = await supabase.rpc('version');
-        if (healthCheck.error) {
-          throw new Error(`Falha na conexão com Supabase: ${healthCheck.error.message}`);
+        const { data: versionData, error: versionError } = await supabase.rpc('version');
+        
+        if (versionError) {
+          console.error("Erro ao verificar versão:", versionError);
+          throw new Error(`Falha na conexão com Supabase: ${versionError.message}`);
         }
         
-        console.log("Conexão com Supabase estabelecida, buscando dados...");
+        console.log("Conexão com Supabase estabelecida, versão:", versionData);
+        console.log("Buscando dados...");
         
         const { data, error, status, statusText } = await supabase
           .from("shipping_rates")
@@ -63,6 +72,7 @@ export const useShippingRates = () => {
         throw err;
       }
     },
+    enabled: Boolean(session), // Só executar a query quando o usuário estiver autenticado
     retry: 2,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });

@@ -4,17 +4,30 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ShippingRate } from "../types";
+import { useAuthContext } from "@/hooks/auth/auth-context";
 
 export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
   const [isImporting, setIsImporting] = useState(false);
   const queryClient = useQueryClient();
+  const { session, isAdmin } = useAuthContext();
 
   const importRates = async () => {
     if (isImporting || !rates.length) return;
     
     try {
+      // Verificar se o usuário está autenticado e é administrador
+      if (!session) {
+        throw new Error("Usuário não autenticado");
+      }
+      
+      if (!isAdmin) {
+        throw new Error("Apenas administradores podem importar taxas de frete");
+      }
+
       setIsImporting(true);
       console.log(`Iniciando importação de ${rates.length} taxas de frete`);
+      console.log('Sessão atual:', session.user.id);
+      console.log('Status de admin:', isAdmin);
       
       // Validar dados antes da importação
       const validRates = rates.filter(rate => {
@@ -52,8 +65,8 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
       
       console.log("Tabela limpa com sucesso, inserindo novas taxas...");
       
-      // Inserir novas taxas em lotes menores (50 por vez)
-      const batchSize = 50;
+      // Inserir novas taxas em lotes menores (20 por vez)
+      const batchSize = 20;
       let successCount = 0;
       
       for (let i = 0; i < validRates.length; i += batchSize) {
@@ -105,3 +118,4 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
     importRates
   };
 };
+
