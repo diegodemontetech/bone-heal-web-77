@@ -1,16 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+
 import { Separator } from "@/components/ui/separator";
-import { Loader2, ShoppingBag, RotateCw, TruckIcon } from "lucide-react";
 import { CartItem } from "@/hooks/use-cart";
-import { formatCurrency } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
-import { useEffect, useRef } from "react";
+import { useRef, useEffect } from "react";
+import ShippingCalculator from "./shipping/ShippingCalculator";
+import OrderSummaryValues from "./OrderSummaryValues";
+import CheckoutButton from "./CheckoutButton";
 
 interface CartSummaryProps {
   cartItems: CartItem[];
@@ -41,42 +36,15 @@ export const CartSummary = ({
   shippingCalculated = false,
   resetShipping
 }: CartSummaryProps) => {
-  const navigate = useNavigate();
+  const calculationRequested = useRef(false);
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const total = subtotal + (shippingCost || 0);
-  const calculationRequested = useRef(false);
-
-  const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Permitir apenas números e limitar a 8 dígitos
-    const value = e.target.value.replace(/\D/g, "").slice(0, 8);
-    setZipCode(value);
-    
-    // Se o CEP mudar, resetar o cálculo de frete
-    if (value !== zipCode && resetShipping) {
-      resetShipping();
-      calculationRequested.current = false;
-    }
-  };
 
   const handleZipCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && zipCode.length === 8 && !isCalculatingShipping) {
       calculateShipping();
       calculationRequested.current = true;
     }
-  };
-
-  const handleCheckoutClick = () => {
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: "/cart" } });
-      return;
-    }
-    
-    if (!shippingCost) {
-      toast.error("Por favor, calcule o frete antes de continuar");
-      return;
-    }
-    
-    handleCheckout(cartItems, subtotal, total);
   };
 
   // Calcular frete automaticamente quando o CEP tiver 8 dígitos
@@ -88,128 +56,41 @@ export const CartSummary = ({
     }
   }, [zipCode, cartItems.length, shippingCalculated, isCalculatingShipping, calculateShipping]);
 
-  const handleRecalculateClick = () => {
-    if (resetShipping) {
-      resetShipping();
-    }
-    calculationRequested.current = true;
-    calculateShipping();
-  };
-
   return (
     <Card className="bg-white shadow-md border rounded-lg">
       <CardContent className="p-6 space-y-6">
         <h2 className="text-xl font-bold text-primary border-b pb-2">Resumo do Pedido</h2>
 
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="zipCode" className="text-sm font-medium">Calcular Frete</Label>
-            <div className="flex gap-2 mt-1">
-              <div className="relative flex-1">
-                <TruckIcon className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                <Input
-                  id="zipCode"
-                  placeholder="Digite seu CEP"
-                  value={zipCode}
-                  onChange={handleZipCodeChange}
-                  onKeyDown={handleZipCodeKeyDown}
-                  maxLength={8}
-                  className={`pl-9 ${shippingError ? "border-red-500" : ""}`}
-                />
-              </div>
-              <Button
-                onClick={shippingCalculated ? handleRecalculateClick : calculateShipping}
-                disabled={isCalculatingShipping || zipCode.length !== 8}
-                variant="outline"
-                className="min-w-[100px]"
-              >
-                {isCalculatingShipping ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : shippingCalculated && shippingCost ? (
-                  <><RotateCw className="w-4 h-4 mr-2" />Recalcular</>
-                ) : (
-                  "Calcular"
-                )}
-              </Button>
-            </div>
-            {shippingError && (
-              <Alert variant="destructive" className="mt-2 py-2">
-                <AlertDescription className="text-sm">{shippingError}</AlertDescription>
-              </Alert>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Digite apenas os 8 números do seu CEP
-            </p>
-          </div>
-
-          {isCalculatingShipping ? (
-            <div className="flex justify-center items-center p-4 bg-gray-50 rounded-md">
-              <div className="flex flex-col items-center space-y-2">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <p className="text-sm text-gray-600">Calculando opções de frete...</p>
-              </div>
-            </div>
-          ) : shippingCost ? (
-            <div className="bg-green-50 p-3 rounded-md border border-green-100">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium flex items-center">
-                  <TruckIcon className="h-4 w-4 mr-2 text-green-600" />
-                  Frete calculado
-                </span>
-                <Badge variant="outline" className="bg-green-100">
-                  {formatCurrency(shippingCost)}
-                </Badge>
-              </div>
-              <p className="text-xs text-gray-600 mt-1">
-                Entrega em até 7 dias úteis
-              </p>
-            </div>
-          ) : null}
+          <ShippingCalculator 
+            zipCode={zipCode}
+            setZipCode={setZipCode}
+            isCalculatingShipping={isCalculatingShipping}
+            shippingCost={shippingCost}
+            shippingError={shippingError}
+            calculateShipping={calculateShipping}
+            shippingCalculated={shippingCalculated}
+            resetShipping={resetShipping}
+            onZipCodeKeyDown={handleZipCodeKeyDown}
+          />
 
           <Separator />
 
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Subtotal ({cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'})</span>
-              <span className="font-medium">{formatCurrency(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Frete</span>
-              <span className="font-medium">
-                {shippingCost ? formatCurrency(shippingCost) : "Calculando..."}
-              </span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-bold text-lg">
-              <span>Total</span>
-              <span className="text-primary">{formatCurrency(total)}</span>
-            </div>
-          </div>
+          <OrderSummaryValues 
+            cartItems={cartItems}
+            shippingCost={shippingCost}
+          />
 
-          <Button
-            className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-base"
-            onClick={handleCheckoutClick}
-            disabled={!shippingCost || isCalculatingShipping}
-          >
-            {!isAuthenticated ? (
-              "Entrar para continuar"
-            ) : !shippingCost ? (
-              "Calcule o frete para continuar"
-            ) : (
-              <>
-                <ShoppingBag className="mr-2 h-5 w-5" />
-                Finalizar Compra
-              </>
-            )}
-          </Button>
-
-          {!shippingCost && (
-            <p className="text-sm text-center text-gray-600">
-              Informe seu CEP para calcular o frete
-            </p>
-          )}
+          <CheckoutButton 
+            cartItems={cartItems}
+            subtotal={subtotal}
+            total={total}
+            isAuthenticated={isAuthenticated || false}
+            shippingCost={shippingCost}
+            handleCheckout={handleCheckout}
+          />
         </div>
       </CardContent>
     </Card>
   );
-}
+};

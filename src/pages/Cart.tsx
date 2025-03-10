@@ -22,7 +22,8 @@ const Cart = () => {
     shippingError,
     calculateShipping,
     handleCheckout,
-    shippingCalculated
+    shippingCalculated,
+    resetShipping
   } = useCartPage();
 
   if (!cartItems.length) {
@@ -74,6 +75,7 @@ const Cart = () => {
             session={session}
             isAuthenticated={isAuthenticated}
             shippingCalculated={shippingCalculated}
+            resetShipping={resetShipping}
           />
         </div>
       </div>
