@@ -91,7 +91,7 @@ const Cart = () => {
             isCalculatingShipping={isCalculatingShipping}
             shippingCost={shippingCost}
             shippingError={shippingError}
-            calculateShipping={calculateShipping}
+            calculateShipping={calculateShipping} // A função wrapper agora não precisa de argumentos
             handleCheckout={handleCheckout}
             session={session}
             isAuthenticated={isAuthenticated}

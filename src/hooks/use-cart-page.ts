@@ -1,3 +1,4 @@
+
 // Atualizando importação no use-cart-page.ts que pode usar o hook de shipping
 import { useState, useEffect } from "react";
 import { useCart } from "./use-cart";
@@ -9,7 +10,7 @@ import { toast } from "sonner";
 import { useShippingRates, useUserZipCode } from "./shipping";
 
 export const useCartPage = () => {
-  const { cartItems, clearCart } = useCart();
+  const { cartItems, clear } = useCart(); // Corrigido de clearCart para clear
   const navigate = useNavigate();
   const session = useSession();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -23,7 +24,7 @@ export const useCartPage = () => {
   const {
     shippingRates,
     loading: isCalculatingShipping,
-    calculateShipping,
+    calculateShipping: calculateShippingRates,
     resetShipping,
     selectedShippingRate
   } = useShippingRates();
@@ -36,6 +37,18 @@ export const useCartPage = () => {
   useEffect(() => {
     setIsAuthenticated(!!session);
   }, [session]);
+
+  // Função wrapper para calculateShipping que não requer argumentos
+  const calculateShipping = () => {
+    if (zipCode && zipCode.length === 8 && cartItems.length > 0) {
+      calculateShippingRates(zipCode, cartItems);
+      setShippingCalculated(true);
+    } else if (!zipCode || zipCode.length !== 8) {
+      setShippingError("Por favor, informe um CEP válido com 8 dígitos");
+    } else if (cartItems.length === 0) {
+      setShippingError("Seu carrinho está vazio");
+    }
+  };
 
   // Função para lidar com o checkout
   const handleCheckout = (cartItems, subtotal, total) => {
