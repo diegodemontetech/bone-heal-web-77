@@ -29,8 +29,16 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
       console.log('Sessão atual:', session.user.id);
       console.log('Status de admin:', isAdmin);
       
-      // Validar dados antes da importação
-      const validRates = rates.filter(rate => {
+      // Validar dados antes da importação e remover duplicatas
+      const uniqueCombos = new Map();
+      rates.forEach(rate => {
+        const key = `${rate.state}-${rate.region_type}-${rate.service_type}`;
+        // Se já existe, só mantém se for a taxa mais recente (assumindo que as taxas estão em ordem)
+        uniqueCombos.set(key, rate);
+      });
+      
+      // Converter de volta para array
+      const validRates = Array.from(uniqueCombos.values()).filter(rate => {
         const isValid = rate.state && 
                        rate.region_type && 
                        rate.service_type && 
@@ -44,7 +52,7 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
         return isValid;
       });
       
-      console.log(`Taxas válidas para importação: ${validRates.length}/${rates.length}`);
+      console.log(`Taxas válidas após remoção de duplicatas: ${validRates.length}/${rates.length}`);
       
       if (validRates.length === 0) {
         throw new Error("Nenhuma taxa de frete válida para importação");
@@ -65,13 +73,16 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
       
       console.log("Tabela limpa com sucesso, inserindo novas taxas...");
       
-      // Inserir novas taxas em lotes menores (20 por vez)
-      const batchSize = 20;
+      // Inserir novas taxas em lotes menores (10 por vez para evitar problemas)
+      const batchSize = 10;
       let successCount = 0;
       
       for (let i = 0; i < validRates.length; i += batchSize) {
         const batch = validRates.slice(i, i + batchSize);
         console.log(`Importando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(validRates.length/batchSize)}, ${batch.length} taxas`);
+        
+        // Log detalhado dos dados sendo inseridos
+        console.log("Exemplo dos dados sendo inseridos:", batch[0]);
         
         const { data, error } = await supabase
           .from("shipping_rates")
@@ -81,6 +92,15 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
         if (error) {
           console.error(`Erro ao importar lote ${i/batchSize + 1}:`, error);
           console.error("Detalhes do erro:", error.details, error.hint, error.message, error.code);
+          
+          // Informação mais específica para o caso de violação de restrição única
+          if (error.code === '23505') { // Código para violação de chave única
+            console.error("Violação de chave única. Verifique se há duplicatas nas combinações (estado, tipo_região, tipo_serviço)");
+            
+            // Tentar identificar qual item está causando o conflito
+            console.error("Items do lote atual que podem estar causando conflito:", batch);
+          }
+          
           throw new Error(`Erro ao importar taxas: ${error.message}`);
         }
         
@@ -118,4 +138,3 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
     importRates
   };
 };
-

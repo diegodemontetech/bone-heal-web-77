@@ -35,6 +35,20 @@ export const ImportRatesButton = ({ isLoading }: ImportRatesButtonProps) => {
       console.log(message);
       setValidationStatus(message);
     }
+
+    // Verificar se há duplicatas na combinação de state, region_type e service_type
+    const combinations = new Set();
+    const duplicates = defaultShippingRates.filter(rate => {
+      const combo = `${rate.state}-${rate.region_type}-${rate.service_type}`;
+      if (combinations.has(combo)) return true;
+      combinations.add(combo);
+      return false;
+    });
+
+    if (duplicates.length > 0) {
+      console.warn(`ATENÇÃO: Encontradas ${duplicates.length} combinações duplicadas nas taxas padrão`, duplicates);
+      setValidationStatus(prev => `${prev || ''} | Atenção: ${duplicates.length} combinações duplicadas detectadas`);
+    }
   }, []);
 
   const handleImport = () => {
