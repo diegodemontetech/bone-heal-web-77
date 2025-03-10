@@ -8,7 +8,10 @@ import TicketPriorityBadge from "./TicketPriorityBadge";
 
 interface TicketItemProps {
   ticket: any;
-  categoryLabels: Record<string, string>;
+  categoryLabels: {
+    status: Record<string, string>;
+    priority: Record<string, string>;
+  };
 }
 
 const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
@@ -35,11 +38,11 @@ const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
             </span>
             <span className="inline-flex items-center mr-4">
               <MessageSquare className="w-4 h-4 mr-1" />
-              {ticket.ticket_messages.length} mensagens
+              {ticket.ticket_messages ? ticket.ticket_messages.length : 0} mensagens
             </span>
             {ticket.category && (
               <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
-                {categoryLabels[ticket.category] || ticket.category}
+                {categoryLabels.status[ticket.category] || ticket.category}
               </span>
             )}
           </div>
