@@ -11,12 +11,17 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="flex min-h-screen">
+      {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <div className="h-screen w-64 border-r">
           <AdminSidebar />
         </div>
       </div>
+      
+      {/* Mobile Navigation */}
       <AdminMobileNav />
+      
+      {/* Main Content */}
       <main className="flex-1 bg-gray-50">
         {children || <Outlet />}
       </main>

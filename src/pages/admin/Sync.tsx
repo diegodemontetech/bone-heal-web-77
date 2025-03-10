@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import AdminLayout from "@/components/admin/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -59,61 +58,59 @@ const Sync = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="container mx-auto py-8">
-        <h1 className="text-2xl font-bold mb-6">Sincronização com Omie</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sincronização de Clientes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-500 mb-4">
-                Sincronize os clientes do Omie com o sistema.
-              </p>
-              <Button 
-                onClick={handleSyncCustomers} 
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sincronizando...
-                  </>
-                ) : (
-                  'Sincronizar Clientes'
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-6">Sincronização com Omie</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sincronização de Clientes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-500 mb-4">
+              Sincronize os clientes do Omie com o sistema.
+            </p>
+            <Button 
+              onClick={handleSyncCustomers} 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sincronizando...
+                </>
+              ) : (
+                'Sincronizar Clientes'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Sincronização de Pedidos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-500 mb-4">
-                Sincronize os pedidos pendentes com o Omie.
-              </p>
-              <Button 
-                onClick={checkOrderStatus} 
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sincronizando...
-                  </>
-                ) : (
-                  'Sincronizar Pedidos'
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Sincronização de Pedidos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-500 mb-4">
+              Sincronize os pedidos pendentes com o Omie.
+            </p>
+            <Button 
+              onClick={checkOrderStatus} 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sincronizando...
+                </>
+              ) : (
+                'Sincronizar Pedidos'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
-    </AdminLayout>
+    </div>
   );
 };
 

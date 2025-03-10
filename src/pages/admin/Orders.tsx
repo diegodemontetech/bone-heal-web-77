@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout from "@/components/admin/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -60,17 +59,15 @@ const Orders = () => {
 
   if (profileLoading || ordersLoading) {
     return (
-      <AdminLayout>
-        <div className="container mx-auto p-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </AdminLayout>
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -79,40 +76,38 @@ const Orders = () => {
   }
 
   return (
-    <AdminLayout>
-      <div className="container mx-auto p-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold">Gerenciamento de Pedidos</h1>
-              <Button onClick={() => setIsCreating(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Pedido
-              </Button>
-            </div>
+    <div className="container mx-auto p-4">
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold">Gerenciamento de Pedidos</h1>
+            <Button onClick={() => setIsCreating(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Pedido
+            </Button>
+          </div>
 
-            <Tabs defaultValue="kanban" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="kanban">Kanban</TabsTrigger>
-                <TabsTrigger value="create" disabled={!isCreating}>
-                  Criar Pedido
-                </TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="kanban" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="kanban">Kanban</TabsTrigger>
+              <TabsTrigger value="create" disabled={!isCreating}>
+                Criar Pedido
+              </TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="kanban">
-                <OrdersKanban orders={orders} refetchOrders={refetch} />
-              </TabsContent>
+            <TabsContent value="kanban">
+              <OrdersKanban orders={orders} refetchOrders={refetch} />
+            </TabsContent>
 
-              <TabsContent value="create">
-                {isCreating && (
-                  <CreateOrder onCancel={() => setIsCreating(false)} />
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-    </AdminLayout>
+            <TabsContent value="create">
+              {isCreating && (
+                <CreateOrder onCancel={() => setIsCreating(false)} />
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
