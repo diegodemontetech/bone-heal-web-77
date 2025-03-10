@@ -1,44 +1,66 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import AdminLayout from "@/components/admin/Layout";
 import CreateOrder from "@/components/admin/CreateOrder";
 import OrdersKanban from "@/components/admin/orders/OrdersKanban";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState("kanban");
 
   // Buscar pedidos
-  const { data: orders, isLoading, refetch } = useQuery({
+  const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            phone,
-            zip_code,
-            omie_code
-          )
-        `)
-        .order("created_at", { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              phone,
+              zip_code,
+              omie_code
+            )
+          `)
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erro ao buscar pedidos:", error);
-        throw error;
+        if (error) {
+          console.error("Erro ao buscar pedidos:", error);
+          throw error;
+        }
+        
+        console.log("Pedidos carregados:", data);
+        return data || [];
+      } catch (err) {
+        console.error("Erro na consulta de pedidos:", err);
+        throw err;
       }
-      
-      console.log("Pedidos carregados:", data);
-      return data;
     },
   });
+
+  // Exibir erros com toast
+  useEffect(() => {
+    if (error) {
+      toast.error("Erro ao carregar pedidos. Por favor, tente novamente.");
+      console.error("Erro detalhado:", error);
+    }
+  }, [error]);
+
+  // Mudar para a tab de criação quando clicar no botão
+  useEffect(() => {
+    if (isCreating) {
+      setActiveTab("create");
+    }
+  }, [isCreating]);
 
   if (isLoading) {
     return (
@@ -63,7 +85,7 @@ const Orders = () => {
               </Button>
             </div>
 
-            <Tabs defaultValue="kanban" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList>
                 <TabsTrigger value="kanban">Kanban</TabsTrigger>
                 <TabsTrigger value="create" disabled={!isCreating}>
@@ -72,7 +94,19 @@ const Orders = () => {
               </TabsList>
 
               <TabsContent value="kanban">
-                {orders && orders.length > 0 ? (
+                {error ? (
+                  <div className="text-center py-16 bg-red-50 rounded-md">
+                    <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-2" />
+                    <p className="text-red-600 font-medium">Erro ao carregar pedidos</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => refetch()}
+                    >
+                      Tentar novamente
+                    </Button>
+                  </div>
+                ) : orders && orders.length > 0 ? (
                   <OrdersKanban orders={orders} refetchOrders={refetch} />
                 ) : (
                   <div className="text-center py-16 bg-gray-50 rounded-md">
@@ -90,7 +124,12 @@ const Orders = () => {
 
               <TabsContent value="create">
                 {isCreating && (
-                  <CreateOrder onCancel={() => setIsCreating(false)} />
+                  <CreateOrder 
+                    onCancel={() => {
+                      setIsCreating(false);
+                      setActiveTab("kanban");
+                    }} 
+                  />
                 )}
               </TabsContent>
             </Tabs>

@@ -26,7 +26,7 @@ const VoucherDialog = ({ onSuccess }: VoucherDialogProps) => {
           Novo Cupom
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Criar Novo Cupom</DialogTitle>
         </DialogHeader>

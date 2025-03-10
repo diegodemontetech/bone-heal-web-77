@@ -23,10 +23,6 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
     }
   };
 
-  // Vamos imprimir esses valores para debug
-  console.log("Admin navigation items:", adminNavigationItems);
-  console.log("Is Admin Master:", isAdminMaster);
-
   // Filtra os itens de navegação baseados nas permissões do usuário
   const filteredNavigationItems = adminNavigationItems.filter(item => {
     // Se não houver permissão específica, mostra para todos os admins
@@ -39,10 +35,8 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
     return hasPermission(item.permission);
   });
 
-  console.log("Filtered navigation items:", filteredNavigationItems);
-
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full w-64 flex-col bg-white">
       <div className="px-3.5 py-2 flex items-center justify-between border-b">
         <Link to="/admin/dashboard" className="font-semibold text-lg">
           Bone Heal Admin
