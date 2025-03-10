@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { Json } from "@/integrations/supabase/types";
 
@@ -8,6 +7,7 @@ export interface CartItem {
   quantity: number;
   price: number;
   image: string;
+  weight?: number; // Adicionando a propriedade weight como opcional
 }
 
 interface CartStore {

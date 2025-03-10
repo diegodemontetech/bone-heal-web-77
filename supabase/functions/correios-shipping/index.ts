@@ -29,6 +29,7 @@ serve(async (req) => {
     let totalWeight = 0;
     if (items.length > 0) {
       totalWeight = items.reduce((acc, item) => {
+        // Garantindo que lidamos com a propriedade weight que pode não existir
         const itemWeight = item.weight || 0.5;  // Peso padrão de 0.5kg se não especificado
         const quantity = item.quantity || 1;    // Quantidade padrão 1 se não especificada
         return acc + (itemWeight * quantity);
