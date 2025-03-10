@@ -55,7 +55,7 @@ serve(async (req) => {
     // Esta é uma simplificação, em produção você usaria uma tabela real
     const getBaseRateByRegion = (prefix: number) => {
       // Capitais e grandes centros (simplificação)
-      if ([010, 011, 012, 013, 020, 021, 022, 030, 040, 050, 060, 070, 080, 090].includes(prefix)) {
+      if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
         return 15; // Taxa base menor para grandes centros
       }
       
