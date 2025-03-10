@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -160,8 +160,8 @@ const QuotationsList = () => {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-medium">{quotation.customer?.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{quotation.customer?.email}</p>
+                      <p className="font-medium">{quotation.customer.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{quotation.customer.email}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -187,7 +187,7 @@ const QuotationsList = () => {
                         size="icon"
                         title="Enviar por e-mail"
                         disabled={quotation.sent_by_email}
-                        onClick={() => handleSendEmail(quotation.id, quotation.customer?.email)}
+                        onClick={() => handleSendEmail(quotation.id, quotation.customer.email)}
                       >
                         <Mail className="h-4 w-4" />
                       </Button>
