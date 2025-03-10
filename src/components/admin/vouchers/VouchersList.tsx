@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface Voucher {
   id: string;
@@ -29,8 +30,11 @@ interface VouchersListProps {
 }
 
 const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDelete = async (id: string) => {
     try {
+      setDeletingId(id);
       const { error } = await supabase
         .from('vouchers')
         .delete()
@@ -43,6 +47,8 @@ const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
     } catch (error) {
       console.error("Erro ao excluir cupom:", error);
       toast.error("Erro ao excluir cupom");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -74,17 +80,17 @@ const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
         ) : (
           vouchers?.map((voucher) => (
             <TableRow key={voucher.id}>
-              <TableCell>{voucher.code}</TableCell>
+              <TableCell className="font-medium">{voucher.code}</TableCell>
               <TableCell>
                 {voucher.discount_type === 'percentage' ? 'Percentual' :
                  voucher.discount_type === 'fixed' ? 'Valor Fixo' : 'Frete Grátis'}
               </TableCell>
               <TableCell>
                 {voucher.discount_type === 'percentage' ? `${voucher.discount_value}%` :
-                 voucher.discount_type === 'fixed' ? `R$ ${voucher.discount_value}` : 'Grátis'}
+                 voucher.discount_type === 'fixed' ? `R$ ${voucher.discount_value.toFixed(2)}` : 'Grátis'}
               </TableCell>
               <TableCell>
-                {voucher.valid_until ? new Date(voucher.valid_until).toLocaleDateString() : 'Sem limite'}
+                {voucher.valid_until ? new Date(voucher.valid_until).toLocaleDateString('pt-BR') : 'Sem limite'}
               </TableCell>
               <TableCell>
                 {voucher.current_uses || 0}/{voucher.max_uses || '∞'}
@@ -94,8 +100,13 @@ const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDelete(voucher.id)}
+                  disabled={deletingId === voucher.id}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deletingId === voucher.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  )}
                 </Button>
               </TableCell>
             </TableRow>

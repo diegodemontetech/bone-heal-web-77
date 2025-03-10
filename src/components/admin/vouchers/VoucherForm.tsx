@@ -36,36 +36,43 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
     setLoading(true);
 
     try {
+      if (!formData.code.trim()) {
+        throw new Error("O código do cupom é obrigatório");
+      }
+
+      if (!formData.discount_value && formData.discount_type !== "shipping") {
+        throw new Error("O valor do desconto é obrigatório");
+      }
+
       // Garantindo que todos os valores numéricos sejam tratados corretamente
       const preparedData = {
         ...formData,
-        code: formData.code.toUpperCase(),
-        discount_value: Number(formData.discount_value) || 0,
-        max_uses: formData.max_uses ? Number(formData.max_uses) : null,
-        min_amount: formData.min_amount ? Number(formData.min_amount) : null,
-        min_items: formData.min_items ? Number(formData.min_items) : null,
-        current_uses: 0
+        code: formData.code.toUpperCase().trim(),
+        discount_value: formData.discount_type === "shipping" ? 0 : parseFloat(formData.discount_value) || 0,
+        max_uses: formData.max_uses ? parseInt(formData.max_uses, 10) : null,
+        min_amount: formData.min_amount ? parseFloat(formData.min_amount) : null,
+        min_items: formData.min_items ? parseInt(formData.min_items, 10) : null,
+        current_uses: 0,
+        valid_until: formData.valid_until || null
       };
       
       // Log para debug
       console.log("Dados do cupom a serem inseridos:", preparedData);
       
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('vouchers')
-        .insert([preparedData])
-        .select();
+        .insert([preparedData]);
 
       if (error) {
         console.error("Erro ao criar cupom:", error);
-        throw error;
+        throw new Error(error.message);
       }
 
-      console.log("Cupom criado com sucesso:", data);
       toast.success("Cupom criado com sucesso!");
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar cupom:", error);
-      toast.error("Erro ao criar cupom. Verifique os dados e tente novamente.");
+      toast.error(`Erro ao criar cupom: ${error.message || "Verifique os dados e tente novamente."}`);
     } finally {
       setLoading(false);
     }
@@ -100,16 +107,20 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
         </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="discount_value">Valor do Desconto</Label>
-        <Input
-          id="discount_value"
-          type="number"
-          required
-          value={formData.discount_value}
-          onChange={(e) => setFormData(prev => ({ ...prev, discount_value: e.target.value }))}
-        />
-      </div>
+      {formData.discount_type !== "shipping" && (
+        <div className="space-y-2">
+          <Label htmlFor="discount_value">
+            {formData.discount_type === "percentage" ? "Valor do Desconto (%)" : "Valor do Desconto (R$)"}
+          </Label>
+          <Input
+            id="discount_value"
+            type="number"
+            required
+            value={formData.discount_value}
+            onChange={(e) => setFormData(prev => ({ ...prev, discount_value: e.target.value }))}
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="valid_until">Válido até</Label>
@@ -152,7 +163,8 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
       </div>
 
       <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar Cupom"}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+        {loading ? "Criando..." : "Criar Cupom"}
       </Button>
     </form>
   );
