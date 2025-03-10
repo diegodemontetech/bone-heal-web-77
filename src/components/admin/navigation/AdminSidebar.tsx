@@ -36,7 +36,7 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
   });
 
   return (
-    <div className="flex h-full w-64 flex-col bg-white">
+    <div className="flex h-full w-64 flex-col bg-white border-r">
       <div className="px-3.5 py-2 flex items-center justify-between border-b">
         <Link to="/admin/dashboard" className="font-semibold text-lg">
           Bone Heal Admin
