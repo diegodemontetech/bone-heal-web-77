@@ -4,10 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import TicketsList from "@/components/admin/tickets/TicketsList";
 import TicketFilters from "@/components/admin/tickets/TicketFilters";
 import { useAuth } from "@/hooks/use-auth-context";
@@ -26,7 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 const statusOptions = {
   open: "Aberto",
