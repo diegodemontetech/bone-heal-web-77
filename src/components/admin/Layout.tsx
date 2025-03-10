@@ -12,8 +12,8 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="flex min-h-screen">
       {/* Desktop Sidebar - Visível apenas em telas médias e maiores */}
-      <div className="hidden md:block w-64">
-        <div className="fixed h-screen">
+      <div className="hidden md:block w-64 flex-shrink-0">
+        <div className="fixed h-screen border-r">
           <AdminSidebar />
         </div>
       </div>
@@ -22,7 +22,7 @@ const Layout = ({ children }: LayoutProps) => {
       <AdminMobileNav />
       
       {/* Main Content */}
-      <main className="flex-1 bg-gray-50">
+      <main className="flex-1 bg-gray-50 md:ml-64">
         {children || <Outlet />}
       </main>
     </div>
