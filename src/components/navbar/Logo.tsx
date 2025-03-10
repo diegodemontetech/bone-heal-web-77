@@ -5,7 +5,7 @@ export const Logo = () => {
   return (
     <Link to="/" className="flex items-center gap-2">
       <img 
-        src="/lovable-uploads/a1e6ee26-a267-49bf-a352-9df8b5791534.png" 
+        src="/lovable-uploads/c5a855af-42eb-4ffd-8fa0-bacd9ce220b3.png" 
         alt="BoneHeal" 
         className="h-12 object-contain"
       />

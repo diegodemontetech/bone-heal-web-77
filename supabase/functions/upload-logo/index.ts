@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     // Download the image from the original URL
-    const imageResponse = await fetch('https://lovable-uploads/a1e6ee26-a267-49bf-a352-9df8b5791534.png');
+    const imageResponse = await fetch('https://lovable-uploads/c5a855af-42eb-4ffd-8fa0-bacd9ce220b3.png');
     if (!imageResponse.ok) {
       throw new Error('Failed to download image');
     }
