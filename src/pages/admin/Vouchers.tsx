@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -42,6 +42,7 @@ const VoucherForm = ({ onSuccess }: { onSuccess: () => void }) => {
     max_uses: "",
     min_amount: "",
     min_items: "",
+    current_uses: 0
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,19 +55,23 @@ const VoucherForm = ({ onSuccess }: { onSuccess: () => void }) => {
         .insert([{
           ...formData,
           code: formData.code.toUpperCase(),
-          discount_value: Number(formData.discount_value),
+          discount_value: Number(formData.discount_value) || 0,
           max_uses: formData.max_uses ? Number(formData.max_uses) : null,
           min_amount: formData.min_amount ? Number(formData.min_amount) : null,
           min_items: formData.min_items ? Number(formData.min_items) : null,
+          current_uses: 0
         }]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar cupom:", error);
+        throw error;
+      }
 
       toast.success("Cupom criado com sucesso!");
       onSuccess();
     } catch (error) {
       console.error("Erro ao criar cupom:", error);
-      toast.error("Erro ao criar cupom");
+      toast.error("Erro ao criar cupom. Verifique os dados e tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -258,7 +263,7 @@ const AdminVouchers = () => {
                         {voucher.valid_until ? new Date(voucher.valid_until).toLocaleDateString() : 'Sem limite'}
                       </TableCell>
                       <TableCell>
-                        {voucher.current_uses}/{voucher.max_uses || '∞'}
+                        {voucher.current_uses || 0}/{voucher.max_uses || '∞'}
                       </TableCell>
                       <TableCell>
                         <Button
