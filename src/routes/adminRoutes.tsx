@@ -1,3 +1,4 @@
+
 import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -16,6 +17,7 @@ const AdminVouchers = lazy(() => import("@/pages/admin/Vouchers"));
 const AdminNews = lazy(() => import("@/pages/admin/News"));
 const AdminStudies = lazy(() => import("@/pages/admin/Studies"));
 const AdminLeads = lazy(() => import("@/pages/admin/Leads"));
+const AdminLeadsKanban = lazy(() => import("@/pages/admin/LeadsKanban"));
 const AdminWhatsapp = lazy(() => import("@/pages/admin/Whatsapp"));
 const AdminEmailTemplates = lazy(() => import("@/pages/admin/EmailTemplates"));
 const AdminShippingRates = lazy(() => import("@/pages/admin/ShippingRates"));
@@ -131,6 +133,16 @@ export const adminRoutes: RouteObject = {
             <Suspense fallback={<AdminLoader />}>
               <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
                 <AdminLeads />
+              </ProtectedRoute>
+            </Suspense>
+          )
+        },
+        {
+          path: "leads-kanban",
+          element: (
+            <Suspense fallback={<AdminLoader />}>
+              <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
+                <AdminLeadsKanban />
               </ProtectedRoute>
             </Suspense>
           )
