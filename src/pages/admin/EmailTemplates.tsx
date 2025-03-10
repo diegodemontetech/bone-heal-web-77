@@ -48,14 +48,16 @@ const EmailTemplates = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+      <div className="p-6">
+        <div className="flex justify-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container p-6">
+    <div className="p-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Templates de Email</CardTitle>

@@ -23,6 +23,11 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
     }
   };
 
+  // Filtra os itens de navegação baseados nas permissões do usuário
+  const filteredNavigationItems = adminNavigationItems.filter(item => {
+    return item.permission === null || isAdminMaster || (item.permission && hasPermission(item.permission));
+  });
+
   return (
     <div className="flex h-full flex-col bg-white">
       <div className="px-3.5 py-2 flex items-center justify-between border-b">
@@ -42,30 +47,22 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
       </div>
       <ScrollArea className="flex-1 py-2">
         <nav className="grid gap-1 px-2">
-          {adminNavigationItems.map((item: NavigationItem) => {
-            const hasAccess = item.permission === null || 
-                             isAdminMaster || 
-                             (item.permission && hasPermission(item.permission));
-            
-            if (!hasAccess) return null;
-            
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={onCloseMobile}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  pathname === item.href
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.title}
-              </Link>
-            );
-          })}
+          {filteredNavigationItems.map((item: NavigationItem) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={onCloseMobile}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                pathname === item.href
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.title}
+            </Link>
+          ))}
         </nav>
       </ScrollArea>
       <div className="mt-auto p-2 border-t">
