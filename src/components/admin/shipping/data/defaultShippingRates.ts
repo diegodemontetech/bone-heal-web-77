@@ -1,7 +1,5 @@
-
 import { ShippingRate } from "../types";
 
-// Lista de taxas de frete padrão
 export const defaultShippingRates: Omit<ShippingRate, 'id'>[] = [
   { state: 'AC', region_type: 'Capital', service_type: 'PAC', delivery_days: 10, rate: 100 },
   { state: 'AC', region_type: 'Capital', service_type: 'SEDEX', delivery_days: 5, rate: 150 },
