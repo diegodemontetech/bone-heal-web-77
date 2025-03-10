@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,40 +5,39 @@ import { toast } from "sonner";
 import { ShippingRate } from "../types";
 import { useAuthContext } from "@/hooks/auth/auth-context";
 
-export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
+export const useImportShippingRates = (initialRates: Omit<ShippingRate, 'id'>[]) => {
   const [isImporting, setIsImporting] = useState(false);
   const queryClient = useQueryClient();
   const { session, isAdmin } = useAuthContext();
 
-  const importRates = async () => {
-    if (isImporting || !rates.length) return;
+  const importRates = async (ratesToImport = initialRates) => {
+    if (isImporting || !ratesToImport.length) return;
     
-    try {
-      // Verificar se o usuário está autenticado e é administrador
-      if (!session) {
-        throw new Error("Usuário não autenticado");
-      }
-      
-      if (!isAdmin) {
-        throw new Error("Apenas administradores podem importar taxas de frete");
-      }
+    // Verificar se o usuário está autenticado e é administrador
+    if (!session) {
+      throw new Error("Usuário não autenticado");
+    }
+    
+    if (!isAdmin) {
+      throw new Error("Apenas administradores podem importar taxas de frete");
+    }
 
-      setIsImporting(true);
-      console.log(`Iniciando importação de ${rates.length} taxas de frete`);
-      console.log('Sessão atual:', session.user.id);
-      console.log('Status de admin:', isAdmin);
-      
-      // Validar dados antes da importação e remover duplicatas
-      const uniqueCombos = new Map();
-      rates.forEach(rate => {
-        const key = `${rate.state}-${rate.region_type}-${rate.service_type}`;
-        // Se já existe, só mantém se for a taxa mais recente (assumindo que as taxas estão em ordem)
-        uniqueCombos.set(key, rate);
-      });
-      
-      // Converter de volta para array
-      const validRates = Array.from(uniqueCombos.values()).filter(rate => {
-        const isValid = rate.state && 
+    setIsImporting(true);
+    console.log(`Iniciando importação de ${ratesToImport.length} taxas de frete`);
+    console.log('Sessão atual:', session.user.id);
+    console.log('Status de admin:', isAdmin);
+    
+    // Validar dados antes da importação e remover duplicatas
+    const uniqueCombos = new Map();
+    ratesToImport.forEach(rate => {
+      const key = `${rate.state}-${rate.region_type}-${rate.service_type}`;
+      // Se já existe, só mantém se for a taxa mais recente (assumindo que as taxas estão em ordem)
+      uniqueCombos.set(key, rate);
+    });
+    
+    // Converter de volta para array
+    const validRates = Array.from(uniqueCombos.values()).filter(rate => {
+      const isValid = rate.state && 
                        rate.region_type && 
                        rate.service_type && 
                        typeof rate.rate === 'number' && 
@@ -52,7 +50,7 @@ export const useImportShippingRates = (rates: Omit<ShippingRate, 'id'>[]) => {
         return isValid;
       });
       
-      console.log(`Taxas válidas após remoção de duplicatas: ${validRates.length}/${rates.length}`);
+      console.log(`Taxas válidas após remoção de duplicatas: ${validRates.length}/${ratesToImport.length}`);
       
       if (validRates.length === 0) {
         throw new Error("Nenhuma taxa de frete válida para importação");

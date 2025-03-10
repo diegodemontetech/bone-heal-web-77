@@ -1,7 +1,7 @@
-
 import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImportRatesButton } from "./ImportRatesButton";
+import { CsvUpload } from "./CsvUpload";
 import { AddRateForm } from "./AddRateForm";
 import { RatesTable } from "./RatesTable";
 import { useShippingRates } from "./hooks/useShippingRates";
@@ -94,9 +94,10 @@ const ShippingRatesTable = () => {
             </div>
           )}
 
-          {/* Botão para importar valores padrão */}
-          <div className="flex justify-end">
+          {/* Área de importação */}
+          <div className="flex flex-col gap-4">
             <ImportRatesButton isLoading={isLoading} />
+            <CsvUpload />
           </div>
 
           {/* Formulário para adicionar nova taxa */}
