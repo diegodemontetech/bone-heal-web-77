@@ -155,7 +155,7 @@ const Checkout = () => {
         amount: cartTotal + (shippingInfo?.cost || 0),
         status: 'pending',
         payment_method: paymentMethod,
-        mercadopago_preference_id: paymentData.id
+        preference_id: paymentData.id
       });
 
       if (paymentError) throw paymentError;
