@@ -1,5 +1,4 @@
-
-import { useShipping } from "@/hooks/use-shipping";
+import { useShipping } from "@/hooks/shipping";
 import { useVoucher } from "@/hooks/use-voucher";
 import { useCheckout } from "@/hooks/use-checkout";
 import { useCheckoutPage } from "@/hooks/use-checkout-page";
