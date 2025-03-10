@@ -2,6 +2,7 @@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Wallet, QrCode } from "lucide-react";
+import { useInstallments } from "@/hooks/use-installments";
 
 interface PaymentOptionsProps {
   paymentMethod: string;
@@ -11,22 +12,8 @@ interface PaymentOptionsProps {
 
 const PaymentOptions = ({ paymentMethod, setPaymentMethod, total }: PaymentOptionsProps) => {
   const pixDiscount = total * 0.05; // 5% de desconto no PIX
+  const { installments } = useInstallments(total, 12);
   
-  const calculateInstallments = (total: number) => {
-    const installments = [];
-    for (let i = 1; i <= 12; i++) {
-      const value = total / i;
-      installments.push({
-        number: i,
-        value,
-        total: total
-      });
-    }
-    return installments;
-  };
-  
-  const installments = calculateInstallments(total);
-
   return (
     <div className="p-4 border rounded-lg space-y-4">
       <h4 className="font-medium text-primary border-b pb-2">Forma de Pagamento</h4>
