@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import AdminLayout from "@/components/admin/Layout";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import {
@@ -61,40 +60,38 @@ const AdminNews = () => {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Notícias</h1>
-          <Button onClick={() => setIsFormOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Notícia
-          </Button>
-        </div>
-
-        <NewsAIGenerator onNewsGenerated={refetchNews} />
-
-        <div className="bg-white rounded-lg shadow">
-          <NewsTable onEdit={handleEdit} onDelete={refetchNews} />
-        </div>
-
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar Notícia" : "Nova Notícia"}
-              </DialogTitle>
-            </DialogHeader>
-            <NewsForm 
-              editingId={editingId}
-              formData={formData}
-              setFormData={setFormData}
-              handleCloseForm={handleCloseForm}
-              refetch={refetchNews}
-            />
-          </DialogContent>
-        </Dialog>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Notícias</h1>
+        <Button onClick={() => setIsFormOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Notícia
+        </Button>
       </div>
-    </AdminLayout>
+
+      <NewsAIGenerator onNewsGenerated={refetchNews} />
+
+      <div className="bg-white rounded-lg shadow">
+        <NewsTable onEdit={handleEdit} onDelete={refetchNews} />
+      </div>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingId ? "Editar Notícia" : "Nova Notícia"}
+            </DialogTitle>
+          </DialogHeader>
+          <NewsForm 
+            editingId={editingId}
+            formData={formData}
+            setFormData={setFormData}
+            handleCloseForm={handleCloseForm}
+            refetch={refetchNews}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

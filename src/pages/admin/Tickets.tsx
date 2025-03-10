@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import AdminLayout from "@/components/admin/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import TicketFilters from "@/components/admin/tickets/TicketFilters";
 import TicketsList from "@/components/admin/tickets/TicketsList";
@@ -47,24 +46,22 @@ const AdminTickets = () => {
   });
 
   return (
-    <AdminLayout>
-      <div className="p-8">
-        <h1 className="text-2xl font-bold mb-6">Tickets de Suporte</h1>
-        
-        <TicketFilters 
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          statusFilter={statusFilter}
-          setStatusFilter={setStatusFilter}
-        />
-        
-        <TicketsList 
-          tickets={tickets} 
-          isLoading={isLoading} 
-          categoryLabels={categoryLabels} 
-        />
-      </div>
-    </AdminLayout>
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-6">Tickets de Suporte</h1>
+      
+      <TicketFilters 
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+      />
+      
+      <TicketsList 
+        tickets={tickets} 
+        isLoading={isLoading} 
+        categoryLabels={categoryLabels} 
+      />
+    </div>
   );
 };
 
