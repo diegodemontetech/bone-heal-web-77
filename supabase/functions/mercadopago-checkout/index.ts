@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer, paymentType = 'standard' } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer, paymentType })
+    const { orderId, items, shipping_cost, buyer } = await req.json()
+    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer })
 
     const access_token = Deno.env.get('MP_ACCESS_TOKEN')
     if (!access_token) {
@@ -63,8 +63,10 @@ serve(async (req) => {
       throw new Error("O valor total do pedido deve ser maior que zero")
     }
 
-    // Configuração base da preferência
-    let config = {
+    // Configuração para checkout padrão do MercadoPago
+    const app_url = Deno.env.get('APP_URL') || 'https://workshop.lovable.dev'
+    
+    const config = {
       items: preferenceItems,
       payer: {
         email: buyer.email,
@@ -72,61 +74,15 @@ serve(async (req) => {
       },
       external_reference: orderId,
       statement_descriptor: "BONEHEAL",
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      back_urls: {
+        success: `${app_url}/checkout/success`,
+        failure: `${app_url}/checkout/failure`,
+        pending: `${app_url}/checkout/pending`
+      },
+      auto_return: "approved",
+      expires: false
     };
-
-    // Configurar o método de pagamento baseado no tipo solicitado
-    if (paymentType === 'transparent') {
-      console.log("Configurando pagamento PIX");
-      
-      // Para pagamento PIX, usamos configuração própria sem excluí-lo
-      Object.assign(config, {
-        payment_methods: {
-          default_payment_method_id: "pix",
-          excluded_payment_types: [
-            { id: "credit_card" },
-            { id: "ticket" },
-            { id: "atm" },
-            { id: "debit_card" }
-          ],
-        }
-      });
-    } 
-    else if (paymentType === 'credit_card') {
-      console.log("Configurando pagamento com cartão de crédito");
-      
-      // Para pagamento com cartão, configuramos para aceitar apenas cartão
-      Object.assign(config, {
-        payment_methods: {
-          default_payment_method_id: "credit_card",
-          excluded_payment_types: [
-            { id: "ticket" },
-            { id: "atm" },
-            { id: "debit_card" },
-            { id: "pix" }
-          ],
-          installments: 12
-        }
-      });
-    }
-    else if (paymentType === 'standard') {
-      // Para checkout padrão, configuramos URLs de redirecionamento
-      console.log("Configurando checkout padrão");
-      
-      Object.assign(config, {
-        payment_methods: {
-          excluded_payment_types: [],
-          installments: 12
-        },
-        back_urls: {
-          success: `${Deno.env.get('APP_URL')}/checkout/success`,
-          failure: `${Deno.env.get('APP_URL')}/checkout/failure`,
-          pending: `${Deno.env.get('APP_URL')}/checkout/pending`
-        },
-        auto_return: "approved",
-        expires: false
-      });
-    }
 
     console.log("Preferência a ser enviada:", JSON.stringify(config, null, 2))
 

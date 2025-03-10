@@ -44,7 +44,7 @@ export const usePaymentProcessor = ({
       
       // Preparar os itens para o MercadoPago
       const orderItems = cartItems.map(item => ({
-        title: item.name,
+        title: String(item.name || '').substring(0, 256),
         quantity: item.quantity,
         price: item.price
       }));
@@ -55,18 +55,12 @@ export const usePaymentProcessor = ({
         email: profile?.email || ''
       };
 
-      // Determinar o tipo de pagamento para o MercadoPago
-      const mpPaymentType = 
-        paymentMethod === 'pix' ? 'transparent' : 
-        paymentMethod === 'credit_card' ? 'credit_card' : 
-        'standard';
-
       console.log("Dados para processamento:", {
         orderId,
         items: orderItems,
         shipping_cost: shippingInfo?.cost || 0,
         buyer: buyerInfo,
-        paymentType: mpPaymentType
+        paymentType: 'standard' // Forçando checkout padrão do MercadoPago
       });
 
       // Chamar a Edge Function do MercadoPago
@@ -76,7 +70,7 @@ export const usePaymentProcessor = ({
           items: orderItems,
           shipping_cost: shippingInfo?.cost || 0,
           buyer: buyerInfo,
-          paymentType: mpPaymentType
+          paymentType: 'standard' // Forçando checkout padrão do MercadoPago
         }
       });
 
@@ -90,31 +84,11 @@ export const usePaymentProcessor = ({
       // Registrar o pedido e pagamento no banco de dados
       await createOrderRecord(orderId, data);
 
-      // Processar de acordo com o método de pagamento
-      if (paymentMethod === 'standard') {
-        // Redirecionar para checkout do MercadoPago
+      // Redirecionar para checkout do MercadoPago
+      if (data?.init_point) {
         window.location.href = data.init_point;
-      } else if (paymentMethod === 'pix') {
-        // Verificar se a resposta contém os dados do PIX
-        if (data?.point_of_interaction?.transaction_data?.qr_code) {
-          // Extrair os dados do PIX
-          setPixCode(data.point_of_interaction.transaction_data.qr_code);
-          setPixQrCodeImage(data.point_of_interaction.transaction_data.qr_code_base64);
-          
-          // Não redireciona automaticamente, deixa o usuário copiar o código PIX
-          toast.success("PIX gerado com sucesso! Escaneie o QR code ou copie o código.");
-        } else {
-          console.error("Dados PIX não encontrados na resposta:", data);
-          throw new Error("Dados do PIX não retornados pelo MercadoPago. Por favor, tente novamente ou escolha outro método de pagamento.");
-        }
-      } else if (paymentMethod === 'credit_card') {
-        // Processar pagamento com cartão
-        if (data?.init_point) {
-          // Redirecionar para o Mercado Pago para processar o cartão
-          window.location.href = data.init_point;
-        } else {
-          toast.error("Não foi possível processar o pagamento com cartão. Tente novamente.");
-        }
+      } else {
+        toast.error("Não foi possível processar o pagamento. Tente novamente.");
       }
 
     } catch (error: any) {
@@ -149,7 +123,7 @@ export const usePaymentProcessor = ({
         user_id: profile?.id,
         amount: total + (shippingInfo?.cost || 0),
         status: 'pending',
-        payment_method: paymentMethod,
+        payment_method: 'mercadopago',
         preference_id: paymentData.id
       });
 

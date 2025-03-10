@@ -14,7 +14,7 @@ const Checkout = () => {
   const { profile, isLoading: profileLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [paymentMethod, setPaymentMethod] = useState("pix");
+  const [paymentMethod, setPaymentMethod] = useState("standard"); // Definindo padrão como "standard"
   const [pixCode, setPixCode] = useState("");
   const [pixQrCodeImage, setPixQrCodeImage] = useState("");
   const [orderId, setOrderId] = useState<string | undefined>(undefined);
