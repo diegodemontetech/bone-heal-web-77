@@ -1,10 +1,28 @@
 
 import { useEffect } from "react";
 import ShippingRatesTable from "@/components/admin/shipping/ShippingRatesTable";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminShippingRates = () => {
   useEffect(() => {
     console.log("Renderizando página de taxas de frete");
+    
+    // Verificar a conexão com o Supabase
+    const checkConnection = async () => {
+      try {
+        const { data, error } = await supabase.from('shipping_rates').select('count(*)', { count: 'exact' });
+        
+        if (error) {
+          console.error("Erro ao verificar conexão com tabela shipping_rates:", error);
+        } else {
+          console.log("Conexão com Supabase verificada com sucesso. Contagem de taxas:", data);
+        }
+      } catch (err) {
+        console.error("Falha ao testar conexão com Supabase:", err);
+      }
+    };
+    
+    checkConnection();
   }, []);
   
   return (

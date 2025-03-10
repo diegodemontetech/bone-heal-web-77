@@ -17,28 +17,37 @@ export const useShippingRates = () => {
     queryFn: async () => {
       console.log("Buscando taxas de frete do Supabase...");
       
-      const { data, error } = await supabase
-        .from("shipping_rates")
-        .select("*")
-        .order("state", { ascending: true })
-        .order("region_type", { ascending: true })
-        .order("service_type", { ascending: true });
+      try {
+        const { data, error, status, statusText } = await supabase
+          .from("shipping_rates")
+          .select("*")
+          .order("state", { ascending: true })
+          .order("region_type", { ascending: true })
+          .order("service_type", { ascending: true });
 
-      if (error) {
-        console.error("Erro ao buscar taxas de frete:", error);
-        toast.error("Erro ao carregar taxas de frete");
-        throw error;
+        if (error) {
+          console.error("Erro ao buscar taxas de frete:", error);
+          console.error("Status HTTP:", status, statusText);
+          console.error("Detalhes do erro:", error.details, error.hint, error.message);
+          toast.error(`Erro ao carregar taxas de frete: ${error.message}`);
+          throw error;
+        }
+        
+        console.log(`Taxas de frete encontradas: ${data?.length || 0}`);
+        if (data?.length) {
+          console.log("Exemplo de taxa recuperada:", data[0]);
+        } else {
+          console.log("Nenhuma taxa de frete encontrada no banco");
+        }
+        
+        return data as ShippingRate[];
+      } catch (err: any) {
+        console.error("Erro na consulta:", err);
+        toast.error("Falha na comunicação com o banco de dados");
+        throw err;
       }
-      
-      console.log(`Taxas de frete encontradas: ${data?.length || 0}`);
-      if (data?.length) {
-        console.log("Amostra de taxa:", data[0]);
-      } else {
-        console.log("Nenhuma taxa de frete encontrada no banco");
-      }
-      
-      return data as ShippingRate[];
     },
+    retry: 1,
   });
 
   // Monitorar quando os dados são carregados
