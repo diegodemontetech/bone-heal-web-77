@@ -59,14 +59,10 @@ const Orders = () => {
 
   if (profileLoading || ordersLoading) {
     return (
-      <div className="container mx-auto p-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="p-6">
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
       </div>
     );
   }
@@ -76,7 +72,7 @@ const Orders = () => {
   }
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="p-6">
       <Card>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">

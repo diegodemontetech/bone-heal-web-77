@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth-context";
-import { adminNavigationItems, NavigationItem } from "./AdminNavigationItems";
+import { adminNavigationItems } from "./AdminNavigationItems";
 
 interface AdminSidebarProps {
   onCloseMobile?: () => void;
@@ -47,7 +47,7 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
       </div>
       <ScrollArea className="flex-1 py-2">
         <nav className="grid gap-1 px-2">
-          {filteredNavigationItems.map((item: NavigationItem) => (
+          {filteredNavigationItems.map((item) => (
             <Link
               key={item.href}
               to={item.href}
