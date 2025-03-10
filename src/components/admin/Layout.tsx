@@ -1,9 +1,14 @@
 
+import { ReactNode } from "react";
 import { Outlet } from "react-router-dom";
 import { AdminSidebar } from "./navigation/AdminSidebar";
 import { AdminMobileNav } from "./navigation/AdminMobileNav";
 
-const Layout = () => {
+interface LayoutProps {
+  children?: ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="flex min-h-screen">
       <div className="hidden md:block">
@@ -13,7 +18,7 @@ const Layout = () => {
       </div>
       <AdminMobileNav />
       <main className="flex-1 bg-gray-50">
-        <Outlet />
+        {children || <Outlet />}
       </main>
     </div>
   );
