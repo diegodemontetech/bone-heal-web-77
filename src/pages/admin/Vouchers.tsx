@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import VoucherDialog from "@/components/admin/vouchers/VoucherDialog";
 import VouchersList from "@/components/admin/vouchers/VouchersList";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Ticket } from "lucide-react";
 
 const AdminVouchers = () => {
   const { data: vouchers, isLoading, error, refetch } = useQuery({
@@ -16,7 +16,10 @@ const AdminVouchers = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao carregar cupons:", error);
+        throw error;
+      }
       return data;
     },
   });
@@ -24,7 +27,10 @@ const AdminVouchers = () => {
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Cupons de Desconto</h1>
+        <div className="flex items-center gap-2">
+          <Ticket className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Cupons de Desconto</h1>
+        </div>
         <VoucherDialog onSuccess={refetch} />
       </div>
 
@@ -38,8 +44,13 @@ const AdminVouchers = () => {
       )}
 
       <Card>
-        <CardHeader className="pb-0">
-          <CardTitle className="text-lg">Lista de Cupons</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            Lista de Cupons
+            <span className="ml-2 text-sm text-muted-foreground font-normal">
+              {vouchers?.length || 0} {vouchers?.length === 1 ? 'cupom' : 'cupons'}
+            </span>
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <VouchersList 

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface Voucher {
   id: string;
@@ -21,6 +22,9 @@ interface Voucher {
   valid_until: string | null;
   max_uses: number | null;
   current_uses: number;
+  min_amount: number | null;
+  min_items: number | null;
+  payment_method: string | null;
 }
 
 interface VouchersListProps {
@@ -51,16 +55,26 @@ const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
       setDeletingId(null);
     }
   };
+  
+  const formatPaymentMethod = (method: string | null) => {
+    if (!method) return "Qualquer";
+    switch(method) {
+      case 'credit_card': return 'Cartão de Crédito';
+      case 'boleto': return 'Boleto';
+      case 'pix': return 'PIX';
+      default: return method;
+    }
+  };
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Código</TableHead>
-          <TableHead>Tipo</TableHead>
-          <TableHead>Valor</TableHead>
-          <TableHead>Válido até</TableHead>
+          <TableHead>Desconto</TableHead>
+          <TableHead>Validade</TableHead>
           <TableHead>Usos</TableHead>
+          <TableHead>Condições</TableHead>
           <TableHead>Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -82,18 +96,59 @@ const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
             <TableRow key={voucher.id}>
               <TableCell className="font-medium">{voucher.code}</TableCell>
               <TableCell>
-                {voucher.discount_type === 'percentage' ? 'Percentual' :
-                 voucher.discount_type === 'fixed' ? 'Valor Fixo' : 'Frete Grátis'}
+                {voucher.discount_type === 'percentage' ? (
+                  <Badge variant="outline" className="bg-blue-50">
+                    {voucher.discount_value}%
+                  </Badge>
+                ) : voucher.discount_type === 'fixed' ? (
+                  <Badge variant="outline" className="bg-green-50">
+                    R$ {voucher.discount_value.toFixed(2)}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-amber-50">
+                    Frete Grátis
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>
-                {voucher.discount_type === 'percentage' ? `${voucher.discount_value}%` :
-                 voucher.discount_type === 'fixed' ? `R$ ${voucher.discount_value.toFixed(2)}` : 'Grátis'}
+                {voucher.valid_until ? (
+                  new Date(voucher.valid_until).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })
+                ) : (
+                  <span className="text-gray-500">Sem limite</span>
+                )}
               </TableCell>
               <TableCell>
-                {voucher.valid_until ? new Date(voucher.valid_until).toLocaleDateString('pt-BR') : 'Sem limite'}
+                <span className="whitespace-nowrap">
+                  {voucher.current_uses || 0}/{voucher.max_uses ? 
+                    voucher.max_uses : 
+                    <span className="text-gray-500">∞</span>}
+                </span>
               </TableCell>
               <TableCell>
-                {voucher.current_uses || 0}/{voucher.max_uses || '∞'}
+                <div className="flex flex-col gap-1 text-sm">
+                  {voucher.payment_method && (
+                    <span className="whitespace-nowrap">
+                      Pagamento: {formatPaymentMethod(voucher.payment_method)}
+                    </span>
+                  )}
+                  {voucher.min_amount && (
+                    <span className="whitespace-nowrap">
+                      Min: R$ {voucher.min_amount.toFixed(2)}
+                    </span>
+                  )}
+                  {voucher.min_items && (
+                    <span className="whitespace-nowrap">
+                      Min: {voucher.min_items} {voucher.min_items === 1 ? 'item' : 'itens'}
+                    </span>
+                  )}
+                  {!voucher.payment_method && !voucher.min_amount && !voucher.min_items && (
+                    <span className="text-gray-500">Sem condições</span>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <Button

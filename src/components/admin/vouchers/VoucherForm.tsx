@@ -28,7 +28,8 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
     max_uses: "",
     min_amount: "",
     min_items: "",
-    current_uses: 0
+    current_uses: 0,
+    payment_method: "" // Nova opção para forma de pagamento
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +46,7 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
       }
 
       // Garantindo que todos os valores numéricos sejam tratados corretamente
+      // e campos vazios sejam enviados como null para o banco
       const preparedData = {
         ...formData,
         code: formData.code.toUpperCase().trim(),
@@ -53,7 +55,8 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
         min_amount: formData.min_amount ? parseFloat(formData.min_amount) : null,
         min_items: formData.min_items ? parseInt(formData.min_items, 10) : null,
         current_uses: 0,
-        valid_until: formData.valid_until || null
+        valid_until: formData.valid_until || null,
+        payment_method: formData.payment_method || null
       };
       
       // Log para debug
@@ -87,6 +90,7 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
           required
           value={formData.code}
           onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+          placeholder="EX: BONEHEAL10"
         />
       </div>
 
@@ -118,12 +122,16 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
             required
             value={formData.discount_value}
             onChange={(e) => setFormData(prev => ({ ...prev, discount_value: e.target.value }))}
+            step={formData.discount_type === "percentage" ? "1" : "0.01"}
+            min={0}
+            max={formData.discount_type === "percentage" ? 100 : undefined}
+            placeholder={formData.discount_type === "percentage" ? "Ex: 10" : "Ex: 50.00"}
           />
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="valid_until">Válido até</Label>
+        <Label htmlFor="valid_until">Válido até (deixe em branco para validade ilimitada)</Label>
         <Input
           id="valid_until"
           type="datetime-local"
@@ -133,32 +141,57 @@ const VoucherForm = ({ onSuccess }: VoucherFormProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="max_uses">Limite de Usos</Label>
+        <Label htmlFor="max_uses">Limite de Usos (deixe em branco para usos ilimitados)</Label>
         <Input
           id="max_uses"
           type="number"
           value={formData.max_uses}
           onChange={(e) => setFormData(prev => ({ ...prev, max_uses: e.target.value }))}
+          min={1}
+          placeholder="Sem limite"
         />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="payment_method">Método de Pagamento (deixe em branco para todos)</Label>
+        <Select
+          value={formData.payment_method}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Qualquer método de pagamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Qualquer método</SelectItem>
+            <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+            <SelectItem value="boleto">Boleto</SelectItem>
+            <SelectItem value="pix">PIX</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="min_amount">Valor Mínimo da Compra</Label>
+        <Label htmlFor="min_amount">Valor Mínimo da Compra (deixe em branco se não houver)</Label>
         <Input
           id="min_amount"
           type="number"
           value={formData.min_amount}
           onChange={(e) => setFormData(prev => ({ ...prev, min_amount: e.target.value }))}
+          min={0}
+          step="0.01"
+          placeholder="Sem valor mínimo"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="min_items">Quantidade Mínima de Itens</Label>
+        <Label htmlFor="min_items">Quantidade Mínima de Itens (deixe em branco se não houver)</Label>
         <Input
           id="min_items"
           type="number"
           value={formData.min_items}
           onChange={(e) => setFormData(prev => ({ ...prev, min_items: e.target.value }))}
+          min={1}
+          placeholder="Sem quantidade mínima"
         />
       </div>
 
