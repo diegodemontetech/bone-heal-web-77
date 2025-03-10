@@ -8,11 +8,12 @@ import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { ShoppingBag, CreditCard, QrCode, Loader2 } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CheckoutLoader from "@/components/checkout/CheckoutLoader";
+import PaymentTabs from "@/components/checkout/PaymentTabs";
+import CheckoutSummary from "@/components/checkout/CheckoutSummary";
 
 const Checkout = () => {
   const { cartItems, total: cartTotal, clear } = useCart();
@@ -45,12 +46,7 @@ const Checkout = () => {
 
   // Se estiver carregando o perfil, mostrar loader
   if (profileLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Carregando suas informações...</span>
-      </div>
-    );
+    return <CheckoutLoader />;
   }
 
   // Função para processar o pagamento
@@ -187,166 +183,24 @@ const Checkout = () => {
                 <CardTitle className="text-xl">Informações de Pagamento</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="pix" className="w-full" onValueChange={setPaymentMethod}>
-                  <TabsList className="grid grid-cols-3 mb-6">
-                    <TabsTrigger value="pix" className="flex items-center">
-                      <QrCode className="h-4 w-4 mr-2" />
-                      <span>PIX</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="credit_card" className="flex items-center">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      <span>Cartão</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="standard" className="flex items-center">
-                      <ShoppingBag className="h-4 w-4 mr-2" />
-                      <span>Checkout MP</span>
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="pix">
-                    <div className="space-y-4">
-                      {pixCode ? (
-                        <div className="flex flex-col items-center p-6 border rounded-md">
-                          <h3 className="font-medium text-lg mb-4">Pagamento PIX gerado!</h3>
-                          <p className="text-sm text-gray-600 mb-4">
-                            Escaneie o QR code abaixo ou copie o código PIX:
-                          </p>
-                          
-                          {pixQrCodeImage && (
-                            <div className="mb-4 p-4 bg-white rounded-lg shadow-sm">
-                              <img 
-                                src={`data:image/png;base64,${pixQrCodeImage}`}
-                                alt="QR Code PIX" 
-                                className="h-48 w-48 mx-auto"
-                              />
-                            </div>
-                          )}
-                          
-                          <div className="w-full p-3 bg-gray-100 rounded-md mb-4 text-center overflow-hidden">
-                            <code className="text-xs break-all">{pixCode}</code>
-                          </div>
-                          
-                          <Button 
-                            variant="outline" 
-                            onClick={() => {
-                              navigator.clipboard.writeText(pixCode);
-                              toast.success("Código PIX copiado!");
-                            }}
-                          >
-                            Copiar código PIX
-                          </Button>
-                          
-                          <div className="mt-4 text-sm text-center text-green-600">
-                            Após o pagamento, você receberá a confirmação e poderá acompanhar o pedido na área "Meus Pedidos".
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <p className="text-sm text-gray-600">
-                            O pagamento via PIX é rápido, seguro e sem taxas. Após clicar em "Finalizar compra", 
-                            você receberá um QR code para escanear com seu aplicativo bancário.
-                          </p>
-                          
-                          <div className="flex items-center p-4 bg-blue-50 text-blue-800 rounded-md text-sm">
-                            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            O pagamento é processado instantaneamente após a confirmação do PIX.
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="credit_card">
-                    <div className="p-4 bg-yellow-50 rounded-md border border-yellow-200">
-                      <p className="text-yellow-800">
-                        Pagamento com cartão de crédito será implementado em breve. Por favor, utilize outra forma de pagamento.
-                      </p>
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="standard">
-                    <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Você será redirecionado para a página de pagamento do MercadoPago, onde poderá escolher entre diversas formas de pagamento.
-                      </p>
-                      
-                      <div className="flex items-center p-4 bg-blue-50 text-blue-800 rounded-md text-sm">
-                        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Após finalizar o pagamento no MercadoPago, você retornará automaticamente para nossa loja.
-                      </div>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-                
-                <div className="mt-6">
-                  <Button 
-                    className="w-full h-12"
-                    onClick={processPayment}
-                    disabled={isProcessing || !!pixCode}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processando...
-                      </>
-                    ) : pixCode ? (
-                      <>Pagamento PIX gerado</>
-                    ) : (
-                      <>Finalizar compra</>
-                    )}
-                  </Button>
-                </div>
+                <PaymentTabs 
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  processPayment={processPayment}
+                  isProcessing={isProcessing}
+                  pixCode={pixCode}
+                  pixQrCodeImage={pixQrCodeImage}
+                />
               </CardContent>
             </Card>
           </div>
           
           <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumo do Pedido</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    {cartItems.map((item) => (
-                      <div key={item.id} className="flex justify-between">
-                        <span>{item.name} x{item.quantity}</span>
-                        <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>R$ {cartTotal.toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span>Frete</span>
-                    <span>
-                      {shippingInfo?.cost 
-                        ? `R$ ${shippingInfo.cost.toFixed(2)}` 
-                        : "Calculando..."}
-                    </span>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>
-                      R$ {(cartTotal + (shippingInfo?.cost || 0)).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <CheckoutSummary 
+              cartItems={cartItems}
+              shippingInfo={shippingInfo}
+              cartTotal={cartTotal}
+            />
           </div>
         </div>
       </div>
