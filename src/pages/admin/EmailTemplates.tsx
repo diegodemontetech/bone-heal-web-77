@@ -2,155 +2,128 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import AdminLayout from "@/components/admin/Layout";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailTemplateForm } from "@/components/admin/EmailTemplateForm";
 import { EmailLogs } from "@/components/admin/EmailLogs";
 
-export const EmailTemplates = () => {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+const EmailTemplates = () => {
+  const [selectedTab, setSelectedTab] = useState("templates");
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const { data: templates, refetch } = useQuery({
+  const { data: templates, isLoading, refetch } = useQuery({
     queryKey: ["email-templates"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("email_templates")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("name");
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
-  const handleToggleActive = async (id: string, currentActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("email_templates")
-        .update({ active: !currentActive })
-        .eq("id", id);
-
-      if (error) throw error;
-      
-      toast.success("Template atualizado com sucesso!");
-      refetch();
-    } catch (error: any) {
-      toast.error("Erro ao atualizar template: " + error.message);
-    }
-  };
-
   const handleEdit = (template: any) => {
-    setSelectedTemplate(template);
-    setIsEditDialogOpen(true);
+    setEditingTemplate(template);
+    setIsCreating(false);
+    setSelectedTab("edit");
   };
+
+  const handleCreate = () => {
+    setEditingTemplate(null);
+    setIsCreating(true);
+    setSelectedTab("create");
+  };
+
+  const handleSuccess = () => {
+    refetch();
+    setSelectedTab("templates");
+    setEditingTemplate(null);
+    setIsCreating(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
-    <AdminLayout>
-      <div className="container mx-auto p-4">
-        <Tabs defaultValue="templates">
-          <TabsList>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="logs">Logs</TabsTrigger>
-          </TabsList>
+    <div className="container p-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Templates de Email</CardTitle>
+          <Button onClick={handleCreate}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Template
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+            <TabsList>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+              {isCreating && <TabsTrigger value="create">Criar</TabsTrigger>}
+              {editingTemplate && <TabsTrigger value="edit">Editar</TabsTrigger>}
+            </TabsList>
 
-          <TabsContent value="templates">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h1 className="text-2xl font-bold">Templates de Email</h1>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button>Novo Template</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Novo Template de Email</DialogTitle>
-                      </DialogHeader>
-                      <EmailTemplateForm onSuccess={() => refetch()} />
-                    </DialogContent>
-                  </Dialog>
+            <TabsContent value="templates" className="space-y-4 mt-6">
+              {templates && templates.length > 0 ? (
+                <div className="grid gap-4">
+                  {templates.map((template) => (
+                    <Card key={template.id}>
+                      <CardContent className="p-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-semibold">{template.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Evento: {template.event_type}
+                          </p>
+                        </div>
+                        <Button variant="outline" onClick={() => handleEdit(template)}>
+                          Editar
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
+              ) : (
+                <div className="text-center py-10">
+                  <p>Nenhum template encontrado.</p>
+                  <Button onClick={handleCreate} className="mt-4">
+                    Criar Template
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Evento</TableHead>
-                      <TableHead>Assunto</TableHead>
-                      <TableHead>Ativo</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {templates?.map((template) => (
-                      <TableRow key={template.id}>
-                        <TableCell>{template.name}</TableCell>
-                        <TableCell>{template.event_type}</TableCell>
-                        <TableCell>{template.subject}</TableCell>
-                        <TableCell>
-                          <Switch
-                            checked={template.active}
-                            onCheckedChange={() => handleToggleActive(template.id, template.active)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(template)}
-                          >
-                            Editar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="logs" className="mt-6">
+              <EmailLogs />
+            </TabsContent>
 
-          <TabsContent value="logs">
-            <EmailLogs />
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="create" className="mt-6">
+              {isCreating && (
+                <EmailTemplateForm onSuccess={handleSuccess} />
+              )}
+            </TabsContent>
 
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Editar Template</DialogTitle>
-            </DialogHeader>
-            <EmailTemplateForm 
-              template={selectedTemplate}
-              onSuccess={() => {
-                refetch();
-                setIsEditDialogOpen(false);
-              }}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
-    </AdminLayout>
+            <TabsContent value="edit" className="mt-6">
+              {editingTemplate && (
+                <EmailTemplateForm
+                  template={editingTemplate}
+                  onSuccess={handleSuccess}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LogOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,10 +14,6 @@ interface AdminSidebarProps {
 export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
   const { pathname } = useLocation();
   const { signOut, isAdminMaster, hasPermission } = useAuth();
-  
-  // Adicionar logs para debug
-  console.log("Auth state:", { isAdminMaster, hasPermission });
-  console.log("Menu items:", adminNavigationItems);
   
   const handleSignOut = async () => {
     try {
@@ -48,12 +43,9 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
       <ScrollArea className="flex-1 py-2">
         <nav className="grid gap-1 px-2">
           {adminNavigationItems.map((item: NavigationItem) => {
-            // Verificar se o usuário tem permissão para acessar o item e fazer log para debug
             const hasAccess = item.permission === null || 
                              isAdminMaster || 
                              (item.permission && hasPermission(item.permission));
-            
-            console.log(`Menu item: ${item.title}, Permission: ${item.permission}, HasAccess: ${hasAccess}`);
             
             if (!hasAccess) return null;
             
