@@ -10,8 +10,8 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   return (
-    <div className="flex min-h-screen">
-      {/* Desktop Sidebar */}
+    <div className="flex min-h-screen w-full">
+      {/* Desktop Sidebar - Visible apenas em telas médias e maiores */}
       <div className="hidden md:block">
         <div className="h-screen w-64 border-r">
           <AdminSidebar />

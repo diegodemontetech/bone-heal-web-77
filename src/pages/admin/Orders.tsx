@@ -1,41 +1,20 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSession } from "@supabase/auth-helpers-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
+import AdminLayout from "@/components/admin/Layout";
 import CreateOrder from "@/components/admin/CreateOrder";
 import OrdersKanban from "@/components/admin/orders/OrdersKanban";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
-  const navigate = useNavigate();
-  const session = useSession();
-
-  // Verificar se o usuário é admin
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["profile", session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user?.id) return null;
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
 
   // Buscar pedidos
-  const { data: orders, isLoading: ordersLoading, refetch } = useQuery({
+  const { data: orders, isLoading, refetch } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -51,59 +30,74 @@ const Orders = () => {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar pedidos:", error);
+        throw error;
+      }
+      
+      console.log("Pedidos carregados:", data);
       return data;
     },
-    enabled: !!profile?.is_admin,
   });
 
-  if (profileLoading || ordersLoading) {
+  if (isLoading) {
     return (
-      <div className="p-6">
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <AdminLayout>
+        <div className="p-6 flex justify-center items-center h-[calc(100vh-100px)]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-      </div>
+      </AdminLayout>
     );
   }
 
-  if (!profile?.is_admin) {
-    return null;
-  }
-
   return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Gerenciamento de Pedidos</h1>
-            <Button onClick={() => setIsCreating(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Pedido
-            </Button>
-          </div>
+    <AdminLayout>
+      <div className="p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold">Gerenciamento de Pedidos</h1>
+              <Button onClick={() => setIsCreating(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Pedido
+              </Button>
+            </div>
 
-          <Tabs defaultValue="kanban" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="kanban">Kanban</TabsTrigger>
-              <TabsTrigger value="create" disabled={!isCreating}>
-                Criar Pedido
-              </TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="kanban" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="kanban">Kanban</TabsTrigger>
+                <TabsTrigger value="create" disabled={!isCreating}>
+                  Criar Pedido
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="kanban">
-              <OrdersKanban orders={orders} refetchOrders={refetch} />
-            </TabsContent>
+              <TabsContent value="kanban">
+                {orders && orders.length > 0 ? (
+                  <OrdersKanban orders={orders} refetchOrders={refetch} />
+                ) : (
+                  <div className="text-center py-16 bg-gray-50 rounded-md">
+                    <p className="text-gray-500">Nenhum pedido encontrado</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setIsCreating(true)}
+                    >
+                      Criar novo pedido
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
 
-            <TabsContent value="create">
-              {isCreating && (
-                <CreateOrder onCancel={() => setIsCreating(false)} />
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+              <TabsContent value="create">
+                {isCreating && (
+                  <CreateOrder onCancel={() => setIsCreating(false)} />
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </AdminLayout>
   );
 };
 
