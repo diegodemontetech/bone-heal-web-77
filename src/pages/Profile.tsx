@@ -71,7 +71,6 @@ const Profile = () => {
   }
 
   // Se não tem perfil mas tem sessão válida, ainda mostrar o formulário de perfil
-  // pois pode estar em processo de sincronização
   if (!profile && hasValidSession) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -91,10 +90,12 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <div className="container mx-auto p-4 flex-1">
-        <ProfileForm />
+        <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm p-6 md:p-8">
+          <ProfileForm />
+        </div>
       </div>
       <Footer />
       <WhatsAppWidget />

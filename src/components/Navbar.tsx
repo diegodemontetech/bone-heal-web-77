@@ -11,12 +11,20 @@ export default function Navbar() {
   const isMobile = useIsMobile();
   
   return (
-    <div className="bg-background border-b">
+    <div className="bg-background border-b sticky top-0 z-50">
       <div className="container flex items-center justify-between py-2">
-        <Logo />
-        {!isMobile && <NavItems />}
-        {!isMobile && <UserMenu session={session} />}
-        {isMobile && <MobileMenu session={session} />}
+        <div className="flex items-center">
+          <Logo />
+        </div>
+        
+        <div className="hidden md:flex items-center justify-center flex-1">
+          <NavItems />
+        </div>
+        
+        <div className="flex items-center justify-end">
+          {!isMobile && <UserMenu session={session} />}
+          {isMobile && <MobileMenu session={session} />}
+        </div>
       </div>
     </div>
   );

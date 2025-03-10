@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 
 export const ProfileForm = () => {
   const { profile, refreshProfile } = useAuth();
@@ -74,29 +74,56 @@ export const ProfileForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold mb-6">Meu Perfil</h1>
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <div className="border-b pb-4 mb-6">
+        <h1 className="text-2xl font-bold text-primary">Meu Perfil</h1>
+        <p className="text-sm text-gray-500 mt-1">Gerencie suas informações pessoais e de contato</p>
+      </div>
       
-      <PersonalInfoSection 
-        formData={formData} 
-        handleChange={handleChange} 
-        handleSelectChange={handleSelectChange} 
-      />
+      <div className="bg-gray-50 p-5 rounded-lg border">
+        <h2 className="text-lg font-medium mb-4">Informações Pessoais</h2>
+        <PersonalInfoSection 
+          formData={formData} 
+          handleChange={handleChange} 
+          handleSelectChange={handleSelectChange} 
+        />
+      </div>
       
-      <AddressSection 
-        formData={formData} 
-        handleChange={handleChange} 
-        handleSelectChange={handleSelectChange}
-        setFormData={setFormData}
-      />
+      <div className="bg-gray-50 p-5 rounded-lg border">
+        <h2 className="text-lg font-medium mb-4">Informações de Contato</h2>
+        <ContactInfoSection 
+          formData={formData} 
+          handleChange={handleChange} 
+        />
+      </div>
       
-      <OmieStatusSection />
+      <div className="bg-gray-50 p-5 rounded-lg border">
+        <h2 className="text-lg font-medium mb-4">Endereço</h2>
+        <AddressSection 
+          formData={formData} 
+          handleChange={handleChange} 
+          handleSelectChange={handleSelectChange}
+          setFormData={setFormData}
+        />
+      </div>
       
-      <TicketsSection />
+      <div className="bg-gray-50 p-5 rounded-lg border">
+        <h2 className="text-lg font-medium mb-4">Status da Integração Omie</h2>
+        <OmieStatusSection />
+      </div>
+      
+      <div className="bg-gray-50 p-5 rounded-lg border">
+        <h2 className="text-lg font-medium mb-4">Meus Chamados</h2>
+        <TicketsSection />
+      </div>
       
       <div className="pt-4 flex justify-end">
-        <Button type="submit" disabled={loading}>
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="px-6" disabled={loading}>
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
           Salvar Alterações
         </Button>
       </div>
