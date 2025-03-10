@@ -13,7 +13,6 @@ export const NavItems = ({ mobile = false }: NavItemsProps) => {
     { href: "/products", label: "Produtos" },
     { href: "/studies", label: "Estudos" },
     { href: "/news", label: "Notícias" },
-    { href: "/how-it-works", label: "Como Funciona" },
     { href: "/contact", label: "Contato" },
   ];
 
