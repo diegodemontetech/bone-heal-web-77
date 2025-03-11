@@ -6,6 +6,7 @@ import { UserPermission } from "@/types/auth";
 
 // Admin Users
 const AdminUsers = lazy(() => import("@/pages/admin/Users"));
+const AdminUserDetail = lazy(() => import("@/pages/admin/UserDetail"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -30,7 +31,7 @@ export const userRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_USERS}>
-          <AdminUsers />
+          <AdminUserDetail />
         </ProtectedRoute>
       </Suspense>
     )
