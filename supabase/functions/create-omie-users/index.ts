@@ -20,22 +20,7 @@ async function criarUsuariosOmie() {
   const stats = { created: 0, skipped: 0, errors: 0, updated: 0 };
 
   try {
-    // Primeiro, encontrar todos os CNPJs/CPFs exclusivos na tabela pedidos_omie
-    const { data: clientesComPedidos, error: pedidosError } = await supabase
-      .from('pedidos_omie')
-      .select('cnpj_cpf')
-      .not('cnpj_cpf', 'is', null);
-
-    if (pedidosError) {
-      throw new Error(`Erro ao buscar pedidos: ${pedidosError.message}`);
-    }
-
-    console.log(`Encontrados ${clientesComPedidos?.length || 0} CPFs/CNPJs únicos em pedidos`);
-    
-    // Criar um Set para busca rápida
-    const cnpjsComPedidos = new Set(clientesComPedidos.map(p => p.cnpj_cpf));
-    
-    // Buscar clientes que têm pedidos
+    // Buscar clientes sem usuário associado
     const { data: clientes, error: clientesError } = await supabase
       .from('clientes_omie')
       .select(`
@@ -67,12 +52,6 @@ async function criarUsuariosOmie() {
     // Processar todos os clientes, mesmo os que não têm pedidos
     for (const cliente of clientes || []) {
       try {
-        // Verificar se o cliente tem pedidos
-        const temPedidos = cnpjsComPedidos.has(cliente.cnpj_cpf);
-        if (!temPedidos) {
-          console.log(`Cliente ${cliente.nome_cliente} (${cliente.cnpj_cpf}) sem pedidos, mas será criado mesmo assim`);
-        }
-
         // Verificar se o email é válido
         if (!cliente.email || !cliente.email.match(/^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$/)) {
           console.log(`Cliente ${cliente.nome_cliente} com email inválido: ${cliente.email}, pulando...`);
