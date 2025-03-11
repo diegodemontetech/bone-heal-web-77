@@ -1,45 +1,11 @@
 
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth-context";
+import { lazy, Suspense } from "react";
+import { useTickets } from "@/hooks/admin/use-tickets";
 import CreateTicketDialog from "@/components/admin/tickets/CreateTicketDialog";
 import TicketsContent from "@/components/admin/tickets/TicketsContent";
 
 const AdminTickets = () => {
-  const { profile, isAdminMaster, hasPermission } = useAuth();
-
-  console.log("Auth no Tickets:", { profile, isAdminMaster, hasPermission });
-
-  // Buscar tickets com filtros
-  const { data: tickets, isLoading, refetch } = useQuery({
-    queryKey: ["tickets"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select(`
-          *,
-          customer:customer_id(full_name, email),
-          assigned:assigned_to(full_name)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: agents } = useQuery({
-    queryKey: ["agents"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .eq("is_admin", true);
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { tickets, isLoading, refetch, agents } = useTickets();
 
   return (
     <div className="p-8">
