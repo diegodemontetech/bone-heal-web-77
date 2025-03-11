@@ -12,4 +12,5 @@ export interface Voucher {
   is_active: boolean;
   created_at: string;
   payment_method?: string | null;
+  min_items?: number | null;
 }

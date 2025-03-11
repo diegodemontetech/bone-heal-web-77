@@ -18,6 +18,7 @@ export const useVouchers = () => {
     valid_from: new Date().toISOString().split('T')[0],
     valid_until: "",
     min_amount: "",
+    min_items: "",
     payment_method: "",
     is_active: true
   });
@@ -68,6 +69,7 @@ export const useVouchers = () => {
       valid_from: new Date().toISOString().split('T')[0],
       valid_until: "",
       min_amount: "",
+      min_items: "",
       payment_method: "",
       is_active: true
     });
@@ -85,6 +87,7 @@ export const useVouchers = () => {
       valid_from: new Date(voucher.valid_from).toISOString().split('T')[0],
       valid_until: voucher.valid_until ? new Date(voucher.valid_until).toISOString().split('T')[0] : "",
       min_amount: voucher.min_amount?.toString() || "",
+      min_items: voucher.min_items?.toString() || "",
       payment_method: voucher.payment_method || "",
       is_active: voucher.is_active
     });
@@ -107,6 +110,7 @@ export const useVouchers = () => {
         valid_from: formData.valid_from,
         valid_until: formData.valid_until || null,
         min_amount: formData.min_amount ? Number(formData.min_amount) : null,
+        min_items: formData.min_items ? Number(formData.min_items) : null,
         payment_method: formData.payment_method || null,
         is_active: formData.is_active
       };

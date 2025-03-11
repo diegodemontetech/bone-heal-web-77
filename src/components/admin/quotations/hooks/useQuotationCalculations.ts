@@ -23,7 +23,7 @@ export const useQuotationCalculations = (
       return 0;
     }
     
-    // Se não tiver cupom, usa o desconto manual
+    // Se não tiver cupom, usa o desconto manual (mantido para retrocompatibilidade)
     if (discountType === "percentage") {
       return subtotal * (discount / 100);
     } else {

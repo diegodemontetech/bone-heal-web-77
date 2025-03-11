@@ -117,6 +117,19 @@ export const VoucherForm = ({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor="min_items">Quantidade Mínima de Itens</Label>
+        <Input
+          id="min_items"
+          name="min_items"
+          type="number"
+          min="0"
+          value={formData.min_items}
+          onChange={handleInputChange}
+          placeholder="1"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="valid_from">Válido a partir de</Label>
