@@ -37,7 +37,7 @@ export function Routes() {
 
         {/* Rotas de Admin */}
         <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
-          {adminRoutes.children.map((route, index) => (
+          {adminRoutes.children?.map((route, index) => (
             <Route key={index} path={route.path} element={route.element} />
           ))}
         </Route>
