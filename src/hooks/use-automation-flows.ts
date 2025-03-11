@@ -73,8 +73,10 @@ export const useAutomationFlows = () => {
         description: "Fluxo de trabalho criado com sucesso",
       });
 
-      setFlows([data, ...flows]);
-      return data;
+      // Adiciona o novo fluxo ao state e retorna
+      const newFlow = data as Flow;
+      setFlows((prevFlows) => [newFlow, ...prevFlows]);
+      return newFlow;
     } catch (error) {
       console.error("Erro ao criar fluxo:", error);
       toast({
@@ -82,10 +84,11 @@ export const useAutomationFlows = () => {
         description: "Não foi possível criar o fluxo de trabalho",
         variant: "destructive",
       });
-      return null;
+      throw error; // Propaga o erro para ser tratado no componente
     }
   };
 
+  // ... manter o código existente para as outras funções
   const deleteFlow = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este fluxo de trabalho?")) return false;
 
@@ -146,8 +149,9 @@ export const useAutomationFlows = () => {
         description: "Fluxo de trabalho duplicado com sucesso",
       });
 
-      setFlows([newFlowData, ...flows]);
-      return newFlowData;
+      const newFlow = newFlowData as Flow;
+      setFlows((prevFlows) => [newFlow, ...prevFlows]);
+      return newFlow;
     } catch (error) {
       console.error("Erro ao duplicar fluxo:", error);
       toast({

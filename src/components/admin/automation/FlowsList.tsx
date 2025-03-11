@@ -24,13 +24,18 @@ const FlowsList = ({ onSelectFlow }: FlowsListProps) => {
   } = useAutomationFlows();
 
   const handleCreateFlow = async (name: string, description: string) => {
-    const newFlow = await createFlow(name, description);
-    if (newFlow) {
-      setNewFlowOpen(false);
-      onSelectFlow(newFlow.id);
-      return newFlow;
+    try {
+      const newFlow = await createFlow(name, description);
+      if (newFlow) {
+        setNewFlowOpen(false);
+        onSelectFlow(newFlow.id);
+        return newFlow;
+      }
+      return null;
+    } catch (error) {
+      console.error("Erro ao criar fluxo:", error);
+      throw error; // Permite que o FlowCreateForm trate o erro
     }
-    return null;
   };
 
   return (
