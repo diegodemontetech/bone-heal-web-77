@@ -1,9 +1,7 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X, Upload } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useProductImages } from "@/hooks/use-product-images";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductImageUploadProps {
   images: string[];
@@ -11,69 +9,24 @@ interface ProductImageUploadProps {
   maxImages?: number;
 }
 
-const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductImageUploadProps) => {
-  const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
+const ProductImageUpload = ({ images: initialImages = [], onChange, maxImages = 3 }: ProductImageUploadProps) => {
+  const { 
+    images,
+    isUploading,
+    handleFileUpload,
+    removeImage
+  } = useProductImages(initialImages);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-      console.log("Nenhum arquivo selecionado");
-      return;
-    }
-
-    console.log("Iniciando upload de", files.length, "arquivo(s)");
-
-    if (images.length + files.length > maxImages) {
-      toast({
-        title: "Limite de imagens excedido",
-        description: `Você pode fazer upload de no máximo ${maxImages} imagens`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    const newImages: string[] = [...images];
-
-    try {
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-        console.log("Tentando fazer upload do arquivo:", fileName);
-
-        const { error: uploadError } = await supabase.storage
-          .from('products')
-          .upload(fileName, file);
-
-        if (uploadError) {
-          console.error("Erro no upload:", uploadError);
-          throw uploadError;
-        }
-
-        newImages.push(fileName);
-        console.log("Upload concluído para:", fileName);
-      }
-
+  // Propagar mudanças para o componente pai
+  const handleImagesChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newImages = await handleFileUpload(event, maxImages);
+    if (newImages) {
       onChange(newImages);
-      toast({
-        title: "Imagens enviadas com sucesso!",
-      });
-    } catch (error: any) {
-      console.error("Erro ao fazer upload:", error);
-      toast({
-        title: "Erro ao fazer upload das imagens",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
     }
   };
 
-  const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
+  const handleRemoveImage = (index: number) => {
+    const newImages = removeImage(index);
     onChange(newImages);
   };
 
@@ -106,7 +59,7 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
             />
             <button
               type="button"
-              onClick={() => removeImage(index)}
+              onClick={() => handleRemoveImage(index)}
               className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-lg hover:bg-red-50"
             >
               <X className="w-4 h-4 text-red-500" />
@@ -120,7 +73,7 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
               accept="image/*"
               multiple
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              onChange={handleFileUpload}
+              onChange={handleImagesChange}
               disabled={isUploading}
             />
             <div className="text-center p-4">
