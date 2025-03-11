@@ -34,7 +34,7 @@ const filterSchema = z.object({
   sortBy: z.string().optional(),
 });
 
-// Garantindo que o tipo gerado seja equivalente à interface FilterValues
+// Tipo compatível com FilterValues
 type FilterFormValues = z.infer<typeof filterSchema>;
 
 const categoryOptions = [
@@ -44,17 +44,15 @@ const categoryOptions = [
 ];
 
 export function ProductFilters({ onFilterChange, initialValues }: ProductFiltersProps) {
-  // Usando o formulário com o tipo correto
+  // Usando o tipo correto para o formulário
   const form = useForm<FilterValues>({
-    resolver: zodResolver(filterSchema) as any, // Utilizando 'as any' para contornar a incompatibilidade de tipos
+    resolver: zodResolver(filterSchema),
     defaultValues: initialValues,
   });
 
-  // Garantindo que o tipo retornado pelo onSubmit seja FilterValues
-  const onSubmit = (data: FilterFormValues) => {
-    // Como FilterFormValues tem a propriedade categories como array não vazio,
-    // podemos seguramente passar para onFilterChange que espera FilterValues
-    onFilterChange(data as FilterValues);
+  // Função de submissão com tipo explícito
+  const onSubmit = (data: FilterValues) => {
+    onFilterChange(data);
   };
 
   return (
