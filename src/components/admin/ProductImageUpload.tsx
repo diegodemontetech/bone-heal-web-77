@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Upload } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ProductImageUploadProps {
@@ -17,7 +17,12 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      console.log("Nenhum arquivo selecionado");
+      return;
+    }
+
+    console.log("Iniciando upload de", files.length, "arquivo(s)");
 
     if (images.length + files.length > maxImages) {
       toast({
@@ -35,33 +40,20 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
       for (const file of files) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = fileName;
 
         console.log("Tentando fazer upload do arquivo:", fileName);
 
-        // Verificar se o bucket 'products' existe
-        const { data: buckets } = await supabase.storage.listBuckets();
-        const productBucketExists = buckets?.some(bucket => bucket.name === 'products');
-        
-        if (!productBucketExists) {
-          console.error("Bucket 'products' não encontrado:", buckets);
-          throw new Error("O bucket 'products' não existe no Supabase Storage");
-        }
-
         const { error: uploadError } = await supabase.storage
           .from('products')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+          .upload(fileName, file);
 
         if (uploadError) {
           console.error("Erro no upload:", uploadError);
           throw uploadError;
         }
 
-        console.log("Upload bem-sucedido para:", filePath);
         newImages.push(fileName);
+        console.log("Upload concluído para:", fileName);
       }
 
       onChange(newImages);
@@ -69,7 +61,7 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
         title: "Imagens enviadas com sucesso!",
       });
     } catch (error: any) {
-      console.error("Erro completo ao fazer upload:", error);
+      console.error("Erro ao fazer upload:", error);
       toast({
         title: "Erro ao fazer upload das imagens",
         description: error.message,
@@ -85,24 +77,16 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
     onChange(newImages);
   };
 
-  // Função auxiliar para obter URL pública da imagem
   const getImageUrl = (path: string) => {
-    // Verificar se o caminho já é uma URL completa
     if (path.startsWith('http')) {
       return path;
     }
     
-    // Construir URL a partir do caminho no storage
-    try {
-      const { data } = supabase.storage
-        .from('products')
-        .getPublicUrl(path);
-      
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Erro ao obter URL da imagem:", error);
-      return `/products/${path}`; // Fallback para caminho relativo
-    }
+    const { data } = supabase.storage
+      .from('products')
+      .getPublicUrl(path);
+    
+    return data.publicUrl;
   };
 
   return (
@@ -117,7 +101,7 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
               onError={(e) => {
                 console.error("Erro ao carregar imagem:", image);
                 const target = e.target as HTMLImageElement;
-                target.src = "/placeholder.svg"; // Imagem de fallback
+                target.src = "/placeholder.svg";
               }}
             />
             <button
@@ -130,26 +114,25 @@ const ProductImageUpload = ({ images = [], onChange, maxImages = 3 }: ProductIma
           </div>
         ))}
         {images.length < maxImages && (
-          <div className="aspect-square rounded-lg border-2 border-dashed border-neutral-300 flex items-center justify-center">
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={isUploading}
-              />
-              <div className="text-center p-4">
-                {isUploading ? (
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                ) : (
-                  <Button variant="outline" disabled={isUploading} type="button">
-                    Adicionar Imagem
-                  </Button>
-                )}
-              </div>
-            </label>
+          <div className="aspect-square rounded-lg border-2 border-dashed border-neutral-300 flex items-center justify-center relative">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+            />
+            <div className="text-center p-4">
+              {isUploading ? (
+                <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  <Upload className="w-6 h-6 text-neutral-400" />
+                  <span className="text-sm text-neutral-500">Clique para adicionar</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

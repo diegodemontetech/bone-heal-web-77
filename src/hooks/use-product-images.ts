@@ -10,7 +10,12 @@ export const useProductImages = (initialImages: string[] = []) => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, maxImages: number) => {
     const files = event.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      console.log("Nenhum arquivo selecionado");
+      return;
+    }
+
+    console.log("Iniciando upload de", files.length, "arquivo(s)");
 
     if (images.length + files.length > maxImages) {
       toast({
@@ -28,33 +33,21 @@ export const useProductImages = (initialImages: string[] = []) => {
       for (const file of files) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
-        const filePath = fileName;
 
-        // Verificar se o bucket 'products' existe
-        const { data: buckets } = await supabase.storage.listBuckets();
-        const productBucketExists = buckets?.some(bucket => bucket.name === 'products');
-        
-        if (!productBucketExists) {
-          throw new Error("O bucket 'products' não existe no Supabase Storage");
-        }
+        console.log("Tentando fazer upload do arquivo:", fileName);
 
-        // Realizar o upload com tratamento de erros melhorado
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('products')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
+          .upload(fileName, file);
 
         if (uploadError) {
           console.error("Erro no upload:", uploadError);
           throw uploadError;
         }
 
-        // Obter a URL pública da imagem
         const { data: publicUrlData } = supabase.storage
           .from('products')
-          .getPublicUrl(filePath);
+          .getPublicUrl(fileName);
 
         newImages.push(fileName);
         console.log("Imagem enviada com sucesso:", fileName);
@@ -66,7 +59,7 @@ export const useProductImages = (initialImages: string[] = []) => {
       });
       return newImages;
     } catch (error: any) {
-      console.error("Erro detalhado ao fazer upload:", error);
+      console.error("Erro ao fazer upload:", error);
       toast({
         title: "Erro ao fazer upload das imagens",
         description: error.message,
