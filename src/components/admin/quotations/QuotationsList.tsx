@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useQuotationsQuery } from "./hooks/useQuotationsQuery";
 import { useEmailSender } from "./hooks/useEmailSender";
+import { useQuotationActions } from "./hooks/useQuotationActions";
 import SearchBar from "./components/SearchBar";
 import QuotationsTable from "./components/QuotationsTable";
 
@@ -10,6 +11,11 @@ const QuotationsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: quotations, isLoading } = useQuotationsQuery();
   const { handleSendEmail } = useEmailSender();
+  const { 
+    handleGeneratePdf, 
+    handleConvertToOrder, 
+    handleShareWhatsApp 
+  } = useQuotationActions();
 
   // Filtrar orçamentos com base no termo de busca
   const filteredQuotations = quotations?.filter(quotation => {
@@ -39,7 +45,10 @@ const QuotationsList = () => {
       <div className="rounded-md border">
         <QuotationsTable 
           quotations={filteredQuotations || []} 
-          onSendEmail={handleSendEmail} 
+          onSendEmail={handleSendEmail}
+          onGeneratePdf={handleGeneratePdf}
+          onConvertToOrder={handleConvertToOrder}
+          onShareWhatsApp={handleShareWhatsApp}
         />
       </div>
     </div>
