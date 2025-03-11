@@ -12,6 +12,10 @@ export const configRoutes: RouteObject[] = [
     element: <AdminSecurity />
   },
   {
+    path: "/admin/shipping",
+    element: <AdminShippingRates />
+  },
+  {
     path: "/admin/shipping-rates",
     element: <AdminShippingRates />
   },

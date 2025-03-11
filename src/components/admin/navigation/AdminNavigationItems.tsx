@@ -1,5 +1,5 @@
 
-import { Home, Package, ShoppingCart, Users, FileText, Settings, BarChart2, MessageSquare, Headphones, MessageCircle, Zap, Truck, Tag, BeakerIcon, FlaskConical, Beaker, BookOpen } from "lucide-react";
+import { Home, Package, ShoppingCart, Users, FileText, Settings, BarChart2, MessageSquare, MessageCircle, Zap, Truck, Tag, Beaker, BookOpen } from "lucide-react";
 import { UserPermission } from "@/types/auth";
 
 export const NavigationItems = [
@@ -79,7 +79,7 @@ export const NavigationItems = [
   {
     title: "Suporte",
     href: "/admin/tickets",
-    icon: Headphones,
+    icon: MessageSquare,
     permissions: [],
     children: [
       {
@@ -151,7 +151,7 @@ export const NavigationItems = [
       },
       {
         title: "Ajuste de Taxa de Frete",
-        href: "/admin/shipping/rates",
+        href: "/admin/shipping-rates",
         permissions: []
       },
       {
