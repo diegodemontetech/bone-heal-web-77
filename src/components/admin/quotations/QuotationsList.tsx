@@ -12,7 +12,7 @@ const QuotationsList = () => {
   const { data: quotations, isLoading } = useQuotationsQuery();
   const { handleSendEmail } = useEmailSender();
   const { 
-    handleGeneratePdf, 
+    handleDownloadPdf, 
     handleConvertToOrder, 
     handleShareWhatsApp 
   } = useQuotationActions();
@@ -46,7 +46,7 @@ const QuotationsList = () => {
         <QuotationsTable 
           quotations={filteredQuotations || []} 
           onSendEmail={handleSendEmail}
-          onGeneratePdf={handleGeneratePdf}
+          onDownloadPdf={handleDownloadPdf}
           onConvertToOrder={handleConvertToOrder}
           onShareWhatsApp={handleShareWhatsApp}
         />

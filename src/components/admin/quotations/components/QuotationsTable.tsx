@@ -16,7 +16,7 @@ import { Quotation } from "../hooks/useQuotationsQuery";
 interface QuotationsTableProps {
   quotations: Quotation[];
   onSendEmail: (quotationId: string, customerEmail: string) => void;
-  onGeneratePdf: (quotationId: string) => void;
+  onDownloadPdf: (quotationId: string) => void;
   onConvertToOrder: (quotationId: string) => void;
   onShareWhatsApp: (quotationId: string) => void;
 }
@@ -24,7 +24,7 @@ interface QuotationsTableProps {
 const QuotationsTable = ({ 
   quotations, 
   onSendEmail, 
-  onGeneratePdf,
+  onDownloadPdf,
   onConvertToOrder,
   onShareWhatsApp
 }: QuotationsTableProps) => {
@@ -65,7 +65,7 @@ const QuotationsTable = ({
                   customerEmail={quotation.customer?.email || ""}
                   sentByEmail={quotation.sent_by_email}
                   onSendEmail={onSendEmail}
-                  onGeneratePdf={onGeneratePdf}
+                  onDownloadPdf={onDownloadPdf}
                   onConvertToOrder={onConvertToOrder}
                   onShareWhatsApp={onShareWhatsApp}
                 />

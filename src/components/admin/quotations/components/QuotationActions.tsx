@@ -1,13 +1,13 @@
 
 import { Button } from "@/components/ui/button";
-import { Eye, Mail, FileText, ShoppingCart, Share2 } from "lucide-react";
+import { Eye, Mail, FileDown, ShoppingCart, Share2 } from "lucide-react";
 
 interface QuotationActionsProps {
   quotationId: string;
   customerEmail: string;
   sentByEmail: boolean;
   onSendEmail: (quotationId: string, customerEmail: string) => void;
-  onGeneratePdf: (quotationId: string) => void;
+  onDownloadPdf: (quotationId: string) => void;
   onConvertToOrder: (quotationId: string) => void;
   onShareWhatsApp: (quotationId: string) => void;
 }
@@ -17,7 +17,7 @@ const QuotationActions = ({
   customerEmail, 
   sentByEmail,
   onSendEmail,
-  onGeneratePdf,
+  onDownloadPdf,
   onConvertToOrder,
   onShareWhatsApp
 }: QuotationActionsProps) => {
@@ -42,10 +42,10 @@ const QuotationActions = ({
       <Button 
         variant="outline" 
         size="icon"
-        title="Gerar PDF"
-        onClick={() => onGeneratePdf(quotationId)}
+        title="Baixar PDF"
+        onClick={() => onDownloadPdf(quotationId)}
       >
-        <FileText className="h-4 w-4" />
+        <FileDown className="h-4 w-4" />
       </Button>
       <Button 
         variant="outline" 
