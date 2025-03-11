@@ -1,12 +1,12 @@
 
-import { UserRole, UserPermission } from '@/types/auth';
+import { UserRole } from '@/types/auth';
 
 export interface UserData {
   id: string;
   email: string;
   full_name: string;
   role: UserRole;
-  is_admin: boolean;
+  is_admin?: boolean;
   created_at: string;
   permissions: string[];
 }
