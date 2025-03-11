@@ -164,7 +164,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
           items: orderItems,
           total_amount: total,
           subtotal: total,
-          status: 'aguardando_pagamento',
+          status: 'pending',
           omie_status: "novo",
           shipping_address: shippingAddress
         })
