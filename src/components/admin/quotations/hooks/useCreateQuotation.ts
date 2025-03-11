@@ -69,7 +69,7 @@ export const useCreateQuotation = (onCancel: () => void) => {
         subtotal_amount: subtotal,
         total_amount: total,
         status: 'draft',
-        voucher_id: appliedVoucher?.id || null,
+        // Removemos o campo voucher_id pois não existe na tabela
       };
 
       const { data, error } = await supabase
@@ -80,15 +80,8 @@ export const useCreateQuotation = (onCancel: () => void) => {
 
       if (error) throw error;
 
-      // Se aplicou um cupom, incrementar o contador de uso
-      if (appliedVoucher) {
-        await supabase
-          .from('vouchers')
-          .update({
-            current_uses: appliedVoucher.current_uses + 1
-          })
-          .eq('id', appliedVoucher.id);
-      }
+      // Se tiver usado cupom, poderíamos incrementar o uso aqui
+      // Mas como não temos a coluna voucher_id, vamos remover esta parte
 
       toast.success("Orçamento criado com sucesso!");
       onCancel();

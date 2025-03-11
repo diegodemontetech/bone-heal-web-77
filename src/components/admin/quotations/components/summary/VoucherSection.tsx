@@ -36,17 +36,21 @@ const VoucherSection = ({
   const { data: vouchers } = useQuery({
     queryKey: ["vouchers"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vouchers')
-        .select('*')
-        .is('valid_until', null)
-        .eq('is_active', true);
-        
-      if (error) {
-        console.error("Erro ao buscar cupons:", error);
+      try {
+        const { data, error } = await supabase
+          .from('vouchers')
+          .select('*')
+          .is('valid_until', null);
+          
+        if (error) {
+          console.error("Erro ao buscar cupons:", error);
+          return [];
+        }
+        return data || [];
+      } catch (err) {
+        console.error("Erro ao buscar cupons:", err);
         return [];
       }
-      return data || [];
     },
   });
 
@@ -62,11 +66,10 @@ const VoucherSection = ({
         .from('vouchers')
         .select('*')
         .eq('code', voucherCode.toUpperCase())
-        .eq('is_active', true)
         .single();
         
       if (error) {
-        toast.error("Cupom não encontrado ou inativo");
+        toast.error("Cupom não encontrado");
         return;
       }
       
