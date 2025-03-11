@@ -11,18 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface ShippingRate {
-  id: string;
-  region: string;
-  zip_code_start: string;
-  zip_code_end: string;
-  flat_rate: number;
-  additional_kg_rate: number;
-  estimated_days: number;
-  is_active: boolean;
-  created_at: string;
-}
+import { ShippingRate } from "@/types/shipping";
 
 const ShippingRates = () => {
   const [rates, setRates] = useState<ShippingRate[]>([]);
@@ -369,10 +358,10 @@ const ShippingRates = () => {
                   <TableRow key={rate.id}>
                     <TableCell className="font-medium">{rate.region}</TableCell>
                     <TableCell>
-                      {rate.zip_code_start.substring(0, 5)}-{rate.zip_code_start.substring(5)} a {rate.zip_code_end.substring(0, 5)}-{rate.zip_code_end.substring(5)}
+                      {rate.zip_code_start?.substring(0, 5)}-{rate.zip_code_start?.substring(5)} a {rate.zip_code_end?.substring(0, 5)}-{rate.zip_code_end?.substring(5)}
                     </TableCell>
-                    <TableCell>R$ {rate.flat_rate.toFixed(2)}</TableCell>
-                    <TableCell>R$ {rate.additional_kg_rate.toFixed(2)}</TableCell>
+                    <TableCell>R$ {Number(rate.flat_rate).toFixed(2)}</TableCell>
+                    <TableCell>R$ {Number(rate.additional_kg_rate).toFixed(2)}</TableCell>
                     <TableCell>{rate.estimated_days} dias</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${

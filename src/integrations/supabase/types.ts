@@ -1189,42 +1189,63 @@ export type Database = {
       shipping_rates: {
         Row: {
           additional_kg_price: number
+          additional_kg_rate: number | null
           created_at: string
           delivery_days: number
+          estimated_days: number | null
+          flat_rate: number | null
           id: string
           insurance_percentage: number
+          is_active: boolean | null
           price_per_kg: number
           rate: number
+          region: string | null
           region_type: string
           service_type: string
           state: string
           updated_at: string
+          zip_code_end: string | null
+          zip_code_start: string | null
         }
         Insert: {
           additional_kg_price?: number
+          additional_kg_rate?: number | null
           created_at?: string
           delivery_days?: number
+          estimated_days?: number | null
+          flat_rate?: number | null
           id?: string
           insurance_percentage?: number
+          is_active?: boolean | null
           price_per_kg?: number
           rate: number
+          region?: string | null
           region_type?: string
           service_type?: string
           state: string
           updated_at?: string
+          zip_code_end?: string | null
+          zip_code_start?: string | null
         }
         Update: {
           additional_kg_price?: number
+          additional_kg_rate?: number | null
           created_at?: string
           delivery_days?: number
+          estimated_days?: number | null
+          flat_rate?: number | null
           id?: string
           insurance_percentage?: number
+          is_active?: boolean | null
           price_per_kg?: number
           rate?: number
+          region?: string | null
           region_type?: string
           service_type?: string
           state?: string
           updated_at?: string
+          zip_code_end?: string | null
+          zip_code_start?: string | null
         }
         Relationships: []
       }
