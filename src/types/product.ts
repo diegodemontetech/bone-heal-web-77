@@ -20,5 +20,5 @@ export interface Product {
   omie_last_update?: string;
   active?: boolean;
   weight?: number;
-  categories?: string[];
+  categories?: string[]; // Mantemos no tipo, mas não enviamos para o banco
 }
