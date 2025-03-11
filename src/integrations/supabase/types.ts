@@ -1078,6 +1078,7 @@ export type Database = {
           notes: string | null
           payment_method: string | null
           sent_by_email: boolean | null
+          shipping_info: Json | null
           status: string
           subtotal_amount: number
           total_amount: number
@@ -1094,6 +1095,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           sent_by_email?: boolean | null
+          shipping_info?: Json | null
           status?: string
           subtotal_amount: number
           total_amount: number
@@ -1110,6 +1112,7 @@ export type Database = {
           notes?: string | null
           payment_method?: string | null
           sent_by_email?: boolean | null
+          shipping_info?: Json | null
           status?: string
           subtotal_amount?: number
           total_amount?: number

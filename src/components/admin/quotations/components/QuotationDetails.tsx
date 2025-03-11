@@ -22,6 +22,14 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
     }
   };
 
+  // Calcular o frete final baseado no shipping_info
+  const getShippingCost = () => {
+    if (quotation.shipping_info && quotation.shipping_info.cost) {
+      return Number(quotation.shipping_info.cost);
+    }
+    return 0;
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -41,18 +49,18 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
           </div>
 
           {/* Cliente */}
-          {quotation.customer && (
+          {quotation.customer_info && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium">Cliente</h3>
               <div className="p-3 border rounded bg-gray-50">
-                <p className="font-medium">{quotation.customer.full_name}</p>
-                <p className="text-sm text-gray-600">{quotation.customer.email}</p>
-                <p className="text-sm text-gray-600">{quotation.customer.phone}</p>
-                {quotation.customer.address && (
+                <p className="font-medium">{quotation.customer_info.name}</p>
+                <p className="text-sm text-gray-600">{quotation.customer_info.email}</p>
+                <p className="text-sm text-gray-600">{quotation.customer_info.phone}</p>
+                {quotation.customer_info.address && (
                   <>
-                    <p className="text-sm text-gray-600">{quotation.customer.address}</p>
+                    <p className="text-sm text-gray-600">{quotation.customer_info.address}</p>
                     <p className="text-sm text-gray-600">
-                      {quotation.customer.city} - {quotation.customer.state}
+                      {quotation.customer_info.city} - {quotation.customer_info.state}
                     </p>
                   </>
                 )}
@@ -85,7 +93,7 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
                           </p>
                         </div>
                         <p className="font-medium">
-                          {formatCurrency(item.unit_price * item.quantity)}
+                          {formatCurrency(Number(item.unit_price) * Number(item.quantity))}
                         </p>
                       </div>
                     </div>
@@ -104,6 +112,21 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
                'Não especificado'}</p>
           </div>
 
+          {/* Frete */}
+          {quotation.shipping_info && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Informações de Envio</h3>
+              <div className="space-y-1">
+                <p className="text-sm">
+                  {quotation.shipping_info.service_type} - {quotation.shipping_info.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Entrega em até {quotation.shipping_info.delivery_days} dias úteis
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Resumo */}
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Resumo</h3>
@@ -111,19 +134,26 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
               <CardContent className="p-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(quotation.subtotal_amount || 0)}</span>
+                  <span>{formatCurrency(Number(quotation.subtotal_amount) || 0)}</span>
                 </div>
                 
                 {quotation.discount_amount > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>Desconto{quotation.discount_type === 'percentage' ? ' (%)' : ''}</span>
-                    <span>-{formatCurrency(quotation.discount_amount)}</span>
+                    <span>-{formatCurrency(Number(quotation.discount_amount))}</span>
+                  </div>
+                )}
+
+                {quotation.shipping_info && (
+                  <div className="flex justify-between">
+                    <span>Frete</span>
+                    <span>{formatCurrency(getShippingCost())}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between font-bold pt-2 border-t">
                   <span>Total</span>
-                  <span>{formatCurrency(quotation.total_amount)}</span>
+                  <span>{formatCurrency(Number(quotation.total_amount))}</span>
                 </div>
               </CardContent>
             </Card>

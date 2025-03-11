@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -109,45 +108,29 @@ const ShippingSection = ({
         
         const state = zipPrefixToState[zipPrefix] || 'OUTRO';
         
-        // Filtrar as opções de frete pelo estado
         const stateOptions = data.filter(rate => {
           return rate.state === state || rate.state === '*';
         });
         
         if (stateOptions.length > 0) {
-          // Formatar para o formato esperado
-          applicableRates = stateOptions.map(rate => ({
+          // Evitar duplicidade de serviços
+          const uniqueServices = new Map();
+          stateOptions.forEach(rate => {
+            const serviceKey = rate.service_type;
+            if (!uniqueServices.has(serviceKey) || rate.flat_rate < uniqueServices.get(serviceKey).flat_rate) {
+              uniqueServices.set(serviceKey, rate);
+            }
+          });
+
+          applicableRates = Array.from(uniqueServices.values()).map(rate => ({
             rate: rate.flat_rate || 0,
             delivery_days: rate.estimated_days || 5,
             service_type: rate.service_type || 'PAC',
-            name: `Frete ${rate.service_type || 'Padrão'} - ${rate.region || state}`,
+            name: rate.service_type || 'Padrão',
             id: rate.id,
-            region: rate.region,
-            estimated_days: rate.estimated_days
+            region: rate.region
           }));
-        } else {
-          // Usar opção padrão
-          applicableRates = [
-            {
-              rate: 30,
-              delivery_days: 7,
-              service_type: 'PAC',
-              name: 'Frete Padrão',
-              zipCode: cleanZipCode
-            }
-          ];
         }
-      } else {
-        // Opções padrão se não houver configurações
-        applicableRates = [
-          {
-            rate: 30,
-            delivery_days: 7,
-            service_type: 'PAC',
-            name: 'Frete Padrão',
-            zipCode: cleanZipCode
-          }
-        ];
       }
       
       // Ordenar por preço
@@ -162,19 +145,6 @@ const ShippingSection = ({
     } catch (error) {
       console.error('Erro ao calcular frete:', error);
       toast.error('Erro ao calcular frete. Tente novamente.');
-      
-      // Fornecer algumas opções padrão para não bloquear o usuário
-      const fallbackOptions = [
-        {
-          rate: 30,
-          delivery_days: 7,
-          service_type: 'PAC',
-          name: 'Frete Padrão',
-          zipCode: zipCode.replace(/\D/g, '')
-        }
-      ];
-      
-      setShippingOptions(fallbackOptions);
     } finally {
       setIsCalculatingShipping(false);
     }

@@ -1,10 +1,8 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { formatCurrency } from "@/lib/utils";
-import { Quotation, QuotationItem } from "./useQuotationsQuery";
 import "jspdf-autotable";
 
 export const usePdfGenerator = () => {
@@ -170,18 +168,25 @@ export const usePdfGenerator = () => {
       
       doc.setFont("helvetica", "normal");
       doc.text("Subtotal:", rightAlign - 70, yPos);
-      doc.text(formatCurrency(quotation.subtotal_amount || 0), rightAlign, yPos, { align: "right" });
+      doc.text(formatCurrency(Number(quotation.subtotal_amount) || 0), rightAlign, yPos, { align: "right" });
       yPos += 7;
       
       if (quotation.discount_amount > 0) {
         doc.text(`Desconto${quotation.discount_type === 'percentage' ? ' (%)' : ''}:`, rightAlign - 70, yPos);
-        doc.text(`-${formatCurrency(quotation.discount_amount || 0)}`, rightAlign, yPos, { align: "right" });
+        doc.text(`-${formatCurrency(Number(quotation.discount_amount) || 0)}`, rightAlign, yPos, { align: "right" });
+        yPos += 7;
+      }
+
+      // Adicionar informações de frete
+      if (quotation.shipping_info && quotation.shipping_info.cost) {
+        doc.text("Frete:", rightAlign - 70, yPos);
+        doc.text(formatCurrency(Number(quotation.shipping_info.cost)), rightAlign, yPos, { align: "right" });
         yPos += 7;
       }
       
       doc.setFont("helvetica", "bold");
       doc.text("TOTAL:", rightAlign - 70, yPos);
-      doc.text(formatCurrency(quotation.total_amount || 0), rightAlign, yPos, { align: "right" });
+      doc.text(formatCurrency(Number(quotation.total_amount) || 0), rightAlign, yPos, { align: "right" });
       yPos += 15;
 
       // Observações (se houver)
