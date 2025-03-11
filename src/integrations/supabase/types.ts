@@ -42,6 +42,51 @@ export type Database = {
         }
         Relationships: []
       }
+      clientes_omie: {
+        Row: {
+          "Clientes e Fornecedores": string | null
+          "Unnamed: 1": string | null
+          "Unnamed: 10": string | null
+          "Unnamed: 11": string | null
+          "Unnamed: 2": string | null
+          "Unnamed: 3": string | null
+          "Unnamed: 4": string | null
+          "Unnamed: 5": string | null
+          "Unnamed: 6": string | null
+          "Unnamed: 7": string | null
+          "Unnamed: 8": string | null
+          "Unnamed: 9": string | null
+        }
+        Insert: {
+          "Clientes e Fornecedores"?: string | null
+          "Unnamed: 1"?: string | null
+          "Unnamed: 10"?: string | null
+          "Unnamed: 11"?: string | null
+          "Unnamed: 2"?: string | null
+          "Unnamed: 3"?: string | null
+          "Unnamed: 4"?: string | null
+          "Unnamed: 5"?: string | null
+          "Unnamed: 6"?: string | null
+          "Unnamed: 7"?: string | null
+          "Unnamed: 8"?: string | null
+          "Unnamed: 9"?: string | null
+        }
+        Update: {
+          "Clientes e Fornecedores"?: string | null
+          "Unnamed: 1"?: string | null
+          "Unnamed: 10"?: string | null
+          "Unnamed: 11"?: string | null
+          "Unnamed: 2"?: string | null
+          "Unnamed: 3"?: string | null
+          "Unnamed: 4"?: string | null
+          "Unnamed: 5"?: string | null
+          "Unnamed: 6"?: string | null
+          "Unnamed: 7"?: string | null
+          "Unnamed: 8"?: string | null
+          "Unnamed: 9"?: string | null
+        }
+        Relationships: []
+      }
       commercial_conditions: {
         Row: {
           created_at: string
@@ -710,6 +755,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pedidos_omie: {
+        Row: {
+          "Cliente (Nome Fantasia)": string | null
+          "Cliente (Razão Social)": string | null
+          "CNPJ/CPF": string | null
+          "Código do Produto": string | null
+          "Data de Emissão (completa)": string | null
+          Desconto: string | null
+          Frete: string | null
+          "Nota Fiscal": number | null
+          Operação: string | null
+          "Outras Despesas Acessórias": string | null
+          Seguro: string | null
+          Situação: string | null
+          "Soma de Quantidade": number | null
+          "Total da Nota Fiscal": number | null
+          "Total de Mercadoria": string | null
+          "Valor do ICMS ST": string | null
+          "Valor do IPI": string | null
+        }
+        Insert: {
+          "Cliente (Nome Fantasia)"?: string | null
+          "Cliente (Razão Social)"?: string | null
+          "CNPJ/CPF"?: string | null
+          "Código do Produto"?: string | null
+          "Data de Emissão (completa)"?: string | null
+          Desconto?: string | null
+          Frete?: string | null
+          "Nota Fiscal"?: number | null
+          Operação?: string | null
+          "Outras Despesas Acessórias"?: string | null
+          Seguro?: string | null
+          Situação?: string | null
+          "Soma de Quantidade"?: number | null
+          "Total da Nota Fiscal"?: number | null
+          "Total de Mercadoria"?: string | null
+          "Valor do ICMS ST"?: string | null
+          "Valor do IPI"?: string | null
+        }
+        Update: {
+          "Cliente (Nome Fantasia)"?: string | null
+          "Cliente (Razão Social)"?: string | null
+          "CNPJ/CPF"?: string | null
+          "Código do Produto"?: string | null
+          "Data de Emissão (completa)"?: string | null
+          Desconto?: string | null
+          Frete?: string | null
+          "Nota Fiscal"?: number | null
+          Operação?: string | null
+          "Outras Despesas Acessórias"?: string | null
+          Seguro?: string | null
+          Situação?: string | null
+          "Soma de Quantidade"?: number | null
+          "Total da Nota Fiscal"?: number | null
+          "Total de Mercadoria"?: string | null
+          "Valor do ICMS ST"?: string | null
+          "Valor do IPI"?: string | null
+        }
+        Relationships: []
       }
       product_reviews: {
         Row: {
