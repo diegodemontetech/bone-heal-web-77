@@ -30,6 +30,12 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
     return 0;
   };
 
+  // Garantir que todos os valores numéricos são válidos
+  const subtotal = Number(quotation.subtotal_amount) || 0;
+  const discount = Number(quotation.discount_amount) || 0;
+  const shipping = getShippingCost();
+  const total = Number(quotation.total_amount) || 0;
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
@@ -93,7 +99,7 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
                           </p>
                         </div>
                         <p className="font-medium">
-                          {formatCurrency(Number(item.unit_price) * Number(item.quantity))}
+                          {formatCurrency(Number(item.unit_price || 0) * Number(item.quantity || 0))}
                         </p>
                       </div>
                     </div>
@@ -118,11 +124,14 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
               <h3 className="text-sm font-medium">Informações de Envio</h3>
               <div className="space-y-1">
                 <p className="text-sm">
-                  {quotation.shipping_info.service_type} - {quotation.shipping_info.name}
+                  {quotation.shipping_info.service_type && 
+                    `${quotation.shipping_info.service_type}${quotation.shipping_info.name ? ` - ${quotation.shipping_info.name}` : ''}`}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Entrega em até {quotation.shipping_info.delivery_days} dias úteis
-                </p>
+                {quotation.shipping_info.delivery_days && (
+                  <p className="text-sm text-muted-foreground">
+                    Entrega em até {quotation.shipping_info.delivery_days} dias úteis
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -134,26 +143,26 @@ export const QuotationDetails = ({ quotation, isOpen, onClose }: QuotationDetail
               <CardContent className="p-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(Number(quotation.subtotal_amount) || 0)}</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
                 
-                {quotation.discount_amount > 0 && (
+                {discount > 0 && (
                   <div className="flex justify-between text-red-600">
                     <span>Desconto{quotation.discount_type === 'percentage' ? ' (%)' : ''}</span>
-                    <span>-{formatCurrency(Number(quotation.discount_amount))}</span>
+                    <span>-{formatCurrency(discount)}</span>
                   </div>
                 )}
 
-                {quotation.shipping_info && (
+                {shipping > 0 && (
                   <div className="flex justify-between">
                     <span>Frete</span>
-                    <span>{formatCurrency(getShippingCost())}</span>
+                    <span>{formatCurrency(shipping)}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between font-bold pt-2 border-t">
                   <span>Total</span>
-                  <span>{formatCurrency(Number(quotation.total_amount))}</span>
+                  <span>{formatCurrency(total)}</span>
                 </div>
               </CardContent>
             </Card>

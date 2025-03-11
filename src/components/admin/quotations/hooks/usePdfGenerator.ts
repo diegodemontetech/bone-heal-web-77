@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +22,12 @@ export const usePdfGenerator = () => {
       if (error) throw error;
       if (!quotation) throw new Error("Orçamento não encontrado");
 
+      // Verificar e sanitizar valores monetários
+      const subtotalAmount = Number(quotation.subtotal_amount) || 0;
+      const discountAmount = Number(quotation.discount_amount) || 0;
+      const shippingCost = quotation.shipping_info?.cost ? Number(quotation.shipping_info.cost) : 0;
+      const totalAmount = Number(quotation.total_amount) || 0;
+
       // Buscar informações adicionais dos produtos (imagens, etc.)
       const items = quotation.items || [];
       const enhancedItems = await Promise.all(items.map(async (item: any) => {
@@ -31,12 +38,21 @@ export const usePdfGenerator = () => {
             .eq("id", item.product_id)
             .single();
           
+          // Sanitizar valores do item
           return {
             ...item,
-            product_image: product?.main_image || product?.default_image_url
+            product_image: product?.main_image || product?.default_image_url,
+            unit_price: Number(item.unit_price) || 0,
+            quantity: Number(item.quantity) || 0,
+            total_price: Number(item.total_price) || Number(item.unit_price) * Number(item.quantity) || 0
           };
         }
-        return item;
+        return {
+          ...item,
+          unit_price: Number(item.unit_price) || 0,
+          quantity: Number(item.quantity) || 0,
+          total_price: Number(item.total_price) || Number(item.unit_price) * Number(item.quantity) || 0
+        };
       }));
 
       // Criar PDF
@@ -139,7 +155,7 @@ export const usePdfGenerator = () => {
         item.product_name || "Produto sem nome",
         item.quantity.toString(),
         formatCurrency(item.unit_price),
-        formatCurrency(item.total_price || (item.unit_price * item.quantity))
+        formatCurrency(item.total_price)
       ]);
 
       (doc as any).autoTable({
@@ -168,25 +184,25 @@ export const usePdfGenerator = () => {
       
       doc.setFont("helvetica", "normal");
       doc.text("Subtotal:", rightAlign - 70, yPos);
-      doc.text(formatCurrency(Number(quotation.subtotal_amount) || 0), rightAlign, yPos, { align: "right" });
+      doc.text(formatCurrency(subtotalAmount), rightAlign, yPos, { align: "right" });
       yPos += 7;
       
-      if (quotation.discount_amount > 0) {
+      if (discountAmount > 0) {
         doc.text(`Desconto${quotation.discount_type === 'percentage' ? ' (%)' : ''}:`, rightAlign - 70, yPos);
-        doc.text(`-${formatCurrency(Number(quotation.discount_amount) || 0)}`, rightAlign, yPos, { align: "right" });
+        doc.text(`-${formatCurrency(discountAmount)}`, rightAlign, yPos, { align: "right" });
         yPos += 7;
       }
 
       // Adicionar informações de frete
-      if (quotation.shipping_info && quotation.shipping_info.cost) {
+      if (shippingCost > 0) {
         doc.text("Frete:", rightAlign - 70, yPos);
-        doc.text(formatCurrency(Number(quotation.shipping_info.cost)), rightAlign, yPos, { align: "right" });
+        doc.text(formatCurrency(shippingCost), rightAlign, yPos, { align: "right" });
         yPos += 7;
       }
       
       doc.setFont("helvetica", "bold");
       doc.text("TOTAL:", rightAlign - 70, yPos);
-      doc.text(formatCurrency(Number(quotation.total_amount) || 0), rightAlign, yPos, { align: "right" });
+      doc.text(formatCurrency(totalAmount), rightAlign, yPos, { align: "right" });
       yPos += 15;
 
       // Observações (se houver)

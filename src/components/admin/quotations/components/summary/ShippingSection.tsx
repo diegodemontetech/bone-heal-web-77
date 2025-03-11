@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -128,7 +129,8 @@ const ShippingSection = ({
             service_type: rate.service_type || 'PAC',
             name: rate.service_type || 'Padrão',
             id: rate.id,
-            region: rate.region
+            region: rate.region,
+            cost: rate.flat_rate || 0
           }));
         }
       }
