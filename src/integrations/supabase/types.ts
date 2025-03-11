@@ -9,6 +9,39 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      automation_flows: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          edges: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          nodes: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          edges?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          nodes?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          edges?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          nodes?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       commercial_conditions: {
         Row: {
           created_at: string
@@ -1077,6 +1110,82 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      workflow_execution_logs: {
+        Row: {
+          data: Json | null
+          execution_id: string
+          id: string
+          node_id: string
+          status: string
+          timestamp: string | null
+        }
+        Insert: {
+          data?: Json | null
+          execution_id: string
+          id?: string
+          node_id: string
+          status: string
+          timestamp?: string | null
+        }
+        Update: {
+          data?: Json | null
+          execution_id?: string
+          id?: string
+          node_id?: string
+          status?: string
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_execution_logs_execution_id_fkey"
+            columns: ["execution_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          flow_id: string
+          id: string
+          result: Json | null
+          started_at: string | null
+          status: string
+          trigger_data: Json | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          flow_id: string
+          id?: string
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          trigger_data?: Json | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          flow_id?: string
+          id?: string
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          trigger_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_executions_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "automation_flows"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

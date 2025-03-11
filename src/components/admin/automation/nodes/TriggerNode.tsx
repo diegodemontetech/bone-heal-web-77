@@ -1,7 +1,7 @@
 
-import { Handle, Position } from 'reactflow';
-import { LucideIcon } from 'lucide-react';
-import { UserPlus, CreditCard, MessageCircle, Calendar } from 'lucide-react';
+import { Handle, Position } from "reactflow";
+import { LucideIcon } from "lucide-react";
+import { UserPlus, CreditCard, MessageCircle, Calendar } from "lucide-react";
 
 interface TriggerNodeProps {
   data: {

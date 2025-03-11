@@ -1,12 +1,12 @@
 
-import { Handle, Position } from 'reactflow';
+import { Handle, Position } from "reactflow";
 import { 
   Mail, 
   MessageCircle, 
   Database, 
   Bell, 
   FileText 
-} from 'lucide-react';
+} from "lucide-react";
 
 interface ActionNodeProps {
   data: {

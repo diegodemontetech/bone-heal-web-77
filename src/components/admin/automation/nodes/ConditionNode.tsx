@@ -1,6 +1,6 @@
 
-import { Handle, Position } from 'reactflow';
-import { Filter, AlertTriangle } from 'lucide-react';
+import { Handle, Position } from "reactflow";
+import { Filter, AlertTriangle } from "lucide-react";
 
 interface ConditionNodeProps {
   data: {
