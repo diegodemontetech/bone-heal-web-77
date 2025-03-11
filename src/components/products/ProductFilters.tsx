@@ -28,8 +28,9 @@ interface ProductFiltersProps {
   initialValues: FilterValues;
 }
 
+// Corrigindo o schema para que categories seja obrigatório
 const filterSchema = z.object({
-  categories: z.array(z.string()),
+  categories: z.array(z.string()).nonempty(),
   sortBy: z.string().optional(),
 });
 
@@ -72,7 +73,7 @@ export function ProductFilters({ onFilterChange, initialValues }: ProductFilters
                           if (checked) {
                             field.onChange(["todos"]);
                           } else {
-                            field.onChange([]);
+                            field.onChange(["todos"]); // Garantir que sempre tem pelo menos "todos" selecionado
                           }
                         } else {
                           // Se marcando uma categoria específica, desmarca "Todos"
@@ -81,7 +82,9 @@ export function ProductFilters({ onFilterChange, initialValues }: ProductFilters
                           if (checked) {
                             field.onChange([...withoutTodos, option.id]);
                           } else {
-                            field.onChange(withoutTodos.filter(v => v !== option.id));
+                            const newValue = withoutTodos.filter(v => v !== option.id);
+                            // Se não sobrar nenhuma categoria, selecionar "todos"
+                            field.onChange(newValue.length > 0 ? newValue : ["todos"]);
                           }
                         }
                       }}
