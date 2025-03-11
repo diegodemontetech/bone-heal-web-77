@@ -55,7 +55,12 @@ export function ProductFilters({ onFilterChange, initialValues }: ProductFilters
   });
 
   const onSubmit = (data: FilterFormValues) => {
-    onFilterChange(data);
+    // Garantindo que categories sempre existe como um array não vazio
+    const validatedData: FilterValues = {
+      categories: data.categories.length > 0 ? data.categories : ["todos"],
+      sortBy: data.sortBy
+    };
+    onFilterChange(validatedData);
   };
 
   return (
