@@ -72,7 +72,7 @@ export const useShippingRates = () => {
       }
       
       // Buscar taxas da tabela para a região e faixa de CEP
-      const { data: ratesData, error: ratesError } = await supabase
+      const { data: ratesFromDb, error: ratesError } = await supabase
         .from('shipping_rates')
         .select('*')
         .eq('region', region)
@@ -83,6 +83,8 @@ export const useShippingRates = () => {
       if (ratesError) {
         throw new Error(ratesError.message);
       }
+      
+      let ratesData = ratesFromDb;
       
       if (!ratesData || ratesData.length === 0) {
         console.log("Nenhuma taxa encontrada para a região e CEP específicos, buscando taxas gerais da região");
