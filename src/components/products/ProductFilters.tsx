@@ -28,13 +28,12 @@ interface ProductFiltersProps {
   initialValues: FilterValues;
 }
 
-// Definindo o schema para garantir que seja compatível com a interface FilterValues
+// O schema deve definir "categories" como obrigatório para corresponder à interface FilterValues
 const filterSchema = z.object({
   categories: z.array(z.string()).min(1, "Selecione pelo menos uma categoria"),
   sortBy: z.string().optional(),
 });
 
-// Tipo compatível com FilterValues
 type FilterFormValues = z.infer<typeof filterSchema>;
 
 const categoryOptions = [
@@ -44,14 +43,13 @@ const categoryOptions = [
 ];
 
 export function ProductFilters({ onFilterChange, initialValues }: ProductFiltersProps) {
-  // Usando o tipo correto para o formulário
-  const form = useForm<FilterValues>({
+  // Usando FilterFormValues que agora é compatível com FilterValues
+  const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
     defaultValues: initialValues,
   });
 
-  // Função de submissão com tipo explícito
-  const onSubmit = (data: FilterValues) => {
+  const onSubmit = (data: FilterFormValues) => {
     onFilterChange(data);
   };
 
