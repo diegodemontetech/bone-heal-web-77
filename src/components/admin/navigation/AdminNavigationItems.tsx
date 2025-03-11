@@ -140,7 +140,7 @@ export const NavigationItems = [
   },
   {
     title: "Configurações",
-    href: "/admin/shipping",
+    href: "/admin/settings",
     icon: Settings,
     permissions: [],
     children: [

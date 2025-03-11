@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth-context";
 import { NavigationItems } from "./AdminNavigationItems";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AdminSidebarProps {
   onCloseMobile?: () => void;
@@ -14,9 +14,27 @@ interface AdminSidebarProps {
 
 export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
   const { pathname } = useLocation();
-  const { signOut, isAdminMaster, hasPermission } = useAuth();
+  const { signOut } = useAuth();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
+  // Expandir automaticamente o item que corresponde à rota atual
+  useEffect(() => {
+    const newExpandedItems: Record<string, boolean> = {};
+    
+    NavigationItems.forEach(item => {
+      if (item.children) {
+        const shouldExpand = pathname.includes(item.href) || 
+          item.children.some(child => pathname.includes(child.href));
+        newExpandedItems[item.title] = shouldExpand;
+      }
+    });
+    
+    setExpandedItems(prev => ({
+      ...prev,
+      ...newExpandedItems
+    }));
+  }, [pathname]);
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -25,10 +43,9 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
     }
   };
 
-  // Sempre mostrar todos os itens de navegação
-  const filteredNavigationItems = NavigationItems;
-
-  const toggleExpand = (title: string) => {
+  const toggleExpand = (title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     setExpandedItems(prev => ({
       ...prev,
       [title]: !prev[title]
@@ -54,14 +71,13 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
       </div>
       <ScrollArea className="flex-1 py-2">
         <nav className="grid gap-1 px-2">
-          {filteredNavigationItems.map((item) => (
+          {NavigationItems.map((item) => (
             <div key={item.title} className="flex flex-col">
               <div
                 className={cn(
-                  "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer",
+                  "flex items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors",
                   pathname === item.href ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                 )}
-                onClick={() => item.children ? toggleExpand(item.title) : null}
               >
                 <Link
                   to={item.href}
@@ -72,8 +88,16 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
                   {item.title}
                 </Link>
                 {item.children && (
-                  <Button variant="ghost" size="icon" className="h-4 w-4 p-0" onClick={() => toggleExpand(item.title)}>
-                    {expandedItems[item.title] ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-4 w-4 p-0" 
+                    onClick={(e) => toggleExpand(item.title, e)}
+                  >
+                    {expandedItems[item.title] ? 
+                      <ChevronUp className="h-4 w-4" /> : 
+                      <ChevronDown className="h-4 w-4" />
+                    }
                   </Button>
                 )}
               </div>
