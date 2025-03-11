@@ -12,12 +12,13 @@ export const useVouchers = () => {
   const [currentVoucher, setCurrentVoucher] = useState<Voucher | null>(null);
   const [formData, setFormData] = useState({
     code: "",
-    discount_percentage: 0,
-    discount_amount: "",
+    discount_value: 0,
+    discount_type: "percentage", // percentage, fixed, shipping
     max_uses: "",
     valid_from: new Date().toISOString().split('T')[0],
     valid_until: "",
-    minimum_purchase: "",
+    min_amount: "",
+    payment_method: "",
     is_active: true
   });
 
@@ -51,15 +52,23 @@ export const useVouchers = () => {
     }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const resetForm = () => {
     setFormData({
       code: "",
-      discount_percentage: 0,
-      discount_amount: "",
+      discount_value: 0,
+      discount_type: "percentage",
       max_uses: "",
       valid_from: new Date().toISOString().split('T')[0],
       valid_until: "",
-      minimum_purchase: "",
+      min_amount: "",
+      payment_method: "",
       is_active: true
     });
     setIsEditing(false);
@@ -70,12 +79,13 @@ export const useVouchers = () => {
     setCurrentVoucher(voucher);
     setFormData({
       code: voucher.code,
-      discount_percentage: voucher.discount_percentage,
-      discount_amount: voucher.discount_amount?.toString() || "",
+      discount_value: voucher.discount_value,
+      discount_type: voucher.discount_type,
       max_uses: voucher.max_uses?.toString() || "",
       valid_from: new Date(voucher.valid_from).toISOString().split('T')[0],
       valid_until: voucher.valid_until ? new Date(voucher.valid_until).toISOString().split('T')[0] : "",
-      minimum_purchase: voucher.minimum_purchase?.toString() || "",
+      min_amount: voucher.min_amount?.toString() || "",
+      payment_method: voucher.payment_method || "",
       is_active: voucher.is_active
     });
     setIsEditing(true);
@@ -84,19 +94,20 @@ export const useVouchers = () => {
 
   const handleCreateVoucher = async () => {
     try {
-      if (!formData.code || (!formData.discount_percentage && !formData.discount_amount)) {
-        toast.error("Por favor, preencha pelo menos o código e um tipo de desconto");
+      if (!formData.code || !formData.discount_value) {
+        toast.error("Por favor, preencha pelo menos o código e o valor do desconto");
         return;
       }
 
       const voucherData = {
-        code: formData.code,
-        discount_percentage: Number(formData.discount_percentage),
-        discount_amount: formData.discount_amount ? Number(formData.discount_amount) : null,
+        code: formData.code.toUpperCase(),
+        discount_value: Number(formData.discount_value),
+        discount_type: formData.discount_type,
         max_uses: formData.max_uses ? Number(formData.max_uses) : null,
         valid_from: formData.valid_from,
         valid_until: formData.valid_until || null,
-        minimum_purchase: formData.minimum_purchase ? Number(formData.minimum_purchase) : null,
+        min_amount: formData.min_amount ? Number(formData.min_amount) : null,
+        payment_method: formData.payment_method || null,
         is_active: formData.is_active
       };
 
@@ -161,6 +172,7 @@ export const useVouchers = () => {
     currentVoucher,
     formData,
     handleInputChange,
+    handleSelectChange,
     resetForm,
     openEditDialog,
     handleCreateVoucher,

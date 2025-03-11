@@ -1,12 +1,12 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import DiscountSection from "./summary/DiscountSection";
 import VoucherSection from "./summary/VoucherSection";
 import PaymentMethodSelector from "./summary/PaymentMethodSelector";
 import TotalSummary from "./summary/TotalSummary";
 import ActionButtons from "./summary/ActionButtons";
+import { useQuotationCalculations } from "../hooks/useQuotationCalculations";
 
 interface QuotationSummaryProps {
   selectedCustomer: any;
@@ -39,37 +39,13 @@ const QuotationSummary = ({
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   
-  const calculateSubtotal = () => {
-    return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  };
+  const { 
+    calculateSubtotal, 
+    calculateDiscountAmount, 
+    calculateTotal 
+  } = useQuotationCalculations(selectedProducts, discount, discountType, appliedVoucher);
 
-  const calculateDiscountAmount = () => {
-    const subtotal = calculateSubtotal();
-    
-    // Se tiver um cupom aplicado, usa o desconto dele
-    if (appliedVoucher) {
-      if (appliedVoucher.discount_type === "percentage") {
-        return subtotal * (appliedVoucher.discount_value / 100);
-      } else if (appliedVoucher.discount_type === "fixed") {
-        return appliedVoucher.discount_value;
-      } 
-      // Se for frete grátis, não afeta o valor do produto diretamente
-      return 0;
-    }
-    
-    // Se não tiver cupom, usa o desconto manual
-    if (discountType === "percentage") {
-      return subtotal * (discount / 100);
-    } else {
-      return discount;
-    }
-  };
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const discountAmount = calculateDiscountAmount();
-    return subtotal - discountAmount;
-  };
+  const totalItems = selectedProducts.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <Card>
@@ -90,6 +66,8 @@ const QuotationSummary = ({
             appliedVoucher={appliedVoucher}
             setAppliedVoucher={setAppliedVoucher}
             paymentMethod={paymentMethod}
+            subtotal={calculateSubtotal()}
+            totalItems={totalItems}
           />
           
           {!appliedVoucher && (

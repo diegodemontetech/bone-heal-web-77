@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash } from "lucide-react";
 import { Voucher } from "@/types/voucher";
+import { formatCurrency } from "@/lib/utils";
 
 interface VouchersListProps {
   vouchers: Voucher[];
@@ -18,12 +19,24 @@ export const VouchersList = ({
   onDelete,
   formatDate
 }: VouchersListProps) => {
+  const getDiscountText = (voucher: Voucher) => {
+    if (voucher.discount_type === "percentage") {
+      return `${voucher.discount_value}%`;
+    } else if (voucher.discount_type === "fixed") {
+      return formatCurrency(voucher.discount_value);
+    } else if (voucher.discount_type === "shipping") {
+      return "Frete Grátis";
+    }
+    return "";
+  };
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Código</TableHead>
           <TableHead>Desconto</TableHead>
+          <TableHead>Método de Pagamento</TableHead>
           <TableHead>Validade</TableHead>
           <TableHead>Usos</TableHead>
           <TableHead>Status</TableHead>
@@ -34,10 +47,14 @@ export const VouchersList = ({
         {vouchers.map((voucher) => (
           <TableRow key={voucher.id}>
             <TableCell className="font-medium">{voucher.code}</TableCell>
+            <TableCell>{getDiscountText(voucher)}</TableCell>
             <TableCell>
-              {voucher.discount_percentage > 0 && `${voucher.discount_percentage}%`}
-              {voucher.discount_amount && voucher.discount_percentage > 0 && ' ou '}
-              {voucher.discount_amount && `R$ ${voucher.discount_amount.toFixed(2)}`}
+              {voucher.payment_method ? 
+                (voucher.payment_method === "pix" ? "PIX" : 
+                 voucher.payment_method === "boleto" ? "Boleto" : 
+                 voucher.payment_method === "credit_card" ? "Cartão de Crédito" : 
+                 voucher.payment_method) : 
+                "Todos"}
             </TableCell>
             <TableCell>
               {formatDate(voucher.valid_from)} 

@@ -2,7 +2,8 @@
 export const useQuotationCalculations = (
   selectedProducts: any[],
   discount: number,
-  discountType: string
+  discountType: string,
+  appliedVoucher: any = null
 ) => {
   const calculateSubtotal = () => {
     return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -10,6 +11,19 @@ export const useQuotationCalculations = (
 
   const calculateDiscountAmount = () => {
     const subtotal = calculateSubtotal();
+    
+    // Se tiver um cupom aplicado, usa o desconto dele
+    if (appliedVoucher) {
+      if (appliedVoucher.discount_type === "percentage") {
+        return subtotal * (appliedVoucher.discount_value / 100);
+      } else if (appliedVoucher.discount_type === "fixed") {
+        return appliedVoucher.discount_value;
+      } 
+      // Se for frete grátis, não afeta o valor do produto diretamente
+      return 0;
+    }
+    
+    // Se não tiver cupom, usa o desconto manual
     if (discountType === "percentage") {
       return subtotal * (discount / 100);
     } else {

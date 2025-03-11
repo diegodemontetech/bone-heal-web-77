@@ -16,6 +16,7 @@ const Vouchers = () => {
     currentVoucher,
     formData,
     handleInputChange,
+    handleSelectChange,
     resetForm,
     openEditDialog,
     handleCreateVoucher,
@@ -81,6 +82,7 @@ const Vouchers = () => {
         onSubmit={handleCreateVoucher}
         formData={formData}
         handleInputChange={handleInputChange}
+        handleSelectChange={handleSelectChange}
         resetForm={resetForm}
       />
     </div>

@@ -17,6 +17,8 @@ interface VoucherSectionProps {
   appliedVoucher: any;
   setAppliedVoucher: (voucher: any) => void;
   paymentMethod: string;
+  subtotal: number;
+  totalItems: number;
 }
 
 const VoucherSection = ({
@@ -27,6 +29,8 @@ const VoucherSection = ({
   appliedVoucher,
   setAppliedVoucher,
   paymentMethod,
+  subtotal,
+  totalItems,
 }: VoucherSectionProps) => {
   // Buscar cupons disponíveis
   const { data: vouchers } = useQuery({
@@ -35,9 +39,8 @@ const VoucherSection = ({
       const { data, error } = await supabase
         .from('vouchers')
         .select('*')
-        .lt('current_uses', 'max_uses')
         .is('valid_until', null)
-        .eq('payment_method', paymentMethod);
+        .eq('is_active', true);
         
       if (error) {
         console.error("Erro ao buscar cupons:", error);
@@ -45,7 +48,6 @@ const VoucherSection = ({
       }
       return data || [];
     },
-    enabled: !!paymentMethod, // Só busca quando o método de pagamento estiver selecionado
   });
 
   const handleApplyVoucher = async () => {
@@ -60,10 +62,11 @@ const VoucherSection = ({
         .from('vouchers')
         .select('*')
         .eq('code', voucherCode.toUpperCase())
+        .eq('is_active', true)
         .single();
         
       if (error) {
-        toast.error("Cupom não encontrado");
+        toast.error("Cupom não encontrado ou inativo");
         return;
       }
       
@@ -80,17 +83,17 @@ const VoucherSection = ({
       }
       
       if (data.payment_method && data.payment_method !== paymentMethod) {
-        toast.error(`Este cupom é válido apenas para pagamentos via ${data.payment_method}`);
+        toast.error(`Este cupom é válido apenas para pagamentos via ${data.payment_method === "pix" ? "PIX" : 
+                                                                        data.payment_method === "boleto" ? "Boleto" :
+                                                                        "Cartão de Crédito"}`);
         return;
       }
       
-      const subtotal = 0; // Será calculado no componente pai
       if (data.min_amount && subtotal < data.min_amount) {
         toast.error(`Este cupom exige um valor mínimo de ${formatCurrency(data.min_amount)}`);
         return;
       }
       
-      const totalItems = 0; // Será calculado no componente pai
       if (data.min_items && totalItems < data.min_items) {
         toast.error(`Este cupom exige no mínimo ${data.min_items} itens`);
         return;
@@ -112,6 +115,17 @@ const VoucherSection = ({
     setVoucherCode("");
   };
 
+  const getDiscountText = (voucher: any) => {
+    if (voucher.discount_type === "percentage") {
+      return `${voucher.discount_value}% de desconto`;
+    } else if (voucher.discount_type === "fixed") {
+      return `${formatCurrency(voucher.discount_value)} de desconto`;
+    } else if (voucher.discount_type === "shipping") {
+      return "Frete grátis";
+    }
+    return "";
+  };
+
   return (
     <div className="space-y-2 border p-3 rounded-md">
       <Label className="flex items-center">
@@ -125,9 +139,7 @@ const VoucherSection = ({
             <div>
               <p className="font-medium">{appliedVoucher.code}</p>
               <p className="text-sm text-green-700">
-                {appliedVoucher.discount_type === "percentage" && `${appliedVoucher.discount_value}% de desconto`}
-                {appliedVoucher.discount_type === "fixed" && `${formatCurrency(appliedVoucher.discount_value)} de desconto`}
-                {appliedVoucher.discount_type === "shipping" && "Frete grátis"}
+                {getDiscountText(appliedVoucher)}
               </p>
             </div>
             <Button 

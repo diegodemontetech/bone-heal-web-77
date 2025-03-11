@@ -1,14 +1,10 @@
 
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { VoucherForm } from "./VoucherForm";
 import { Voucher } from "@/types/voucher";
 
@@ -20,6 +16,7 @@ interface VoucherDialogProps {
   onSubmit: () => void;
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSelectChange?: (name: string, value: string) => void;
   resetForm: () => void;
 }
 
@@ -31,6 +28,7 @@ export const VoucherDialog = ({
   onSubmit,
   formData,
   handleInputChange,
+  handleSelectChange,
   resetForm,
 }: VoucherDialogProps) => {
   return (
@@ -42,6 +40,7 @@ export const VoucherDialog = ({
         <VoucherForm
           formData={formData}
           handleInputChange={handleInputChange}
+          handleSelectChange={handleSelectChange}
           onSubmit={onSubmit}
           onCancel={() => {
             setIsOpen(false);

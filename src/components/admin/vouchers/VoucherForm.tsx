@@ -3,11 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Voucher } from "@/types/voucher";
 
 interface VoucherFormProps {
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSelectChange?: (name: string, value: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
   isEditing: boolean;
@@ -16,6 +18,7 @@ interface VoucherFormProps {
 export const VoucherForm = ({
   formData,
   handleInputChange,
+  handleSelectChange,
   onSubmit,
   onCancel,
   isEditing,
@@ -33,32 +36,58 @@ export const VoucherForm = ({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="discount_percentage">Desconto em Porcentagem (%)</Label>
-          <Input
-            id="discount_percentage"
-            name="discount_percentage"
-            type="number"
-            min="0"
-            max="100"
-            value={formData.discount_percentage}
-            onChange={handleInputChange}
-            placeholder="10"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="discount_amount">Desconto em Valor (R$)</Label>
-          <Input
-            id="discount_amount"
-            name="discount_amount"
-            type="number"
-            min="0"
-            value={formData.discount_amount}
-            onChange={handleInputChange}
-            placeholder="50.00"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="discount_type">Tipo de Desconto</Label>
+        <Select
+          value={formData.discount_type}
+          onValueChange={(value) => handleSelectChange && handleSelectChange("discount_type", value)}
+        >
+          <SelectTrigger id="discount_type">
+            <SelectValue placeholder="Selecione o tipo de desconto" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="percentage">Porcentagem (%)</SelectItem>
+            <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+            <SelectItem value="shipping">Frete Grátis</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="discount_value">
+          {formData.discount_type === "percentage" 
+            ? "Desconto (%)" 
+            : formData.discount_type === "fixed" 
+              ? "Desconto (R$)" 
+              : "Valor Mínimo para Frete Grátis (R$)"}
+        </Label>
+        <Input
+          id="discount_value"
+          name="discount_value"
+          type="number"
+          min="0"
+          value={formData.discount_value}
+          onChange={handleInputChange}
+          placeholder={formData.discount_type === "percentage" ? "10" : "50.00"}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="payment_method">Método de Pagamento (opcional)</Label>
+        <Select
+          value={formData.payment_method || ""}
+          onValueChange={(value) => handleSelectChange && handleSelectChange("payment_method", value)}
+        >
+          <SelectTrigger id="payment_method">
+            <SelectValue placeholder="Qualquer método de pagamento" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Todos os métodos</SelectItem>
+            <SelectItem value="pix">PIX</SelectItem>
+            <SelectItem value="boleto">Boleto</SelectItem>
+            <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -75,13 +104,13 @@ export const VoucherForm = ({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="minimum_purchase">Compra Mínima (R$)</Label>
+          <Label htmlFor="min_amount">Compra Mínima (R$)</Label>
           <Input
-            id="minimum_purchase"
-            name="minimum_purchase"
+            id="min_amount"
+            name="min_amount"
             type="number"
             min="0"
-            value={formData.minimum_purchase}
+            value={formData.min_amount}
             onChange={handleInputChange}
             placeholder="100.00"
           />
