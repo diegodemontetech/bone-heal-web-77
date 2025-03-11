@@ -6,11 +6,10 @@ export const useUsersQuery = () => {
   return useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
-      // Buscar perfis de usuários
+      // Buscar todos os perfis de usuários (admins e dentistas)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
-        .or('is_admin.eq.true,role.eq.admin,role.eq.admin_master');
+        .select('*');
 
       if (profilesError) throw profilesError;
 

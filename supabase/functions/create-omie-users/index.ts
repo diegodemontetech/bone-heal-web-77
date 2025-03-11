@@ -20,7 +20,22 @@ async function criarUsuariosOmie() {
   const stats = { created: 0, skipped: 0, errors: 0 };
 
   try {
-    // Buscar clientes do Omie com pedidos que ainda não têm usuário associado
+    // Primeiro, encontrar todos os CNPJs/CPFs exclusivos na tabela pedidos_omie
+    const { data: clientesComPedidos, error: pedidosError } = await supabase
+      .from('pedidos_omie')
+      .select('cnpj_cpf')
+      .not('cnpj_cpf', 'is', null);
+
+    if (pedidosError) {
+      throw new Error(`Erro ao buscar pedidos: ${pedidosError.message}`);
+    }
+
+    console.log(`Encontrados ${clientesComPedidos?.length || 0} CPFs/CNPJs únicos em pedidos`);
+    
+    // Criar um Set para busca rápida
+    const cnpjsComPedidos = new Set(clientesComPedidos.map(p => p.cnpj_cpf));
+    
+    // Buscar clientes que têm pedidos
     const { data: clientes, error: clientesError } = await supabase
       .from('clientes_omie')
       .select(`
@@ -44,31 +59,16 @@ async function criarUsuariosOmie() {
       .not('email', 'eq', '');
 
     if (clientesError) {
-      throw clientesError;
+      throw new Error(`Erro ao buscar clientes: ${clientesError.message}`);
     }
 
-    console.log(`Encontrados ${clientes?.length || 0} clientes para processamento`);
-
-    // Verificar quais clientes têm pedidos
-    const { data: pedidosPorCliente, error: pedidosError } = await supabase
-      .from('pedidos_omie')
-      .select('cnpj_cpf')
-      .is('cliente_id', null);
-
-    if (pedidosError) {
-      throw pedidosError;
-    }
-
-    // Criar um Set com os CNPJs/CPFs dos clientes com pedidos
-    const clientesComPedidos = new Set(pedidosPorCliente.map(p => p.cnpj_cpf));
-
-    console.log(`Encontrados ${clientesComPedidos.size} clientes com pedidos`);
+    console.log(`Encontrados ${clientes?.length || 0} clientes sem usuário associado`);
 
     // Processar apenas clientes que têm pedidos
     for (const cliente of clientes || []) {
       try {
         // Verificar se o cliente tem pedidos
-        if (!clientesComPedidos.has(cliente.cnpj_cpf)) {
+        if (!cnpjsComPedidos.has(cliente.cnpj_cpf)) {
           console.log(`Cliente ${cliente.nome_cliente} (${cliente.cnpj_cpf}) sem pedidos, pulando...`);
           stats.skipped++;
           continue;

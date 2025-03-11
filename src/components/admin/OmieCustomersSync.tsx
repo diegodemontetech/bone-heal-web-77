@@ -1,30 +1,34 @@
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Users, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function OmieCustomersSync() {
+const OmieCustomersSync = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState<any>(null);
+  const [lastResult, setLastResult] = useState<any>(null);
 
-  const syncUsers = async () => {
-    setIsLoading(true);
+  const handleSyncClientes = async () => {
     try {
-      // Chamar a Edge Function
+      setIsLoading(true);
+      
       const { data, error } = await supabase.functions.invoke('create-omie-users');
       
       if (error) {
-        throw error;
+        console.error("Erro na sincronização:", error);
+        toast.error("Erro ao sincronizar clientes com Omie");
+        return;
       }
       
-      setStats(data.stats);
-      toast.success(data.message);
-    } catch (error) {
-      console.error('Erro ao sincronizar usuários:', error);
-      toast.error('Falha ao sincronizar usuários do Omie');
+      console.log("Resultado da sincronização:", data);
+      setLastResult(data);
+      
+      toast.success(data.message || "Sincronização concluída!");
+    } catch (err) {
+      console.error("Erro ao chamar função:", err);
+      toast.error("Erro ao processar sincronização");
     } finally {
       setIsLoading(false);
     }
@@ -33,53 +37,49 @@ export function OmieCustomersSync() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sincronização de Clientes Omie</CardTitle>
+        <CardTitle>Sincronização de Usuários do Omie</CardTitle>
         <CardDescription>
-          Criar usuários automáticos para clientes do Omie que já realizaram pedidos
+          Criar usuários no sistema para clientes que já realizaram pedidos no Omie
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
-          Esta funcionalidade irá criar automaticamente contas de usuários para os clientes
-          do Omie que já realizaram pedidos e ainda não possuem um login no sistema.
-        </p>
-        
-        {stats && (
-          <div className="mt-4 grid grid-cols-3 gap-4">
-            <div className="bg-green-50 p-3 rounded-md">
-              <p className="text-xs text-green-700">Usuários Criados</p>
-              <p className="text-2xl font-bold text-green-700">{stats.created}</p>
+        <div className="flex flex-col space-y-4">
+          <Button 
+            onClick={handleSyncClientes} 
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Sincronizando...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Criar Usuários de Clientes com Pedidos
+              </>
+            )}
+          </Button>
+          
+          {lastResult && (
+            <div className="mt-4 p-4 border rounded bg-muted">
+              <h3 className="font-medium">Último resultado:</h3>
+              <p className="text-sm mt-2">
+                Usuários criados: <span className="font-semibold">{lastResult.stats?.created || 0}</span>
+              </p>
+              <p className="text-sm">
+                Usuários pulados: <span className="font-semibold">{lastResult.stats?.skipped || 0}</span>
+              </p>
+              <p className="text-sm">
+                Erros: <span className="font-semibold">{lastResult.stats?.errors || 0}</span>
+              </p>
             </div>
-            <div className="bg-blue-50 p-3 rounded-md">
-              <p className="text-xs text-blue-700">Usuários Pulados</p>
-              <p className="text-2xl font-bold text-blue-700">{stats.skipped}</p>
-            </div>
-            <div className="bg-red-50 p-3 rounded-md">
-              <p className="text-xs text-red-700">Erros</p>
-              <p className="text-2xl font-bold text-red-700">{stats.errors}</p>
-            </div>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter>
-        <Button 
-          onClick={syncUsers} 
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-              Sincronizando...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" /> 
-              Iniciar Sincronização
-            </>
           )}
-        </Button>
-      </CardFooter>
+        </div>
+      </CardContent>
     </Card>
   );
-}
+};
+
+export default OmieCustomersSync;
