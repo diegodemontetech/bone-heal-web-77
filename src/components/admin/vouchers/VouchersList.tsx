@@ -1,71 +1,23 @@
 
-import { Loader2, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-
-interface Voucher {
-  id: string;
-  code: string;
-  discount_type: string;
-  discount_value: number;
-  valid_until: string | null;
-  max_uses: number | null;
-  current_uses: number;
-  min_amount: number | null;
-  min_items: number | null;
-  payment_method: string | null;
-}
+import { Edit, Trash } from "lucide-react";
+import { Voucher } from "@/types/voucher";
 
 interface VouchersListProps {
-  vouchers: Voucher[] | null;
-  isLoading: boolean;
-  onDelete: () => void;
+  vouchers: Voucher[];
+  onEdit: (voucher: Voucher) => void;
+  onDelete: (id: string) => void;
+  formatDate: (date: string | null) => string;
 }
 
-const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const handleDelete = async (id: string) => {
-    try {
-      setDeletingId(id);
-      const { error } = await supabase
-        .from('vouchers')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success("Cupom excluído com sucesso!");
-      onDelete();
-    } catch (error) {
-      console.error("Erro ao excluir cupom:", error);
-      toast.error("Erro ao excluir cupom");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-  
-  const formatPaymentMethod = (method: string | null) => {
-    if (!method) return "Qualquer";
-    switch(method) {
-      case 'credit_card': return 'Cartão de Crédito';
-      case 'boleto': return 'Boleto';
-      case 'pix': return 'PIX';
-      default: return method;
-    }
-  };
-
+export const VouchersList = ({
+  vouchers,
+  onEdit,
+  onDelete,
+  formatDate
+}: VouchersListProps) => {
   return (
     <Table>
       <TableHeader>
@@ -74,102 +26,56 @@ const VouchersList = ({ vouchers, isLoading, onDelete }: VouchersListProps) => {
           <TableHead>Desconto</TableHead>
           <TableHead>Validade</TableHead>
           <TableHead>Usos</TableHead>
-          <TableHead>Condições</TableHead>
-          <TableHead>Ações</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {isLoading ? (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+        {vouchers.map((voucher) => (
+          <TableRow key={voucher.id}>
+            <TableCell className="font-medium">{voucher.code}</TableCell>
+            <TableCell>
+              {voucher.discount_percentage > 0 && `${voucher.discount_percentage}%`}
+              {voucher.discount_amount && voucher.discount_percentage > 0 && ' ou '}
+              {voucher.discount_amount && `R$ ${voucher.discount_amount.toFixed(2)}`}
             </TableCell>
-          </TableRow>
-        ) : vouchers?.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-              Nenhum cupom encontrado
+            <TableCell>
+              {formatDate(voucher.valid_from)} 
+              {voucher.valid_until && ` até ${formatDate(voucher.valid_until)}`}
             </TableCell>
-          </TableRow>
-        ) : (
-          vouchers?.map((voucher) => (
-            <TableRow key={voucher.id}>
-              <TableCell className="font-medium">{voucher.code}</TableCell>
-              <TableCell>
-                {voucher.discount_type === 'percentage' ? (
-                  <Badge variant="outline" className="bg-blue-50">
-                    {voucher.discount_value}%
-                  </Badge>
-                ) : voucher.discount_type === 'fixed' ? (
-                  <Badge variant="outline" className="bg-green-50">
-                    R$ {voucher.discount_value.toFixed(2)}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-amber-50">
-                    Frete Grátis
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>
-                {voucher.valid_until ? (
-                  new Date(voucher.valid_until).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                  })
-                ) : (
-                  <span className="text-gray-500">Sem limite</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <span className="whitespace-nowrap">
-                  {voucher.current_uses || 0}/{voucher.max_uses ? 
-                    voucher.max_uses : 
-                    <span className="text-gray-500">∞</span>}
-                </span>
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-col gap-1 text-sm">
-                  {voucher.payment_method && (
-                    <span className="whitespace-nowrap">
-                      Pagamento: {formatPaymentMethod(voucher.payment_method)}
-                    </span>
-                  )}
-                  {voucher.min_amount && (
-                    <span className="whitespace-nowrap">
-                      Min: R$ {voucher.min_amount.toFixed(2)}
-                    </span>
-                  )}
-                  {voucher.min_items && (
-                    <span className="whitespace-nowrap">
-                      Min: {voucher.min_items} {voucher.min_items === 1 ? 'item' : 'itens'}
-                    </span>
-                  )}
-                  {!voucher.payment_method && !voucher.min_amount && !voucher.min_items && (
-                    <span className="text-gray-500">Sem condições</span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
+            <TableCell>
+              {voucher.current_uses} 
+              {voucher.max_uses && ` / ${voucher.max_uses}`}
+            </TableCell>
+            <TableCell>
+              {voucher.is_active ? (
+                <Badge className="bg-green-100 text-green-800 border-green-200">Ativo</Badge>
+              ) : (
+                <Badge className="bg-gray-100 text-gray-800 border-gray-200">Inativo</Badge>
+              )}
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end space-x-2">
+                <Button 
+                  variant="outline" 
                   size="icon"
-                  onClick={() => handleDelete(voucher.id)}
-                  disabled={deletingId === voucher.id}
+                  onClick={() => onEdit(voucher)}
                 >
-                  {deletingId === voucher.id ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  )}
+                  <Edit className="h-4 w-4" />
                 </Button>
-              </TableCell>
-            </TableRow>
-          ))
-        )}
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="text-red-500 hover:bg-red-50"
+                  onClick={() => onDelete(voucher.id)}
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
       </TableBody>
     </Table>
   );
 };
-
-export default VouchersList;

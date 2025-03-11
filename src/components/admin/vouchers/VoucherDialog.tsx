@@ -9,36 +9,47 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import VoucherForm from "./VoucherForm";
+import { VoucherForm } from "./VoucherForm";
+import { Voucher } from "@/types/voucher";
 
 interface VoucherDialogProps {
-  onSuccess: () => void;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
+  isEditing: boolean;
+  currentVoucher: Voucher | null;
+  onSubmit: () => void;
+  formData: any;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  resetForm: () => void;
 }
 
-const VoucherDialog = ({ onSuccess }: VoucherDialogProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
+export const VoucherDialog = ({
+  isOpen,
+  setIsOpen,
+  isEditing,
+  currentVoucher,
+  onSubmit,
+  formData,
+  handleInputChange,
+  resetForm,
+}: VoucherDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Cupom
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Criar Novo Cupom</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar Cupom" : "Criar Novo Cupom"}</DialogTitle>
         </DialogHeader>
         <VoucherForm
-          onSuccess={() => {
+          formData={formData}
+          handleInputChange={handleInputChange}
+          onSubmit={onSubmit}
+          onCancel={() => {
             setIsOpen(false);
-            onSuccess();
+            resetForm();
           }}
+          isEditing={isEditing}
         />
       </DialogContent>
     </Dialog>
   );
 };
-
-export default VoucherDialog;
