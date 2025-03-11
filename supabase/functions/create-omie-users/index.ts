@@ -17,7 +17,7 @@ async function criarUsuariosOmie() {
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  const stats = { created: 0, skipped: 0, errors: 0 };
+  const stats = { created: 0, skipped: 0, errors: 0, updated: 0 };
 
   try {
     // Primeiro, encontrar todos os CNPJs/CPFs exclusivos na tabela pedidos_omie
@@ -64,14 +64,13 @@ async function criarUsuariosOmie() {
 
     console.log(`Encontrados ${clientes?.length || 0} clientes sem usuário associado`);
 
-    // Processar apenas clientes que têm pedidos
+    // Processar todos os clientes, mesmo os que não têm pedidos
     for (const cliente of clientes || []) {
       try {
         // Verificar se o cliente tem pedidos
-        if (!cnpjsComPedidos.has(cliente.cnpj_cpf)) {
-          console.log(`Cliente ${cliente.nome_cliente} (${cliente.cnpj_cpf}) sem pedidos, pulando...`);
-          stats.skipped++;
-          continue;
+        const temPedidos = cnpjsComPedidos.has(cliente.cnpj_cpf);
+        if (!temPedidos) {
+          console.log(`Cliente ${cliente.nome_cliente} (${cliente.cnpj_cpf}) sem pedidos, mas será criado mesmo assim`);
         }
 
         // Verificar se o email é válido
@@ -100,7 +99,7 @@ async function criarUsuariosOmie() {
             .update({ cliente_id: cliente.id })
             .eq('cnpj_cpf', cliente.cnpj_cpf);
             
-          stats.skipped++;
+          stats.updated++;
           continue;
         }
 
@@ -181,7 +180,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Sincronização concluída! ${result.created} usuários criados, ${result.skipped} pulados, ${result.errors} erros.`,
+          message: `Sincronização concluída! ${result.created} usuários criados, ${result.updated} atualizados, ${result.skipped} pulados, ${result.errors} erros.`,
           stats: result
         }),
         { 

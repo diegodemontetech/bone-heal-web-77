@@ -1,3 +1,4 @@
+
 import { Loader2 } from "lucide-react";
 import {
   Table,
@@ -21,6 +22,8 @@ interface UserData {
   is_admin: boolean;
   created_at: string;
   permissions: string[];
+  omie_code?: string;
+  omie_sync?: boolean;
 }
 
 interface UsersTableProps {
@@ -53,27 +56,28 @@ const UsersTable = ({
           <TableHead>Função</TableHead>
           <TableHead>Permissões</TableHead>
           <TableHead>Data de Criação</TableHead>
+          <TableHead>Omie</TableHead>
           <TableHead>Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {isLoading ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center py-8">
+            <TableCell colSpan={7} className="text-center py-8">
               <Loader2 className="w-6 h-6 animate-spin mx-auto" />
             </TableCell>
           </TableRow>
         ) : users?.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
               Nenhum usuário encontrado
             </TableCell>
           </TableRow>
         ) : (
           users?.map((user) => (
             <TableRow key={user.id}>
-              <TableCell>{user.full_name}</TableCell>
-              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.full_name || "Sem nome"}</TableCell>
+              <TableCell>{user.email || "Sem email"}</TableCell>
               <TableCell>
                 {user.role ? (
                   <Badge variant="outline">
@@ -105,6 +109,17 @@ const UsersTable = ({
               </TableCell>
               <TableCell>
                 {new Date(user.created_at).toLocaleDateString()}
+              </TableCell>
+              <TableCell>
+                {user.omie_code ? (
+                  <Badge variant="outline" className="bg-green-100">
+                    Integrado
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-gray-100">
+                    Não integrado
+                  </Badge>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex space-x-2">
