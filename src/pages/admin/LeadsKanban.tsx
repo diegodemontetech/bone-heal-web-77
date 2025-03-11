@@ -1,5 +1,5 @@
 
-import { LeadsKanban } from "@/components/admin/kanban/LeadsKanban";
+import LeadsKanban from "@/components/admin/kanban/LeadsKanban";
 
 const LeadsKanbanPage = () => {
   return <LeadsKanban />;

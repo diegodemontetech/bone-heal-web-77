@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 interface FlowCreateFormProps {
   onCreateFlow: (name: string, description: string) => Promise<any>;
@@ -13,12 +14,28 @@ interface FlowCreateFormProps {
 
 const FlowCreateForm = ({ onCreateFlow, onComplete }: FlowCreateFormProps) => {
   const [flowData, setFlowData] = useState({ name: "", description: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCreate = async () => {
-    const result = await onCreateFlow(flowData.name, flowData.description);
-    if (result) {
-      setFlowData({ name: "", description: "" });
-      onComplete();
+    try {
+      if (!flowData.name.trim()) {
+        toast.error("O nome do fluxo é obrigatório");
+        return;
+      }
+
+      setIsSubmitting(true);
+      const result = await onCreateFlow(flowData.name, flowData.description);
+      
+      if (result) {
+        setFlowData({ name: "", description: "" });
+        toast.success("Fluxo criado com sucesso!");
+        onComplete();
+      }
+    } catch (error) {
+      console.error("Erro ao criar fluxo:", error);
+      toast.error("Erro ao criar fluxo. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -47,7 +64,12 @@ const FlowCreateForm = ({ onCreateFlow, onComplete }: FlowCreateFormProps) => {
         <DialogClose asChild>
           <Button variant="outline">Cancelar</Button>
         </DialogClose>
-        <Button onClick={handleCreate}>Criar Fluxo</Button>
+        <Button 
+          onClick={handleCreate} 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Criando..." : "Criar Fluxo"}
+        </Button>
       </div>
     </div>
   );
