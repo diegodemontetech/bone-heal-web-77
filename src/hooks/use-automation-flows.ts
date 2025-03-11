@@ -14,6 +14,9 @@ export interface AutomationFlow {
   is_active: boolean;
 }
 
+// Exportar Flow como alias para AutomationFlow para compatibilidade com os componentes existentes
+export type Flow = AutomationFlow;
+
 export const useAutomationFlows = () => {
   const [flows, setFlows] = useState<AutomationFlow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,10 +40,6 @@ export const useAutomationFlows = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchFlows();
-  }, []);
 
   const createFlow = async (name: string, description: string) => {
     try {
@@ -80,7 +79,7 @@ export const useAutomationFlows = () => {
     }
   };
 
-  const deleteFlow = async (id: string) => {
+  const deleteFlow = async (id: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from("automation_flows")
@@ -91,24 +90,19 @@ export const useAutomationFlows = () => {
 
       setFlows((prev) => prev.filter((flow) => flow.id !== id));
       toast.success("Fluxo excluído com sucesso!");
+      return true;
     } catch (err: any) {
       console.error("Erro ao excluir fluxo:", err);
       toast.error("Erro ao excluir fluxo");
+      return false;
     }
   };
 
-  const duplicateFlow = async (id: string) => {
+  const duplicateFlow = async (flow: Flow): Promise<any> => {
     try {
       // Busca o fluxo a ser duplicado
-      const { data: flowToDuplicate, error: fetchError } = await supabase
-        .from("automation_flows")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (fetchError) throw fetchError;
-      if (!flowToDuplicate) throw new Error("Fluxo não encontrado");
-
+      const flowToDuplicate = flow;
+      
       // Cria novo fluxo com os mesmos dados
       const { data: duplicatedFlow, error: insertError } = await supabase
         .from("automation_flows")
@@ -137,30 +131,32 @@ export const useAutomationFlows = () => {
     }
   };
 
-  const toggleFlowStatus = async (id: string, currentStatus: boolean) => {
+  const toggleFlowStatus = async (flow: Flow): Promise<boolean> => {
     try {
-      const newStatus = !currentStatus;
+      const newStatus = !flow.is_active;
 
       const { error } = await supabase
         .from("automation_flows")
         .update({ is_active: newStatus })
-        .eq("id", id);
+        .eq("id", flow.id);
 
       if (error) throw error;
 
       // Atualiza a lista de fluxos
       setFlows((prev) =>
-        prev.map((flow) =>
-          flow.id === id ? { ...flow, is_active: newStatus } : flow
+        prev.map((f) =>
+          f.id === flow.id ? { ...f, is_active: newStatus } : f
         )
       );
 
       toast.success(
         `Fluxo ${newStatus ? "ativado" : "desativado"} com sucesso!`
       );
+      return true;
     } catch (err: any) {
       console.error("Erro ao atualizar status do fluxo:", err);
       toast.error("Erro ao atualizar status do fluxo");
+      return false;
     }
   };
 
