@@ -1,9 +1,10 @@
 
 import { useState } from "react";
-import { jsPDF } from "jspdf";
-import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { jsPDF } from "jspdf";
+import { formatCurrency } from "@/lib/utils";
+import { Quotation, QuotationItem } from "./useQuotationsQuery";
 
 export const usePdfGenerator = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -11,154 +12,175 @@ export const usePdfGenerator = () => {
   const generatePdf = async (quotationId: string) => {
     setIsGeneratingPdf(true);
     try {
-      // Buscar os dados completos do orçamento
+      // Buscar dados do orçamento
       const { data: quotation, error } = await supabase
         .from("quotations")
-        .select("*")
+        .select("*, customer:profiles(full_name, email, phone, address, city, state)")
         .eq("id", quotationId)
         .single();
 
       if (error) throw error;
+      if (!quotation) throw new Error("Orçamento não encontrado");
 
-      // Criar um novo documento PDF
+      // Criar PDF
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
       
-      // Adicionar título
-      doc.setFontSize(20);
-      doc.setTextColor(0, 102, 204);
-      doc.text("BONE HEAL - ORÇAMENTO", 105, 20, { align: "center" });
+      // Configurações do documento
+      const margin = 20;
+      let yPos = 20;
       
-      // Número do orçamento
+      // Estilo do texto
       doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Nº: ${quotationId.substring(0, 8)}`, 105, 27, { align: "center" });
+      doc.setFont("helvetica", "normal");
+
+      // Cabeçalho
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("BONE HEAL", pageWidth / 2, yPos, { align: "center" });
+      yPos += 10;
       
-      // Data atual e validade
-      const currentDate = new Date();
-      const validityDate = new Date();
-      validityDate.setDate(validityDate.getDate() + 5);
-      
+      doc.setFontSize(14);
+      doc.text("ORÇAMENTO", pageWidth / 2, yPos, { align: "center" });
+      yPos += 15;
+
+      // Informações do orçamento
       doc.setFontSize(10);
-      doc.text(`Data de emissão: ${currentDate.toLocaleDateString('pt-BR')}`, 105, 33, { align: "center" });
-      doc.text(`Válido até: ${validityDate.toLocaleDateString('pt-BR')}`, 105, 39, { align: "center" });
+      doc.setFont("helvetica", "bold");
+      doc.text(`Nº do Orçamento: ${quotation.id.substring(0, 8)}`, margin, yPos);
+      yPos += 5;
       
-      // Informações do cliente
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text("DADOS DO CLIENTE", 15, 55);
+      doc.text(`Data: ${new Date(quotation.created_at).toLocaleDateString('pt-BR')}`, margin, yPos);
+      yPos += 5;
       
-      if (quotation.customer_info) {
-        const customer = quotation.customer_info;
-        doc.setFontSize(10);
-        doc.text(`Nome: ${customer.name || 'N/A'}`, 15, 62);
-        doc.text(`Documento: ${customer.document || 'N/A'}`, 15, 68);
-        doc.text(`Email: ${customer.email || 'N/A'}`, 15, 74);
-        doc.text(`Telefone: ${customer.phone || 'N/A'}`, 15, 80);
-        doc.text(`Endereço: ${customer.address || 'N/A'}, ${customer.city || 'N/A'} - ${customer.state || 'N/A'}`, 15, 86);
+      doc.text(`Validade: ${new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`, margin, yPos);
+      yPos += 10;
+
+      // Dados do cliente
+      const customer = Array.isArray(quotation.customer) 
+        ? (quotation.customer.length > 0 ? quotation.customer[0] : null) 
+        : quotation.customer;
+      
+      if (customer) {
+        doc.setFont("helvetica", "bold");
+        doc.text("DADOS DO CLIENTE", margin, yPos);
+        yPos += 5;
+        
+        doc.setFont("helvetica", "normal");
+        doc.text(`Nome: ${customer.full_name || 'Não informado'}`, margin, yPos);
+        yPos += 5;
+        
+        doc.text(`Email: ${customer.email || 'Não informado'}`, margin, yPos);
+        yPos += 5;
+        
+        doc.text(`Telefone: ${customer.phone || 'Não informado'}`, margin, yPos);
+        yPos += 5;
+        
+        const address = customer.address ? 
+          `${customer.address}, ${customer.city || ''} - ${customer.state || ''}` : 
+          'Não informado';
+        doc.text(`Endereço: ${address}`, margin, yPos);
+        yPos += 10;
       }
+
+      // Lista de produtos
+      doc.setFont("helvetica", "bold");
+      doc.text("PRODUTOS", margin, yPos);
+      yPos += 7;
+
+      // Cabeçalho da tabela
+      const tableHeaders = ["Produto", "Qtd", "Preço Unit.", "Total"];
+      const columnWidths = [pageWidth - 140, 20, 40, 40];
+      let xPos = margin;
       
-      // Tabela de produtos
-      doc.setFontSize(12);
-      doc.text("PRODUTOS", 15, 100);
+      tableHeaders.forEach((header, i) => {
+        doc.text(header, xPos, yPos);
+        xPos += columnWidths[i];
+      });
       
-      if (quotation.items && quotation.items.length > 0) {
-        // Implementamos manualmente a tabela
-        const cols = ["Item", "Quantidade", "Valor Unit.", "Subtotal"];
-        const colWidths = [90, 30, 30, 30];
-        const startX = 15;
-        let startY = 105;
-        
-        // Cabeçalho da tabela
-        doc.setFillColor(0, 102, 204);
-        doc.setTextColor(255, 255, 255);
-        doc.rect(startX, startY, 180, 10, 'F');
-        
-        // Escrever os cabeçalhos
-        let currentX = startX + 5;
-        for (let i = 0; i < cols.length; i++) {
-          doc.text(cols[i], currentX, startY + 6);
-          currentX += colWidths[i];
-        }
-        
-        // Conteúdo da tabela
-        startY += 10;
-        doc.setTextColor(0, 0, 0);
-        
-        // Alternar cores das linhas
-        let isEven = false;
-        for (const item of quotation.items) {
-          if (isEven) {
-            doc.setFillColor(240, 240, 240);
-            doc.rect(startX, startY, 180, 10, 'F');
+      yPos += 5;
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 5;
+
+      // Dados da tabela
+      const items = quotation.items || [];
+      if (items.length > 0) {
+        items.forEach((item: QuotationItem) => {
+          xPos = margin;
+          
+          // Produto (com quebra de linha se necessário)
+          const productName = item.product_name || "Produto sem nome";
+          const lines = doc.splitTextToSize(productName, columnWidths[0] - 5);
+          doc.setFont("helvetica", "normal");
+          doc.text(lines, xPos, yPos);
+          
+          // Determinar a altura máxima dessa linha
+          const lineHeight = lines.length * 5;
+          
+          // Quantidade
+          xPos += columnWidths[0];
+          doc.text(item.quantity.toString(), xPos, yPos);
+          
+          // Preço unitário
+          xPos += columnWidths[1];
+          doc.text(formatCurrency(item.unit_price), xPos, yPos);
+          
+          // Total
+          xPos += columnWidths[2];
+          doc.text(formatCurrency(item.total_price), xPos, yPos);
+          
+          yPos += Math.max(lineHeight, 7); // Garantir espaço mínimo entre linhas
+          
+          // Verificar se precisamos de uma nova página
+          if (yPos > doc.internal.pageSize.getHeight() - 50) {
+            doc.addPage();
+            yPos = 20; // Reset para o topo da nova página
           }
-          
-          let rowX = startX + 5;
-          doc.text(item.name.substring(0, 40), rowX, startY + 6);
-          rowX += colWidths[0];
-          
-          doc.text(String(item.quantity), rowX, startY + 6);
-          rowX += colWidths[1];
-          
-          doc.text(formatCurrency(item.price), rowX, startY + 6);
-          rowX += colWidths[2];
-          
-          doc.text(formatCurrency(item.price * item.quantity), rowX, startY + 6);
-          
-          startY += 10;
-          isEven = !isEven;
-        }
-        
-        // Footer da tabela com os totais
-        startY += 5;
-        doc.setFillColor(240, 240, 240);
-        doc.rect(startX, startY, 180, 10, 'F');
-        doc.text("Subtotal:", startX + 125, startY + 6);
-        doc.text(formatCurrency(quotation.subtotal_amount), startX + 155, startY + 6);
-        
-        startY += 10;
-        doc.rect(startX, startY, 180, 10, 'F');
-        doc.text("Desconto:", startX + 125, startY + 6);
-        doc.text(formatCurrency(quotation.discount_amount), startX + 155, startY + 6);
-        
-        startY += 10;
-        doc.setFillColor(230, 230, 230);
-        doc.rect(startX, startY, 180, 10, 'F');
-        doc.setFontSize(12);
-        doc.text("Total:", startX + 125, startY + 6);
-        doc.text(formatCurrency(quotation.total_amount), startX + 155, startY + 6);
+        });
+      } else {
+        doc.setFont("helvetica", "italic");
+        doc.text("Nenhum produto no orçamento", margin, yPos);
+        yPos += 7;
       }
+
+      // Linha divisória
+      doc.line(margin, yPos, pageWidth - margin, yPos);
+      yPos += 10;
+
+      // Resumo de valores
+      const rightAlign = pageWidth - margin;
       
+      doc.setFont("helvetica", "normal");
+      doc.text("Subtotal:", rightAlign - 70, yPos);
+      doc.text(formatCurrency(quotation.subtotal_amount || 0), rightAlign, yPos, { align: "right" });
+      yPos += 7;
+      
+      doc.text("Desconto:", rightAlign - 70, yPos);
+      doc.text(formatCurrency(quotation.discount_amount || 0), rightAlign, yPos, { align: "right" });
+      yPos += 7;
+      
+      doc.setFont("helvetica", "bold");
+      doc.text("TOTAL:", rightAlign - 70, yPos);
+      doc.text(formatCurrency(quotation.total_amount || 0), rightAlign, yPos, { align: "right" });
+      yPos += 15;
+
       // Forma de pagamento
-      const finalY = startY + 20;
-      doc.setFontSize(10);
-      doc.text(`Forma de pagamento: ${quotation.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
-                                     quotation.payment_method === 'pix' ? 'PIX' : 
-                                     quotation.payment_method === 'boleto' ? 'Boleto Bancário' : 
-                                     'A combinar'}`, 15, finalY);
-      
-      // Observações e termos
-      doc.text("Observações:", 15, finalY + 10);
-      doc.text("- Orçamento válido por 5 dias a partir da data de emissão.", 15, finalY + 16);
-      doc.text("- Pagamento conforme condições acordadas.", 15, finalY + 22);
-      doc.text("- Prazo de entrega a combinar após confirmação de pedido.", 15, finalY + 28);
-      
+      doc.setFont("helvetica", "normal");
+      doc.text(`Forma de pagamento: ${quotation.payment_method || 'Não especificada'}`, margin, yPos);
+      yPos += 15;
+
       // Rodapé
-      const pageHeight = doc.internal.pageSize.height;
+      const currentDate = new Date().toLocaleDateString('pt-BR');
       doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text("BoneHeal Ltda. - CNPJ: 00.000.000/0001-00", 105, pageHeight - 10, { align: "center" });
-      doc.text("Av. Exemplo, 1000 - São Paulo/SP - CEP 00000-000 - Tel: (11) 0000-0000", 105, pageHeight - 6, { align: "center" });
+      doc.text(`Documento gerado em ${currentDate}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+
+      // Salvar o PDF
+      doc.save(`orcamento-${quotation.id.substring(0, 8)}.pdf`);
       
-      // Baixar o PDF
-      doc.save(`orcamento-${quotationId.substring(0, 8)}.pdf`);
-      
-      toast.success("PDF baixado com sucesso");
-      
-      // Retornar os dados do orçamento para uso posterior
-      return quotation;
+      toast.success("PDF gerado com sucesso");
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao baixar o PDF do orçamento");
+      toast.error("Não foi possível gerar o PDF do orçamento");
     } finally {
       setIsGeneratingPdf(false);
     }
