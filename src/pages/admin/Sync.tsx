@@ -1,25 +1,24 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import OmieCustomersSync from "@/components/admin/OmieCustomersSync";
-import TestOmieSync from "@/components/TestOmieSync";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { RefreshCw } from "lucide-react";
 
 const Sync = () => {
   return (
-    <div className="p-8 space-y-6">
-      <h1 className="text-2xl font-bold">Sincronização</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <OmieCustomersSync />
-        
+    <div className="p-8">
+      <div className="flex items-center gap-2 mb-6">
+        <RefreshCw className="w-6 h-6 text-primary" />
+        <h1 className="text-2xl font-bold">Sincronização</h1>
+      </div>
+
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Teste de Sincronização</CardTitle>
-            <CardDescription>
-              Teste a sincronização de um único cliente com o Omie
-            </CardDescription>
+            <CardTitle>Sincronização com Sistemas Externos</CardTitle>
           </CardHeader>
           <CardContent>
-            <TestOmieSync />
+            <p className="text-muted-foreground">
+              Configure a sincronização de dados com sistemas externos como Omie.
+            </p>
           </CardContent>
         </Card>
       </div>

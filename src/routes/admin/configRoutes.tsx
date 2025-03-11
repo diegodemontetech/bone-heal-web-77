@@ -1,55 +1,55 @@
 
 import { RouteObject } from "react-router-dom";
-import AdminSettings from "@/pages/admin/Settings";
-import AdminShipping from "@/pages/admin/Shipping";
-import AdminShippingRates from "@/pages/admin/ShippingRates";
-import AdminVouchers from "@/pages/admin/Vouchers";
-import AdminCommercialConditions from "@/pages/admin/CommercialConditions";
-import AdminEmailTemplates from "@/pages/admin/EmailTemplates";
-import AdminSecurity from "@/pages/admin/Security";
-import AdminSync from "@/pages/admin/Sync";
-import AdminApiEvolution from "@/pages/admin/ApiEvolution";
-import AdminN8n from "@/pages/admin/N8n";
+import Settings from "@/pages/admin/Settings";
+import Shipping from "@/pages/admin/Shipping";
+import ShippingRates from "@/pages/admin/ShippingRates";
+import Vouchers from "@/pages/admin/Vouchers";
+import CommercialConditions from "@/pages/admin/CommercialConditions";
+import EmailTemplates from "@/pages/admin/EmailTemplates";
+import Security from "@/pages/admin/Security";
+import Sync from "@/pages/admin/Sync";
+import ApiEvolution from "@/pages/admin/ApiEvolution";
+import N8n from "@/pages/admin/N8n";
 
 export const configRoutes: RouteObject[] = [
   {
     path: "settings",
-    element: <AdminSettings />
+    element: <Settings />
   },
   {
     path: "shipping",
-    element: <AdminShipping />
+    element: <Shipping />
   },
   {
     path: "shipping-rates",
-    element: <AdminShippingRates />
+    element: <ShippingRates />
   },
   {
     path: "vouchers",
-    element: <AdminVouchers />
+    element: <Vouchers />
   },
   {
     path: "commercial-conditions",
-    element: <AdminCommercialConditions />
+    element: <CommercialConditions />
   },
   {
     path: "email-templates",
-    element: <AdminEmailTemplates />
+    element: <EmailTemplates />
   },
   {
     path: "security",
-    element: <AdminSecurity />
+    element: <Security />
   },
   {
     path: "sync",
-    element: <AdminSync />
+    element: <Sync />
   },
   {
     path: "api-evolution",
-    element: <AdminApiEvolution />
+    element: <ApiEvolution />
   },
   {
     path: "n8n",
-    element: <AdminN8n />
+    element: <N8n />
   }
 ];
