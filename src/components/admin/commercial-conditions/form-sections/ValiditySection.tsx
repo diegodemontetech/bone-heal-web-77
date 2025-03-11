@@ -11,7 +11,7 @@ import {
 
 interface ValiditySectionProps {
   validUntil: string;
-  paymentMethod: string;
+  paymentMethod: string | null;
   onValidUntilChange: (value: string) => void;
   onPaymentMethodChange: (value: string) => void;
 }
@@ -23,21 +23,26 @@ const ValiditySection = ({
   onPaymentMethodChange
 }: ValiditySectionProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <h3 className="text-base font-medium">Validade e Forma de Pagamento</h3>
+      
       <div className="space-y-2">
-        <Label htmlFor="valid_until">Válido até (deixe em branco para validade ilimitada)</Label>
+        <Label htmlFor="valid_until">Válido até</Label>
         <Input
           id="valid_until"
           type="datetime-local"
           value={validUntil}
           onChange={(e) => onValidUntilChange(e.target.value)}
         />
+        <p className="text-sm text-muted-foreground">
+          Deixe em branco para validade permanente
+        </p>
       </div>
-
+      
       <div className="space-y-2">
-        <Label htmlFor="payment_method">Método de Pagamento (deixe em branco para todos)</Label>
+        <Label htmlFor="payment_method">Método de Pagamento</Label>
         <Select
-          value={paymentMethod}
+          value={paymentMethod || ""}
           onValueChange={onPaymentMethodChange}
         >
           <SelectTrigger>
@@ -50,6 +55,9 @@ const ValiditySection = ({
             <SelectItem value="pix">PIX</SelectItem>
           </SelectContent>
         </Select>
+        <p className="text-sm text-muted-foreground">
+          Condicionar desconto a método de pagamento específico
+        </p>
       </div>
     </div>
   );

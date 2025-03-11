@@ -1,5 +1,6 @@
 
-import { Loader2, Trash2, Edit, Eye, Power } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Trash2, Copy, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -11,9 +12,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/utils";
 import CommercialConditionDialog from "./CommercialConditionDialog";
 
 interface CommercialCondition {
@@ -43,73 +44,103 @@ const CommercialConditionsList = ({
   conditions, 
   isLoading, 
   onDelete,
-  onToggle 
+  onToggle
 }: CommercialConditionsListProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [editCondition, setEditCondition] = useState<CommercialCondition | null>(null);
-
+  const [editingCondition, setEditingCondition] = useState<CommercialCondition | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
   const handleDelete = async (id: string) => {
-    try {
-      setDeletingId(id);
-      const { error } = await supabase
-        .from('commercial_conditions')
-        .delete()
-        .eq('id', id);
+    if (confirm("Tem certeza que deseja excluir esta condição comercial?")) {
+      try {
+        setDeletingId(id);
+        const { error } = await supabase
+          .from('commercial_conditions')
+          .delete()
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast.success("Condição comercial excluída com sucesso!");
-      onDelete();
-    } catch (error) {
-      console.error("Erro ao excluir condição comercial:", error);
-      toast.error("Erro ao excluir condição comercial");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const handleToggleActive = async (id: string, currentState: boolean) => {
-    try {
-      setUpdatingId(id);
-      const { error } = await supabase
-        .from('commercial_conditions')
-        .update({ is_active: !currentState })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast.success(`Condição comercial ${!currentState ? 'ativada' : 'desativada'} com sucesso!`);
-      onToggle();
-    } catch (error) {
-      console.error("Erro ao atualizar condição comercial:", error);
-      toast.error("Erro ao atualizar condição comercial");
-    } finally {
-      setUpdatingId(null);
+        toast.success("Condição comercial excluída com sucesso!");
+        onDelete();
+      } catch (error: any) {
+        console.error("Erro ao excluir condição comercial:", error);
+        toast.error("Erro ao excluir condição comercial");
+      } finally {
+        setDeletingId(null);
+      }
     }
   };
   
-  const formatDiscountType = (type: string, value: number) => {
-    switch(type) {
-      case 'percentage':
-        return <Badge variant="outline" className="bg-blue-50">{value}%</Badge>;
-      case 'fixed':
-        return <Badge variant="outline" className="bg-green-50">R$ {value.toFixed(2)}</Badge>;
-      case 'shipping':
-        return <Badge variant="outline" className="bg-amber-50">Frete Grátis</Badge>;
-      default:
-        return value;
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('commercial_conditions')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success(`Condição ${!currentStatus ? 'ativada' : 'desativada'} com sucesso!`);
+      onToggle();
+    } catch (error: any) {
+      console.error("Erro ao alterar status da condição:", error);
+      toast.error("Erro ao alterar status da condição");
     }
   };
-
-  const formatPaymentMethod = (method: string | null) => {
-    if (!method) return "Qualquer";
-    switch(method) {
-      case 'credit_card': return 'Cartão de Crédito';
-      case 'boleto': return 'Boleto';
-      case 'pix': return 'PIX';
-      default: return method;
+  
+  const handleEdit = (condition: CommercialCondition) => {
+    setEditingCondition(condition);
+    setIsDialogOpen(true);
+  };
+  
+  const formatDiscountValue = (type: string, value: number) => {
+    if (type === 'percentage') {
+      return `${value}%`;
+    } else if (type === 'fixed') {
+      return formatCurrency(value);
+    } else {
+      return 'Frete Grátis';
     }
+  };
+  
+  const formatRegion = (region: string | null) => {
+    if (!region) return null;
+    
+    const regions: Record<string, string> = {
+      'north': 'Norte',
+      'northeast': 'Nordeste',
+      'midwest': 'Centro-Oeste',
+      'southeast': 'Sudeste',
+      'south': 'Sul'
+    };
+    
+    return regions[region] || region;
+  };
+  
+  const formatCustomerGroup = (group: string | null) => {
+    if (!group) return null;
+    
+    const groups: Record<string, string> = {
+      'new': 'Novos clientes',
+      'vip': 'Clientes VIP',
+      'clinic': 'Clínicas',
+      'hospital': 'Hospitais'
+    };
+    
+    return groups[group] || group;
+  };
+  
+  const formatPaymentMethod = (method: string | null) => {
+    if (!method) return null;
+    
+    const methods: Record<string, string> = {
+      'credit_card': 'Cartão de Crédito',
+      'boleto': 'Boleto',
+      'pix': 'PIX'
+    };
+    
+    return methods[method] || method;
   };
 
   return (
@@ -117,11 +148,11 @@ const CommercialConditionsList = ({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Status</TableHead>
             <TableHead>Nome</TableHead>
             <TableHead>Desconto</TableHead>
-            <TableHead>Validade</TableHead>
             <TableHead>Condições</TableHead>
-            <TableHead>Ativo</TableHead>
+            <TableHead>Segmentação</TableHead>
             <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -140,82 +171,85 @@ const CommercialConditionsList = ({
             </TableRow>
           ) : (
             conditions?.map((condition) => (
-              <TableRow key={condition.id} className={!condition.is_active ? "opacity-60" : ""}>
+              <TableRow key={condition.id}>
+                <TableCell>
+                  <div className="flex items-center">
+                    <Switch
+                      checked={condition.is_active}
+                      onCheckedChange={() => handleToggleActive(condition.id, condition.is_active)}
+                      className="mr-2"
+                    />
+                    {condition.is_active ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-gray-400" />
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell className="font-medium">
-                  <div className="flex flex-col">
-                    <span>{condition.name}</span>
+                  <div>
+                    {condition.name}
                     {condition.description && (
-                      <span className="text-xs text-muted-foreground">{condition.description}</span>
+                      <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                        {condition.description}
+                      </p>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
-                  {formatDiscountType(condition.discount_type, condition.discount_value)}
-                </TableCell>
-                <TableCell>
-                  {condition.valid_until ? (
-                    new Date(condition.valid_until).toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric'
-                    })
-                  ) : (
-                    <span className="text-gray-500">Sem limite</span>
+                  <Badge variant={
+                    condition.discount_type === 'percentage' ? 'outline' : 
+                    condition.discount_type === 'fixed' ? 'secondary' : 
+                    'default'
+                  }>
+                    {formatDiscountValue(condition.discount_type, condition.discount_value)}
+                  </Badge>
+                  {condition.free_shipping && (
+                    <Badge variant="outline" className="ml-2 bg-blue-50">
+                      Frete Grátis
+                    </Badge>
                   )}
                 </TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-1 text-sm">
+                  <div className="space-y-1 text-sm">
                     {condition.payment_method && (
-                      <span className="whitespace-nowrap">
-                        Pagamento: {formatPaymentMethod(condition.payment_method)}
-                      </span>
+                      <div>Pagamento: {formatPaymentMethod(condition.payment_method)}</div>
                     )}
                     {condition.min_amount && (
-                      <span className="whitespace-nowrap">
-                        Min: R$ {condition.min_amount.toFixed(2)}
-                      </span>
+                      <div>Valor mínimo: {formatCurrency(condition.min_amount)}</div>
                     )}
                     {condition.min_items && (
-                      <span className="whitespace-nowrap">
-                        Min: {condition.min_items} {condition.min_items === 1 ? 'item' : 'itens'}
-                      </span>
+                      <div>Itens mínimos: {condition.min_items}</div>
                     )}
-                    {condition.region && (
-                      <span className="whitespace-nowrap">
-                        Região: {condition.region}
-                      </span>
+                    {condition.valid_until && (
+                      <div>Válido até: {new Date(condition.valid_until).toLocaleDateString('pt-BR')}</div>
                     )}
-                    {condition.customer_group && (
-                      <span className="whitespace-nowrap">
-                        Grupo: {condition.customer_group}
-                      </span>
-                    )}
-                    {condition.free_shipping && (
-                      <span className="whitespace-nowrap text-green-600">
-                        Frete grátis
-                      </span>
-                    )}
-                    {!condition.payment_method && !condition.min_amount && !condition.min_items && 
-                     !condition.region && !condition.customer_group && !condition.free_shipping && (
+                    {!condition.payment_method && !condition.min_amount && !condition.min_items && !condition.valid_until && (
                       <span className="text-gray-500">Sem condições</span>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Switch 
-                    checked={condition.is_active} 
-                    disabled={updatingId === condition.id}
-                    onCheckedChange={() => handleToggleActive(condition.id, condition.is_active)}
-                  />
+                  <div className="space-y-1 text-sm">
+                    {condition.region && (
+                      <div>Região: {formatRegion(condition.region)}</div>
+                    )}
+                    {condition.customer_group && (
+                      <div>Grupo: {formatCustomerGroup(condition.customer_group)}</div>
+                    )}
+                    {!condition.region && !condition.customer_group && (
+                      <span className="text-gray-500">Sem segmentação</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
+                  <div className="flex space-x-2">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setEditCondition(condition)}
+                      onClick={() => handleEdit(condition)}
                     >
-                      <Edit className="w-4 h-4 text-blue-500" />
+                      <Copy className="h-4 w-4 text-blue-500" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -224,9 +258,9 @@ const CommercialConditionsList = ({
                       disabled={deletingId === condition.id}
                     >
                       {deletingId === condition.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-red-500" />
                       )}
                     </Button>
                   </div>
@@ -236,16 +270,20 @@ const CommercialConditionsList = ({
           )}
         </TableBody>
       </Table>
-
-      {editCondition && (
-        <CommercialConditionDialog 
-          condition={editCondition} 
+      
+      {editingCondition && (
+        <CommercialConditionDialog
+          condition={editingCondition}
+          open={isDialogOpen}
           onSuccess={() => {
-            setEditCondition(null);
+            setIsDialogOpen(false);
+            setEditingCondition(null);
             onToggle();
-          }} 
-          onCancel={() => setEditCondition(null)}
-          open={!!editCondition}
+          }}
+          onCancel={() => {
+            setIsDialogOpen(false);
+            setEditingCondition(null);
+          }}
         />
       )}
     </>

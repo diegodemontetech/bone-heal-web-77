@@ -12,212 +12,186 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-serve(async (req) => {
-  // Tratar solicitações CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+// Interface para um remetente de mensagem
+interface Sender {
+  phone: string;
+  name: string;
+}
+
+// Interface para uma mensagem recebida
+interface IncomingMessage {
+  leadId: string;
+  content: string;
+  sender: Sender;
+}
+
+// Processa uma mensagem da Evolution API
+function processEvolutionMessage(message: any): IncomingMessage | null {
+  if (!message || !message.key || !message.key.remoteJid) {
+    console.error("Mensagem inválida da Evolution API:", message);
+    return null;
   }
 
-  try {
-    // Processar o webhook
-    const body = await req.json();
-    console.log("Webhook recebido:", JSON.stringify(body));
+  const phone = message.key.remoteJid.split('@')[0];
+  const name = message.pushName || 'Desconhecido';
+  const content = message.message?.conversation || 
+                  message.message?.extendedTextMessage?.text ||
+                  '[Mensagem sem texto]';
+  
+  console.log(`Mensagem de ${name} (${phone}): ${content}`);
+  
+  return {
+    content,
+    sender: { phone, name },
+    leadId: '' // Será preenchido depois
+  };
+}
 
-    // Processar mensagem recebida do Evolution API
-    if (body.event === 'messages.upsert' && body.message?.key?.fromMe === false) {
-      const message = body.message;
-      const msgContent = message.message?.conversation || 
-                         message.message?.extendedTextMessage?.text ||
-                         '[Mensagem sem texto]';
-      
-      // Obter informações do remetente
-      const sender = {
-        phone: message.key.remoteJid.split('@')[0],
-        name: message.pushName || 'Desconhecido'
-      };
-      
-      console.log(`Mensagem de ${sender.name} (${sender.phone}): ${msgContent}`);
-      
-      // Verificar se o contato/lead já existe
-      const { data: leadData, error: leadError } = await supabase
+// Processa uma mensagem da Z-API
+function processZAPIMessage(body: any): IncomingMessage | null {
+  if (!body) {
+    console.error("Payload inválido da Z-API");
+    return null;
+  }
+
+  const phone = (body.phone || body.from || '')
+                 .replace(/^(\d+)@.*$/, '$1');
+  const content = body.text || body.message || body.body || '[Sem texto]';
+  const name = body.name || body.notifyName || 'Desconhecido';
+  
+  if (!phone || !content) {
+    console.error("Dados insuficientes da Z-API:", body);
+    return null;
+  }
+  
+  console.log(`Mensagem Z-API de ${name} (${phone}): ${content}`);
+  
+  return {
+    content,
+    sender: { phone, name },
+    leadId: '' // Será preenchido depois
+  };
+}
+
+// Verifica ou cria um lead com base no remetente
+async function findOrCreateLead(sender: Sender): Promise<string> {
+  try {
+    // Buscar lead existente
+    const { data: leadData, error: leadError } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('phone', sender.phone)
+      .single();
+    
+    if (leadError || !leadData) {
+      // Criar novo lead
+      const { data: newLead, error: createError } = await supabase
         .from('leads')
-        .select('*')
-        .eq('phone', sender.phone)
+        .insert({
+          name: sender.name,
+          phone: sender.phone,
+          status: 'novo',
+          source: 'whatsapp',
+          needs_human: true,
+          last_contact: new Date().toISOString()
+        })
+        .select()
         .single();
       
-      let lead;
-      
-      // Se o lead não existir, criar um novo
-      if (leadError || !leadData) {
-        const { data: newLead, error: createError } = await supabase
-          .from('leads')
-          .insert({
-            name: sender.name,
-            phone: sender.phone,
-            status: 'novo',
-            source: 'whatsapp',
-            needs_human: true,
-            last_contact: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
-        if (createError) {
-          console.error("Erro ao criar lead:", createError.message);
-          throw createError;
-        }
-        
-        lead = newLead;
-        console.log("Novo lead criado:", lead.id);
-        
-        // Criar notificação para novo lead
-        await supabase
-          .from('notifications')
-          .insert({
-            type: 'whatsapp_human_needed',
-            content: `Novo contato de ${sender.name} (${sender.phone}) precisa de atendimento humano.`,
-            status: 'pending'
-          });
-      } else {
-        lead = leadData;
-        console.log("Lead existente encontrado:", lead.id);
-        
-        // Atualizar timestamp de último contato e marcar como precisando de atendimento humano
-        const { error: updateError } = await supabase
-          .from('leads')
-          .update({ 
-            last_contact: new Date().toISOString(),
-            needs_human: true 
-          })
-          .eq('id', lead.id);
-        
-        if (updateError) {
-          console.error("Erro ao atualizar lead:", updateError.message);
-        }
-        
-        // Criar notificação apenas se o lead ainda não estiver marcado como precisando de atendimento
-        if (!lead.needs_human) {
-          await supabase
-            .from('notifications')
-            .insert({
-              type: 'whatsapp_human_needed',
-              content: `${sender.name} (${sender.phone}) precisa de atendimento humano.`,
-              status: 'pending'
-            });
-        }
+      if (createError) {
+        console.error("Erro ao criar lead:", createError.message);
+        throw createError;
       }
       
-      // Registrar a mensagem no banco de dados
-      const { error: msgError } = await supabase
-        .from('whatsapp_messages')
+      // Criar notificação para novo lead
+      await supabase
+        .from('notifications')
         .insert({
-          lead_id: lead.id,
-          message: msgContent,
-          direction: 'incoming',
-          is_bot: false
+          type: 'whatsapp_human_needed',
+          content: `Novo contato de ${sender.name} (${sender.phone}) precisa de atendimento humano.`,
+          status: 'pending'
         });
       
-      if (msgError) {
-        console.error("Erro ao registrar mensagem:", msgError.message);
-      }
-      
-      // TODO: Implementar integração com IA para atendimento automatizado
-      // Por enquanto, apenas aguardar atendimento humano
+      return newLead.id;
+    } 
+    
+    // Atualizar lead existente
+    const { error: updateError } = await supabase
+      .from('leads')
+      .update({ 
+        last_contact: new Date().toISOString(),
+        needs_human: true 
+      })
+      .eq('id', leadData.id);
+    
+    if (updateError) {
+      console.error("Erro ao atualizar lead:", updateError.message);
     }
     
-    // Processar webhook da Z-API como alternativa
-    else if (body.phone || body.messageId) {
-      const phone = body.phone || body.from || '';
-      const message = body.text || body.message || body.body || '[Sem texto]';
-      const senderName = body.name || body.notifyName || 'Desconhecido';
+    // Criar notificação apenas se o lead ainda não estiver marcado como precisando de atendimento
+    if (!leadData.needs_human) {
+      await supabase
+        .from('notifications')
+        .insert({
+          type: 'whatsapp_human_needed',
+          content: `${sender.name} (${sender.phone}) precisa de atendimento humano.`,
+          status: 'pending'
+        });
+    }
+    
+    return leadData.id;
+  } catch (error) {
+    console.error("Erro ao processar lead:", error.message);
+    throw error;
+  }
+}
+
+// Registra mensagem no banco de dados
+async function saveMessage(leadId: string, content: string): Promise<void> {
+  try {
+    const { error: msgError } = await supabase
+      .from('whatsapp_messages')
+      .insert({
+        lead_id: leadId,
+        message: content,
+        direction: 'incoming',
+        is_bot: false
+      });
+    
+    if (msgError) {
+      console.error("Erro ao registrar mensagem:", msgError.message);
+      throw msgError;
+    }
+  } catch (error) {
+    console.error("Erro ao salvar mensagem:", error);
+    throw error;
+  }
+}
+
+// Processa o webhook
+async function processWebhook(req: Request): Promise<Response> {
+  try {
+    const body = await req.json();
+    console.log("Webhook recebido:", JSON.stringify(body));
+    
+    let message: IncomingMessage | null = null;
+    
+    // Determinar o tipo de webhook e extrair a mensagem
+    if (body.event === 'messages.upsert' && body.message?.key?.fromMe === false) {
+      // Webhook da Evolution API
+      message = processEvolutionMessage(body.message);
+    } else if (body.phone || body.messageId) {
+      // Webhook da Z-API
+      message = processZAPIMessage(body);
+    }
+    
+    if (message) {
+      // Processar a mensagem recebida
+      const leadId = await findOrCreateLead(message.sender);
+      message.leadId = leadId;
       
-      // Remover prefixo/sufixo do número se necessário (Z-API envia com prefixo)
-      const cleanPhone = phone.replace(/^(\d+)@.*$/, '$1');
-      
-      if (cleanPhone && message) {
-        console.log(`Mensagem Z-API de ${senderName} (${cleanPhone}): ${message}`);
-        
-        // Verificar se o contato/lead já existe
-        const { data: leadData, error: leadError } = await supabase
-          .from('leads')
-          .select('*')
-          .eq('phone', cleanPhone)
-          .single();
-        
-        let lead;
-        
-        // Se o lead não existir, criar um novo
-        if (leadError || !leadData) {
-          const { data: newLead, error: createError } = await supabase
-            .from('leads')
-            .insert({
-              name: senderName,
-              phone: cleanPhone,
-              status: 'novo',
-              source: 'whatsapp',
-              needs_human: true,
-              last_contact: new Date().toISOString()
-            })
-            .select()
-            .single();
-          
-          if (createError) {
-            console.error("Erro ao criar lead:", createError.message);
-            throw createError;
-          }
-          
-          lead = newLead;
-          
-          // Criar notificação para novo lead
-          await supabase
-            .from('notifications')
-            .insert({
-              type: 'whatsapp_human_needed',
-              content: `Novo contato de ${senderName} (${cleanPhone}) precisa de atendimento humano.`,
-              status: 'pending'
-            });
-        } else {
-          lead = leadData;
-          
-          // Atualizar timestamp de último contato e marcar como precisando de atendimento humano
-          const { error: updateError } = await supabase
-            .from('leads')
-            .update({ 
-              last_contact: new Date().toISOString(),
-              needs_human: true 
-            })
-            .eq('id', lead.id);
-          
-          if (updateError) {
-            console.error("Erro ao atualizar lead:", updateError.message);
-          }
-          
-          // Criar notificação apenas se o lead ainda não estiver marcado como precisando de atendimento
-          if (!lead.needs_human) {
-            await supabase
-              .from('notifications')
-              .insert({
-                type: 'whatsapp_human_needed',
-                content: `${senderName} (${cleanPhone}) precisa de atendimento humano.`,
-                status: 'pending'
-              });
-          }
-        }
-        
-        // Registrar a mensagem no banco de dados
-        const { error: msgError } = await supabase
-          .from('whatsapp_messages')
-          .insert({
-            lead_id: lead.id,
-            message: message,
-            direction: 'incoming',
-            is_bot: false
-          });
-        
-        if (msgError) {
-          console.error("Erro ao registrar mensagem:", msgError.message);
-        }
-      }
+      // Salvar a mensagem no banco
+      await saveMessage(leadId, message.content);
     }
     
     return new Response(
@@ -231,4 +205,14 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
+}
+
+// Handler principal
+serve(async (req) => {
+  // Tratar solicitações CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
+  return processWebhook(req);
 });

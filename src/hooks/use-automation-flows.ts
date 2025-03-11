@@ -1,39 +1,38 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
-export interface Flow {
+export interface AutomationFlow {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   created_at: string;
   updated_at: string;
+  nodes: any[];
+  edges: any[];
   is_active: boolean;
 }
 
 export const useAutomationFlows = () => {
-  const [flows, setFlows] = useState<Flow[]>([]);
+  const [flows, setFlows] = useState<AutomationFlow[]>([]);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchFlows = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("automation_flows")
         .select("*")
-        .order("updated_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setFlows(data || []);
-    } catch (error) {
-      console.error("Erro ao buscar fluxos:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os fluxos de trabalho",
-        variant: "destructive",
-      });
+    } catch (err: any) {
+      console.error("Erro ao buscar fluxos de automação:", err);
+      setError(err);
+      toast.error("Erro ao carregar fluxos de automação");
     } finally {
       setLoading(false);
     }
@@ -45,53 +44,43 @@ export const useAutomationFlows = () => {
 
   const createFlow = async (name: string, description: string) => {
     try {
+      // Certifique-se de que os campos estão preenchidos
       if (!name.trim()) {
-        toast({
-          title: "Campo obrigatório",
-          description: "Nome do fluxo é obrigatório",
-          variant: "destructive",
-        });
-        return null;
+        throw new Error("O nome do fluxo é obrigatório");
       }
 
+      // Cria um novo fluxo com valores iniciais
       const { data, error } = await supabase
         .from("automation_flows")
-        .insert({
-          name,
-          description,
-          nodes: [],
-          edges: [],
-          is_active: false,
-        })
-        .select("*")
+        .insert([
+          {
+            name,
+            description: description || null,
+            nodes: [],
+            edges: [],
+            is_active: false
+          }
+        ])
+        .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar fluxo:", error);
+        throw error;
+      }
 
-      toast({
-        title: "Sucesso",
-        description: "Fluxo de trabalho criado com sucesso",
-      });
-
-      // Adiciona o novo fluxo ao state e retorna
-      const newFlow = data as Flow;
-      setFlows((prevFlows) => [newFlow, ...prevFlows]);
-      return newFlow;
-    } catch (error) {
-      console.error("Erro ao criar fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o fluxo de trabalho",
-        variant: "destructive",
-      });
-      throw error; // Propaga o erro para ser tratado no componente
+      // Atualiza a lista de fluxos no state
+      setFlows((prev) => [data, ...prev]);
+      toast.success("Fluxo criado com sucesso!");
+      return data;
+    } catch (err: any) {
+      console.error("Erro ao criar fluxo:", err);
+      toast.error(`Erro ao criar fluxo: ${err.message}`);
+      throw err;
     }
   };
 
-  // ... manter o código existente para as outras funções
   const deleteFlow = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este fluxo de trabalho?")) return false;
-
     try {
       const { error } = await supabase
         .from("automation_flows")
@@ -100,107 +89,89 @@ export const useAutomationFlows = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: "Fluxo de trabalho excluído com sucesso",
-      });
-
-      setFlows(flows.filter(flow => flow.id !== id));
-      return true;
-    } catch (error) {
-      console.error("Erro ao excluir fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o fluxo de trabalho",
-        variant: "destructive",
-      });
-      return false;
+      setFlows((prev) => prev.filter((flow) => flow.id !== id));
+      toast.success("Fluxo excluído com sucesso!");
+    } catch (err: any) {
+      console.error("Erro ao excluir fluxo:", err);
+      toast.error("Erro ao excluir fluxo");
     }
   };
 
-  const duplicateFlow = async (flowToDuplicate: Flow) => {
+  const duplicateFlow = async (id: string) => {
     try {
-      // Fetch the flow data first
-      const { data: flowData, error: fetchError } = await supabase
+      // Busca o fluxo a ser duplicado
+      const { data: flowToDuplicate, error: fetchError } = await supabase
         .from("automation_flows")
         .select("*")
-        .eq("id", flowToDuplicate.id)
+        .eq("id", id)
         .single();
 
       if (fetchError) throw fetchError;
+      if (!flowToDuplicate) throw new Error("Fluxo não encontrado");
 
-      // Insert a new flow with the same data
-      const { data: newFlowData, error: insertError } = await supabase
+      // Cria novo fluxo com os mesmos dados
+      const { data: duplicatedFlow, error: insertError } = await supabase
         .from("automation_flows")
-        .insert({
-          name: `${flowToDuplicate.name} (Cópia)`,
-          description: flowToDuplicate.description,
-          nodes: flowData.nodes,
-          edges: flowData.edges,
-          is_active: false,
-        })
-        .select("*")
+        .insert([
+          {
+            name: `${flowToDuplicate.name} (cópia)`,
+            description: flowToDuplicate.description,
+            nodes: flowToDuplicate.nodes,
+            edges: flowToDuplicate.edges,
+            is_active: false // Sempre cria desativado
+          }
+        ])
+        .select()
         .single();
 
       if (insertError) throw insertError;
 
-      toast({
-        title: "Sucesso",
-        description: "Fluxo de trabalho duplicado com sucesso",
-      });
-
-      const newFlow = newFlowData as Flow;
-      setFlows((prevFlows) => [newFlow, ...prevFlows]);
-      return newFlow;
-    } catch (error) {
-      console.error("Erro ao duplicar fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível duplicar o fluxo de trabalho",
-        variant: "destructive",
-      });
+      // Atualiza a lista de fluxos
+      setFlows((prev) => [duplicatedFlow, ...prev]);
+      toast.success("Fluxo duplicado com sucesso!");
+      return duplicatedFlow;
+    } catch (err: any) {
+      console.error("Erro ao duplicar fluxo:", err);
+      toast.error("Erro ao duplicar fluxo");
       return null;
     }
   };
 
-  const toggleFlowStatus = async (flow: Flow) => {
+  const toggleFlowStatus = async (id: string, currentStatus: boolean) => {
     try {
+      const newStatus = !currentStatus;
+
       const { error } = await supabase
         .from("automation_flows")
-        .update({ is_active: !flow.is_active })
-        .eq("id", flow.id);
+        .update({ is_active: newStatus })
+        .eq("id", id);
 
       if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: `Fluxo ${flow.is_active ? "desativado" : "ativado"} com sucesso`,
-      });
-
-      setFlows(
-        flows.map(f => 
-          f.id === flow.id ? { ...f, is_active: !f.is_active } : f
+      // Atualiza a lista de fluxos
+      setFlows((prev) =>
+        prev.map((flow) =>
+          flow.id === id ? { ...flow, is_active: newStatus } : flow
         )
       );
-      return true;
-    } catch (error) {
-      console.error("Erro ao alterar status do fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível alterar o status do fluxo",
-        variant: "destructive",
-      });
-      return false;
+
+      toast.success(
+        `Fluxo ${newStatus ? "ativado" : "desativado"} com sucesso!`
+      );
+    } catch (err: any) {
+      console.error("Erro ao atualizar status do fluxo:", err);
+      toast.error("Erro ao atualizar status do fluxo");
     }
   };
 
   return {
     flows,
     loading,
-    fetchFlows,
+    error,
     createFlow,
     deleteFlow,
     duplicateFlow,
-    toggleFlowStatus
+    toggleFlowStatus,
+    refreshFlows: fetchFlows
   };
 };

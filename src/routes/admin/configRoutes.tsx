@@ -1,114 +1,55 @@
 
-import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { UserPermission } from "@/types/auth";
-
-// Admin pages
-const AdminSecurity = lazy(() => import("@/pages/admin/Security"));
-const AdminShippingRates = lazy(() => import("@/pages/admin/ShippingRates"));
-const AdminVouchers = lazy(() => import("@/pages/admin/Vouchers"));
-const AdminCommercialConditions = lazy(() => import("@/pages/admin/CommercialConditions"));
-
-// Placeholder para páginas que ainda não foram implementadas
-const PlaceholderPage = lazy(() => import("@/pages/admin/PlaceholderPage"));
-
-// Loader para componentes com lazy loading
-const AdminLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
+import AdminSettings from "@/pages/admin/Settings";
+import AdminShipping from "@/pages/admin/Shipping";
+import AdminShippingRates from "@/pages/admin/ShippingRates";
+import AdminVouchers from "@/pages/admin/Vouchers";
+import AdminCommercialConditions from "@/pages/admin/CommercialConditions";
+import AdminEmailTemplates from "@/pages/admin/EmailTemplates";
+import AdminSecurity from "@/pages/admin/Security";
+import AdminSync from "@/pages/admin/Sync";
+import AdminApiEvolution from "@/pages/admin/ApiEvolution";
+import AdminN8n from "@/pages/admin/N8n";
 
 export const configRoutes: RouteObject[] = [
   {
-    path: "security",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <AdminSecurity />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    path: "settings",
+    element: <AdminSettings />
   },
   {
     path: "shipping",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <AdminShippingRates />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminShipping />
   },
   {
     path: "shipping-rates",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <AdminShippingRates />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminShippingRates />
   },
   {
     path: "vouchers",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_PRODUCTS}>
-          <AdminVouchers />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminVouchers />
   },
   {
     path: "commercial-conditions",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <AdminCommercialConditions />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminCommercialConditions />
   },
   {
     path: "email-templates",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <PlaceholderPage title="Templates de Email" />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminEmailTemplates />
+  },
+  {
+    path: "security",
+    element: <AdminSecurity />
   },
   {
     path: "sync",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <PlaceholderPage title="Sincronização" />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminSync />
   },
   {
     path: "api-evolution",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <PlaceholderPage title="API Evolution" />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminApiEvolution />
   },
   {
     path: "n8n",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
-          <PlaceholderPage title="n8n" />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AdminN8n />
   }
 ];

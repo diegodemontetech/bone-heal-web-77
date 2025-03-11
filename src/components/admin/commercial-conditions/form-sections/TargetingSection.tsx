@@ -8,12 +8,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const BRAZILIAN_REGIONS = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"];
-const CUSTOMER_GROUPS = ["Varejista", "Distribuidor", "Clínica", "Hospital", "Instituição Pública"];
-
 interface TargetingSectionProps {
-  region: string;
-  customerGroup: string;
+  region: string | null;
+  customerGroup: string | null;
   onRegionChange: (value: string) => void;
   onCustomerGroupChange: (value: string) => void;
 }
@@ -24,39 +21,62 @@ const TargetingSection = ({
   onRegionChange,
   onCustomerGroupChange
 }: TargetingSectionProps) => {
+  // Opções de regiões do Brasil
+  const regionOptions = [
+    { value: "", label: "Todas as regiões" },
+    { value: "north", label: "Norte" },
+    { value: "northeast", label: "Nordeste" },
+    { value: "midwest", label: "Centro-Oeste" },
+    { value: "southeast", label: "Sudeste" },
+    { value: "south", label: "Sul" }
+  ];
+  
+  // Opções de grupos de clientes
+  const customerGroupOptions = [
+    { value: "", label: "Todos os clientes" },
+    { value: "new", label: "Novos clientes" },
+    { value: "vip", label: "Clientes VIP" },
+    { value: "clinic", label: "Clínicas" },
+    { value: "hospital", label: "Hospitais" }
+  ];
+  
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      <h3 className="text-base font-medium">Segmentação</h3>
+      
       <div className="space-y-2">
-        <Label htmlFor="region">Região (deixe em branco para todas)</Label>
+        <Label htmlFor="region">Região</Label>
         <Select
-          value={region}
+          value={region || ""}
           onValueChange={onRegionChange}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Todas as regiões" />
+          <SelectTrigger id="region">
+            <SelectValue placeholder="Selecione uma região" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as regiões</SelectItem>
-            {BRAZILIAN_REGIONS.map((region) => (
-              <SelectItem key={region} value={region}>{region}</SelectItem>
+            {regionOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-
+      
       <div className="space-y-2">
-        <Label htmlFor="customer_group">Grupo de Clientes (deixe em branco para todos)</Label>
+        <Label htmlFor="customer_group">Grupo de Clientes</Label>
         <Select
-          value={customerGroup}
+          value={customerGroup || ""}
           onValueChange={onCustomerGroupChange}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Todos os grupos" />
+          <SelectTrigger id="customer_group">
+            <SelectValue placeholder="Selecione um grupo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os grupos</SelectItem>
-            {CUSTOMER_GROUPS.map((group) => (
-              <SelectItem key={group} value={group}>{group}</SelectItem>
+            {customerGroupOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

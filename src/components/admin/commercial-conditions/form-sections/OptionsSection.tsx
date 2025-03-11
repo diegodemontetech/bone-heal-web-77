@@ -1,6 +1,5 @@
 
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 
 interface OptionsSectionProps {
@@ -17,39 +16,37 @@ const OptionsSection = ({
   onIsActiveChange
 }: OptionsSectionProps) => {
   return (
-    <>
-      <div className="flex items-center space-x-2">
-        <Checkbox 
+    <div className="space-y-4">
+      <h3 className="text-base font-medium">Opções Adicionais</h3>
+      
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label htmlFor="free_shipping">Frete Grátis</Label>
+          <p className="text-sm text-muted-foreground">
+            Oferecer frete grátis com esta condição
+          </p>
+        </div>
+        <Switch
           id="free_shipping"
           checked={freeShipping}
-          onCheckedChange={(checked) => 
-            onFreeShippingChange(checked === true)
-          }
+          onCheckedChange={onFreeShippingChange}
         />
-        <Label 
-          htmlFor="free_shipping" 
-          className="font-normal cursor-pointer"
-        >
-          Incluir frete grátis nesta condição
-        </Label>
       </div>
-
-      <div className="flex items-center space-x-2">
-        <Switch 
+      
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label htmlFor="is_active">Ativar Condição</Label>
+          <p className="text-sm text-muted-foreground">
+            A condição comercial estará ativa imediatamente
+          </p>
+        </div>
+        <Switch
           id="is_active"
           checked={isActive}
-          onCheckedChange={(checked) => 
-            onIsActiveChange(checked)
-          }
+          onCheckedChange={onIsActiveChange}
         />
-        <Label 
-          htmlFor="is_active" 
-          className="font-normal cursor-pointer"
-        >
-          Condição ativa
-        </Label>
       </div>
-    </>
+    </div>
   );
 };
 
