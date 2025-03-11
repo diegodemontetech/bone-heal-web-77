@@ -30,13 +30,34 @@ export const useProductImages = (initialImages: string[] = []) => {
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
         const filePath = fileName;
 
-        const { error: uploadError } = await supabase.storage
-          .from('products')
-          .upload(filePath, file);
+        // Verificar se o bucket 'products' existe
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const productBucketExists = buckets?.some(bucket => bucket.name === 'products');
+        
+        if (!productBucketExists) {
+          throw new Error("O bucket 'products' não existe no Supabase Storage");
+        }
 
-        if (uploadError) throw uploadError;
+        // Realizar o upload com tratamento de erros melhorado
+        const { error: uploadError, data } = await supabase.storage
+          .from('products')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error("Erro no upload:", uploadError);
+          throw uploadError;
+        }
+
+        // Obter a URL pública da imagem
+        const { data: publicUrlData } = supabase.storage
+          .from('products')
+          .getPublicUrl(filePath);
 
         newImages.push(fileName);
+        console.log("Imagem enviada com sucesso:", fileName);
       }
 
       setImages(newImages);
@@ -45,6 +66,7 @@ export const useProductImages = (initialImages: string[] = []) => {
       });
       return newImages;
     } catch (error: any) {
+      console.error("Erro detalhado ao fazer upload:", error);
       toast({
         title: "Erro ao fazer upload das imagens",
         description: error.message,
