@@ -24,5 +24,15 @@ export const userRoutes: RouteObject[] = [
         </ProtectedRoute>
       </Suspense>
     )
+  },
+  {
+    path: "users/:id",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_USERS}>
+          <AdminUsers />
+        </ProtectedRoute>
+      </Suspense>
+    )
   }
 ];

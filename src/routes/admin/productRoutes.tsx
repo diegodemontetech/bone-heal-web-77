@@ -38,6 +38,16 @@ export const productRoutes: RouteObject[] = [
     )
   },
   {
+    path: "products/:id",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_PRODUCTS}>
+          <AdminProductForm />
+        </ProtectedRoute>
+      </Suspense>
+    )
+  },
+  {
     path: "vouchers",
     element: (
       <Suspense fallback={<AdminLoader />}>
