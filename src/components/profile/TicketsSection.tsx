@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Headset, MessageSquare, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 export const TicketsSection = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [ticketData, setTicketData] = useState({
@@ -44,7 +44,7 @@ export const TicketsSection = () => {
       const { data, error } = await supabase
         .from("support_tickets")
         .insert({
-          customer_id: user?.id,
+          customer_id: profile?.id,
           subject: ticketData.subject,
           description: ticketData.description,
           priority: ticketData.priority,
