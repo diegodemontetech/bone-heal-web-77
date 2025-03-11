@@ -1,6 +1,2 @@
 
 project_id = "kurpshcdafxbyqnzxvxu"
-cors_enabled = true
-
-[functions.webhook-whatsapp]
-verify_jwt = false

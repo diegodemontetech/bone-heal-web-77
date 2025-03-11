@@ -1,8 +1,8 @@
 
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send } from 'lucide-react';
+import { Send, Paperclip, Loader2 } from 'lucide-react';
 
 interface MessageInputProps {
   onSendMessage: (message: string) => Promise<void>;
@@ -11,35 +11,62 @@ interface MessageInputProps {
 const MessageInput = ({ onSendMessage }: MessageInputProps) => {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-
-  const handleSend = async () => {
-    if (!message.trim()) return;
+  
+  const handleSendMessage = async () => {
+    if (!message.trim() || sending) return;
     
-    setSending(true);
     try {
-      await onSendMessage(message.trim());
+      setSending(true);
+      await onSendMessage(message);
       setMessage('');
     } finally {
       setSending(false);
     }
   };
+  
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Enviar no Enter sem Shift
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   return (
-    <div className="p-4 border-t flex gap-2">
-      <Input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Digite sua mensagem..."
-        className="flex-1"
-        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-      />
-      <Button 
-        onClick={handleSend} 
-        disabled={sending || !message.trim()}
-        type="button"
-      >
-        {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-      </Button>
+    <div className="p-3 border-t">
+      <div className="flex items-end gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
+          type="button"
+        >
+          <Paperclip className="h-5 w-5" />
+        </Button>
+        
+        <Textarea
+          placeholder="Digite sua mensagem..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          rows={1}
+          className="min-h-[2.5rem] resize-none"
+        />
+        
+        <Button
+          type="button"
+          size="icon"
+          className="rounded-full h-10 w-10"
+          onClick={handleSendMessage}
+          disabled={!message.trim() || sending}
+        >
+          {sending ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

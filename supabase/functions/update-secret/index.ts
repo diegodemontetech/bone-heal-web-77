@@ -1,117 +1,109 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // Lidar com solicitações CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+  // Tratar solicitações CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
   }
-
+  
   try {
-    // Verificar autenticação - apenas administradores podem atualizar segredos
+    // Inicializar cliente Supabase para verificação de permissões
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_ANON_KEY") || "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization") || "" },
-        },
-      }
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: "Não autorizado" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401,
-        }
-      );
+    
+    // Autenticar usuário
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Usuário não autorizado' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Verificar se o usuário é administrador
-    const { data: profile } = await supabaseClient
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      return new Response(
-        JSON.stringify({ error: "Você não tem permissão para atualizar segredos" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 403,
-        }
-      );
+    // Verificar se o usuário tem permissão para gerenciar integrações
+    const { data: permissions, error: permError } = await supabaseClient
+      .from('user_permissions')
+      .select('permission')
+      .eq('user_id', user.id)
+      .eq('permission', 'manage_integrations');
+    
+    if (permError || !permissions || permissions.length === 0) {
+      return new Response(JSON.stringify({ error: 'Sem permissão para gerenciar integrações' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    // Obter os segredos a serem atualizados
+    
+    // Processar dados da requisição
     const { secrets } = await req.json();
-
-    if (!secrets || typeof secrets !== "object") {
-      return new Response(
-        JSON.stringify({ error: "Formato de segredos inválido" }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        }
-      );
+    
+    if (!secrets || typeof secrets !== 'object') {
+      return new Response(JSON.stringify({ error: 'Formato de dados inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
-
-    // Usamos o cliente administrativo para modificar segredos
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") || "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-    );
-
-    // Na produção real, seria necessário usar a API do Supabase para atualizar segredos
-    // Esta é uma simulação onde "salvamos" os valores dos segredos em uma tabela
-    for (const [key, value] of Object.entries(secrets)) {
-      if (typeof value === "string") {
-        // Simulação: atualizar a tabela de configurações com os segredos
-        await supabaseAdmin
-          .from("app_secrets")
-          .upsert(
-            {
-              key,
-              value,
-              updated_by: user.id,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "key" }
-          );
-
-        console.log(`Segredo atualizado: ${key}`);
-      }
+    
+    // URL da API Admin do Supabase
+    const projectRef = Deno.env.get('SUPABASE_PROJECT_ID') || 'kurpshcdafxbyqnzxvxu';
+    const apiKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    
+    // API para atualizar secrets
+    const secretsUrl = `https://api.supabase.com/v1/projects/${projectRef}/secrets`;
+    
+    // Formatar secrets para o formato esperado pela API
+    const secretsArray = Object.entries(secrets).map(([name, value]) => ({
+      name,
+      value: String(value)
+    }));
+    
+    console.log(`Atualizando ${secretsArray.length} secretos`);
+    
+    // Enviar para a API do Supabase
+    const response = await fetch(secretsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(secretsArray)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Erro ao atualizar secretos: ${errorText}`);
+      throw new Error(`Erro na API do Supabase: ${response.status} ${errorText}`);
     }
-
-    return new Response(
-      JSON.stringify({ success: true, message: "Segredos atualizados com sucesso" }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error("Erro ao atualizar segredos:", error);
     
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
+      JSON.stringify({ success: true, message: 'Secretos atualizados com sucesso' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    
+  } catch (error) {
+    console.error('Erro na função:', error.message);
+    return new Response(
+      JSON.stringify({ success: false, error: `Erro ao atualizar secretos: ${error.message}` }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });

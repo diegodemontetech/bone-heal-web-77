@@ -150,6 +150,42 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_stage_automations: {
+        Row: {
+          action_data: Json
+          action_type: string
+          created_at: string
+          hours_trigger: number | null
+          id: string
+          is_active: boolean
+          next_stage: string | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          action_data: Json
+          action_type: string
+          created_at?: string
+          hours_trigger?: number | null
+          id?: string
+          is_active?: boolean
+          next_stage?: string | null
+          stage: string
+          updated_at?: string
+        }
+        Update: {
+          action_data?: Json
+          action_type?: string
+          created_at?: string
+          hours_trigger?: number | null
+          id?: string
+          is_active?: boolean
+          next_stage?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dental_specialties: {
         Row: {
           created_at: string | null
@@ -307,6 +343,57 @@ export type Database = {
         }
         Relationships: []
       }
+      leads: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          email: string | null
+          id: string
+          last_contact: string
+          name: string | null
+          needs_human: boolean
+          notes: string | null
+          phone: string
+          source: string
+          stage: string
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact?: string
+          name?: string | null
+          needs_human?: boolean
+          notes?: string | null
+          phone: string
+          source?: string
+          stage?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          last_contact?: string
+          name?: string | null
+          needs_human?: boolean
+          notes?: string | null
+          phone?: string
+          source?: string
+          stage?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           author: string | null
@@ -373,6 +460,36 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read_at: string | null
+          status: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          status?: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          status?: string
+          type?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -982,6 +1099,42 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          customer_id: string
+          description: string
+          id: string
+          priority: string
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          customer_id: string
+          description: string
+          id?: string
+          priority?: string
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          customer_id?: string
+          description?: string
+          id?: string
+          priority?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sync_progress: {
         Row: {
           created_at: string
@@ -1005,6 +1158,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ticket_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_from_customer: boolean
+          message: string
+          sender_id: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_from_customer?: boolean
+          message: string
+          sender_id: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_from_customer?: boolean
+          message?: string
+          sender_id?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {
@@ -1074,6 +1262,90 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: []
+      }
+      whatsapp_instances: {
+        Row: {
+          created_at: string
+          id: string
+          instance_name: string
+          qr_code: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instance_name: string
+          qr_code?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instance_name?: string
+          qr_code?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          instance_id: string | null
+          is_bot: boolean
+          lead_id: string
+          media_type: string | null
+          media_url: string | null
+          message: string
+          sender_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          instance_id?: string | null
+          is_bot?: boolean
+          lead_id: string
+          media_type?: string | null
+          media_url?: string | null
+          message: string
+          sender_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          instance_id?: string | null
+          is_bot?: boolean
+          lead_id?: string
+          media_type?: string | null
+          media_url?: string | null
+          message?: string
+          sender_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_messages_config: {
         Row: {
