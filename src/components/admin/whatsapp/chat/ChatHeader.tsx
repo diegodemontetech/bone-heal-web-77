@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Phone, MoreVertical, RefreshCw } from 'lucide-react';
+import { Phone, MoreVertical, RefreshCw, Copy, Check } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -20,6 +20,7 @@ interface ChatHeaderProps {
 
 const ChatHeader = ({ selectedLead }: ChatHeaderProps) => {
   const [refreshing, setRefreshing] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   const handleRefreshStatus = async () => {
     setRefreshing(true);
@@ -49,6 +50,21 @@ const ChatHeader = ({ selectedLead }: ChatHeaderProps) => {
     window.open(`tel:${phoneNumber}`);
   };
 
+  const copyToClipboard = () => {
+    if (!selectedLead.phone) return;
+    
+    navigator.clipboard.writeText(selectedLead.phone)
+      .then(() => {
+        setCopied(true);
+        toast.success('Número copiado para a área de transferência');
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Falha ao copiar:', err);
+        toast.error('Não foi possível copiar o número');
+      });
+  };
+
   return (
     <div className="border-b p-3 flex justify-between items-center">
       <div className="flex items-center gap-3">
@@ -62,6 +78,15 @@ const ChatHeader = ({ selectedLead }: ChatHeaderProps) => {
           <h3 className="font-medium">{selectedLead.name || 'Contato'}</h3>
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">{selectedLead.phone}</p>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-5 w-5" 
+              onClick={copyToClipboard}
+              title="Copiar número"
+            >
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            </Button>
             {selectedLead.last_contact && (
               <span className="text-xs text-muted-foreground">
                 • {formatDistanceToNow(new Date(selectedLead.last_contact), { 
