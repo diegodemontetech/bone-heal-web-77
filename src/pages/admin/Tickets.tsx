@@ -1,5 +1,4 @@
 
-import { lazy, Suspense } from "react";
 import { useTickets } from "@/hooks/admin/use-tickets";
 import CreateTicketDialog from "@/components/admin/tickets/CreateTicketDialog";
 import TicketsContent from "@/components/admin/tickets/TicketsContent";

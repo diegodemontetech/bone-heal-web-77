@@ -2,6 +2,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Voucher } from "@/types/voucher";
 
 interface VoucherFormProps {
   formData: any;
@@ -16,10 +18,10 @@ export const VoucherForm = ({
   handleInputChange,
   onSubmit,
   onCancel,
-  isEditing
+  isEditing,
 }: VoucherFormProps) => {
   return (
-    <div className="space-y-4 py-4">
+    <div className="space-y-4 py-2 pb-4">
       <div className="space-y-2">
         <Label htmlFor="code">Código do Cupom</Label>
         <Input
@@ -27,39 +29,68 @@ export const VoucherForm = ({
           name="code"
           value={formData.code}
           onChange={handleInputChange}
-          placeholder="Ex: BONEHEAL20"
+          placeholder="PROMO10"
         />
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="discount_percentage">Desconto (%)</Label>
+          <Label htmlFor="discount_percentage">Desconto em Porcentagem (%)</Label>
           <Input
             id="discount_percentage"
             name="discount_percentage"
             type="number"
+            min="0"
+            max="100"
             value={formData.discount_percentage}
             onChange={handleInputChange}
-            placeholder="Ex: 10"
+            placeholder="10"
           />
         </div>
-        
         <div className="space-y-2">
-          <Label htmlFor="discount_amount">Desconto (R$)</Label>
+          <Label htmlFor="discount_amount">Desconto em Valor (R$)</Label>
           <Input
             id="discount_amount"
             name="discount_amount"
             type="number"
+            min="0"
             value={formData.discount_amount}
             onChange={handleInputChange}
-            placeholder="Ex: 50.00"
+            placeholder="50.00"
           />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="valid_from">Válido de</Label>
+          <Label htmlFor="max_uses">Limite de Usos</Label>
+          <Input
+            id="max_uses"
+            name="max_uses"
+            type="number"
+            min="0"
+            value={formData.max_uses}
+            onChange={handleInputChange}
+            placeholder="100"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="minimum_purchase">Compra Mínima (R$)</Label>
+          <Input
+            id="minimum_purchase"
+            name="minimum_purchase"
+            type="number"
+            min="0"
+            value={formData.minimum_purchase}
+            onChange={handleInputChange}
+            placeholder="100.00"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="valid_from">Válido a partir de</Label>
           <Input
             id="valid_from"
             name="valid_from"
@@ -68,7 +99,6 @@ export const VoucherForm = ({
             onChange={handleInputChange}
           />
         </div>
-        
         <div className="space-y-2">
           <Label htmlFor="valid_until">Válido até</Label>
           <Input
@@ -80,51 +110,27 @@ export const VoucherForm = ({
           />
         </div>
       </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="max_uses">Máximo de Usos</Label>
-          <Input
-            id="max_uses"
-            name="max_uses"
-            type="number"
-            value={formData.max_uses}
-            onChange={handleInputChange}
-            placeholder="Ex: 100"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="minimum_purchase">Compra Mínima (R$)</Label>
-          <Input
-            id="minimum_purchase"
-            name="minimum_purchase"
-            type="number"
-            value={formData.minimum_purchase}
-            onChange={handleInputChange}
-            placeholder="Ex: 200.00"
-          />
-        </div>
-      </div>
-      
+
       <div className="flex items-center space-x-2">
-        <input
+        <Switch
           id="is_active"
           name="is_active"
-          type="checkbox"
           checked={formData.is_active}
-          onChange={handleInputChange}
-          className="h-4 w-4 rounded border-gray-300"
+          onCheckedChange={(checked) => 
+            handleInputChange({
+              target: { name: "is_active", type: "checkbox", checked }
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
         />
         <Label htmlFor="is_active">Cupom Ativo</Label>
       </div>
-      
+
       <div className="flex justify-end space-x-2 pt-4">
         <Button variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
         <Button onClick={onSubmit}>
-          {isEditing ? "Atualizar" : "Criar"} Cupom
+          {isEditing ? "Atualizar Cupom" : "Criar Cupom"}
         </Button>
       </div>
     </div>
