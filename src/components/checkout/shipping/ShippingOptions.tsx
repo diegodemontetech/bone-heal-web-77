@@ -1,12 +1,13 @@
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Truck, Loader2 } from "lucide-react";
-import { ShippingRate } from "@/types/shipping";
+import { ShippingCalculationRate } from "@/types/shipping";
 
 interface ShippingOptionsProps {
-  shippingRates: ShippingRate[];
-  selectedShippingRate: ShippingRate | null;
-  onShippingRateChange: (rate: ShippingRate) => void;
+  shippingRates: ShippingCalculationRate[];
+  selectedShippingRate: ShippingCalculationRate | null;
+  onShippingRateChange: (rate: ShippingCalculationRate) => void;
   shippingLoading?: boolean;
 }
 

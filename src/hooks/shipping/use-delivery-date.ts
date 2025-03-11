@@ -1,12 +1,16 @@
 
-import { addDays } from "date-fns";
-import { ShippingRate } from "@/types/shipping";
+import { addBusinessDays } from "date-fns";
+import { ShippingCalculationRate } from "@/types/shipping";
 
-export const useDeliveryDate = (selectedShippingRate: ShippingRate | null) => {
-  // Calcular a data estimada de entrega com base no prazo do frete selecionado
-  const deliveryDate = selectedShippingRate 
-    ? addDays(new Date(), selectedShippingRate.delivery_days) 
-    : null;
+export const useDeliveryDate = () => {
+  const calculateDeliveryDate = (shippingRate: ShippingCalculationRate | null) => {
+    if (!shippingRate) return null;
+    
+    const today = new Date();
+    const deliveryDate = addBusinessDays(today, shippingRate.delivery_days);
+    
+    return deliveryDate;
+  };
 
-  return { deliveryDate };
+  return { calculateDeliveryDate };
 };

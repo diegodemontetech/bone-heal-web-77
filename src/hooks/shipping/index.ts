@@ -1,55 +1,40 @@
 
-import { useState, useEffect, useRef } from "react";
-import { CartItem } from "@/hooks/use-cart";
-import { ShippingRate } from "@/types/shipping";
 import { useShippingRates } from "./use-shipping-rates";
-import { useUserZipCode } from "./use-user-zip-code";
 import { useDeliveryDate } from "./use-delivery-date";
+import { useUserZipCode } from "./use-user-zip-code";
 
-export const useShipping = (cartItems: CartItem[] = []) => {
-  const cartItemsRef = useRef(cartItems);
-  
-  // Hooks extraídos
-  const {
-    zipCode,
-    setZipCode,
-    zipCodeFetched
-  } = useUserZipCode();
-  
+export { useShippingRates, useDeliveryDate, useUserZipCode };
+
+export const useShipping = (cartItems = []) => {
   const {
     shippingRates,
     selectedShippingRate,
     loading,
-    calculateShipping: calculateShippingRates,
+    calculateShipping,
     handleShippingRateChange,
-    resetShipping
+    resetShipping,
   } = useShippingRates();
   
-  const { deliveryDate } = useDeliveryDate(selectedShippingRate);
+  const { calculateDeliveryDate } = useDeliveryDate();
+  const { zipCode, setZipCode, loadUserZipCode } = useUserZipCode();
 
-  // Atualizar a referência quando cartItems mudar
-  useEffect(() => {
-    cartItemsRef.current = cartItems;
-  }, [cartItems]);
-
-  // Wrapper para a função de cálculo de frete que usa os itens do carrinho atuais
-  const calculateShipping = (zipCodeInput: string) => {
-    if (zipCodeInput && zipCodeInput.length === 8 && cartItemsRef.current.length > 0) {
-      calculateShippingRates(zipCodeInput, cartItemsRef.current);
+  const handleZipCodeChange = (newZipCode) => {
+    setZipCode(newZipCode);
+    if (newZipCode && newZipCode.length === 8) {
+      calculateShipping(newZipCode, cartItems);
     }
   };
 
-  // Efeito para calcular o frete quando o CEP for definido e tiver o formato correto
-  useEffect(() => {
-    const cleanZipCode = zipCode?.replace(/\D/g, '') || '';
-    
-    // Só calcula se tiver CEP válido e cartItems no carrinho
-    if (cleanZipCode.length === 8 && cartItemsRef.current.length > 0) {
-      calculateShipping(cleanZipCode);
+  const handleZipCodeSubmit = () => {
+    if (zipCode && zipCode.length === 8) {
+      calculateShipping(zipCode, cartItems);
     }
-  }, [zipCode, cartItems.length]);
+  };
 
-  // Calcular o valor do frete com base na opção selecionada
+  // Calcular data de entrega
+  const deliveryDate = calculateDeliveryDate(selectedShippingRate);
+  
+  // Obter preço do frete
   const shippingFee = selectedShippingRate ? selectedShippingRate.rate : 0;
 
   return {
@@ -57,17 +42,13 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     selectedShippingRate,
     loading,
     zipCode,
-    setZipCode,
-    shippingFee,
-    deliveryDate,
-    handleShippingRateChange,
-    resetShipping,
+    setZipCode: handleZipCodeChange,
+    loadUserZipCode,
     calculateShipping,
-    zipCodeFetched
+    handleShippingRateChange,
+    handleZipCodeSubmit,
+    resetShipping,
+    deliveryDate,
+    shippingFee,
   };
 };
-
-// Re-exportar os hooks individuais para uso específico quando necessário
-export { useShippingRates } from './use-shipping-rates';
-export { useUserZipCode } from './use-user-zip-code';
-export { useDeliveryDate } from './use-delivery-date';
