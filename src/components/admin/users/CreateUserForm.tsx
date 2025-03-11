@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, Plus } from "lucide-react";
-import { useUsers, availablePermissions } from "@/components/admin/UsersContext";
+import { useUsers } from "@/components/admin/UsersContext";
+import { availablePermissions } from "@/components/admin/users/permissions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserRole } from "@/types/auth";
 

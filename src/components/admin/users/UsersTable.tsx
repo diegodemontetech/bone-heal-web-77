@@ -1,4 +1,3 @@
-
 import { Loader2 } from "lucide-react";
 import {
   Table,
@@ -12,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { UserRole } from "@/types/auth";
-import { availablePermissions } from "@/components/admin/UsersContext";
+import { availablePermissions } from "@/components/admin/users/permissions";
 
 interface UserData {
   id: string;

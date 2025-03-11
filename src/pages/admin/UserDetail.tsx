@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Loader2, User, ShieldCheck, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
-import { useUsers, availablePermissions } from "@/components/admin/UsersContext";
+import { useUsers } from "@/components/admin/UsersContext";
+import { availablePermissions } from "@/components/admin/users/permissions";
 
 const UserDetail = () => {
   const { id } = useParams();
