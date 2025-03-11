@@ -21,9 +21,9 @@ export const VouchersList = ({
 }: VouchersListProps) => {
   const getDiscountText = (voucher: Voucher) => {
     if (voucher.discount_type === "percentage") {
-      return `${voucher.discount_value}%`;
+      return `${voucher.discount_amount}%`;
     } else if (voucher.discount_type === "fixed") {
-      return formatCurrency(voucher.discount_value);
+      return formatCurrency(voucher.discount_amount);
     } else if (voucher.discount_type === "shipping") {
       return "Frete Grátis";
     }
