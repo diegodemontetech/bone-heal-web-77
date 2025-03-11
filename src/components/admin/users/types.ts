@@ -6,9 +6,11 @@ export interface UserData {
   email: string;
   full_name: string;
   role: UserRole;
-  is_admin?: boolean;
+  is_admin: boolean; // Alterado de is_admin? para is_admin (propriedade obrigatória)
   created_at: string;
   permissions: string[];
+  omie_code?: string; // Adicionando propriedades usadas em UsersTable
+  omie_sync?: boolean;
 }
 
 export interface NewUser {

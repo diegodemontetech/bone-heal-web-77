@@ -13,7 +13,6 @@ type UsersProviderProps = {
 };
 
 export const UsersProvider = ({ children }: UsersProviderProps) => {
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
@@ -69,6 +68,7 @@ export const UsersProvider = ({ children }: UsersProviderProps) => {
               full_name: profile.full_name || (profile.nome_cliente || "Usuário sem nome"),
               email: profile.email || "email@indisponivel.com",
               role: profile.role || "dentist",
+              is_admin: profile.role === UserRole.ADMIN || profile.role === UserRole.ADMIN_MASTER, // Garantindo que is_admin seja sempre definido
               permissions: permissions?.map(p => p.permission) || [],
               created_at: profile.created_at || new Date().toISOString()
             };

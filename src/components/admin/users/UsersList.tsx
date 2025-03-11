@@ -5,22 +5,23 @@ import { useAuth } from "@/hooks/use-auth-context";
 import UsersTable from "./UsersTable";
 import EditUserDialog from "./EditUserDialog";
 import DeleteUserDialog from "./DeleteUserDialog";
+import { UserData } from "./types";
 
 const UsersList = () => {
   const { users, isLoading, deleteUser, updateUserPermissions } = useUsers();
   const { isAdminMaster } = useAuth();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
 
-  const openEditDialog = (user: any) => {
+  const openEditDialog = (user: UserData) => {
     setSelectedUser(user);
     setSelectedPermissions(user.permissions || []);
     setIsEditOpen(true);
   };
 
-  const openDeleteDialog = (user: any) => {
+  const openDeleteDialog = (user: UserData) => {
     setSelectedUser(user);
     setIsDeleteOpen(true);
   };
