@@ -49,7 +49,7 @@ const CommercialConditionForm = ({ onSuccess, existingCondition }: CommercialCon
 
       <DiscountSection
         discountType={formData.discount_type}
-        discountValue={formData.discount_value}
+        discountValue={formData.discount_value.toString()}
         onDiscountTypeChange={(value) => updateField('discount_type', value)}
         onDiscountValueChange={(value) => updateField('discount_value', value)}
       />
