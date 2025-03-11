@@ -1,5 +1,5 @@
 
-import { UsersProvider } from "@/components/admin/UsersContext";
+import { UsersProvider } from "@/components/admin/users";
 import UsersList from "@/components/admin/users/UsersList";
 import CreateUserForm from "@/components/admin/users/CreateUserForm";
 

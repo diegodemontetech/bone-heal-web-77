@@ -1,11 +1,10 @@
 
-import React, { createContext } from 'react';
-import { useUsersQuery } from './users/usersQuery';
-import { useUserMutations } from './users/usersMutations';
-import { UsersContextType, NewUser } from './users/types';
-import { availablePermissions } from './users/permissions';
-
-export const UsersContext = createContext<UsersContextType | undefined>(undefined);
+import React from 'react';
+import { UsersContext } from './UsersContext';
+import { useUsersQuery } from './usersQuery';
+import { useUserMutations } from './usersMutations';
+import { UsersContextType, NewUser } from './types';
+import { availablePermissions } from './permissions';
 
 export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data: users = [], isLoading, error } = useUsersQuery();
@@ -38,7 +37,3 @@ export const UsersProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </UsersContext.Provider>
   );
 };
-
-// Re-exportar o useUsers e availablePermissions para manter a API pública consistente
-export { useUsers } from './users/useUsers';
-export { availablePermissions } from './users/permissions';

@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Loader2, User, ShieldCheck, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
-import { useUsers } from "@/components/admin/UsersContext";
+import { useUsers } from "@/components/admin/users";
 import { availablePermissions } from "@/components/admin/users/permissions";
 
 const UserDetail = () => {
