@@ -1,15 +1,13 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Plus, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import OrdersKanban from "@/components/admin/orders/OrdersKanban";
-import CreateOrder from "@/components/admin/CreateOrder";
-import { OrdersList } from "@/components/admin/orders/OrdersList";
 import { OrderDetails } from "@/components/admin/order/OrderDetails";
+import OrdersHeader from "@/components/admin/orders/OrdersHeader";
+import OrdersTabs from "@/components/admin/orders/OrdersTabs";
+import OrdersLoading from "@/components/admin/orders/OrdersLoading";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -68,85 +66,25 @@ const Orders = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="p-6 flex justify-center items-center h-[calc(100vh-100px)]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <OrdersLoading />;
   }
 
   return (
     <div className="p-6">
       <Card>
         <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Gerenciamento de Pedidos</h1>
-            <Button onClick={() => setIsCreating(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Pedido
-            </Button>
-          </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="kanban">Kanban</TabsTrigger>
-              <TabsTrigger value="list">Lista</TabsTrigger>
-              <TabsTrigger value="create" disabled={!isCreating}>
-                Criar Pedido
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="kanban">
-              {error ? (
-                <div className="text-center py-16 bg-red-50 rounded-md">
-                  <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-2" />
-                  <p className="text-red-600 font-medium">Erro ao carregar pedidos</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => refetch()}
-                  >
-                    Tentar novamente
-                  </Button>
-                </div>
-              ) : orders && orders.length > 0 ? (
-                <OrdersKanban 
-                  orders={orders} 
-                  refetchOrders={refetch} 
-                  onViewOrder={handleViewOrder}
-                />
-              ) : (
-                <div className="text-center py-16 bg-gray-50 rounded-md">
-                  <p className="text-gray-500">Nenhum pedido encontrado</p>
-                  <Button 
-                    variant="outline" 
-                    className="mt-4"
-                    onClick={() => setIsCreating(true)}
-                  >
-                    Criar novo pedido
-                  </Button>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="list">
-              <OrdersList 
-                orders={orders || []} 
-                onViewOrder={handleViewOrder}
-              />
-            </TabsContent>
-
-            <TabsContent value="create">
-              {isCreating && (
-                <CreateOrder 
-                  onCancel={() => {
-                    setIsCreating(false);
-                    setActiveTab("kanban");
-                  }} 
-                />
-              )}
-            </TabsContent>
-          </Tabs>
+          <OrdersHeader setIsCreating={setIsCreating} />
+          
+          <OrdersTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isCreating={isCreating}
+            setIsCreating={setIsCreating}
+            orders={orders}
+            error={error}
+            refetch={refetch}
+            onViewOrder={handleViewOrder}
+          />
         </CardContent>
       </Card>
 
