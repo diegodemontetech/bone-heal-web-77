@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth-context";
-import { adminNavigationItems } from "./AdminNavigationItems";
+import { NavigationItems } from "./AdminNavigationItems";
 
 interface AdminSidebarProps {
   onCloseMobile?: () => void;
@@ -24,7 +24,7 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
   };
 
   // Filtra os itens de navegação baseados nas permissões do usuário
-  const filteredNavigationItems = adminNavigationItems.filter(item => {
+  const filteredNavigationItems = NavigationItems.filter(item => {
     // Se não houver permissão específica, mostra para todos os admins
     if (!item.permission) return true;
     
