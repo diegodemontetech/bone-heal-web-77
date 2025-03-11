@@ -40,12 +40,13 @@ const ShippingRates = () => {
             Exportar
           </Button>
           
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Taxa
-            </Button>
-          </DialogTrigger>
+          <Button onClick={() => {
+            resetForm();
+            setIsDialogOpen(true);
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Taxa
+          </Button>
         </div>
       </div>
 
