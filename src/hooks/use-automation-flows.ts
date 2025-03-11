@@ -40,6 +40,10 @@ export const useAutomationFlows = () => {
       setLoading(false);
     }
   };
+  
+  useEffect(() => {
+    fetchFlows();
+  }, []);
 
   const createFlow = async (name: string, description: string) => {
     try {
