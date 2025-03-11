@@ -23,17 +23,8 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
     }
   };
 
-  // Filtra os itens de navegação baseados nas permissões do usuário
-  const filteredNavigationItems = NavigationItems.filter(item => {
-    // Se não houver permissão específica, mostra para todos os admins
-    if (!item.permissions || item.permissions.length === 0) return true;
-    
-    // Se for admin master, mostra tudo
-    if (isAdminMaster) return true;
-    
-    // Se precisar de permissão específica, verifica se o usuário tem
-    return item.permissions.some(permission => hasPermission(permission));
-  });
+  // Sempre mostrar todos os itens de navegação, pois foi removida a filtragem baseada em permissões
+  const filteredNavigationItems = NavigationItems;
 
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r">
