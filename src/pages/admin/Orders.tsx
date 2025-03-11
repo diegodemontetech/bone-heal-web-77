@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,10 +8,13 @@ import { Plus, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import OrdersKanban from "@/components/admin/orders/OrdersKanban";
 import CreateOrder from "@/components/admin/CreateOrder";
+import { OrdersList } from "@/components/admin/orders/OrdersList";
+import { OrderDetails } from "@/components/admin/order/OrderDetails";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   // Buscar pedidos
   const { data: orders, isLoading, error, refetch } = useQuery({
@@ -61,6 +63,10 @@ const Orders = () => {
     }
   }, [isCreating]);
 
+  const handleViewOrder = (order: any) => {
+    setSelectedOrder(order);
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 flex justify-center items-center h-[calc(100vh-100px)]">
@@ -84,6 +90,7 @@ const Orders = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="kanban">Kanban</TabsTrigger>
+              <TabsTrigger value="list">Lista</TabsTrigger>
               <TabsTrigger value="create" disabled={!isCreating}>
                 Criar Pedido
               </TabsTrigger>
@@ -103,7 +110,11 @@ const Orders = () => {
                   </Button>
                 </div>
               ) : orders && orders.length > 0 ? (
-                <OrdersKanban orders={orders} refetchOrders={refetch} />
+                <OrdersKanban 
+                  orders={orders} 
+                  refetchOrders={refetch} 
+                  onViewOrder={handleViewOrder}
+                />
               ) : (
                 <div className="text-center py-16 bg-gray-50 rounded-md">
                   <p className="text-gray-500">Nenhum pedido encontrado</p>
@@ -116,6 +127,13 @@ const Orders = () => {
                   </Button>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="list">
+              <OrdersList 
+                orders={orders || []} 
+                onViewOrder={handleViewOrder}
+              />
             </TabsContent>
 
             <TabsContent value="create">
@@ -131,6 +149,14 @@ const Orders = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {selectedOrder && (
+        <OrderDetails
+          order={selectedOrder}
+          isOpen={!!selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
 };

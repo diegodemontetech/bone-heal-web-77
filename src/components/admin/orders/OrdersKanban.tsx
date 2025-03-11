@@ -1,4 +1,3 @@
-
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -15,9 +14,10 @@ const COLUMNS = [
 interface OrdersKanbanProps {
   orders: any[] | null;
   refetchOrders: () => void;
+  onViewOrder: (order: any) => void;
 }
 
-const OrdersKanban = ({ orders, refetchOrders }: OrdersKanbanProps) => {
+const OrdersKanban = ({ orders, refetchOrders, onViewOrder }: OrdersKanbanProps) => {
   const getOrdersByStatus = (status: string) => {
     return orders?.filter(order => order.omie_status === status) || [];
   };
@@ -199,7 +199,8 @@ const OrdersKanban = ({ orders, refetchOrders }: OrdersKanbanProps) => {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          className={`p-3 mb-2 rounded border ${getStatusColor(order.omie_status)} hover:shadow-md transition-shadow`}
+                          className={`p-3 mb-2 rounded border ${getStatusColor(order.omie_status)} hover:shadow-md transition-shadow cursor-pointer`}
+                          onClick={() => onViewOrder(order)}
                         >
                           <p className="font-medium">
                             Pedido #{order.id.slice(0, 8)}
