@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from "react";
-import { useSelectedProducts } from "./useSelectedProducts";
-import { useQuotationCalculations } from "./useQuotationCalculations";
-import { useCreateQuotation } from "./useCreateQuotation";
+import { useState } from "react";
+import { useSelectedProducts } from "@/components/admin/quotations/hooks/useSelectedProducts";
+import { useQuotationCalculations } from "@/components/admin/quotations/hooks/useQuotationCalculations";
+import { useCreateQuotation } from "@/components/admin/quotations/hooks/useCreateQuotation";
 
 export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
