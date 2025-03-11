@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Call, MoreVertical, RefreshCw } from 'lucide-react';
+import { Phone, MoreVertical, RefreshCw } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -85,7 +85,7 @@ const ChatHeader = ({ selectedLead }: ChatHeaderProps) => {
         </Button>
         
         <Button variant="ghost" size="icon" onClick={handleCall}>
-          <Call className="h-4 w-4" />
+          <Phone className="h-4 w-4" />
         </Button>
         
         <DropdownMenu>
