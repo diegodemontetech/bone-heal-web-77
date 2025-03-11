@@ -3,8 +3,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { jsPDF } from "jspdf";
+import 'jspdf-autotable';
 
 export const useQuotationActions = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -27,14 +27,11 @@ export const useQuotationActions = () => {
       // Criar um novo documento PDF
       const doc = new jsPDF();
       
-      // Adicionar logo e cabeçalho
-      const logoUrl = "https://cdn.dentalspeed.com/produtos/550/membrana-sintetica-polipropileno-bone-heal-ds-bon15683a-2.jpg";
-      doc.addImage(logoUrl, 'JPEG', 15, 10, 30, 30);
-      
-      // Título
+      // Deixamos de usar a imagem externa devido ao erro CORS
+      // Adicionar título
       doc.setFontSize(20);
       doc.setTextColor(0, 102, 204);
-      doc.text("ORÇAMENTO", 105, 20, { align: "center" });
+      doc.text("BONE HEAL - ORÇAMENTO", 105, 20, { align: "center" });
       
       // Número do orçamento
       doc.setFontSize(10);
@@ -70,29 +67,74 @@ export const useQuotationActions = () => {
       doc.text("PRODUTOS", 15, 100);
       
       if (quotation.items && quotation.items.length > 0) {
-        // @ts-ignore - jsPDF-autotable não está tipado corretamente
-        doc.autoTable({
-          startY: 105,
-          head: [['Item', 'Quantidade', 'Valor Unit.', 'Subtotal']],
-          body: quotation.items.map((item: any) => [
-            item.name,
-            item.quantity,
-            formatCurrency(item.price),
-            formatCurrency(item.price * item.quantity)
-          ]),
-          foot: [
-            ['', '', 'Subtotal:', formatCurrency(quotation.subtotal_amount)],
-            ['', '', 'Desconto:', formatCurrency(quotation.discount_amount)],
-            ['', '', 'Total:', formatCurrency(quotation.total_amount)]
-          ],
-          theme: 'striped',
-          headStyles: { fillColor: [0, 102, 204] },
-          footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-        });
+        // Implementamos manualmente a tabela, já que houve problemas com o autoTable
+        const cols = ["Item", "Quantidade", "Valor Unit.", "Subtotal"];
+        const colWidths = [90, 30, 30, 30];
+        const startX = 15;
+        let startY = 105;
+        
+        // Cabeçalho da tabela
+        doc.setFillColor(0, 102, 204);
+        doc.setTextColor(255, 255, 255);
+        doc.rect(startX, startY, 180, 10, 'F');
+        
+        // Escrever os cabeçalhos
+        let currentX = startX + 5;
+        for (let i = 0; i < cols.length; i++) {
+          doc.text(cols[i], currentX, startY + 6);
+          currentX += colWidths[i];
+        }
+        
+        // Conteúdo da tabela
+        startY += 10;
+        doc.setTextColor(0, 0, 0);
+        
+        // Alternar cores das linhas
+        let isEven = false;
+        for (const item of quotation.items) {
+          if (isEven) {
+            doc.setFillColor(240, 240, 240);
+            doc.rect(startX, startY, 180, 10, 'F');
+          }
+          
+          let rowX = startX + 5;
+          doc.text(item.name.substring(0, 40), rowX, startY + 6);
+          rowX += colWidths[0];
+          
+          doc.text(String(item.quantity), rowX, startY + 6);
+          rowX += colWidths[1];
+          
+          doc.text(formatCurrency(item.price), rowX, startY + 6);
+          rowX += colWidths[2];
+          
+          doc.text(formatCurrency(item.price * item.quantity), rowX, startY + 6);
+          
+          startY += 10;
+          isEven = !isEven;
+        }
+        
+        // Footer da tabela com os totais
+        startY += 5;
+        doc.setFillColor(240, 240, 240);
+        doc.rect(startX, startY, 180, 10, 'F');
+        doc.text("Subtotal:", startX + 125, startY + 6);
+        doc.text(formatCurrency(quotation.subtotal_amount), startX + 155, startY + 6);
+        
+        startY += 10;
+        doc.rect(startX, startY, 180, 10, 'F');
+        doc.text("Desconto:", startX + 125, startY + 6);
+        doc.text(formatCurrency(quotation.discount_amount), startX + 155, startY + 6);
+        
+        startY += 10;
+        doc.setFillColor(230, 230, 230);
+        doc.rect(startX, startY, 180, 10, 'F');
+        doc.setFontSize(12);
+        doc.text("Total:", startX + 125, startY + 6);
+        doc.text(formatCurrency(quotation.total_amount), startX + 155, startY + 6);
       }
       
       // Forma de pagamento
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      let finalY = startY + 20;
       doc.setFontSize(10);
       doc.text(`Forma de pagamento: ${quotation.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
                                        quotation.payment_method === 'pix' ? 'PIX' : 
@@ -101,7 +143,7 @@ export const useQuotationActions = () => {
       
       // Observações e termos
       doc.text("Observações:", 15, finalY + 10);
-      doc.text("- Orçamento válido por 5 dias.", 15, finalY + 16);
+      doc.text("- Orçamento válido por 5 dias a partir da data de emissão.", 15, finalY + 16);
       doc.text("- Pagamento conforme condições acordadas.", 15, finalY + 22);
       doc.text("- Prazo de entrega a combinar após confirmação de pedido.", 15, finalY + 28);
       
@@ -146,7 +188,7 @@ export const useQuotationActions = () => {
         return null;
       }
 
-      // Criar o pedido baseado no orçamento
+      // Criar o pedido baseado no orçamento - corrigindo para o esquema correto
       const orderData = {
         user_id: quotation.user_id,
         items: quotation.items,
@@ -159,10 +201,7 @@ export const useQuotationActions = () => {
           name: quotation.customer_info.name,
           address: quotation.customer_info.address,
           city: quotation.customer_info.city,
-          state: quotation.customer_info.state,
-          document: quotation.customer_info.document,
-          phone: quotation.customer_info.phone,
-          email: quotation.customer_info.email
+          state: quotation.customer_info.state
         } : null
       };
 
@@ -173,7 +212,10 @@ export const useQuotationActions = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("Erro detalhado ao converter:", orderError);
+        throw new Error(`Erro ao inserir pedido: ${orderError.message}`);
+      }
 
       // Atualizar o status do orçamento para "converted"
       const { error: updateError } = await supabase
