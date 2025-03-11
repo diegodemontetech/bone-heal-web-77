@@ -3,7 +3,7 @@ import { OmieCustomersSync } from '@/components/admin/OmieCustomersSync';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TestOmieSync } from '@/components/TestOmieSync';
+import TestOmieSync from '@/components/TestOmieSync';
 import { ArrowRightIcon, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
