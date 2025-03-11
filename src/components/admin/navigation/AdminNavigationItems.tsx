@@ -1,5 +1,5 @@
 
-import { Home, Package, ShoppingCart, Users, FileText, Settings, BarChart2, MessageSquare, Headphones, MessageCircle } from "lucide-react";
+import { Home, Package, ShoppingCart, Users, FileText, Settings, BarChart2, MessageSquare, Headphones, MessageCircle, Zap } from "lucide-react";
 import { UserPermission } from "@/types/auth";
 
 export const NavigationItems = [
@@ -103,6 +103,19 @@ export const NavigationItems = [
       {
         title: "Configurações",
         href: "/admin/whatsapp/settings",
+        permissions: [UserPermission.MANAGE_INTEGRATIONS]
+      }
+    ]
+  },
+  {
+    title: "Automação",
+    href: "/admin/automation/flows",
+    icon: Zap,
+    permissions: [UserPermission.MANAGE_INTEGRATIONS],
+    children: [
+      {
+        title: "Fluxos de Trabalho",
+        href: "/admin/automation/flows",
         permissions: [UserPermission.MANAGE_INTEGRATIONS]
       }
     ]
