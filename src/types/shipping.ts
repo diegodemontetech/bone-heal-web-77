@@ -12,6 +12,16 @@ export interface ShippingRate {
 }
 
 export interface ShippingCalculationRate {
+  id?: string;
+  region?: string;
+  zip_code_start?: string;
+  zip_code_end?: string;
+  flat_rate?: number;
+  additional_kg_rate?: number;
+  estimated_days?: number;
+  is_active?: boolean;
+  
+  // Campos para compatibilidade com o componente ShippingOptions
   rate: number;
   delivery_days: number;
   service_type: string;
