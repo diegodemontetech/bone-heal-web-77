@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useSelectedProducts } from "./useSelectedProducts";
 import { useQuotationCalculations } from "./useQuotationCalculations";
 import { useCreateQuotation } from "./useCreateQuotation";
+import { ShippingCalculationRate } from "@/types/shipping";
 
 export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -10,6 +11,8 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState("percentage");
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [zipCode, setZipCode] = useState("");
+  const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   
   const { 
     selectedProducts, 
@@ -21,7 +24,7 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     calculateSubtotal, 
     calculateDiscountAmount, 
     calculateTotal 
-  } = useQuotationCalculations(selectedProducts, discount, discountType, appliedVoucher);
+  } = useQuotationCalculations(selectedProducts, discount, discountType, appliedVoucher, selectedShipping?.rate || 0);
   
   const { loading, createQuotation } = useCreateQuotation(onCancel);
 
@@ -38,7 +41,8 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
       subtotal,
       discountAmount,
       total,
-      appliedVoucher
+      appliedVoucher,
+      selectedShipping
     );
   };
 
@@ -55,6 +59,10 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     setDiscountType,
     appliedVoucher,
     setAppliedVoucher,
+    zipCode,
+    setZipCode,
+    selectedShipping,
+    setSelectedShipping,
     loading,
     handleProductQuantityChange,
     handleCreateQuotation,

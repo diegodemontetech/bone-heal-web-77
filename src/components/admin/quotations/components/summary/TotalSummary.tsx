@@ -7,6 +7,7 @@ interface TotalSummaryProps {
   calculateDiscountAmount: () => number;
   calculateTotal: () => number;
   appliedVoucher: any;
+  shippingCost?: number;
 }
 
 const TotalSummary = ({
@@ -14,24 +15,35 @@ const TotalSummary = ({
   calculateDiscountAmount,
   calculateTotal,
   appliedVoucher,
+  shippingCost = 0
 }: TotalSummaryProps) => {
+  const isFreeShipping = appliedVoucher?.discount_type === "shipping";
+
   return (
     <div className="space-y-2">
       <div className="flex justify-between">
         <span>Subtotal:</span>
         <span>{formatCurrency(calculateSubtotal())}</span>
       </div>
-      <div className="flex justify-between">
-        <span>Desconto:</span>
-        <span className="text-red-500">- {formatCurrency(calculateDiscountAmount())}</span>
-      </div>
-      {appliedVoucher?.discount_type === "shipping" && (
-        <div className="flex justify-between text-green-600">
-          <span>Frete:</span>
-          <span>Grátis</span>
+      
+      {calculateDiscountAmount() > 0 && (
+        <div className="flex justify-between">
+          <span>Desconto:</span>
+          <span className="text-red-500">- {formatCurrency(calculateDiscountAmount())}</span>
         </div>
       )}
+      
+      <div className="flex justify-between">
+        <span>Frete:</span>
+        {isFreeShipping ? (
+          <span className="text-green-600">Grátis</span>
+        ) : (
+          <span>{formatCurrency(shippingCost)}</span>
+        )}
+      </div>
+      
       <Separator />
+      
       <div className="flex justify-between font-bold">
         <span>Total:</span>
         <span>{formatCurrency(calculateTotal())}</span>

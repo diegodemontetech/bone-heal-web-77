@@ -202,21 +202,47 @@ const OrdersKanban = ({ orders, refetchOrders, onViewOrder }: OrdersKanbanProps)
                           className={`p-3 mb-2 rounded border ${getStatusColor(order.omie_status)} hover:shadow-md transition-shadow cursor-pointer`}
                           onClick={() => onViewOrder(order)}
                         >
-                          <p className="font-medium">
-                            Pedido #{order.id.slice(0, 8)}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {order.profiles?.full_name}
-                          </p>
-                          <p className="text-sm">
-                            {format(new Date(order.created_at), "dd/MM/yyyy")}
-                          </p>
-                          <p className="font-medium text-primary">
-                            {new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL'
-                            }).format(order.total_amount)}
-                          </p>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">
+                                Pedido #{order.id.slice(0, 8)}
+                              </p>
+                              {order.profiles && (
+                                <div className="mt-1">
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {order.profiles.full_name}
+                                  </p>
+                                  {order.profiles.phone && (
+                                    <p className="text-xs text-gray-600">
+                                      {order.profiles.phone}
+                                    </p>
+                                  )}
+                                  {order.profiles.email && (
+                                    <p className="text-xs text-gray-600 truncate max-w-[200px]">
+                                      {order.profiles.email}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                              <p className="text-sm mt-2">
+                                {format(new Date(order.created_at), "dd/MM/yyyy")}
+                              </p>
+                            </div>
+                            <p className="font-medium text-primary">
+                              {new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL'
+                              }).format(order.total_amount)}
+                            </p>
+                          </div>
+                          
+                          {order.items && order.items.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <p className="text-xs text-gray-500">
+                                {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </Draggable>

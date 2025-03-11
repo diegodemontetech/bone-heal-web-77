@@ -3,7 +3,8 @@ export const useQuotationCalculations = (
   selectedProducts: any[],
   discount: number,
   discountType: string,
-  appliedVoucher: any = null
+  appliedVoucher: any = null,
+  shippingCost: number = 0
 ) => {
   const calculateSubtotal = () => {
     return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
@@ -34,7 +35,12 @@ export const useQuotationCalculations = (
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
-    return subtotal - discountAmount;
+    
+    // Adiciona o frete, a menos que haja um cupom de frete grátis
+    const isFreeShipping = appliedVoucher && appliedVoucher.discount_type === "shipping";
+    const shippingAmount = isFreeShipping ? 0 : shippingCost;
+    
+    return subtotal - discountAmount + shippingAmount;
   };
 
   return {

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import { formatCurrency } from "@/lib/utils";
 import { Quotation, QuotationItem } from "./useQuotationsQuery";
+import "jspdf-autotable";
 
 export const usePdfGenerator = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -15,12 +16,30 @@ export const usePdfGenerator = () => {
       // Buscar dados do orçamento
       const { data: quotation, error } = await supabase
         .from("quotations")
-        .select("*, customer:profiles(full_name, email, phone, address, city, state)")
+        .select("*, customer:profiles(full_name, email, phone, address, city, state, zip_code, cnpj, cpf)")
         .eq("id", quotationId)
         .single();
 
       if (error) throw error;
       if (!quotation) throw new Error("Orçamento não encontrado");
+
+      // Buscar informações adicionais dos produtos (imagens, etc.)
+      const items = quotation.items || [];
+      const enhancedItems = await Promise.all(items.map(async (item: any) => {
+        if (item.product_id) {
+          const { data: product } = await supabase
+            .from("products")
+            .select("main_image, default_image_url")
+            .eq("id", item.product_id)
+            .single();
+          
+          return {
+            ...item,
+            product_image: product?.main_image || product?.default_image_url
+          };
+        }
+        return item;
+      }));
 
       // Criar PDF
       const doc = new jsPDF();
@@ -53,7 +72,7 @@ export const usePdfGenerator = () => {
       doc.text(`Data: ${new Date(quotation.created_at).toLocaleDateString('pt-BR')}`, margin, yPos);
       yPos += 5;
       
-      doc.text(`Validade: ${new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`, margin, yPos);
+      doc.text(`Validade: ${new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')}`, margin, yPos);
       yPos += 10;
 
       // Dados do cliente
@@ -75,77 +94,76 @@ export const usePdfGenerator = () => {
         
         doc.text(`Telefone: ${customer.phone || 'Não informado'}`, margin, yPos);
         yPos += 5;
+
+        if (customer.cnpj) {
+          doc.text(`CNPJ: ${customer.cnpj}`, margin, yPos);
+          yPos += 5;
+        } else if (customer.cpf) {
+          doc.text(`CPF: ${customer.cpf}`, margin, yPos);
+          yPos += 5;
+        }
         
         const address = customer.address ? 
           `${customer.address}, ${customer.city || ''} - ${customer.state || ''}` : 
           'Não informado';
         doc.text(`Endereço: ${address}`, margin, yPos);
-        yPos += 10;
+        yPos += 5;
+        
+        if (customer.zip_code) {
+          doc.text(`CEP: ${customer.zip_code}`, margin, yPos);
+          yPos += 5;
+        }
+        
+        yPos += 5;
       }
+
+      // Forma de pagamento
+      doc.setFont("helvetica", "bold");
+      doc.text("FORMA DE PAGAMENTO", margin, yPos);
+      yPos += 5;
+      
+      doc.setFont("helvetica", "normal");
+      const paymentMethod = quotation.payment_method === 'pix' ? 'PIX' : 
+                            quotation.payment_method === 'credit_card' ? 'Cartão de Crédito' : 
+                            quotation.payment_method === 'boleto' ? 'Boleto Bancário' : 
+                            'Não especificado';
+      
+      doc.text(paymentMethod, margin, yPos);
+      yPos += 10;
 
       // Lista de produtos
       doc.setFont("helvetica", "bold");
       doc.text("PRODUTOS", margin, yPos);
       yPos += 7;
 
-      // Cabeçalho da tabela
-      const tableHeaders = ["Produto", "Qtd", "Preço Unit.", "Total"];
-      const columnWidths = [pageWidth - 140, 20, 40, 40];
-      let xPos = margin;
-      
-      tableHeaders.forEach((header, i) => {
-        doc.text(header, xPos, yPos);
-        xPos += columnWidths[i];
+      // Usando autoTable para criar uma tabela de produtos
+      const tableData = enhancedItems.map((item: any) => [
+        item.product_name || "Produto sem nome",
+        item.quantity.toString(),
+        formatCurrency(item.unit_price),
+        formatCurrency(item.total_price || (item.unit_price * item.quantity))
+      ]);
+
+      (doc as any).autoTable({
+        startY: yPos,
+        head: [['Produto', 'Qtd', 'Preço Unit.', 'Total']],
+        body: tableData,
+        margin: { left: margin, right: margin },
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [240, 240, 240] },
+        tableWidth: 'auto',
+        styles: { overflow: 'linebreak', cellPadding: 3 },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 40, halign: 'right' },
+          3: { cellWidth: 40, halign: 'right' }
+        }
       });
-      
-      yPos += 5;
-      doc.line(margin, yPos, pageWidth - margin, yPos);
-      yPos += 5;
 
-      // Dados da tabela
-      const items = quotation.items || [];
-      if (items.length > 0) {
-        items.forEach((item: QuotationItem) => {
-          xPos = margin;
-          
-          // Produto (com quebra de linha se necessário)
-          const productName = item.product_name || "Produto sem nome";
-          const lines = doc.splitTextToSize(productName, columnWidths[0] - 5);
-          doc.setFont("helvetica", "normal");
-          doc.text(lines, xPos, yPos);
-          
-          // Determinar a altura máxima dessa linha
-          const lineHeight = lines.length * 5;
-          
-          // Quantidade
-          xPos += columnWidths[0];
-          doc.text(item.quantity.toString(), xPos, yPos);
-          
-          // Preço unitário
-          xPos += columnWidths[1];
-          doc.text(formatCurrency(item.unit_price), xPos, yPos);
-          
-          // Total
-          xPos += columnWidths[2];
-          doc.text(formatCurrency(item.total_price), xPos, yPos);
-          
-          yPos += Math.max(lineHeight, 7); // Garantir espaço mínimo entre linhas
-          
-          // Verificar se precisamos de uma nova página
-          if (yPos > doc.internal.pageSize.getHeight() - 50) {
-            doc.addPage();
-            yPos = 20; // Reset para o topo da nova página
-          }
-        });
-      } else {
-        doc.setFont("helvetica", "italic");
-        doc.text("Nenhum produto no orçamento", margin, yPos);
-        yPos += 7;
-      }
-
-      // Linha divisória
-      doc.line(margin, yPos, pageWidth - margin, yPos);
-      yPos += 10;
+      // Atualizar a posição Y após a tabela
+      yPos = (doc as any).lastAutoTable.finalY + 10;
 
       // Resumo de valores
       const rightAlign = pageWidth - margin;
@@ -155,24 +173,34 @@ export const usePdfGenerator = () => {
       doc.text(formatCurrency(quotation.subtotal_amount || 0), rightAlign, yPos, { align: "right" });
       yPos += 7;
       
-      doc.text("Desconto:", rightAlign - 70, yPos);
-      doc.text(formatCurrency(quotation.discount_amount || 0), rightAlign, yPos, { align: "right" });
-      yPos += 7;
+      if (quotation.discount_amount > 0) {
+        doc.text(`Desconto${quotation.discount_type === 'percentage' ? ' (%)' : ''}:`, rightAlign - 70, yPos);
+        doc.text(`-${formatCurrency(quotation.discount_amount || 0)}`, rightAlign, yPos, { align: "right" });
+        yPos += 7;
+      }
       
       doc.setFont("helvetica", "bold");
       doc.text("TOTAL:", rightAlign - 70, yPos);
       doc.text(formatCurrency(quotation.total_amount || 0), rightAlign, yPos, { align: "right" });
       yPos += 15;
 
-      // Forma de pagamento
-      doc.setFont("helvetica", "normal");
-      doc.text(`Forma de pagamento: ${quotation.payment_method || 'Não especificada'}`, margin, yPos);
-      yPos += 15;
+      // Observações (se houver)
+      if (quotation.notes) {
+        doc.setFont("helvetica", "bold");
+        doc.text("OBSERVAÇÕES:", margin, yPos);
+        yPos += 5;
+        
+        doc.setFont("helvetica", "normal");
+        const notes = doc.splitTextToSize(quotation.notes, pageWidth - (margin * 2));
+        doc.text(notes, margin, yPos);
+        yPos += (notes.length * 5) + 10;
+      }
 
       // Rodapé
       const currentDate = new Date().toLocaleDateString('pt-BR');
       doc.setFontSize(8);
       doc.text(`Documento gerado em ${currentDate}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: "center" });
+      doc.text("Bone Heal - Materiais Avançados para Regeneração Óssea", pageWidth / 2, doc.internal.pageSize.getHeight() - 5, { align: "center" });
 
       // Salvar o PDF
       doc.save(`orcamento-${quotation.id.substring(0, 8)}.pdf`);

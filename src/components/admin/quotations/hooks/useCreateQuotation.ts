@@ -2,9 +2,12 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { ShippingCalculationRate } from "@/types/shipping";
 
 export const useCreateQuotation = (onCancel: () => void) => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const createQuotation = async (
     selectedCustomer: any,
@@ -14,77 +17,76 @@ export const useCreateQuotation = (onCancel: () => void) => {
     subtotal: number,
     discountAmount: number,
     total: number,
-    appliedVoucher: any = null
+    appliedVoucher: any = null,
+    shippingInfo: ShippingCalculationRate | null = null
   ) => {
     if (!selectedCustomer) {
-      toast.error("Por favor, selecione um cliente");
+      toast.error("Selecione um cliente");
       return;
     }
 
     if (!selectedProducts.length) {
-      toast.error("Por favor, adicione pelo menos um produto");
+      toast.error("Selecione pelo menos um produto");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-
-      if (!user) {
-        toast.error("Você precisa estar autenticado para criar um orçamento");
-        return;
-      }
-
-      // Preparar itens do orçamento
-      const items = selectedProducts.map(item => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        subtotal: item.price * item.quantity
+      const quotationItems = selectedProducts.map(product => ({
+        product_id: product.id,
+        product_name: product.name,
+        quantity: product.quantity,
+        unit_price: product.price,
+        total_price: product.price * product.quantity,
+        product_image: product.main_image || product.default_image_url
       }));
 
-      // Preparar informações do cliente
       const customerInfo = {
         id: selectedCustomer.id,
-        name: selectedCustomer.nome_cliente || selectedCustomer.full_name,
+        name: selectedCustomer.full_name,
         email: selectedCustomer.email,
-        phone: selectedCustomer.telefone || selectedCustomer.phone,
-        address: selectedCustomer.endereco || selectedCustomer.address,
-        city: selectedCustomer.cidade || selectedCustomer.city,
-        state: selectedCustomer.estado || selectedCustomer.state,
-        document: selectedCustomer.cnpj_cpf || selectedCustomer.cnpj || selectedCustomer.cpf
+        phone: selectedCustomer.phone,
+        address: selectedCustomer.address,
+        city: selectedCustomer.city,
+        state: selectedCustomer.state,
+        zip_code: selectedCustomer.zip_code
       };
 
-      // Dados do orçamento
       const quotationData = {
-        user_id: user.id,
-        customer_info: customerInfo,
-        items: items,
+        user_id: selectedCustomer.id,
+        items: quotationItems,
         payment_method: paymentMethod,
         discount_type: discountType,
         discount_amount: discountAmount,
         subtotal_amount: subtotal,
         total_amount: total,
-        status: 'draft',
-        // Não incluímos voucher_id pois não existe na tabela
+        customer_info: customerInfo,
+        status: "draft",
+        shipping_info: shippingInfo ? {
+          cost: shippingInfo.rate,
+          service: shippingInfo.service_type,
+          estimated_days: shippingInfo.delivery_days,
+          zip_code: selectedCustomer.zip_code || shippingInfo.zipCode
+        } : null
       };
 
       const { data, error } = await supabase
-        .from('quotations')
+        .from("quotations")
         .insert([quotationData])
-        .select('id')
+        .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar orçamento:", error);
+        throw new Error(error.message);
+      }
 
       toast.success("Orçamento criado com sucesso!");
-      onCancel();
-    } catch (error) {
-      console.error("Erro ao criar orçamento:", error);
-      toast.error("Erro ao criar orçamento. Por favor, tente novamente.");
+      navigate("/admin/quotations");
+    } catch (error: any) {
+      console.error("Erro:", error);
+      toast.error(`Erro ao criar orçamento: ${error.message || "Erro desconhecido"}`);
     } finally {
       setLoading(false);
     }

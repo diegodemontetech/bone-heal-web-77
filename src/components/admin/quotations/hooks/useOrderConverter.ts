@@ -12,7 +12,7 @@ export const useOrderConverter = () => {
       // Buscar os dados do orçamento
       const { data: quotation, error } = await supabase
         .from("quotations")
-        .select("*")
+        .select("*, customer:profiles(*)")
         .eq("id", quotationId)
         .single();
 
@@ -24,21 +24,61 @@ export const useOrderConverter = () => {
         return null;
       }
 
-      // Criar o pedido baseado no orçamento - corrigindo para o esquema correto
+      // Buscar informações completas dos produtos
+      const enhancedItems = await Promise.all((quotation.items || []).map(async (item: any) => {
+        if (item.product_id) {
+          const { data: product } = await supabase
+            .from("products")
+            .select("*")
+            .eq("id", item.product_id)
+            .single();
+          
+          return {
+            product_id: item.product_id,
+            name: item.product_name || product?.name,
+            quantity: item.quantity,
+            price: item.unit_price || product?.price,
+            omie_code: product?.omie_code || null,
+            omie_product_id: product?.omie_product_id || null,
+            product_image: product?.main_image || product?.default_image_url
+          };
+        }
+        
+        return {
+          product_id: item.product_id,
+          name: item.product_name,
+          quantity: item.quantity,
+          price: item.unit_price,
+          omie_code: null
+        };
+      }));
+
+      const customer = Array.isArray(quotation.customer) 
+        ? (quotation.customer.length > 0 ? quotation.customer[0] : null) 
+        : quotation.customer;
+
+      if (!customer) {
+        throw new Error("Cliente não encontrado para este orçamento");
+      }
+
+      // Criar o pedido baseado no orçamento
       const orderData = {
-        user_id: quotation.user_id,
-        items: quotation.items,
+        user_id: customer.id,
+        items: enhancedItems,
         subtotal: quotation.subtotal_amount,
         total_amount: quotation.total_amount,
         discount: quotation.discount_amount,
         payment_method: quotation.payment_method,
         status: "pending",
-        shipping_address: quotation.customer_info ? {
-          name: quotation.customer_info.name,
-          address: quotation.customer_info.address,
-          city: quotation.customer_info.city,
-          state: quotation.customer_info.state
-        } : null
+        omie_status: "novo",
+        shipping_address: {
+          name: customer.full_name,
+          address: customer.address,
+          city: customer.city,
+          state: customer.state,
+          zip_code: customer.zip_code,
+          neighborhood: customer.neighborhood
+        }
       };
 
       // Inserir o novo pedido
@@ -51,6 +91,42 @@ export const useOrderConverter = () => {
       if (orderError) {
         console.error("Erro detalhado ao converter:", orderError);
         throw new Error(`Erro ao inserir pedido: ${orderError.message}`);
+      }
+
+      // Criar preferência no MercadoPago se necessário
+      if (quotation.payment_method && order.id) {
+        try {
+          const { data: prefData, error: prefError } = await supabase.functions.invoke(
+            'mercadopago-checkout',
+            {
+              body: {
+                order_id: order.id,
+                items: enhancedItems,
+                payer: {
+                  name: customer.full_name || "Cliente",
+                  email: customer.email || "cliente@example.com",
+                  identification: {
+                    type: "CPF",
+                    number: customer.cpf || "00000000000"
+                  }
+                }
+              }
+            }
+          );
+
+          if (prefError) {
+            console.warn("Erro ao criar preferência MP:", prefError);
+          } else if (prefData?.preferenceId) {
+            await supabase
+              .from("orders")
+              .update({
+                mp_preference_id: prefData.preferenceId
+              })
+              .eq("id", order.id);
+          }
+        } catch (mpError) {
+          console.warn("Erro ao processar pagamento:", mpError);
+        }
       }
 
       // Atualizar o status do orçamento para "converted"

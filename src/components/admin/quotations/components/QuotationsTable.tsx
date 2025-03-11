@@ -65,6 +65,7 @@ const QuotationsTable = ({
                   customerEmail={quotation.customer?.email || ""}
                   sentByEmail={quotation.sent_by_email}
                   status={quotation.status}
+                  quotation={quotation}
                   onSendEmail={onSendEmail}
                   onDownloadPdf={onDownloadPdf}
                   onConvertToOrder={onConvertToOrder}
