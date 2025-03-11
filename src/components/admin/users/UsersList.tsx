@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useUsers } from "@/components/admin/UsersContext";
+import { useUsers } from "./useUsers";
 import { useAuth } from "@/hooks/use-auth-context";
 import UsersTable from "./UsersTable";
 import EditUserDialog from "./EditUserDialog";

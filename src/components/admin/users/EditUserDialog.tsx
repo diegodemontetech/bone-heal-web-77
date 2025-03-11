@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { UserRole } from "@/types/auth";
-import { availablePermissions } from "@/components/admin/UsersContext";
+import { availablePermissions } from "./permissions";
 
 interface UserData {
   id: string;
