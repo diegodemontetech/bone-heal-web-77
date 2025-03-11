@@ -9,14 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { UserRole } from "@/types/auth";
-
-interface UserData {
-  id: string;
-  full_name: string;
-  email: string;
-  role: UserRole;
-}
+import { UserData } from "./types";
 
 interface DeleteUserDialogProps {
   isOpen: boolean;
