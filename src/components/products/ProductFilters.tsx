@@ -28,12 +28,14 @@ interface ProductFiltersProps {
   initialValues: FilterValues;
 }
 
-// O schema deve definir "categories" como obrigatório para corresponder à interface FilterValues
+// Definindo o schema Zod para garantir que seja compatível com FilterValues
 const filterSchema = z.object({
+  // Explicitamente definindo categories como não opcional
   categories: z.array(z.string()).min(1, "Selecione pelo menos uma categoria"),
   sortBy: z.string().optional(),
 });
 
+// Usando o tipo do schema para garantir compatibilidade
 type FilterFormValues = z.infer<typeof filterSchema>;
 
 const categoryOptions = [
@@ -43,7 +45,7 @@ const categoryOptions = [
 ];
 
 export function ProductFilters({ onFilterChange, initialValues }: ProductFiltersProps) {
-  // Usando FilterFormValues que agora é compatível com FilterValues
+  // Usando FilterFormValues que é compatível com FilterValues
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
     defaultValues: initialValues,
