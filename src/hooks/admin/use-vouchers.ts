@@ -12,7 +12,7 @@ export const useVouchers = () => {
   const [currentVoucher, setCurrentVoucher] = useState<Voucher | null>(null);
   const [formData, setFormData] = useState({
     code: "",
-    discount_value: 0,
+    discount_amount: 0,
     discount_type: "percentage", // percentage, fixed, shipping
     max_uses: "",
     valid_from: new Date().toISOString().split('T')[0],
@@ -62,7 +62,7 @@ export const useVouchers = () => {
   const resetForm = () => {
     setFormData({
       code: "",
-      discount_value: 0,
+      discount_amount: 0,
       discount_type: "percentage",
       max_uses: "",
       valid_from: new Date().toISOString().split('T')[0],
@@ -79,7 +79,7 @@ export const useVouchers = () => {
     setCurrentVoucher(voucher);
     setFormData({
       code: voucher.code,
-      discount_value: voucher.discount_value,
+      discount_amount: voucher.discount_amount,
       discount_type: voucher.discount_type,
       max_uses: voucher.max_uses?.toString() || "",
       valid_from: new Date(voucher.valid_from).toISOString().split('T')[0],
@@ -94,14 +94,14 @@ export const useVouchers = () => {
 
   const handleCreateVoucher = async () => {
     try {
-      if (!formData.code || !formData.discount_value) {
+      if (!formData.code || !formData.discount_amount) {
         toast.error("Por favor, preencha pelo menos o código e o valor do desconto");
         return;
       }
 
       const voucherData = {
         code: formData.code.toUpperCase(),
-        discount_value: Number(formData.discount_value),
+        discount_amount: Number(formData.discount_amount),
         discount_type: formData.discount_type,
         max_uses: formData.max_uses ? Number(formData.max_uses) : null,
         valid_from: formData.valid_from,

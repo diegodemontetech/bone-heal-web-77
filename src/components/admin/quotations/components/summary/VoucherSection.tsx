@@ -117,9 +117,9 @@ const VoucherSection = ({
 
   const getDiscountText = (voucher: any) => {
     if (voucher.discount_type === "percentage") {
-      return `${voucher.discount_value}% de desconto`;
+      return `${voucher.discount_amount}% de desconto`;
     } else if (voucher.discount_type === "fixed") {
-      return `${formatCurrency(voucher.discount_value)} de desconto`;
+      return `${formatCurrency(voucher.discount_amount)} de desconto`;
     } else if (voucher.discount_type === "shipping") {
       return "Frete grátis";
     }

@@ -1370,8 +1370,8 @@ export type Database = {
           code: string
           created_at: string | null
           current_uses: number | null
+          discount_amount: number
           discount_type: string
-          discount_value: number
           id: string
           max_uses: number | null
           min_amount: number | null
@@ -1385,8 +1385,8 @@ export type Database = {
           code: string
           created_at?: string | null
           current_uses?: number | null
+          discount_amount: number
           discount_type: string
-          discount_value: number
           id?: string
           max_uses?: number | null
           min_amount?: number | null
@@ -1400,8 +1400,8 @@ export type Database = {
           code?: string
           created_at?: string | null
           current_uses?: number | null
+          discount_amount?: number
           discount_type?: string
-          discount_value?: number
           id?: string
           max_uses?: number | null
           min_amount?: number | null

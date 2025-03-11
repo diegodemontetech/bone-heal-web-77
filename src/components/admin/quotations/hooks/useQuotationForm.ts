@@ -9,6 +9,7 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
   const [paymentMethod, setPaymentMethod] = useState("pix");
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState("percentage");
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   
   const { 
     selectedProducts, 
@@ -20,7 +21,7 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     calculateSubtotal, 
     calculateDiscountAmount, 
     calculateTotal 
-  } = useQuotationCalculations(selectedProducts, discount, discountType);
+  } = useQuotationCalculations(selectedProducts, discount, discountType, appliedVoucher);
   
   const { loading, createQuotation } = useCreateQuotation(onCancel);
 
@@ -33,10 +34,11 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
       selectedCustomer,
       selectedProducts,
       paymentMethod,
-      discountType,
+      appliedVoucher ? "voucher" : discountType,
       subtotal,
       discountAmount,
-      total
+      total,
+      appliedVoucher
     );
   };
 
@@ -51,6 +53,8 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     setDiscount,
     discountType,
     setDiscountType,
+    appliedVoucher,
+    setAppliedVoucher,
     loading,
     handleProductQuantityChange,
     handleCreateQuotation,

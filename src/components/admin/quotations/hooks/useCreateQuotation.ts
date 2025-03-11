@@ -13,107 +13,88 @@ export const useCreateQuotation = (onCancel: () => void) => {
     discountType: string,
     subtotal: number,
     discountAmount: number,
-    total: number
+    total: number,
+    appliedVoucher: any = null
   ) => {
+    if (!selectedCustomer) {
+      toast.error("Por favor, selecione um cliente");
+      return;
+    }
+
+    if (!selectedProducts.length) {
+      toast.error("Por favor, adicione pelo menos um produto");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      setLoading(true);
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
 
-      // Validações
-      if (!selectedCustomer) {
-        toast.error("Selecione um cliente para o orçamento");
-        return false;
+      if (!user) {
+        toast.error("Você precisa estar autenticado para criar um orçamento");
+        return;
       }
 
-      if (selectedProducts.length === 0) {
-        toast.error("Adicione pelo menos um produto ao orçamento");
-        return false;
-      }
-
-      const quoteItems = selectedProducts.map(product => ({
-        product_id: product.id,
-        name: product.name,
-        quantity: product.quantity,
-        price: product.price,
-        omie_code: product.omie_code || null
+      // Preparar itens do orçamento
+      const items = selectedProducts.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        subtotal: item.price * item.quantity
       }));
 
-      // Criar orçamento no banco de dados
-      const { data: quotation, error } = await supabase
-        .from("quotations")
-        .insert({
-          user_id: selectedCustomer.id,
-          items: quoteItems,
-          status: "draft",
-          discount_type: discountType,
-          discount_amount: discountAmount,
-          subtotal_amount: subtotal,
-          total_amount: total,
-          payment_method: paymentMethod,
-          customer_info: {
-            name: selectedCustomer.full_name,
-            email: selectedCustomer.email,
-            phone: selectedCustomer.phone,
-            address: selectedCustomer.address,
-            city: selectedCustomer.city,
-            state: selectedCustomer.state,
-            zip_code: selectedCustomer.zip_code
-          }
-        })
-        .select()
+      // Preparar informações do cliente
+      const customerInfo = {
+        id: selectedCustomer.id,
+        name: selectedCustomer.nome_cliente || selectedCustomer.full_name,
+        email: selectedCustomer.email,
+        phone: selectedCustomer.telefone || selectedCustomer.phone,
+        address: selectedCustomer.endereco || selectedCustomer.address,
+        city: selectedCustomer.cidade || selectedCustomer.city,
+        state: selectedCustomer.estado || selectedCustomer.state,
+        document: selectedCustomer.cnpj_cpf || selectedCustomer.cnpj || selectedCustomer.cpf
+      };
+
+      // Dados do orçamento
+      const quotationData = {
+        user_id: user.id,
+        customer_info: customerInfo,
+        items: items,
+        payment_method: paymentMethod,
+        discount_type: discountType,
+        discount_amount: discountAmount,
+        subtotal_amount: subtotal,
+        total_amount: total,
+        status: 'draft',
+        voucher_id: appliedVoucher?.id || null,
+      };
+
+      const { data, error } = await supabase
+        .from('quotations')
+        .insert([quotationData])
+        .select('id')
         .single();
 
-      if (error) {
-        console.error("Erro ao criar orçamento:", error);
-        throw error;
+      if (error) throw error;
+
+      // Se aplicou um cupom, incrementar o contador de uso
+      if (appliedVoucher) {
+        await supabase
+          .from('vouchers')
+          .update({
+            current_uses: appliedVoucher.current_uses + 1
+          })
+          .eq('id', appliedVoucher.id);
       }
 
       toast.success("Orçamento criado com sucesso!");
-
-      // Perguntar se deseja enviar por e-mail
-      const sendEmail = window.confirm("Deseja enviar o orçamento por e-mail para o cliente?");
-      
-      if (sendEmail) {
-        try {
-          // Chamar a Edge Function para enviar e-mail
-          await supabase.functions.invoke("process-email", {
-            body: {
-              template_id: "quotation_created", // ID do template no banco de dados
-              recipient_email: selectedCustomer.email,
-              recipient_name: selectedCustomer.full_name,
-              variables: {
-                customer_name: selectedCustomer.full_name,
-                quotation_id: quotation.id,
-                total: total.toFixed(2),
-                products: quoteItems.map(item => `${item.name} (${item.quantity}x)`).join(", "),
-                payment_method: paymentMethod === "pix" ? "PIX (5% de desconto)" : 
-                              paymentMethod === "boleto" ? "Boleto Bancário" : "Cartão de Crédito"
-              }
-            }
-          });
-          
-          // Atualizar status de envio
-          await supabase
-            .from("quotations")
-            .update({ 
-              sent_by_email: true,
-              status: "sent"
-            })
-            .eq("id", quotation.id);
-            
-          toast.success("Orçamento enviado por e-mail!");
-        } catch (emailError) {
-          console.error("Erro ao enviar e-mail:", emailError);
-          toast.error("Erro ao enviar o orçamento por e-mail, mas o orçamento foi salvo!");
-        }
-      }
-      
-      onCancel(); // Voltar para a lista
-      return true;
-      
-    } catch (error: any) {
+      onCancel();
+    } catch (error) {
       console.error("Erro ao criar orçamento:", error);
-      toast.error("Erro ao criar orçamento: " + error.message);
-      return false;
+      toast.error("Erro ao criar orçamento. Por favor, tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -121,6 +102,6 @@ export const useCreateQuotation = (onCancel: () => void) => {
 
   return {
     loading,
-    createQuotation,
+    createQuotation
   };
 };

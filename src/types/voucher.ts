@@ -2,7 +2,7 @@
 export interface Voucher {
   id: string;
   code: string;
-  discount_value: number;
+  discount_amount: number;
   discount_type: string;
   max_uses: number | null;
   current_uses: number;

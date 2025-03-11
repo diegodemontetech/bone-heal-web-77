@@ -54,7 +54,7 @@ export const VoucherForm = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="discount_value">
+        <Label htmlFor="discount_amount">
           {formData.discount_type === "percentage" 
             ? "Desconto (%)" 
             : formData.discount_type === "fixed" 
@@ -62,11 +62,11 @@ export const VoucherForm = ({
               : "Valor Mínimo para Frete Grátis (R$)"}
         </Label>
         <Input
-          id="discount_value"
-          name="discount_value"
+          id="discount_amount"
+          name="discount_amount"
           type="number"
           min="0"
-          value={formData.discount_value}
+          value={formData.discount_amount}
           onChange={handleInputChange}
           placeholder={formData.discount_type === "percentage" ? "10" : "50.00"}
         />

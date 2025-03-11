@@ -1,7 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { useState } from "react";
-import DiscountSection from "./summary/DiscountSection";
 import VoucherSection from "./summary/VoucherSection";
 import PaymentMethodSelector from "./summary/PaymentMethodSelector";
 import TotalSummary from "./summary/TotalSummary";
@@ -69,15 +68,6 @@ const QuotationSummary = ({
             subtotal={calculateSubtotal()}
             totalItems={totalItems}
           />
-          
-          {!appliedVoucher && (
-            <DiscountSection
-              discountType={discountType}
-              setDiscountType={setDiscountType}
-              discount={discount}
-              setDiscount={setDiscount}
-            />
-          )}
           
           <TotalSummary
             calculateSubtotal={calculateSubtotal}

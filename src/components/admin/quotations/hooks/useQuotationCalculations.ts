@@ -15,9 +15,9 @@ export const useQuotationCalculations = (
     // Se tiver um cupom aplicado, usa o desconto dele
     if (appliedVoucher) {
       if (appliedVoucher.discount_type === "percentage") {
-        return subtotal * (appliedVoucher.discount_value / 100);
+        return subtotal * (appliedVoucher.discount_amount / 100);
       } else if (appliedVoucher.discount_type === "fixed") {
-        return appliedVoucher.discount_value;
+        return appliedVoucher.discount_amount;
       } 
       // Se for frete grátis, não afeta o valor do produto diretamente
       return 0;
