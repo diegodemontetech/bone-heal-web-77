@@ -44,46 +44,58 @@ export type Database = {
       }
       clientes_omie: {
         Row: {
-          "Clientes e Fornecedores": string | null
-          "Unnamed: 1": string | null
-          "Unnamed: 10": string | null
-          "Unnamed: 11": string | null
-          "Unnamed: 2": string | null
-          "Unnamed: 3": string | null
-          "Unnamed: 4": string | null
-          "Unnamed: 5": string | null
-          "Unnamed: 6": string | null
-          "Unnamed: 7": string | null
-          "Unnamed: 8": string | null
-          "Unnamed: 9": string | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj_cpf: string | null
+          codigo_cliente_omie: string | null
+          complemento: string | null
+          created_at: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome_cliente: string | null
+          numero: string | null
+          telefone: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          "Clientes e Fornecedores"?: string | null
-          "Unnamed: 1"?: string | null
-          "Unnamed: 10"?: string | null
-          "Unnamed: 11"?: string | null
-          "Unnamed: 2"?: string | null
-          "Unnamed: 3"?: string | null
-          "Unnamed: 4"?: string | null
-          "Unnamed: 5"?: string | null
-          "Unnamed: 6"?: string | null
-          "Unnamed: 7"?: string | null
-          "Unnamed: 8"?: string | null
-          "Unnamed: 9"?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj_cpf?: string | null
+          codigo_cliente_omie?: string | null
+          complemento?: string | null
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome_cliente?: string | null
+          numero?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          "Clientes e Fornecedores"?: string | null
-          "Unnamed: 1"?: string | null
-          "Unnamed: 10"?: string | null
-          "Unnamed: 11"?: string | null
-          "Unnamed: 2"?: string | null
-          "Unnamed: 3"?: string | null
-          "Unnamed: 4"?: string | null
-          "Unnamed: 5"?: string | null
-          "Unnamed: 6"?: string | null
-          "Unnamed: 7"?: string | null
-          "Unnamed: 8"?: string | null
-          "Unnamed: 9"?: string | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj_cpf?: string | null
+          codigo_cliente_omie?: string | null
+          complemento?: string | null
+          created_at?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome_cliente?: string | null
+          numero?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -758,61 +770,73 @@ export type Database = {
       }
       pedidos_omie: {
         Row: {
-          "Cliente (Nome Fantasia)": string | null
-          "Cliente (Razão Social)": string | null
-          "CNPJ/CPF": string | null
-          "Código do Produto": string | null
-          "Data de Emissão (completa)": string | null
+          cliente_id: string | null
+          cnpj_cpf: string | null
+          codigo_produto: string | null
+          created_at: string | null
+          data_emissao: string | null
           Desconto: string | null
           Frete: string | null
-          "Nota Fiscal": number | null
+          id: string
+          nome_fantasia: string | null
+          numero_nota_fiscal: number | null
           Operação: string | null
-          "Outras Despesas Acessórias": string | null
+          outras_despesas: string | null
+          quantidade_total: number | null
+          razao_social: string | null
           Seguro: string | null
           Situação: string | null
-          "Soma de Quantidade": number | null
           "Total da Nota Fiscal": number | null
-          "Total de Mercadoria": string | null
-          "Valor do ICMS ST": string | null
-          "Valor do IPI": string | null
+          total_mercadoria: string | null
+          updated_at: string | null
+          valor_icms_st: string | null
+          valor_ipi: string | null
         }
         Insert: {
-          "Cliente (Nome Fantasia)"?: string | null
-          "Cliente (Razão Social)"?: string | null
-          "CNPJ/CPF"?: string | null
-          "Código do Produto"?: string | null
-          "Data de Emissão (completa)"?: string | null
+          cliente_id?: string | null
+          cnpj_cpf?: string | null
+          codigo_produto?: string | null
+          created_at?: string | null
+          data_emissao?: string | null
           Desconto?: string | null
           Frete?: string | null
-          "Nota Fiscal"?: number | null
+          id?: string
+          nome_fantasia?: string | null
+          numero_nota_fiscal?: number | null
           Operação?: string | null
-          "Outras Despesas Acessórias"?: string | null
+          outras_despesas?: string | null
+          quantidade_total?: number | null
+          razao_social?: string | null
           Seguro?: string | null
           Situação?: string | null
-          "Soma de Quantidade"?: number | null
           "Total da Nota Fiscal"?: number | null
-          "Total de Mercadoria"?: string | null
-          "Valor do ICMS ST"?: string | null
-          "Valor do IPI"?: string | null
+          total_mercadoria?: string | null
+          updated_at?: string | null
+          valor_icms_st?: string | null
+          valor_ipi?: string | null
         }
         Update: {
-          "Cliente (Nome Fantasia)"?: string | null
-          "Cliente (Razão Social)"?: string | null
-          "CNPJ/CPF"?: string | null
-          "Código do Produto"?: string | null
-          "Data de Emissão (completa)"?: string | null
+          cliente_id?: string | null
+          cnpj_cpf?: string | null
+          codigo_produto?: string | null
+          created_at?: string | null
+          data_emissao?: string | null
           Desconto?: string | null
           Frete?: string | null
-          "Nota Fiscal"?: number | null
+          id?: string
+          nome_fantasia?: string | null
+          numero_nota_fiscal?: number | null
           Operação?: string | null
-          "Outras Despesas Acessórias"?: string | null
+          outras_despesas?: string | null
+          quantidade_total?: number | null
+          razao_social?: string | null
           Seguro?: string | null
           Situação?: string | null
-          "Soma de Quantidade"?: number | null
           "Total da Nota Fiscal"?: number | null
-          "Total de Mercadoria"?: string | null
-          "Valor do ICMS ST"?: string | null
-          "Valor do IPI"?: string | null
+          total_mercadoria?: string | null
+          updated_at?: string | null
+          valor_icms_st?: string | null
+          valor_ipi?: string | null
         }
         Relationships: []
       }
@@ -1580,6 +1604,10 @@ export type Database = {
           document: string
         }
         Returns: string
+      }
+      gerar_usuarios_a_partir_de_pedidos: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       get_user_admin_status: {
         Args: {
