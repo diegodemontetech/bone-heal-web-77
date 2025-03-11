@@ -30,7 +30,7 @@ interface ProductFiltersProps {
 
 // Definindo o schema Zod para garantir que seja compatível com FilterValues
 const filterSchema = z.object({
-  // Explicitamente definindo categories como não opcional
+  // Definindo explicitamente como não opcional
   categories: z.array(z.string()).min(1, "Selecione pelo menos uma categoria"),
   sortBy: z.string().optional(),
 });
