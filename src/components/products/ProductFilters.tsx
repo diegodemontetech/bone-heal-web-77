@@ -48,7 +48,10 @@ export function ProductFilters({ onFilterChange, initialValues }: ProductFilters
   // Usando FilterFormValues que é compatível com FilterValues
   const form = useForm<FilterFormValues>({
     resolver: zodResolver(filterSchema),
-    defaultValues: initialValues,
+    defaultValues: {
+      categories: initialValues.categories || ["todos"],
+      sortBy: initialValues.sortBy
+    },
   });
 
   const onSubmit = (data: FilterFormValues) => {
