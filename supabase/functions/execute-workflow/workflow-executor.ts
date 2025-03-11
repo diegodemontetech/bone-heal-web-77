@@ -1,8 +1,11 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { Workflow, ExecutionResults } from "./types.ts";
+import { Workflow, ExecutionResults, NodeResult } from "./types.ts";
 import { simulateAction, simulateCondition } from "./action-simulators.ts";
 
+/**
+ * Executa um fluxo de trabalho com os dados de trigger fornecidos.
+ */
 export async function executeWorkflow(
   workflow: Workflow, 
   triggerData: any,
@@ -21,7 +24,16 @@ export async function executeWorkflow(
   const results: ExecutionResults = {};
   const processedNodes: Set<string> = new Set();
   
-  // Log de execução
+  // Iniciar a execução a partir dos nós de gatilho
+  for (const triggerNode of triggerNodes) {
+    await processNode(triggerNode.id, triggerData);
+  }
+  
+  return results;
+
+  /**
+   * Registra informações sobre a execução de um nó.
+   */
   async function logExecution(nodeId: string, status: string, data: any) {
     await supabase
       .from("workflow_execution_logs")
@@ -34,10 +46,49 @@ export async function executeWorkflow(
       });
   }
   
-  // Processar um nó
+  /**
+   * Executa a operação específica para o tipo de nó.
+   */
+  function executeNodeOperation(node: any, inputData: any): any {
+    switch (node.type) {
+      case "triggerNode":
+        return { ...triggerData, trigger: node.data.action };
+      
+      case "actionNode":
+        return simulateAction(node.data.service, node.data.action, inputData);
+      
+      case "conditionNode":
+        return simulateCondition(node.data.action, inputData);
+      
+      default:
+        return { ...inputData };
+    }
+  }
+  
+  /**
+   * Encontra as próximas arestas a serem seguidas após a execução de um nó.
+   */
+  function findNextEdges(nodeId: string, nodeType: string, conditionResult?: boolean): any[] {
+    const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+    
+    // Para nós de condição, filtra as arestas com base no resultado
+    if (nodeType === "conditionNode" && conditionResult !== undefined) {
+      return outgoingEdges.filter(edge => 
+        (conditionResult && edge.sourceHandle === "true") || 
+        (!conditionResult && edge.sourceHandle === "false")
+      );
+    }
+    
+    return outgoingEdges;
+  }
+  
+  /**
+   * Processa um nó e seus nós subsequentes recursivamente.
+   */
   async function processNode(nodeId: string, inputData: any): Promise<any> {
+    // Evitar processamento em loop
     if (processedNodes.has(nodeId)) {
-      return results[nodeId]; // Evitar processamento em loop
+      return results[nodeId];
     }
     
     const node = nodes.find(n => n.id === nodeId);
@@ -50,23 +101,8 @@ export async function executeWorkflow(
     let result;
     
     try {
-      // Aqui seria implementada a lógica real para cada tipo de nó
-      switch (node.type) {
-        case "triggerNode":
-          result = { ...triggerData, trigger: node.data.action };
-          break;
-        
-        case "actionNode":
-          result = simulateAction(node.data.service, node.data.action, inputData);
-          break;
-        
-        case "conditionNode":
-          result = simulateCondition(node.data.action, inputData);
-          break;
-        
-        default:
-          result = { ...inputData };
-      }
+      // Executar a operação específica do nó
+      result = executeNodeOperation(node, inputData);
       
       await logExecution(nodeId, "completed", { result });
       
@@ -79,32 +115,17 @@ export async function executeWorkflow(
     results[nodeId] = result;
     processedNodes.add(nodeId);
     
-    // Encontrar os próximos nós
-    const outgoingEdges = edges.filter(edge => edge.source === nodeId);
+    // Encontrar e processar os próximos nós
+    const nextEdges = findNextEdges(
+      nodeId, 
+      node.type, 
+      node.type === "conditionNode" ? result.result === true : undefined
+    );
     
-    for (const edge of outgoingEdges) {
-      // Para condições, verificar o resultado
-      if (node.type === "conditionNode") {
-        const conditionResult = result.result === true;
-        
-        // Se a saída da condição não corresponder ao handle da aresta, pular
-        if ((conditionResult && edge.sourceHandle !== "true") || 
-            (!conditionResult && edge.sourceHandle !== "false")) {
-          continue;
-        }
-      }
-      
-      // Processar o próximo nó
+    for (const edge of nextEdges) {
       await processNode(edge.target, result);
     }
     
     return result;
   }
-  
-  // Começar a execução a partir dos nós de gatilho
-  for (const triggerNode of triggerNodes) {
-    await processNode(triggerNode.id, triggerData);
-  }
-  
-  return results;
 }
