@@ -20,45 +20,31 @@ export interface WhatsAppChatProps {
 
 export interface WhatsAppMessage {
   id: string;
-  lead_id?: string;
-  message?: string;
-  direction?: string;
+  lead_id: string;
+  message: string;
+  direction: 'inbound' | 'outbound';
   sent_by?: string;
-  is_bot?: boolean;
-  created_at?: string;
+  is_bot: boolean;
+  created_at: string;
   media_type?: string;
   media_url?: string;
   instance_id?: string;
   sender_id?: string;
-  // Campos compatíveis com a interface esperada em outros componentes
-  from?: string;
-  to?: string;
-  body?: string;
-  type?: string;
-  timestamp?: string;
-  is_sent_by_me?: boolean;
-}
-
-export interface WhatsAppInstanceCardProps {
-  instance: WhatsAppInstance;
-  onSelect: () => void;
-  onRefreshQr: () => Promise<any>;
-  onDelete: () => void; // Corrigindo a propriedade obrigatória
 }
 
 export interface CreateInstanceDialogProps {
   isOpen: boolean;
   isCreating: boolean;
-  onOpenChange: (open: boolean) => void;
   onCreateInstance: (name: string) => Promise<boolean>;
+  onClose: () => void;
 }
 
 export interface InstancesTabProps {
   instances: WhatsAppInstance[];
   isLoading: boolean;
-  onSelectInstance: (instanceId: string) => void;
+  onSelect: (instanceId: string) => void;
   onRefreshQr: (instanceId: string) => Promise<any>;
-  onDeleteInstance: (instanceId: string) => Promise<boolean>;
+  onDelete: (instanceId: string) => Promise<boolean>;
   onCreateDialogOpen: () => void;
 }
 
@@ -69,74 +55,3 @@ export interface ChatTabProps {
   selectedInstanceId: string | null;
 }
 
-export interface DialogActionsProps {
-  onCancel: () => void;
-  onConfirm: () => void;
-  isLoading: boolean;
-}
-
-export interface InstanceNameInputProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-export interface ChatMessageProps {
-  message: WhatsAppMessage;
-}
-
-export interface ChatMessagesProps {
-  messages: WhatsAppMessage[];
-  isLoading: boolean;
-}
-
-export interface ChatInputProps {
-  onSendMessage: (message: string) => Promise<boolean>;
-  disabled?: boolean;
-}
-
-// Função de utilitário para converter entre os formatos de mensagem
-export function convertMessageFormat(message: any, toDatabase: boolean = false): WhatsAppMessage {
-  if (toDatabase) {
-    // Convertendo do formato externo para o formato do banco de dados
-    return {
-      id: message.id || crypto.randomUUID(),
-      lead_id: message.lead_id || '',
-      message: message.body || message.message || '',
-      direction: message.is_sent_by_me ? 'outbound' : 'inbound',
-      sent_by: message.sent_by || (message.is_sent_by_me ? 'user' : 'contact'),
-      is_bot: message.is_bot || false,
-      created_at: message.timestamp || message.created_at || new Date().toISOString(),
-      media_type: message.media_type || '',
-      media_url: message.media_url || '',
-      instance_id: message.instance_id || '',
-      sender_id: message.sender_id || message.from || '',
-      from: message.from || '',
-      to: message.to || '',
-      body: message.body || message.message || '',
-      type: message.type || 'text',
-      timestamp: message.timestamp || message.created_at || new Date().toISOString(),
-      is_sent_by_me: message.is_sent_by_me || message.direction === 'outbound'
-    };
-  } else {
-    // Convertendo do formato do banco de dados para o formato externo
-    return {
-      id: message.id || crypto.randomUUID(),
-      lead_id: message.lead_id || '',
-      message: message.message || message.body || '',
-      direction: message.direction || (message.is_sent_by_me ? 'outbound' : 'inbound'),
-      sent_by: message.sent_by || (message.is_sent_by_me ? 'user' : 'contact'),
-      is_bot: message.is_bot || false,
-      created_at: message.created_at || message.timestamp || new Date().toISOString(),
-      media_type: message.media_type || '',
-      media_url: message.media_url || '',
-      instance_id: message.instance_id || '',
-      sender_id: message.sender_id || message.from || '',
-      from: message.from || message.sender_id || '',
-      to: message.to || '',
-      body: message.body || message.message || '',
-      type: message.type || 'text',
-      timestamp: message.timestamp || message.created_at || new Date().toISOString(),
-      is_sent_by_me: message.is_sent_by_me || message.direction === 'outbound'
-    };
-  }
-}

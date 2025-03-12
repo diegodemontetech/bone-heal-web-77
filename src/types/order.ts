@@ -34,7 +34,19 @@ export interface Order {
   shipping_address?: ShippingAddress;
   created_at: string;
   updated_at: string;
-  profiles?: Record<string, any>;
+  profiles?: {
+    id?: string;
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    zip_code?: string;
+    city?: string;
+    state?: string;
+    address?: string;
+    endereco_numero?: string;
+    complemento?: string;
+    neighborhood?: string;
+  };
   omie_status?: string;
 }
 
