@@ -30,7 +30,7 @@ export const useShareWhatsApp = () => {
       
       // Acesse as propriedades com segurança e forneça valores padrão
       const customerName = customerInfo && typeof customerInfo === 'object' && 'name' in customerInfo 
-        ? customerInfo.name as string 
+        ? String(customerInfo.name || 'Cliente') 
         : "Cliente";
         
       const message = `Olá ${customerName}, segue o orçamento solicitado no valor de ${formatCurrency(quotation.total_amount)}. Você pode visualizá-lo pelo link: ${quotationViewUrl}`;
@@ -40,7 +40,7 @@ export const useShareWhatsApp = () => {
       
       // Buscar número de telefone do cliente ou usar um padrão
       const phone = customerInfo && typeof customerInfo === 'object' && 'phone' in customerInfo
-        ? (customerInfo.phone as string).replace(/\D/g, '')
+        ? String(customerInfo.phone || '').replace(/\D/g, '')
         : "";
       
       if (!phone) {

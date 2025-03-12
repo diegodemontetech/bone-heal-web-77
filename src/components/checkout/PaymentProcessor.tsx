@@ -1,15 +1,16 @@
+
 import { useState, useEffect } from 'react';
-import { useCart } from '@/hooks/use-cart';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { useNavigate } from "react-router-dom";
+import { useCart } from '@/hooks/use-cart';
 
 interface PaymentProcessorProps {
   orderId: string;
 }
 
 const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ orderId }) => {
-  const { getTotalPrice, clearCart } = useCart();
+  const cart = useCart();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -25,7 +26,9 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ orderId }) => {
         // Exemplo: await updateOrderPaymentStatus(orderId, 'paid');
 
         // Limpar o carrinho e redirecionar para a página de sucesso
-        clearCart();
+        if (typeof cart.clearCart === 'function') {
+          cart.clearCart();
+        }
         toast.success("Pagamento processado com sucesso!");
         navigate('/success');
       } catch (error) {
@@ -37,7 +40,14 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ orderId }) => {
     };
 
     processPayment();
-  }, [orderId, getTotalPrice, clearCart, navigate]);
+  }, [orderId, navigate, cart]);
+
+  const getTotalPrice = () => {
+    if (typeof cart.getTotalPrice === 'function') {
+      return cart.getTotalPrice();
+    }
+    return 0;
+  };
 
   return (
     <div className="text-center">

@@ -7,12 +7,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth-context';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { WhatsAppMessage } from '@/components/admin/whatsapp/types';
 
 const AdminWhatsAppMessages = () => {
   const { profile, hasPermission } = useAuth();
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [pendingNotifications, setPendingNotifications] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -34,7 +37,7 @@ const AdminWhatsAppMessages = () => {
       .subscribe();
       
     return () => {
-      supabase.removeChannel(subscription);
+      subscription.removeChannel(subscription);
     };
   }, [profile]);
 
@@ -76,6 +79,31 @@ const AdminWhatsAppMessages = () => {
   const handleRefresh = () => {
     fetchNotifications();
   };
+
+  const handleSendMessage = async (message: string, media?: { url: string; type: string }) => {
+    if (!selectedLead || !message.trim()) return false;
+    
+    try {
+      const { error } = await supabase
+        .from('whatsapp_messages')
+        .insert([{
+          lead_id: selectedLead.id,
+          message,
+          direction: 'outbound',
+          is_bot: false,
+          media_url: media?.url,
+          media_type: media?.type
+        }]);
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      toast.error("Falha ao enviar mensagem");
+      return false;
+    }
+  };
   
   if (isLoading) {
     return (
@@ -108,7 +136,10 @@ const AdminWhatsAppMessages = () => {
         </div>
         <div className="col-span-2">
           <WhatsAppChat 
-            selectedLead={selectedLead} 
+            messages={messages} 
+            isLoading={messagesLoading}
+            onSendMessage={handleSendMessage}
+            selectedLead={selectedLead}
             onMessageSent={handleRefresh}
           />
         </div>

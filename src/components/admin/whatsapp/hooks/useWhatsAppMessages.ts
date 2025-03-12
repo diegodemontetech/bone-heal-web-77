@@ -2,27 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-export interface WhatsAppMessage {
-  id: string;
-  lead_id: string;
-  message: string;
-  direction: string;
-  sent_by: string;
-  is_bot: boolean;
-  created_at: string;
-  media_type?: string;
-  media_url?: string;
-  instance_id?: string;
-  sender_id?: string;
-  // Campos compatíveis com a interface esperada em outros componentes
-  from?: string;
-  to?: string;
-  body?: string;
-  type?: string;
-  timestamp?: string;
-  is_sent_by_me?: boolean;
-}
+import { WhatsAppMessage } from '../types';
 
 export const useWhatsAppMessages = (leadId: string | undefined) => {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
@@ -76,15 +56,15 @@ export const useWhatsAppMessages = (leadId: string | undefined) => {
         filter: `lead_id=eq.${leadId}`
       }, (payload) => {
         const newMessage = {
-          ...payload.new,
-          sent_by: payload.new.direction === 'outbound' ? 'us' : 'them',
+          ...payload.new as any,
+          sent_by: (payload.new as any).direction === 'outbound' ? 'us' : 'them',
           // Campos compatíveis
-          from: payload.new.direction === 'outbound' ? 'system' : leadId,
-          to: payload.new.direction === 'outbound' ? leadId : 'system',
-          body: payload.new.message,
-          type: payload.new.media_type || 'text',
-          timestamp: payload.new.created_at,
-          is_sent_by_me: payload.new.direction === 'outbound'
+          from: (payload.new as any).direction === 'outbound' ? 'system' : leadId,
+          to: (payload.new as any).direction === 'outbound' ? leadId : 'system',
+          body: (payload.new as any).message,
+          type: (payload.new as any).media_type || 'text',
+          timestamp: (payload.new as any).created_at,
+          is_sent_by_me: (payload.new as any).direction === 'outbound'
         } as WhatsAppMessage;
         
         setMessages(prev => [...prev, newMessage]);

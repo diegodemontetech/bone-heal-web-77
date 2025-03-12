@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Voucher } from "@/types/voucher";
 import { format } from "date-fns";
 
 interface VoucherFormData {
@@ -18,13 +17,31 @@ interface VoucherFormData {
   is_active: boolean;
 }
 
+// Estenda a interface Voucher para adicionar a propriedade is_active
+interface ExtendedVoucher {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_amount: number;
+  min_amount: number;
+  min_items: number;
+  payment_method: string;
+  valid_from: string;
+  valid_until: string;
+  max_uses: number;
+  current_uses: number;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+}
+
 export const useVouchers = () => {
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [vouchers, setVouchers] = useState<ExtendedVoucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentVoucher, setCurrentVoucher] = useState<Voucher | null>(null);
+  const [currentVoucher, setCurrentVoucher] = useState<ExtendedVoucher | null>(null);
   const [formData, setFormData] = useState<VoucherFormData>({
     code: "",
     discount_type: "percentage",
@@ -56,7 +73,7 @@ export const useVouchers = () => {
       const formattedVouchers = data.map(voucher => ({
         ...voucher,
         is_active: voucher.is_active ?? true
-      })) as Voucher[];
+      })) as ExtendedVoucher[];
       
       setVouchers(formattedVouchers);
     } catch (err) {
@@ -105,8 +122,17 @@ export const useVouchers = () => {
   const createVoucher = async (voucher: VoucherFormData) => {
     try {
       const newVoucher = {
-        ...voucher,
-        current_uses: 0
+        code: voucher.code,
+        discount_type: voucher.discount_type,
+        discount_amount: voucher.discount_amount,
+        min_amount: voucher.min_amount,
+        min_items: voucher.min_items,
+        payment_method: voucher.payment_method,
+        valid_from: voucher.valid_from,
+        valid_until: voucher.valid_until,
+        max_uses: voucher.max_uses,
+        current_uses: 0,
+        is_active: voucher.is_active
       };
 
       const { data, error } = await supabase
@@ -117,7 +143,7 @@ export const useVouchers = () => {
 
       if (error) throw error;
 
-      setVouchers(prev => [data as Voucher, ...prev]);
+      setVouchers(prev => [data as ExtendedVoucher, ...prev]);
       toast.success("Voucher criado com sucesso!");
       return data;
     } catch (err) {
@@ -127,11 +153,22 @@ export const useVouchers = () => {
     }
   };
 
-  const updateVoucher = async (id: string, updates: Partial<Voucher>) => {
+  const updateVoucher = async (id: string, updates: Partial<ExtendedVoucher>) => {
     try {
       const { data, error } = await supabase
         .from("vouchers")
-        .update(updates)
+        .update({
+          code: updates.code,
+          discount_type: updates.discount_type,
+          discount_amount: updates.discount_amount,
+          min_amount: updates.min_amount,
+          min_items: updates.min_items,
+          payment_method: updates.payment_method,
+          valid_from: updates.valid_from,
+          valid_until: updates.valid_until,
+          max_uses: updates.max_uses,
+          is_active: updates.is_active
+        })
         .eq("id", id)
         .select()
         .single();
@@ -140,7 +177,7 @@ export const useVouchers = () => {
 
       setVouchers(prev => 
         prev.map(voucher => 
-          voucher.id === id ? data as Voucher : voucher
+          voucher.id === id ? data as ExtendedVoucher : voucher
         )
       );
 
@@ -172,7 +209,7 @@ export const useVouchers = () => {
     }
   };
 
-  const openEditDialog = (voucher: Voucher) => {
+  const openEditDialog = (voucher: ExtendedVoucher) => {
     setCurrentVoucher(voucher);
     setFormData({
       code: voucher.code,

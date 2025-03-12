@@ -21,6 +21,13 @@ interface OrderItem {
   total_price: number;
 }
 
+interface OrderAddress {
+  zip_code: string;
+  city: string;
+  state: string;
+  address: string;
+}
+
 interface Order {
   id: string;
   user_id: string;
@@ -31,12 +38,7 @@ interface Order {
   payment_method: string;
   payment_status: string;
   items: OrderItem[];
-  shipping_address: {
-    zip_code: string;
-    city: string;
-    state: string;
-    address: string;
-  };
+  shipping_address: OrderAddress;
   created_at: string;
   updated_at: string;
   discount: number;
@@ -78,6 +80,13 @@ const Orders = () => {
           // Parse JSON fields
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
+          // Cria um objeto de endereço com valores padrão
+          const shippingAddress: OrderAddress = {
+            zip_code: profileData.zip_code || '',
+            city: profileData.city || '',
+            state: profileData.state || '',
+            address: profileData.address || ''
+          };
           
           return {
             id: order.id,
@@ -95,12 +104,7 @@ const Orders = () => {
               price: item.price,
               total_price: item.total_price
             })),
-            shipping_address: {
-              zip_code: profileData.zip_code || '',
-              city: profileData.city || '',
-              state: profileData.state || '',
-              address: profileData.address || ''
-            },
+            shipping_address: shippingAddress,
             created_at: order.created_at,
             updated_at: order.updated_at || order.created_at,
             discount: order.discount || 0
