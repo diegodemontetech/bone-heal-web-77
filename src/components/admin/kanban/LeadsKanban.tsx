@@ -9,8 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import KanbanColumn from "./KanbanColumn";
-import LeadDrawer from "./LeadDrawer";
+import { KanbanColumn } from "./KanbanColumn";
+import { LeadDrawer } from "./LeadDrawer";
 import { useLeadsQuery } from "./hooks/useLeadsQuery";
 import { useUpdateLeadStatus } from "./hooks/useUpdateLeadStatus";
 
