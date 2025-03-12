@@ -24,6 +24,8 @@ interface ShippingInfo {
   method?: string;
   carrier?: string;
   estimated_days?: number;
+  zipCode?: string;
+  service_type?: string;
 }
 
 export const useOrderConverter = () => {
@@ -89,16 +91,17 @@ export const useOrderConverter = () => {
       
       // Extrair dados do cliente com segurança
       if (typeof customerInfoRaw === 'object' && customerInfoRaw !== null && !Array.isArray(customerInfoRaw)) {
-        customer.id = (customerInfoRaw as any).id || '';
-        customer.name = (customerInfoRaw as any).name || '';
-        customer.email = (customerInfoRaw as any).email;
-        customer.phone = (customerInfoRaw as any).phone;
-        customer.address = (customerInfoRaw as any).address;
-        customer.city = (customerInfoRaw as any).city;
-        customer.state = (customerInfoRaw as any).state;
-        customer.zip_code = (customerInfoRaw as any).zip_code;
-        customer.neighborhood = (customerInfoRaw as any).neighborhood;
-        customer.cpf = (customerInfoRaw as any).cpf;
+        const customerObj = customerInfoRaw as Record<string, Json>;
+        customer.id = customerObj.id as string || '';
+        customer.name = customerObj.name as string || '';
+        customer.email = customerObj.email as string | undefined;
+        customer.phone = customerObj.phone as string | undefined;
+        customer.address = customerObj.address as string | undefined;
+        customer.city = customerObj.city as string | undefined;
+        customer.state = customerObj.state as string | undefined;
+        customer.zip_code = customerObj.zip_code as string | undefined;
+        customer.neighborhood = customerObj.neighborhood as string | undefined;
+        customer.cpf = customerObj.cpf as string | undefined;
       }
 
       if (!customer.id || !customer.name) {
@@ -122,10 +125,14 @@ export const useOrderConverter = () => {
       };
       
       if (shippingInfoRaw && typeof shippingInfoRaw === 'object' && !Array.isArray(shippingInfoRaw)) {
-        shippingInfo.cost = typeof (shippingInfoRaw as any).cost === 'number' ? (shippingInfoRaw as any).cost : 0;
-        shippingInfo.method = (shippingInfoRaw as any).method;
-        shippingInfo.carrier = (shippingInfoRaw as any).carrier;
-        shippingInfo.estimated_days = (shippingInfoRaw as any).estimated_days;
+        const shippingObj = shippingInfoRaw as Record<string, Json>;
+        shippingInfo.cost = typeof shippingObj.cost === 'number' ? shippingObj.cost : 
+                            typeof shippingObj.cost === 'string' ? parseFloat(shippingObj.cost) : 0;
+        shippingInfo.method = shippingObj.method as string | undefined;
+        shippingInfo.carrier = shippingObj.carrier as string | undefined;
+        shippingInfo.estimated_days = shippingObj.estimated_days as number | undefined;
+        shippingInfo.service_type = shippingObj.service_type as string | undefined;
+        shippingInfo.zipCode = shippingObj.zip_code as string | undefined;
       }
 
       // Criar o pedido
@@ -195,7 +202,7 @@ export const useOrderConverter = () => {
           
           console.log("Preferência MP criada:", prefData.id);
           
-          // Criar notificação para o cliente - corrigindo o formato conforme estrutura do banco
+          // Criar notificação para o cliente
           await supabase
             .from("notifications")
             .insert({

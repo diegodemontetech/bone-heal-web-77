@@ -1,213 +1,198 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
+  // Tratamento para preflight CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Configurar cliente Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    console.log("Recebendo webhook do MercadoPago");
     
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Faltam credenciais do Supabase')
-    }
+    const body = await req.json();
+    console.log("Dados recebidos:", JSON.stringify(body, null, 2));
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
-    
-    // Configurar token do Mercado Pago
-    const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN')
-    if (!mpAccessToken) {
-      throw new Error('Token do Mercado Pago não configurado')
-    }
-
-    // Obter dados da requisição
-    const formData = await req.formData()
-    const idStr = formData.get('id')
-    const topicStr = formData.get('topic')
-
-    if (!idStr || !topicStr) {
-      throw new Error('Webhook inválido: faltam id ou topic')
-    }
-
-    const id = String(idStr)
-    const topic = String(topicStr)
-
-    console.log(`Webhook recebido: topic=${topic}, id=${id}`)
-
-    // Verificar se é uma notificação de pagamento
-    if (topic !== 'payment') {
-      return new Response(
-        JSON.stringify({ message: `Ignorando evento: ${topic}` }),
-        { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-      )
-    }
-
-    // Buscar informações do pagamento no Mercado Pago
-    const mpResponse = await fetch(
-      `https://api.mercadopago.com/v1/payments/${id}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${mpAccessToken}`
-        }
+    // Verificar se é uma atualização de pagamento
+    if (body.type === 'payment' && body.data?.id) {
+      const paymentId = body.data.id;
+      console.log(`Processando atualização do pagamento: ${paymentId}`);
+      
+      // Obter token de acesso MP
+      const accessToken = Deno.env.get('MP_ACCESS_TOKEN');
+      if (!accessToken) {
+        throw new Error("Token do MercadoPago não configurado");
       }
-    )
 
-    if (!mpResponse.ok) {
-      throw new Error(`Erro ao buscar pagamento: ${mpResponse.status}`)
-    }
-
-    const paymentData = await mpResponse.json()
-    console.log('Dados do pagamento:', JSON.stringify(paymentData, null, 2))
-
-    // Verificar a referência externa (order_id)
-    const orderId = paymentData.external_reference
-    
-    if (!orderId) {
-      throw new Error('Referência externa não encontrada no pagamento')
-    }
-
-    // Buscar o pedido no banco de dados
-    const { data: orderData, error: orderError } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('id', orderId)
-      .single()
-
-    if (orderError) {
-      throw new Error(`Pedido não encontrado: ${orderError.message}`)
-    }
-
-    // Mapear status do MP para status do pedido
-    let orderStatus = 'pending'
-    let paymentStatus = 'pending'
-    
-    switch (paymentData.status) {
-      case 'approved':
-        orderStatus = 'processing'
-        paymentStatus = 'completed'
-        break
-      case 'rejected':
-      case 'cancelled':
-        paymentStatus = 'failed'
-        break
-      case 'in_process':
-      case 'pending':
-        paymentStatus = 'pending'
-        break
-    }
-
-    // Atualizar o status do pedido
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update({ 
-        status: orderStatus,
-        payment_status: paymentStatus,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', orderId)
-
-    if (updateError) {
-      throw new Error(`Erro ao atualizar pedido: ${updateError.message}`)
-    }
-
-    // Registrar o pagamento
-    const { error: paymentError } = await supabase
-      .from('payments')
-      .upsert([{
-        order_id: orderId,
-        payment_id: id,
-        provider: 'mercadopago',
-        amount: paymentData.transaction_amount,
-        status: paymentStatus,
-        payment_method: paymentData.payment_method_id,
-        payment_details: paymentData,
-        created_at: new Date().toISOString()
-      }])
-
-    if (paymentError) {
-      throw new Error(`Erro ao registrar pagamento: ${paymentError.message}`)
-    }
-
-    // Criar notificação para o usuário
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: orderData.user_id,
-        title: 'Atualização de pagamento',
-        message: paymentStatus === 'completed' 
-          ? 'Seu pagamento foi aprovado!' 
-          : paymentStatus === 'failed'
-            ? 'Houve um problema com seu pagamento'
-            : 'Seu pagamento está sendo processado',
-        type: 'payment',
-        read: false,
-        link: `/orders/${orderId}`
-      })
-
-    // Se o pagamento for aprovado, disparar workflow do n8n
-    if (paymentStatus === 'completed') {
-      try {
-        // Buscar dados do cliente
-        const { data: userData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', orderData.user_id)
-          .single()
-
-        if (userData) {
-          // Disparar webhook do n8n
-          const n8nWebhookBase = Deno.env.get('N8N_WEBHOOK_BASE_URL')
-          
-          if (n8nWebhookBase) {
-            const n8nWebhookUrl = `${n8nWebhookBase}/pedido_pago`
-            
-            await fetch(n8nWebhookUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                order_id: orderId,
-                customer_name: userData.full_name,
-                customer_email: userData.email,
-                customer_phone: userData.phone,
-                total: orderData.total_amount,
-                payment_method: paymentData.payment_method_id,
-                payment_status: paymentStatus
-              }),
-            })
+      // Buscar detalhes do pagamento no MP
+      const paymentResponse = await fetch(
+        `https://api.mercadopago.com/v1/payments/${paymentId}`,
+        {
+          headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json"
           }
         }
-      } catch (n8nError) {
-        console.error('Erro ao disparar workflow n8n:', n8nError)
+      );
+
+      if (!paymentResponse.ok) {
+        throw new Error(`Erro ao buscar dados do pagamento: ${paymentResponse.statusText}`);
       }
+
+      const paymentData = await paymentResponse.json();
+      console.log("Dados do pagamento:", JSON.stringify(paymentData, null, 2));
+
+      // Extrair informações importantes
+      const externalReference = paymentData.external_reference;
+      const status = paymentData.status;
+      const paymentMethod = paymentData.payment_method_id;
+      const transactionAmount = paymentData.transaction_amount;
+
+      if (!externalReference) {
+        throw new Error("Pagamento sem referência externa (ID do pedido)");
+      }
+
+      // Mapear status do MP para status interno
+      const paymentStatus = status === 'approved' ? 'completed' : 
+                            status === 'pending' ? 'pending' : 
+                            status === 'rejected' ? 'failed' : 'pending';
+
+      // Atualizar o pagamento no Supabase
+      const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = Deno.env.toObject();
+      if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+        throw new Error("Credenciais do Supabase não configuradas");
+      }
+
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      // Procurar o pagamento existente
+      const { data: paymentRecord, error: findError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('order_id', externalReference)
+        .eq('mercadopago_payment_id', paymentId.toString())
+        .maybeSingle();
+
+      if (findError) {
+        throw new Error(`Erro ao buscar registro de pagamento: ${findError.message}`);
+      }
+
+      // Atualizar ou criar o registro de pagamento
+      let paymentResult;
+      if (paymentRecord) {
+        // Atualizar registro existente
+        const { data, error } = await supabase
+          .from('payments')
+          .update({
+            status: paymentStatus,
+            mercadopago_status: status,
+            paid_at: status === 'approved' ? new Date().toISOString() : null
+          })
+          .eq('id', paymentRecord.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        paymentResult = data;
+      } else {
+        // Criar novo registro de pagamento
+        const { data, error } = await supabase
+          .from('payments')
+          .insert({
+            order_id: externalReference,
+            amount: transactionAmount,
+            payment_method: paymentMethod,
+            status: paymentStatus,
+            mercadopago_payment_id: paymentId.toString(),
+            mercadopago_status: status,
+            mercadopago_payment_type: paymentData.payment_type_id,
+            paid_at: status === 'approved' ? new Date().toISOString() : null
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        paymentResult = data;
+      }
+
+      // Atualizar o status do pedido
+      if (status === 'approved') {
+        const { error: orderError } = await supabase
+          .from('orders')
+          .update({ status: 'processing' })
+          .eq('id', externalReference);
+
+        if (orderError) {
+          console.error("Erro ao atualizar pedido:", orderError);
+        }
+        
+        // Enviar notificação para o cliente
+        try {
+          // Buscar informações do pedido
+          const { data: orderData } = await supabase
+            .from('orders')
+            .select('*, profiles:user_id(full_name, email, phone)')
+            .eq('id', externalReference)
+            .single();
+            
+          if (orderData) {
+            // Criar notificação no sistema
+            await supabase.from('notifications').insert({
+              user_id: orderData.user_id,
+              type: 'payment',
+              content: `Seu pagamento para o pedido #${externalReference.slice(0, 8)} foi aprovado!`,
+              status: 'unread'
+            });
+            
+            // Disparar webhook para o n8n
+            const n8nWebhookBase = Deno.env.get('N8N_WEBHOOK_BASE_URL');
+            if (n8nWebhookBase) {
+              await fetch(`${n8nWebhookBase}/pagamento_aprovado`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  order_id: externalReference,
+                  customer_name: orderData.profiles?.full_name,
+                  customer_email: orderData.profiles?.email,
+                  customer_phone: orderData.profiles?.phone,
+                  payment_method: paymentMethod,
+                  amount: transactionAmount
+                })
+              });
+            }
+          }
+        } catch (notifyError) {
+          console.error("Erro ao enviar notificação:", notifyError);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, status, orderId: externalReference }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
     }
 
+    // Resposta padrão para outros tipos de webhook
     return new Response(
-      JSON.stringify({ success: true, message: 'Pagamento processado com sucesso' }),
+      JSON.stringify({ received: true }),
       { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
-    )
+    );
   } catch (error) {
-    console.error('Erro ao processar webhook:', error)
+    console.error("Erro ao processar webhook:", error);
     
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack
-      }),
+      JSON.stringify({ error: error.message }),
       { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        status: 500, 
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
       }
-    )
+    );
   }
-})
+});
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
