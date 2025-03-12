@@ -2,6 +2,29 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
+
+// Interface para dados do cliente
+interface CustomerInfo {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  neighborhood?: string;
+  cpf?: string;
+}
+
+// Interface para informações de frete
+interface ShippingInfo {
+  cost: number;
+  method?: string;
+  carrier?: string;
+  estimated_days?: number;
+}
 
 export const useOrderConverter = () => {
   const [isConvertingToOrder, setIsConvertingToOrder] = useState(false);
@@ -53,22 +76,57 @@ export const useOrderConverter = () => {
         };
       }));
 
-      // Obter informações do cliente
-      const customer = quotation.customer_info;
+      // Tratar informações do cliente com tipagem segura
+      const customerInfoRaw = quotation.customer_info as Json;
+      if (!customerInfoRaw || typeof customerInfoRaw !== 'object') {
+        throw new Error("Informações do cliente inválidas");
+      }
+      
+      const customer: CustomerInfo = {
+        id: '',
+        name: ''
+      };
+      
+      // Extrair dados do cliente com segurança
+      if (typeof customerInfoRaw === 'object' && customerInfoRaw !== null && !Array.isArray(customerInfoRaw)) {
+        customer.id = (customerInfoRaw as any).id || '';
+        customer.name = (customerInfoRaw as any).name || '';
+        customer.email = (customerInfoRaw as any).email;
+        customer.phone = (customerInfoRaw as any).phone;
+        customer.address = (customerInfoRaw as any).address;
+        customer.city = (customerInfoRaw as any).city;
+        customer.state = (customerInfoRaw as any).state;
+        customer.zip_code = (customerInfoRaw as any).zip_code;
+        customer.neighborhood = (customerInfoRaw as any).neighborhood;
+        customer.cpf = (customerInfoRaw as any).cpf;
+      }
 
-      if (!customer) {
+      if (!customer.id || !customer.name) {
         throw new Error("Cliente não encontrado para este orçamento");
       }
 
       // Dados do endereço para entrega
       const shippingAddress = {
         name: customer.name,
-        address: customer.address,
-        city: customer.city,
-        state: customer.state,
-        zip_code: customer.zip_code,
-        neighborhood: customer.neighborhood || ""
+        address: customer.address || '',
+        city: customer.city || '',
+        state: customer.state || '',
+        zip_code: customer.zip_code || '',
+        neighborhood: customer.neighborhood || ''
       };
+
+      // Extrair informações de frete com segurança
+      const shippingInfoRaw = quotation.shipping_info as Json;
+      const shippingInfo: ShippingInfo = {
+        cost: 0
+      };
+      
+      if (shippingInfoRaw && typeof shippingInfoRaw === 'object' && !Array.isArray(shippingInfoRaw)) {
+        shippingInfo.cost = typeof (shippingInfoRaw as any).cost === 'number' ? (shippingInfoRaw as any).cost : 0;
+        shippingInfo.method = (shippingInfoRaw as any).method;
+        shippingInfo.carrier = (shippingInfoRaw as any).carrier;
+        shippingInfo.estimated_days = (shippingInfoRaw as any).estimated_days;
+      }
 
       // Criar o pedido
       const orderData = {
@@ -77,7 +135,7 @@ export const useOrderConverter = () => {
         subtotal: quotation.subtotal_amount,
         total_amount: quotation.total_amount,
         discount: quotation.discount_amount,
-        shipping_fee: quotation.shipping_info?.cost || 0,
+        shipping_fee: shippingInfo.cost || 0,
         payment_method: quotation.payment_method,
         status: "pending",
         omie_status: "novo",
@@ -111,7 +169,7 @@ export const useOrderConverter = () => {
             body: {
               orderId: order.id,
               items: mpItems,
-              shipping_cost: quotation.shipping_info?.cost || 0,
+              shipping_cost: shippingInfo.cost || 0,
               buyer: {
                 name: customer.name || "Cliente",
                 email: customer.email || "cliente@example.com",
@@ -137,16 +195,14 @@ export const useOrderConverter = () => {
           
           console.log("Preferência MP criada:", prefData.id);
           
-          // Criar notificação para o cliente
+          // Criar notificação para o cliente - corrigindo o formato conforme estrutura do banco
           await supabase
             .from("notifications")
             .insert({
               user_id: customer.id,
-              title: "Novo pedido criado",
-              message: `Seu pedido #${order.id.slice(0, 8)} está aguardando pagamento.`,
               type: "payment",
-              read: false,
-              link: `/checkout/${order.id}`
+              content: `Seu pedido #${order.id.slice(0, 8)} está aguardando pagamento.`,
+              status: "pending"
             });
           
           // Disparar webhook para o n8n (se estiver configurado)
