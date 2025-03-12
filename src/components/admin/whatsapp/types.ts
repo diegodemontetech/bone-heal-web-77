@@ -43,7 +43,7 @@ export interface WhatsAppInstanceCardProps {
   instance: WhatsAppInstance;
   onSelect: () => void;
   onRefreshQr: () => Promise<any>;
-  onDelete: () => void; // Adicionando prop obrigatória
+  onDelete: () => void; // Corrigindo a propriedade obrigatória
 }
 
 // Função de utilitário para converter entre os formatos de mensagem

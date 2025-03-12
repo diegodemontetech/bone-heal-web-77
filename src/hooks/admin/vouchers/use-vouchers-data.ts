@@ -20,12 +20,10 @@ export const useVouchersData = () => {
       if (error) throw error;
       
       const formattedVouchers = data.map(voucher => {
-        // Garantir que todos os vouchers tenham a propriedade is_active
+        // Garantir que todos os vouchers tenham a propriedade is_active com valor padrão true
         return {
           ...voucher,
-          is_active: 'is_active' in voucher 
-            ? Boolean(voucher.is_active) 
-            : true
+          is_active: voucher.is_active !== undefined ? Boolean(voucher.is_active) : true
         } as Voucher;
       });
       

@@ -3,10 +3,10 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
-import { useWhatsAppDashboard } from "./dashboard/useWhatsAppDashboard";
-import CreateInstanceDialog from "./dashboard/CreateInstanceDialog";
-import InstancesTab from "./dashboard/InstancesTab";
-import ChatTab from "./dashboard/ChatTab";
+import { useWhatsAppDashboard } from "@/hooks/admin/whatsapp/useWhatsAppDashboard";
+import { CreateInstanceDialog } from "./dashboard/dialogs/CreateInstanceDialog";
+import { InstancesTab } from "./dashboard/instances/InstancesTab";
+import { ChatTab } from "./dashboard/chat/ChatTab";
 
 const WhatsAppDashboard = () => {
   const {
@@ -69,7 +69,10 @@ const WhatsAppDashboard = () => {
             instances={instances}
             isLoading={isLoading}
             onSelectInstance={handleSelectInstance}
-            onRefreshQr={handleSelectInstance}
+            onRefreshQr={async (instanceId) => {
+              const { refreshQrCode } = await import('@/hooks/admin/whatsapp/useWhatsAppInstances');
+              return refreshQrCode(instanceId);
+            }}
             onDeleteInstance={handleDeleteInstance}
             onCreateDialogOpen={() => setIsDialogOpen(true)}
           />
