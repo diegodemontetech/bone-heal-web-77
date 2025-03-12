@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomerSelection } from "./order/CustomerSelection";
 import { ProductSelection } from "./order/ProductSelection";
 import { OrderSummary } from "./order/OrderSummary";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
-import { useOrderCustomers } from "@/hooks/useOrderCustomers";
+import { useCustomerState } from "@/hooks/useCustomerState";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { ShippingSection } from "./order/ShippingSection";
 import { PaymentMethodSection } from "./order/PaymentMethodSection";
@@ -36,22 +37,19 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   // Hook para gerenciar clientes
   const {
     customers,
-    isLoadingCustomers,
     selectedCustomer,
     setSelectedCustomer,
-    customerSearchTerm,
-    setCustomerSearchTerm,
-    customerDialogOpen,
-    setCustomerDialogOpen,
-    handleRegistrationSuccess
-  } = useOrderCustomers();
+    isLoadingCustomers,
+    searchTerm,
+    setSearchTerm
+  } = useCustomerState();
 
   // Hook para gerenciar produtos
   const {
     products,
     isLoadingProducts,
-    searchTerm,
-    setSearchTerm,
+    searchTerm: productSearchTerm,
+    setSearchTerm: setProductSearchTerm,
     selectedProducts,
     handleProductQuantityChange
   } = useOrderProducts();
@@ -59,6 +57,10 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const [zipCode, setZipCode] = useState("");
 
   const handleCreateOrder = () => {
+    if (!selectedCustomer) {
+      toast.error("Selecione um cliente para criar o pedido");
+      return;
+    }
     createOrder(selectedCustomer, selectedProducts, selectedShipping);
   };
 
@@ -67,9 +69,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const discount = calculateDiscount(subtotal);
   const shippingCost = selectedShipping?.rate || 0;
   const total = subtotal + shippingCost - discount;
-
-  console.log("Clientes carregados:", customers);
-  console.log("Cliente selecionado:", selectedCustomer);
 
   return (
     <div className="container max-w-6xl mx-auto">
@@ -83,14 +82,10 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               isLoadingCustomers={isLoadingCustomers}
               selectedCustomer={selectedCustomer}
               setSelectedCustomer={setSelectedCustomer}
-              customerSearchTerm={customerSearchTerm}
-              setCustomerSearchTerm={setCustomerSearchTerm}
-              customerDialogOpen={customerDialogOpen}
-              setCustomerDialogOpen={setCustomerDialogOpen}
-              handleRegistrationSuccess={handleRegistrationSuccess}
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
             />
 
-            {/* Frete - Mostrado apenas quando um cliente estiver selecionado */}
             {selectedCustomer && (
               <div className="mt-6">
                 <ShippingSection 
@@ -102,7 +97,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               </div>
             )}
 
-            {/* Forma de Pagamento */}
             <div className="mt-6">
               <PaymentMethodSection 
                 paymentMethod={paymentMethod}
@@ -110,7 +104,6 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               />
             </div>
             
-            {/* Cupom de Desconto */}
             <div className="mt-6">
               <VoucherSection
                 voucherCode={voucherCode}
@@ -129,13 +122,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
         {/* Produtos */}
         <Card className="lg:col-span-1">
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-6">
             <ProductSelection
               products={products}
               isLoadingProducts={isLoadingProducts}
               selectedProducts={selectedProducts}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
+              searchTerm={productSearchTerm}
+              setSearchTerm={setProductSearchTerm}
               onProductQuantityChange={handleProductQuantityChange}
             />
           </CardContent>

@@ -2,21 +2,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomerDisplay } from "./CustomerDisplay";
-import { Search, UserPlus, Loader2, X } from "lucide-react";
+import { Search, UserPlus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import RegistrationForm from "@/components/auth/RegistrationForm";
-import { useEffect } from "react";
+import { useState } from "react";
+import { Customer } from "@/hooks/useCustomerState";
+import { toast } from "sonner";
 
 interface CustomerSelectionProps {
-  customers: any[];
+  customers: Customer[];
   isLoadingCustomers: boolean;
-  selectedCustomer: any;
-  setSelectedCustomer: (customer: any) => void;
-  customerSearchTerm: string;
-  setCustomerSearchTerm: (term: string) => void;
-  customerDialogOpen: boolean;
-  setCustomerDialogOpen: (open: boolean) => void;
-  handleRegistrationSuccess: (customer: any) => void;
+  selectedCustomer: Customer | null;
+  setSelectedCustomer: (customer: Customer | null) => void;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
 }
 
 export const CustomerSelection = ({
@@ -24,17 +23,16 @@ export const CustomerSelection = ({
   isLoadingCustomers,
   selectedCustomer,
   setSelectedCustomer,
-  customerSearchTerm,
-  setCustomerSearchTerm,
-  customerDialogOpen,
-  setCustomerDialogOpen,
-  handleRegistrationSuccess
+  searchTerm,
+  setSearchTerm,
 }: CustomerSelectionProps) => {
-  // Log para debug
-  useEffect(() => {
-    console.log("CustomerSelection renderizando com", customers?.length || 0, "clientes");
-    console.log("Cliente selecionado:", selectedCustomer);
-  }, [customers, selectedCustomer]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleRegistrationSuccess = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsDialogOpen(false);
+    toast.success("Cliente cadastrado com sucesso!");
+  };
 
   return (
     <div>
@@ -46,68 +44,52 @@ export const CustomerSelection = ({
               type="search"
               placeholder="Buscar cliente por nome, e-mail ou telefone..."
               className="pl-8"
-              value={customerSearchTerm}
-              onChange={(e) => setCustomerSearchTerm(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
-            {customerSearchTerm && (
-              <button 
-                onClick={() => setCustomerSearchTerm("")}
-                className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
           </div>
           
           <div className="max-h-60 overflow-y-auto border rounded-md">
             {isLoadingCustomers ? (
               <div className="flex justify-center p-4">
-                <Loader2 className="animate-spin h-6 w-6 text-primary" />
+                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
               </div>
-            ) : customers && customers.length > 0 ? (
+            ) : customers.length > 0 ? (
               customers.map(customer => (
                 <div
                   key={customer.id}
                   className="p-3 border-b last:border-0 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    console.log("Cliente selecionado:", customer);
-                    setSelectedCustomer(customer);
-                  }}
+                  onClick={() => setSelectedCustomer(customer)}
                 >
-                  <p className="font-medium">{customer.full_name || "Sem nome"}</p>
+                  <p className="font-medium">{customer.full_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    {customer.email || "Sem email"}
-                    {customer.phone && ` • ${customer.phone}`}
+                    {customer.email} {customer.phone && `• ${customer.phone}`}
                   </p>
                 </div>
               ))
             ) : (
               <div className="p-4 text-center text-muted-foreground">
-                {customerSearchTerm 
-                  ? "Nenhum cliente encontrado com esse termo" 
-                  : "Digite para buscar clientes"}
+                {searchTerm ? "Nenhum cliente encontrado" : "Digite para buscar clientes"}
               </div>
             )}
           </div>
           
-          <Dialog open={customerDialogOpen} onOpenChange={setCustomerDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="w-full">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Cadastrar Novo Cliente
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-lg">
               <DialogHeader>
                 <DialogTitle>Cadastrar Novo Cliente</DialogTitle>
               </DialogHeader>
-              <div className="py-4">
-                <RegistrationForm 
-                  isDentist={true} 
-                  isModal={true} 
-                  onSuccess={handleRegistrationSuccess}
-                />
-              </div>
+              <RegistrationForm 
+                isDentist={true} 
+                isModal={true} 
+                onSuccess={handleRegistrationSuccess}
+              />
             </DialogContent>
           </Dialog>
         </div>
