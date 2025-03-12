@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Order, ShippingAddress } from "@/types/order";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 import { toast } from "sonner";
+import { OrderWithJson } from "@/hooks/admin/whatsapp/WhatsAppTypes";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
@@ -42,46 +42,25 @@ const Orders = () => {
           return;
         }
 
-        const formattedOrders = data.map(order => {
+        const formattedOrders = (data as OrderWithJson[]).map(order => {
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
           
-          // Definir um objeto de endereço de envio padrão para evitar erros
           const shippingAddress: ShippingAddress = {
-            zip_code: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.zip_code || '') : 
-              String(profileData.zip_code || ''),
-            city: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.city || '') : 
-              String(profileData.city || ''),
-            state: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.state || '') : 
-              String(profileData.state || ''),
-            address: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.address || '') : 
-              String(profileData.address || ''),
-            number: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.number || '') : 
-              String(profileData.endereco_numero || ''),
-            complement: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.complement || '') : 
-              String(profileData.complemento || ''),
-            neighborhood: typeof order.shipping_address === 'object' && order.shipping_address ? 
-              String(order.shipping_address.neighborhood || '') : 
-              String(profileData.neighborhood || '')
+            zip_code: order.shipping_address?.zip_code || profileData.zip_code || '',
+            city: order.shipping_address?.city || profileData.city || '',
+            state: order.shipping_address?.state || profileData.state || '',
+            address: order.shipping_address?.address || profileData.address || '',
+            number: order.shipping_address?.number || profileData.endereco_numero || '',
+            complement: order.shipping_address?.complement || profileData.complemento || '',
+            neighborhood: order.shipping_address?.neighborhood || profileData.neighborhood || ''
           };
           
           return {
             ...order,
             payment_status: order.payment_status || 'pending',
             shipping_address: shippingAddress,
-            items: parsedItems.map((item: any) => ({
-              product_id: item.product_id,
-              quantity: item.quantity,
-              price: item.price,
-              name: item.product_name || item.name || '',
-              total_price: item.total_price
-            }))
+            items: parsedItems
           } as Order;
         });
         
