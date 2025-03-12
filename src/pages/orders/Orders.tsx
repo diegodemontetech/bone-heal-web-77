@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Order, ShippingAddress, OrderItem } from "@/types/order";
+import { Order, ShippingAddress } from "@/types/order";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -46,29 +45,27 @@ const Orders = () => {
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
           
-          // Garantir que todos os campos de endereço existam
           const shippingAddress: ShippingAddress = {
-            zip_code: profileData.zip_code || '',
-            city: profileData.city || '',
-            state: profileData.state || '',
-            address: profileData.address || '',
-            number: profileData.endereco_numero || '',
-            complement: profileData.complemento || '',
-            neighborhood: profileData.neighborhood || ''
+            zip_code: order.shipping_address?.zip_code || profileData.zip_code || '',
+            city: order.shipping_address?.city || profileData.city || '',
+            state: order.shipping_address?.state || profileData.state || '',
+            address: order.shipping_address?.address || profileData.address || '',
+            number: order.shipping_address?.number || profileData.endereco_numero || '',
+            complement: order.shipping_address?.complement || profileData.complemento || '',
+            neighborhood: order.shipping_address?.neighborhood || profileData.neighborhood || ''
           };
           
           return {
             ...order,
-            // Garantir que payment_status sempre exista
             payment_status: order.payment_status || 'pending',
-            shipping_address: order.shipping_address || shippingAddress,
+            shipping_address: shippingAddress,
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
               quantity: item.quantity,
               price: item.price,
               name: item.product_name || item.name || '',
               total_price: item.total_price
-            })) as OrderItem[]
+            }))
           } as Order;
         });
         

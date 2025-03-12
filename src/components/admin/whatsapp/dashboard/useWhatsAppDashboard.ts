@@ -1,30 +1,45 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWhatsAppInstances } from "@/hooks/use-whatsapp-instances";
-import { useWhatsAppMessages } from "@/hooks/use-whatsapp-messages";
+import { useWhatsAppInstances } from "./useWhatsAppInstances";
+import { useWhatsAppMessages } from "./useWhatsAppMessages";
+import { useWhatsAppDialog } from "./useWhatsAppDialog";
+import { useWhatsAppTabs } from "./useWhatsAppTabs";
+import { useWhatsAppInstanceActions } from "./useWhatsAppInstanceActions";
 
 export const useWhatsAppDashboard = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("instances");
   const [userId, setUserId] = useState<string | null>(null);
+  
+  const { 
+    isDialogOpen, 
+    setIsDialogOpen 
+  } = useWhatsAppDialog();
+  
+  const {
+    activeTab,
+    setActiveTab,
+    selectedInstanceId,
+    selectInstance
+  } = useWhatsAppTabs();
   
   const { 
     instances, 
     isLoading, 
     error, 
-    fetchInstances, 
-    createInstance, 
-    refreshQrCode,
-    isCreating
+    fetchInstances
   } = useWhatsAppInstances();
   
   const { 
     messages, 
     loading: messagesLoading, 
     sendMessage 
-  } = useWhatsAppMessages(selectedInstanceId);
+  } = useWhatsAppMessages(selectedInstanceId || "", "");
+
+  const {
+    handleCreateInstance,
+    handleDeleteInstance,
+    handleRefreshQr,
+    isCreating
+  } = useWhatsAppInstanceActions();
 
   // Fetch instances on component mount
   useEffect(() => {
@@ -41,40 +56,20 @@ export const useWhatsAppDashboard = () => {
     getCurrentUser();
   }, []);
 
-  const handleCreateInstance = async (newInstanceName: string) => {
-    if (!newInstanceName.trim()) {
-      return false;
-    }
-    
-    const instance = await createInstance(newInstanceName);
-    
-    if (instance) {
-      setIsDialogOpen(false);
-      setSelectedInstanceId(instance.id);
-      setActiveTab("chat");
-      return true;
-    }
-    
-    return false;
+  const handleSelectInstance = (instanceId: string): void => {
+    selectInstance(instanceId);
   };
 
-  const handleDeleteInstance = async (instanceId: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta instância?")) {
-      // Implementar a lógica de exclusão aqui
-      console.log("Deletando instância:", instanceId);
-    }
-  };
-
-  const handleSelectInstance = (instanceId: string) => {
-    setSelectedInstanceId(instanceId);
-    setActiveTab("chat");
-  };
-
-  const handleSendMessage = async (message: string) => {
+  const handleSendMessage = async (message: string): Promise<boolean> => {
     if (!selectedInstanceId || !message.trim()) return false;
     
-    // Enviar mensagem
-    return true;
+    try {
+      const success = await sendMessage(message);
+      return success;
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      return false;
+    }
   };
 
   return {
@@ -92,6 +87,7 @@ export const useWhatsAppDashboard = () => {
     handleCreateInstance,
     handleDeleteInstance,
     handleSelectInstance,
-    handleSendMessage
+    handleSendMessage,
+    handleRefreshQr
   };
 };

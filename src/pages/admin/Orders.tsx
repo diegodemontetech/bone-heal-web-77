@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,13 +7,13 @@ import { OrderDetails } from "@/components/admin/order/OrderDetails";
 import OrdersHeader from "@/components/admin/orders/OrdersHeader";
 import OrdersTabs from "@/components/admin/orders/OrdersTabs";
 import OrdersLoading from "@/components/admin/orders/OrdersLoading";
+import { Order, ShippingAddress } from "@/types/order";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  // Buscar pedidos
   const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
@@ -32,21 +31,14 @@ const Orders = () => {
           `)
           .order("created_at", { ascending: false });
 
-        if (error) {
-          console.error("Erro ao buscar pedidos:", error);
-          throw error;
-        }
+        if (error) throw error;
         
-        // Processar os dados para garantir que todos os campos necessários existam
-        const processedData = data?.map(order => ({
+        return data?.map(order => ({
           ...order,
           payment_status: order.payment_status || 'pending',
-          profiles: order.profiles || {},
-          shipping_address: order.shipping_address || {}
+          shipping_address: order.shipping_address || {},
+          profiles: order.profiles || {}
         })) || [];
-        
-        console.log("Pedidos carregados:", processedData);
-        return processedData;
       } catch (err) {
         console.error("Erro na consulta de pedidos:", err);
         throw err;
@@ -54,7 +46,6 @@ const Orders = () => {
     },
   });
 
-  // Exibir erros com toast
   useEffect(() => {
     if (error) {
       toast.error("Erro ao carregar pedidos. Por favor, tente novamente.");
@@ -62,7 +53,6 @@ const Orders = () => {
     }
   }, [error]);
 
-  // Mudar para a tab de criação quando clicar no botão
   useEffect(() => {
     if (isCreating) {
       setActiveTab("create");

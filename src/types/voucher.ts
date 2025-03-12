@@ -2,7 +2,7 @@
 export interface Voucher {
   id: string;
   code: string;
-  discount_type: string;
+  discount_type: 'percentage' | 'fixed';
   discount_amount: number;
   valid_from: string;
   valid_until: string;
