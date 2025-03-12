@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
 import Home from "@/pages/Index";
 import About from "@/pages/About";
@@ -33,6 +34,8 @@ export function Routes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/orders/:id" element={<OrderDetails />} />
         
         {/* Rotas de Admin */}
         <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>

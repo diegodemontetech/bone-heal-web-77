@@ -2,11 +2,7 @@
 import { useState } from "react";
 
 export const useZipCodeFormatter = (initialZipCode: string = "") => {
-  const [zipCode, setZipCode] = useState(
-    initialZipCode ? formatZipCode(initialZipCode) : ""
-  );
-
-  // Formatar CEP com máscara #####-###
+  // Função de formatação de CEP
   const formatZipCode = (value: string) => {
     const digits = value.replace(/\D/g, "");
     
@@ -16,6 +12,10 @@ export const useZipCodeFormatter = (initialZipCode: string = "") => {
     
     return `${digits.substring(0, 5)}-${digits.substring(5, 8)}`;
   };
+
+  const [zipCode, setZipCode] = useState(
+    initialZipCode ? formatZipCode(initialZipCode) : ""
+  );
 
   // Handler para entrada de CEP
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {

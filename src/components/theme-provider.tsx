@@ -23,7 +23,7 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "light", // Mudança para light como padrão
   storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
@@ -45,12 +45,15 @@ export function ThemeProvider({
       return;
     }
 
+    // Aplicar tema explicitamente
     root.classList.add(theme);
+    console.log("Tema aplicado:", theme);
   }, [theme]);
 
   const value = {
     theme,
     setTheme: (theme: Theme) => {
+      console.log("Alterando tema para:", theme);
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
     },

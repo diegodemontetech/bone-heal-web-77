@@ -43,7 +43,7 @@ const Profile = () => {
   // Redirecionar para login se não estiver autenticado
   useEffect(() => {
     // Só verificamos após completar as duas verificações (profile e sessão)
-    if (!sessionCheckComplete || !isLoading === false) return;
+    if (!sessionCheckComplete || isLoading) return;
     
     // Evitar múltiplas tentativas de redirecionamento
     if (redirectAttempted) return;

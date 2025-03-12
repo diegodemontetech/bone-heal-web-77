@@ -2,16 +2,24 @@
 import { ReactNode, Suspense } from "react";
 import { useAuth } from "@/hooks/use-auth-context";
 import { Navigate, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 export const AdminLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex flex-col items-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <p className="mt-4 text-sm text-muted-foreground">Carregando o painel administrativo...</p>
+    </div>
   </div>
 );
 
 export const AdminRoute = ({ children }: { children?: ReactNode }) => {
-  const { profile, isAdmin } = useAuth();
+  const { profile, isAdmin, isLoading } = useAuth();
   const location = useLocation();
+
+  if (isLoading) {
+    return <AdminLoader />;
+  }
 
   if (!profile) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
