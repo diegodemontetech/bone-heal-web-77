@@ -1,219 +1,52 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import Papa from "papaparse";
-import { stringifyForSupabase } from "@/utils/supabaseJsonUtils";
+import { useShippingRatesData } from "./shipping/use-shipping-rates-data";
+import { useShippingRatesCrud } from "./shipping/use-shipping-rates-crud";
+import { useShippingRatesExportImport } from "./shipping/use-shipping-rates-export-import";
+import { UseShippingRatesReturn } from "./shipping/types";
+import { ShippingCalculationRate } from "@/types/shipping";
+import { useState } from "react";
 
-interface ShippingRate {
-  id?: string;
-  region: string;
-  state: string;
-  zip_code_start: string;
-  zip_code_end: string;
-  flat_rate: number;
-  rate: number;
-  additional_kg_rate: number;
-  estimated_days: number;
-  is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+export const useShippingRates = (): UseShippingRatesReturn => {
+  const { rates, loading, fetchRates, setRates } = useShippingRatesData();
+  const { 
+    formData, 
+    isEditing, 
+    isDialogOpen, 
+    setIsDialogOpen, 
+    handleInputChange, 
+    handleSelectChange, 
+    resetForm, 
+    openEditDialog, 
+    handleCreateRate, 
+    handleDeleteRate 
+  } = useShippingRatesCrud();
+  const { exportRates, insertShippingRates: importRatesBase } = useShippingRatesExportImport();
+  
+  // Para compatibilidade com o componente que usa este hook
+  const [shippingOptions] = useState<ShippingCalculationRate[]>([]);
 
-export const useShippingRates = () => {
-  const [rates, setRates] = useState<ShippingRate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Partial<ShippingRate>>({
-    region: "",
-    state: "",
-    zip_code_start: "",
-    zip_code_end: "",
-    flat_rate: 0,
-    rate: 0,
-    additional_kg_rate: 0,
-    estimated_days: 3,
-    is_active: true
-  });
-
-  useEffect(() => {
-    fetchRates();
-  }, []);
-
-  const fetchRates = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("shipping_rates")
-        .select("*")
-        .order("region", { ascending: true });
-
-      if (error) throw error;
-      setRates(data);
-    } catch (err) {
-      console.error("Erro ao buscar taxas de envio:", err);
-      toast.error("Erro ao carregar taxas de envio");
-    } finally {
-      setLoading(false);
-    }
+  const handleExportRates = () => {
+    exportRates(rates);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === "checkbox") {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else if (type === "number") {
-      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      region: "",
-      state: "",
-      zip_code_start: "",
-      zip_code_end: "",
-      flat_rate: 0,
-      rate: 0,
-      additional_kg_rate: 0,
-      estimated_days: 3,
-      is_active: true
-    });
-    setIsEditing(false);
-  };
-
-  const openEditDialog = (rate: ShippingRate) => {
-    setFormData(rate);
-    setIsEditing(true);
-    setIsDialogOpen(true);
-  };
-
-  const handleCreateRate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validação básica
-    if (!formData.region || !formData.state || !formData.zip_code_start || !formData.zip_code_end) {
-      toast.error("Preencha todos os campos obrigatórios");
-      return;
-    }
-
-    try {
-      if (isEditing && formData.id) {
-        // Atualizar
-        const { error } = await supabase
-          .from("shipping_rates")
-          .update({
-            region: formData.region,
-            state: formData.state,
-            zip_code_start: formData.zip_code_start,
-            zip_code_end: formData.zip_code_end,
-            flat_rate: formData.flat_rate || 0,
-            rate: formData.rate || 0,
-            additional_kg_rate: formData.additional_kg_rate || 0,
-            estimated_days: formData.estimated_days || 3,
-            is_active: formData.is_active === undefined ? true : formData.is_active
-          })
-          .eq("id", formData.id);
-
-        if (error) throw error;
-        toast.success("Taxa de envio atualizada com sucesso");
-      } else {
-        // Criar
-        const { error } = await supabase
-          .from("shipping_rates")
-          .insert([{
-            region: formData.region,
-            state: formData.state,
-            zip_code_start: formData.zip_code_start,
-            zip_code_end: formData.zip_code_end,
-            flat_rate: formData.flat_rate || 0,
-            rate: formData.rate || 0,
-            additional_kg_rate: formData.additional_kg_rate || 0,
-            estimated_days: formData.estimated_days || 3,
-            is_active: formData.is_active === undefined ? true : formData.is_active
-          }]);
-
-        if (error) throw error;
-        toast.success("Taxa de envio criada com sucesso");
-      }
-
-      // Recarregar dados e fechar diálogo
+  const handleCreateRateWithRefresh = async (e: React.FormEvent) => {
+    const success = await handleCreateRate(e);
+    if (success) {
       await fetchRates();
-      setIsDialogOpen(false);
-      resetForm();
-    } catch (err) {
-      console.error("Erro ao salvar taxa de envio:", err);
-      toast.error("Erro ao salvar taxa de envio");
     }
   };
 
-  const handleDeleteRate = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta taxa de envio?")) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("shipping_rates")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      
+  const handleDeleteRateWithRefresh = async (id: string) => {
+    const success = await handleDeleteRate(id);
+    if (success) {
       setRates(prev => prev.filter(rate => rate.id !== id));
-      toast.success("Taxa de envio excluída com sucesso");
-    } catch (err) {
-      console.error("Erro ao excluir taxa de envio:", err);
-      toast.error("Erro ao excluir taxa de envio");
     }
   };
 
-  const exportRates = () => {
-    const csv = Papa.unparse(rates);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'taxas_de_envio.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const insertShippingRates = async (rates: any[]) => {
-    try {
-      const { error } = await supabase
-        .from('shipping_rates')
-        .insert(
-          rates.map(rate => ({
-            region: rate.region || '',
-            state: rate.state || rate.region || '',
-            zip_code_start: rate.zip_code_start || '',
-            zip_code_end: rate.zip_code_end || '',
-            flat_rate: rate.flat_rate || 0,
-            rate: rate.flat_rate || 0,
-            additional_kg_rate: rate.additional_kg_rate || 0,
-            estimated_days: rate.estimated_days || 3,
-            is_active: true
-          }))
-        );
-      
-      if (error) throw error;
-      toast.success("Taxas de envio importadas com sucesso");
-      fetchRates();
-    } catch (error) {
-      console.error("Erro ao importar taxas:", error);
-      toast.error("Erro ao importar taxas de envio");
+  const handleImportRates = async (rates: any[]) => {
+    const success = await importRatesBase(rates);
+    if (success) {
+      await fetchRates();
     }
   };
 
@@ -228,9 +61,10 @@ export const useShippingRates = () => {
     handleSelectChange,
     resetForm,
     openEditDialog,
-    handleCreateRate,
-    handleDeleteRate,
-    exportRates,
-    insertShippingRates
+    handleCreateRate: handleCreateRateWithRefresh,
+    handleDeleteRate: handleDeleteRateWithRefresh,
+    exportRates: handleExportRates,
+    insertShippingRates: handleImportRates,
+    shippingOptions
   };
 };
