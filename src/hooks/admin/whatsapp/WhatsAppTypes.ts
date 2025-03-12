@@ -11,4 +11,6 @@ export interface WhatsAppTabsState {
   setActiveTab: (tab: string) => void;
   selectedInstanceId: string | null;
   setSelectedInstanceId: (id: string | null) => void;
+  selectInstance: (id: string) => void;
 }
+

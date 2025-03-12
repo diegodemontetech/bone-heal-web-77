@@ -1,18 +1,18 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useWhatsAppInstances } from "./useWhatsAppInstances";
-import { useWhatsAppMessages } from "./useWhatsAppMessages";
-import { useWhatsAppDialog } from "./useWhatsAppDialog";
-import { useWhatsAppTabs } from "./useWhatsAppTabs";
-import { useWhatsAppInstanceActions } from "./useWhatsAppInstanceActions";
+import { useWhatsAppInstances } from "@/hooks/admin/whatsapp/useWhatsAppInstances";
+import { useWhatsAppMessages } from "@/hooks/admin/whatsapp/useWhatsAppMessages";
+import { useWhatsAppDialog } from "@/hooks/admin/whatsapp/useWhatsAppDialog";
+import { useWhatsAppTabs } from "@/hooks/admin/whatsapp/useWhatsAppTabs";
+import { useWhatsAppInstanceActions } from "@/hooks/admin/whatsapp/useWhatsAppInstanceActions";
 
 export const useWhatsAppDashboard = () => {
   const [userId, setUserId] = useState<string | null>(null);
   
   const { 
-    isDialogOpen, 
-    setIsDialogOpen 
+    isOpen: isDialogOpen, 
+    setIsOpen: setIsDialogOpen 
   } = useWhatsAppDialog();
   
   const {
