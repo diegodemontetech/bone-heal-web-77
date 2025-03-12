@@ -1,26 +1,25 @@
 
 import React from "react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { InstanceNameInputProps } from "@/components/admin/whatsapp/types";
 
-interface InstanceNameInputProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-export const InstanceNameInput: React.FC<InstanceNameInputProps> = ({
-  value,
-  onChange
-}) => {
+export const InstanceNameInput: React.FC<InstanceNameInputProps> = ({ value, onChange }) => {
   return (
-    <div className="py-4">
-      <Label htmlFor="instance-name" className="mb-2 block">Nome da Instância</Label>
-      <Input
-        id="instance-name"
-        placeholder="Nome da Instância"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
+    <div className="grid gap-4 py-4">
+      <div className="space-y-2">
+        <Label htmlFor="name">Nome da Instância</Label>
+        <Input
+          id="name"
+          placeholder="Ex: whatsapp-principal"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <p className="text-sm text-muted-foreground">
+          Este nome será usado para identificar sua instância do WhatsApp.
+          Use apenas letras, números e hífens.
+        </p>
+      </div>
     </div>
   );
 };

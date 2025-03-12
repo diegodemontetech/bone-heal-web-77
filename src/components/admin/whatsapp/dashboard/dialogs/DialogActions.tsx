@@ -1,35 +1,36 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { DialogActionsProps } from "@/components/admin/whatsapp/types";
+import { Loader2 } from "lucide-react";
 
-interface DialogActionsProps {
-  onCancel: () => void;
-  onConfirm: () => void;
-  isSubmitting?: boolean;
-  confirmText?: string;
-  cancelText?: string;
-}
-
-export const DialogActions: React.FC<DialogActionsProps> = ({
-  onCancel,
-  onConfirm,
-  isSubmitting = false,
-  confirmText = "Confirmar",
-  cancelText = "Cancelar"
+export const DialogActions: React.FC<DialogActionsProps> = ({ 
+  onCancel, 
+  onConfirm, 
+  isLoading 
 }) => {
   return (
     <div className="flex justify-end gap-2 mt-4">
-      <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
-        {cancelText}
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onCancel}
+        disabled={isLoading}
+      >
+        Cancelar
       </Button>
-      <Button onClick={onConfirm} disabled={isSubmitting}>
-        {isSubmitting ? (
+      <Button
+        type="button"
+        onClick={onConfirm}
+        disabled={isLoading}
+      >
+        {isLoading ? (
           <>
-            <span className="animate-spin mr-2">⌛</span>
-            Processando...
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Criando...
           </>
         ) : (
-          confirmText
+          'Criar'
         )}
       </Button>
     </div>

@@ -47,7 +47,8 @@ export const useWhatsAppMessages = (instanceId: string | null) => {
     if (!instanceId || !message.trim()) return false;
 
     try {
-      const newMessage: Partial<WhatsAppMessage> = {
+      const newMessage: WhatsAppMessage = {
+        id: crypto.randomUUID(),
         instance_id: instanceId,
         body: message,
         message: message,
@@ -55,7 +56,9 @@ export const useWhatsAppMessages = (instanceId: string | null) => {
         is_sent_by_me: true,
         created_at: new Date().toISOString(),
         timestamp: new Date().toISOString(),
-        type: 'text'
+        type: 'text',
+        lead_id: '',  // Campo obrigatório no banco de dados
+        sender_id: ''  // Pode ser preenchido com o ID do usuário logado
       };
 
       // 1. Salvar mensagem no banco de dados

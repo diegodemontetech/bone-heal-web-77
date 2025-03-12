@@ -1,53 +1,53 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CreateInstanceDialogProps } from "@/components/admin/whatsapp/types";
 import { InstanceNameInput } from "./InstanceNameInput";
 import { DialogActions } from "./DialogActions";
 
-interface CreateInstanceDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: (instanceName: string) => Promise<boolean>;
-  isCreating: boolean;
-}
-
 export const CreateInstanceDialog: React.FC<CreateInstanceDialogProps> = ({
   isOpen,
-  onClose,
-  onConfirm,
-  isCreating
+  isCreating,
+  onOpenChange,
+  onCreateInstance
 }) => {
   const [instanceName, setInstanceName] = useState("");
-
+  
   const handleConfirm = async () => {
-    const success = await onConfirm(instanceName);
-    if (success) {
-      setInstanceName("");
-    }
-  };
-
-  const handleClose = () => {
+    await onCreateInstance(instanceName);
     setInstanceName("");
-    onClose();
   };
-
+  
+  const handleCancel = () => {
+    setInstanceName("");
+    onOpenChange(false);
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova Instância WhatsApp</DialogTitle>
+          <DialogDescription>
+            Crie uma nova instância para conectar com o WhatsApp
+          </DialogDescription>
         </DialogHeader>
         
-        <InstanceNameInput
-          value={instanceName}
-          onChange={setInstanceName}
+        <InstanceNameInput 
+          value={instanceName} 
+          onChange={setInstanceName} 
         />
         
-        <DialogActions
-          onCancel={handleClose}
+        <DialogActions 
+          onCancel={handleCancel} 
           onConfirm={handleConfirm}
-          isSubmitting={isCreating}
-          confirmText="Criar Instância"
+          isLoading={isCreating}
         />
       </DialogContent>
     </Dialog>

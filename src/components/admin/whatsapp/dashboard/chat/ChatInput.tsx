@@ -3,24 +3,17 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
+import { ChatInputProps } from "@/components/admin/whatsapp/types";
 
-interface ChatInputProps {
-  onSendMessage: (message: string) => Promise<boolean>;
-  disabled?: boolean;
-}
-
-export const ChatInput: React.FC<ChatInputProps> = ({
-  onSendMessage,
-  disabled = false
-}) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false }) => {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
-
-  const handleSend = async () => {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!message.trim() || disabled || isSending) return;
     
     setIsSending(true);
-    
     try {
       const success = await onSendMessage(message);
       if (success) {
@@ -30,31 +23,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       setIsSending(false);
     }
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
+  
   return (
-    <div className="p-3 border-t bg-background flex gap-2 items-center">
+    <form onSubmit={handleSubmit} className="flex space-x-2">
       <Input
-        placeholder={disabled ? "Selecione uma instância para enviar mensagens" : "Digite uma mensagem..."}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
+        placeholder="Digite sua mensagem..."
+        disabled={disabled || isSending}
         className="flex-1"
       />
       <Button 
-        onClick={handleSend} 
+        type="submit" 
         disabled={disabled || !message.trim() || isSending}
         size="icon"
       >
         <Send className="h-4 w-4" />
       </Button>
-    </div>
+    </form>
   );
 };

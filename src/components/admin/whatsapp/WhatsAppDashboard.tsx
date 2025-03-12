@@ -24,7 +24,8 @@ const WhatsAppDashboard = () => {
     handleCreateInstance,
     handleDeleteInstance,
     handleSelectInstance,
-    handleSendMessage
+    handleSendMessage,
+    handleRefreshQr
   } = useWhatsAppDashboard();
 
   if (error) {
@@ -69,10 +70,7 @@ const WhatsAppDashboard = () => {
             instances={instances}
             isLoading={isLoading}
             onSelectInstance={handleSelectInstance}
-            onRefreshQr={async (instanceId) => {
-              const { refreshQrCode } = await import('@/hooks/admin/whatsapp/useWhatsAppInstances');
-              return refreshQrCode(instanceId);
-            }}
+            onRefreshQr={handleRefreshQr}
             onDeleteInstance={handleDeleteInstance}
             onCreateDialogOpen={() => setIsDialogOpen(true)}
           />

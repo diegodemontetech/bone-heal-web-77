@@ -1,78 +1,55 @@
 
 import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { WhatsAppInstance } from "../../../types";
+import { Plus, Loader2 } from "lucide-react";
 import { InstanceCard } from "./InstanceCard";
-import { Loader2, Plus } from "lucide-react";
-
-interface InstancesTabProps {
-  instances: WhatsAppInstance[];
-  isLoading: boolean;
-  error: Error | null;
-  onSelect: (instanceId: string) => void;
-  onRefreshQr: (instanceId: string) => Promise<any>;
-  onDelete: (instanceId: string) => Promise<boolean>;
-  openCreateDialog: () => void;
-}
+import { InstancesTabProps } from "@/components/admin/whatsapp/types";
 
 export const InstancesTab: React.FC<InstancesTabProps> = ({
   instances,
   isLoading,
-  error,
-  onSelect,
+  onSelectInstance,
   onRefreshQr,
-  onDelete,
-  openCreateDialog
+  onDeleteInstance,
+  onCreateDialogOpen
 }) => {
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full">
+      <div className="flex justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  if (error) {
+  
+  if (instances.length === 0) {
     return (
-      <div className="text-center py-8">
-        <p className="text-destructive">
-          Erro ao carregar instâncias: {error.message}
-        </p>
-        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-          Tentar novamente
-        </Button>
-      </div>
+      <Card className="text-center p-8">
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-2">Nenhuma instância encontrada</h3>
+          <p className="text-muted-foreground mb-6">
+            Crie uma nova instância para começar a usar o WhatsApp
+          </p>
+          <Button onClick={onCreateDialogOpen}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Instância
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
-
+  
   return (
-    <div className="p-4">
-      <div className="mb-4">
-        <Button onClick={openCreateDialog} className="w-full">
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Instância
-        </Button>
-      </div>
-      
-      {instances.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">
-            Nenhuma instância encontrada. Crie uma nova para começar.
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {instances.map((instance) => (
-            <InstanceCard 
-              key={instance.id} 
-              instance={instance} 
-              onSelect={() => onSelect(instance.id)} 
-              onRefreshQr={() => onRefreshQr(instance.id)}
-              onDelete={() => onDelete(instance.id)}
-            />
-          ))}
-        </div>
-      )}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {instances.map((instance) => (
+        <InstanceCard
+          key={instance.id}
+          instance={instance}
+          onSelect={() => onSelectInstance(instance.id)}
+          onRefreshQr={() => onRefreshQr(instance.id)}
+          onDelete={() => onDeleteInstance(instance.id)}
+        />
+      ))}
     </div>
   );
 };

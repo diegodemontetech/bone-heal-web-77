@@ -46,6 +46,54 @@ export interface WhatsAppInstanceCardProps {
   onDelete: () => void; // Corrigindo a propriedade obrigatória
 }
 
+export interface CreateInstanceDialogProps {
+  isOpen: boolean;
+  isCreating: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreateInstance: (name: string) => Promise<boolean>;
+}
+
+export interface InstancesTabProps {
+  instances: WhatsAppInstance[];
+  isLoading: boolean;
+  onSelectInstance: (instanceId: string) => void;
+  onRefreshQr: (instanceId: string) => Promise<any>;
+  onDeleteInstance: (instanceId: string) => Promise<boolean>;
+  onCreateDialogOpen: () => void;
+}
+
+export interface ChatTabProps {
+  messages: WhatsAppMessage[];
+  messagesLoading: boolean;
+  onSendMessage: (message: string) => Promise<boolean>;
+  selectedInstanceId: string | null;
+}
+
+export interface DialogActionsProps {
+  onCancel: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}
+
+export interface InstanceNameInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export interface ChatMessageProps {
+  message: WhatsAppMessage;
+}
+
+export interface ChatMessagesProps {
+  messages: WhatsAppMessage[];
+  isLoading: boolean;
+}
+
+export interface ChatInputProps {
+  onSendMessage: (message: string) => Promise<boolean>;
+  disabled?: boolean;
+}
+
 // Função de utilitário para converter entre os formatos de mensagem
 export function convertMessageFormat(message: any, toDatabase: boolean = false): WhatsAppMessage {
   if (toDatabase) {

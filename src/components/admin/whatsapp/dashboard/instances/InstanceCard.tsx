@@ -1,93 +1,95 @@
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Trash, MessageCircle } from "lucide-react";
-import { WhatsAppInstance } from "../../../types";
+import { Button } from "@/components/ui/button";
+import { MessageSquare, RefreshCw, Trash2, QrCode } from "lucide-react";
+import Image from "@/components/ui/image";
+import { WhatsAppInstanceCardProps } from "@/components/admin/whatsapp/types";
 
-interface InstanceCardProps {
-  instance: WhatsAppInstance;
-  onSelect: () => void;
-  onRefreshQr: () => Promise<any>;
-  onDelete: () => void;
-}
-
-export const InstanceCard: React.FC<InstanceCardProps> = ({
+export const InstanceCard: React.FC<WhatsAppInstanceCardProps> = ({
   instance,
   onSelect,
   onRefreshQr,
   onDelete
 }) => {
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'connected':
-        return <Badge className="bg-green-500">Conectado</Badge>;
-      case 'disconnected':
-        return <Badge variant="destructive">Desconectado</Badge>;
-      case 'connecting':
-        return <Badge className="bg-yellow-500">Conectando</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const handleRefreshQr = async () => {
+    setIsRefreshing(true);
+    try {
+      await onRefreshQr();
+    } finally {
+      setIsRefreshing(false);
     }
   };
-
-  const handleRefreshQr = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await onRefreshQr();
+  
+  const getStatusColor = () => {
+    switch (instance.status) {
+      case 'connected':
+        return 'bg-green-500';
+      case 'disconnected':
+        return 'bg-red-500';
+      case 'connecting':
+        return 'bg-yellow-500';
+      default:
+        return 'bg-gray-500';
+    }
   };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete();
-  };
-
+  
   return (
-    <Card 
-      className="cursor-pointer hover:border-primary transition-colors"
-      onClick={onSelect}
-    >
+    <Card className="overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="flex justify-between items-center">
-          <span>{instance.instance_name}</span>
-          {getStatusBadge(instance.status)}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Criado em: {new Date(instance.created_at).toLocaleDateString()}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleRefreshQr}
-              title="Atualizar QR Code"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={onSelect}
-              title="Ver Mensagens"
-            >
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={handleDelete}
-              title="Excluir Instância"
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg">{instance.name}</CardTitle>
+          <Badge variant="outline" className="flex items-center gap-1">
+            <span className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
+            {instance.status || 'Desconectado'}
+          </Badge>
         </div>
+      </CardHeader>
+      <CardContent className="p-4">
+        {instance.qr_code ? (
+          <div className="bg-white p-2 rounded flex justify-center">
+            <img 
+              src={instance.qr_code} 
+              alt="QR Code" 
+              className="w-full max-w-[200px] h-auto"
+            />
+          </div>
+        ) : (
+          <div className="h-[200px] bg-muted flex items-center justify-center rounded">
+            <QrCode className="h-16 w-16 text-muted-foreground" />
+          </div>
+        )}
       </CardContent>
+      <CardFooter className="flex justify-between gap-2 p-4 pt-0">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={onSelect}
+        >
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Chat
+        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleRefreshQr}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onDelete}
+          >
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      </CardFooter>
     </Card>
   );
 };

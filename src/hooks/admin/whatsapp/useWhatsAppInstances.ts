@@ -19,99 +19,128 @@ export const useWhatsAppInstances = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      // Mapeando para ter o tipo correto
-      const instancesWithName = data.map(instance => ({
-        ...instance,
-        name: instance.instance_name // Adicionando o campo name a partir de instance_name
-      })) as WhatsAppInstance[];
-
-      setInstances(instancesWithName);
+      
+      setInstances(data || []);
     } catch (err) {
-      console.error('Erro ao buscar instâncias WhatsApp:', err);
+      console.error('Erro ao buscar instâncias:', err);
       setError(err instanceof Error ? err : new Error('Erro desconhecido'));
-      toast.error('Falha ao carregar instâncias WhatsApp');
+      toast.error('Falha ao carregar instâncias');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createInstance = async (instanceName: string) => {
-    if (!instanceName.trim()) {
-      toast.error('Nome da instância não pode ser vazio');
-      return null;
-    }
-
+  const createInstance = async (instanceName: string): Promise<WhatsAppInstance | null> => {
+    if (!instanceName.trim()) return null;
+    
     setIsCreating(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
+      // 1. Verificar se já existe uma instância com esse nome
+      const { data: existingInstances, error: checkError } = await supabase
+        .from('whatsapp_instances')
+        .select('id')
+        .eq('instance_name', instanceName)
+        .maybeSingle();
+        
+      if (checkError) throw checkError;
       
-      if (!userData?.user?.id) {
-        throw new Error('Usuário não autenticado');
+      if (existingInstances) {
+        toast.error('Já existe uma instância com esse nome');
+        return null;
       }
-
+      
+      // 2. Criar a instância na Evolution API
+      const { data: evolutionData, error: evolutionError } = await supabase.functions.invoke('evolution-api', {
+        body: { 
+          action: 'getInstance',
+          instanceName: instanceName
+        }
+      });
+      
+      if (evolutionError) throw evolutionError;
+      
+      if (!evolutionData?.success) {
+        toast.error(evolutionData?.message || 'Erro ao criar instância na API');
+        return null;
+      }
+      
+      // 3. Criar a instância no banco de dados
+      const newInstance: Partial<WhatsAppInstance> = {
+        instance_name: instanceName,
+        name: instanceName, // Para compatibilidade
+        status: 'disconnected',
+        qr_code: ''
+      };
+      
       const { data, error } = await supabase
         .from('whatsapp_instances')
-        .insert([
-          {
-            instance_name: instanceName,
-            status: 'disconnected',
-            user_id: userData.user.id
-          }
-        ])
+        .insert([newInstance])
         .select()
         .single();
-
+        
       if (error) throw error;
-
-      // Adiciona o nome para compatibilidade
-      const instanceWithName = {
-        ...data,
-        name: data.instance_name
-      } as WhatsAppInstance;
-
-      setInstances(prev => [instanceWithName, ...prev]);
-      toast.success('Instância WhatsApp criada com sucesso!');
       
-      return instanceWithName;
+      // 4. Adicionar a nova instância ao estado local
+      setInstances(prev => [data, ...prev]);
+      
+      toast.success('Instância criada com sucesso');
+      return data;
     } catch (err) {
-      console.error('Erro ao criar instância WhatsApp:', err);
-      toast.error('Falha ao criar instância WhatsApp');
+      console.error('Erro ao criar instância:', err);
+      toast.error('Falha ao criar instância');
       return null;
     } finally {
       setIsCreating(false);
     }
   };
 
-  const refreshQrCode = async (instanceId: string) => {
+  const refreshQrCode = async (instanceId: string): Promise<any> => {
     try {
-      // Implementação para atualizar o QR code
+      // Buscar o nome da instância
+      const instance = instances.find(inst => inst.id === instanceId);
+      if (!instance) {
+        toast.error('Instância não encontrada');
+        return null;
+      }
+      
+      // Gerar QR Code na Evolution API
       const { data, error } = await supabase.functions.invoke('evolution-api', {
         body: { 
           action: 'getQRCode',
-          instanceName: instances.find(i => i.id === instanceId)?.instance_name || 'default'
+          instanceName: instance.instance_name
         }
       });
       
       if (error) throw error;
       
-      if (data?.success && data?.qrcode) {
-        // Atualiza o QR code localmente
-        setInstances(prev => 
-          prev.map(instance => 
-            instance.id === instanceId 
-              ? { ...instance, qr_code: data.qrcode } 
-              : instance
-          )
-        );
-        
-        return data.qrcode;
+      if (!data?.success) {
+        toast.error(data?.message || 'Erro ao gerar QR Code');
+        return null;
       }
       
-      throw new Error(data?.message || 'Falha ao atualizar QR code');
+      // Atualizar QR code no banco de dados
+      if (data.qrcode) {
+        const { error: updateError } = await supabase
+          .from('whatsapp_instances')
+          .update({ qr_code: data.qrcode })
+          .eq('id', instanceId);
+          
+        if (updateError) throw updateError;
+        
+        // Atualizar instância localmente
+        setInstances(prev => 
+          prev.map(inst => 
+            inst.id === instanceId 
+              ? { ...inst, qr_code: data.qrcode } 
+              : inst
+          )
+        );
+      }
+      
+      return data;
     } catch (err) {
-      console.error('Erro ao atualizar QR code:', err);
-      toast.error('Falha ao atualizar QR code');
+      console.error('Erro ao atualizar QR Code:', err);
+      toast.error('Falha ao atualizar QR Code');
       return null;
     }
   };

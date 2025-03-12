@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useWhatsAppInstances } from "./useWhatsAppInstances";
 import { useWhatsAppMessages } from "./useWhatsAppMessages";
+import { WhatsAppInstance, WhatsAppMessage } from "@/components/admin/whatsapp/types";
 
 export const useWhatsAppDashboard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -41,7 +42,7 @@ export const useWhatsAppDashboard = () => {
     getCurrentUser();
   }, []);
 
-  const handleCreateInstance = async (newInstanceName: string) => {
+  const handleCreateInstance = async (newInstanceName: string): Promise<boolean> => {
     if (!newInstanceName.trim()) {
       return false;
     }
@@ -58,7 +59,7 @@ export const useWhatsAppDashboard = () => {
     return false;
   };
 
-  const handleDeleteInstance = async (instanceId: string) => {
+  const handleDeleteInstance = async (instanceId: string): Promise<boolean> => {
     if (window.confirm("Tem certeza que deseja excluir esta instância?")) {
       try {
         const { error } = await supabase
@@ -86,7 +87,7 @@ export const useWhatsAppDashboard = () => {
     return false;
   };
 
-  const handleSelectInstance = (instanceId: string) => {
+  const handleSelectInstance = (instanceId: string): void => {
     setSelectedInstanceId(instanceId);
     setActiveTab("chat");
   };
@@ -95,13 +96,16 @@ export const useWhatsAppDashboard = () => {
     if (!selectedInstanceId || !message.trim()) return false;
     
     try {
-      // Implementar lógica de envio de mensagem
       const success = await sendMessage(message);
       return success;
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       return false;
     }
+  };
+
+  const handleRefreshQr = async (instanceId: string): Promise<any> => {
+    return await refreshQrCode(instanceId);
   };
 
   return {
@@ -119,6 +123,7 @@ export const useWhatsAppDashboard = () => {
     handleCreateInstance,
     handleDeleteInstance,
     handleSelectInstance,
-    handleSendMessage
+    handleSendMessage,
+    handleRefreshQr
   };
 };
