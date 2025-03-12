@@ -1,31 +1,21 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { CustomerSelection } from "./order/CustomerSelection";
-import { ProductSelection } from "./order/ProductSelection";
-import { OrderSummary } from "./order/OrderSummary";
-import { useCreateOrder } from "@/hooks/useCreateOrder";
+import { useState } from "react";
 import { useCustomerState } from "@/hooks/useCustomerState";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
-import { ShippingSection } from "./order/ShippingSection";
-import { PaymentMethodSection } from "./order/PaymentMethodSection";
-import VoucherSection from "./quotations/components/summary/VoucherSection";
+import { useCreateOrder } from "@/hooks/useCreateOrder";
+import { OrderSummary } from "./order/OrderSummary";
+import { ProductSelection } from "./order/ProductSelection";
+import { useAdminAuthorization } from "@/hooks/orders/useAdminAuthorization";
+import CreateOrderLayout from "./order/create/CreateOrderLayout";
+import CustomerSection from "./order/create/CustomerSection";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth-context";
-import { supabase } from "@/integrations/supabase/client";
 
 interface CreateOrderProps {
   onCancel: () => void;
 }
 
 const CreateOrder = ({ onCancel }: CreateOrderProps) => {
-  const { isAdmin } = useAuth();
-
-  useEffect(() => {
-    if (!isAdmin) {
-      toast.error("Você não tem permissão para criar pedidos");
-      onCancel();
-    }
-  }, [isAdmin, onCancel]);
+  const { isAdmin, verifyAdminPermission } = useAdminAuthorization(onCancel);
+  const [zipCode, setZipCode] = useState("");
 
   // Hook para criar pedido
   const {
@@ -65,34 +55,8 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     handleProductQuantityChange
   } = useOrderProducts();
 
-  const [zipCode, setZipCode] = useState("");
-
   const handleCreateOrder = async () => {
-    if (!isAdmin) {
-      toast.error("Você não tem permissão para criar pedidos");
-      return;
-    }
-
-    // Verificar diretamente no Supabase se o usuário tem permissão
-    const { data: session } = await supabase.auth.getSession();
-    if (!session?.session?.user?.id) {
-      toast.error("Você precisa estar autenticado");
-      return;
-    }
-    
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("is_admin, role")
-      .eq("id", session.session.user.id)
-      .single();
-      
-    const hasAdminPermission = 
-      profileData?.is_admin === true || 
-      profileData?.role === 'admin' || 
-      profileData?.role === 'admin_master';
-      
-    if (!hasAdminPermission) {
-      toast.error("Você não tem permissão para criar pedidos");
+    if (!await verifyAdminPermission()) {
       return;
     }
 
@@ -115,86 +79,56 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   }
 
   return (
-    <div className="container max-w-6xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Seleção de Cliente */}
-        <Card className="lg:col-span-1">
-          <CardContent className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Cliente</h3>
-            <CustomerSelection
-              customers={customers}
-              isLoadingCustomers={isLoadingCustomers}
-              selectedCustomer={selectedCustomer}
-              setSelectedCustomer={setSelectedCustomer}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-            />
-
-            {selectedCustomer && (
-              <div className="mt-6">
-                <ShippingSection 
-                  zipCode={zipCode || selectedCustomer?.zip_code || ""}
-                  setZipCode={setZipCode}
-                  selectedShipping={selectedShipping}
-                  setSelectedShipping={setSelectedShipping}
-                />
-              </div>
-            )}
-
-            <div className="mt-6">
-              <PaymentMethodSection 
-                paymentMethod={paymentMethod}
-                setPaymentMethod={setPaymentMethod}
-              />
-            </div>
-            
-            <div className="mt-6">
-              <VoucherSection
-                voucherCode={voucherCode}
-                setVoucherCode={setVoucherCode}
-                appliedVoucher={appliedVoucher}
-                setAppliedVoucher={setAppliedVoucher}
-                isApplyingVoucher={isApplyingVoucher}
-                setIsApplyingVoucher={setIsApplyingVoucher}
-                paymentMethod={paymentMethod}
-                subtotal={subtotal}
-                totalItems={selectedProducts.reduce((acc, p) => acc + p.quantity, 0)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Produtos */}
-        <Card className="lg:col-span-1">
-          <CardContent className="p-6">
-            <ProductSelection
-              products={products}
-              isLoadingProducts={isLoadingProducts}
-              selectedProducts={selectedProducts}
-              searchTerm={productSearchTerm}
-              setSearchTerm={setProductSearchTerm}
-              onProductQuantityChange={handleProductQuantityChange}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Resumo */}
-        <Card className="lg:col-span-1">
-          <OrderSummary
-            subtotal={subtotal}
-            discount={discount}
-            shippingFee={shippingCost}
-            total={total}
-            loading={loading}
-            onCreateOrder={handleCreateOrder}
-            onCancel={onCancel}
-            hasProducts={selectedProducts.length > 0}
-            paymentMethod={paymentMethod}
-            appliedVoucher={appliedVoucher}
-          />
-        </Card>
-      </div>
-    </div>
+    <CreateOrderLayout
+      customerSection={
+        <CustomerSection
+          customers={customers}
+          isLoadingCustomers={isLoadingCustomers}
+          selectedCustomer={selectedCustomer}
+          setSelectedCustomer={setSelectedCustomer}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          zipCode={zipCode}
+          setZipCode={setZipCode}
+          selectedShipping={selectedShipping}
+          setSelectedShipping={setSelectedShipping}
+          paymentMethod={paymentMethod}
+          setPaymentMethod={setPaymentMethod}
+          voucherCode={voucherCode}
+          setVoucherCode={setVoucherCode}
+          appliedVoucher={appliedVoucher}
+          setAppliedVoucher={setAppliedVoucher}
+          isApplyingVoucher={isApplyingVoucher}
+          setIsApplyingVoucher={setIsApplyingVoucher}
+          subtotal={subtotal}
+          totalItems={selectedProducts.reduce((acc, p) => acc + p.quantity, 0)}
+        />
+      }
+      productsSection={
+        <ProductSelection
+          products={products}
+          isLoadingProducts={isLoadingProducts}
+          selectedProducts={selectedProducts}
+          searchTerm={productSearchTerm}
+          setSearchTerm={setProductSearchTerm}
+          onProductQuantityChange={handleProductQuantityChange}
+        />
+      }
+      summarySection={
+        <OrderSummary
+          subtotal={subtotal}
+          discount={discount}
+          shippingFee={shippingCost}
+          total={total}
+          loading={loading}
+          onCreateOrder={handleCreateOrder}
+          onCancel={onCancel}
+          hasProducts={selectedProducts.length > 0}
+          paymentMethod={paymentMethod}
+          appliedVoucher={appliedVoucher}
+        />
+      }
+    />
   );
 };
 
