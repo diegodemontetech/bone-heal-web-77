@@ -45,7 +45,7 @@ const AdminWhatsAppMessages = () => {
     try {
       const { count, error } = await supabase
         .from('notifications')
-        .select('id', { count: 'exact' })
+        .select('id', { count: 'exact', head: false })
         .eq('type', 'whatsapp_human_needed')
         .eq('status', 'pending');
         

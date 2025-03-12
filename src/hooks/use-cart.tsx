@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 import { Json } from "@/integrations/supabase/types";
 
@@ -17,6 +18,11 @@ interface CartStore {
   updateQuantity: (productId: string, quantity: number) => void;
   removeItem: (productId: string) => void;
   clear: () => void;
+  // Adicionando os métodos ausentes
+  clearCart: () => void;
+  getTotalPrice: () => number;
+  getTotalItems: () => number;
+  cart?: CartItem[]; // Para compatibilidade com componentes existentes
 }
 
 export const useCart = create<CartStore>((set, get) => ({
@@ -40,7 +46,8 @@ export const useCart = create<CartStore>((set, get) => ({
     
     return {
       cartItems: newItems,
-      total
+      total,
+      cart: newItems // Adicionando para compatibilidade
     };
   }),
   updateQuantity: (productId, quantity) => set((state) => {
@@ -54,15 +61,28 @@ export const useCart = create<CartStore>((set, get) => ({
     
     return {
       cartItems: newItems,
-      total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+      total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      cart: newItems // Adicionando para compatibilidade
     };
   }),
   removeItem: (productId) => set((state) => {
     const newItems = state.cartItems.filter(item => item.id !== productId);
     return {
       cartItems: newItems,
-      total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+      total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      cart: newItems // Adicionando para compatibilidade
     };
   }),
-  clear: () => set({ cartItems: [], total: 0 }),
+  clear: () => set({ cartItems: [], total: 0, cart: [] }),
+  
+  // Implementando os métodos adicionais
+  clearCart: () => set({ cartItems: [], total: 0, cart: [] }),
+  
+  getTotalPrice: () => {
+    return get().total;
+  },
+  
+  getTotalItems: () => {
+    return get().cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  }
 }));

@@ -34,6 +34,7 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     if (success) {
       await fetchRates();
     }
+    return success;
   };
 
   const handleDeleteRateWithRefresh = async (id: string) => {
@@ -41,6 +42,7 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     if (success) {
       setRates(prev => prev.filter(rate => rate.id !== id));
     }
+    return success;
   };
 
   const handleImportRates = async (rates: any[]) => {
@@ -48,6 +50,7 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     if (success) {
       await fetchRates();
     }
+    return success;
   };
 
   return {
