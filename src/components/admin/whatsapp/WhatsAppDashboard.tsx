@@ -1,164 +1,186 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Plus, RefreshCw } from "lucide-react";
-import { useWhatsAppInstances } from "@/hooks/use-whatsapp-instances";
-import { useWhatsAppMessages } from "@/hooks/use-whatsapp-messages";
-import QRCode from "react-qr-code";
-import WhatsAppChat from "./WhatsAppChat";
-import WhatsAppInstanceCard from "./WhatsAppInstanceCard";
+
+import React, { useState } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useWhatsAppInstances } from '@/hooks/use-whatsapp-instances';
+import { useWhatsAppMessages } from '@/hooks/use-whatsapp-messages';
+import QRCode from 'react-qr-code';
+import { WhatsAppInstance } from '@/types/automation';
+import WhatsAppInstanceCard from './WhatsAppInstanceCard';
+import WhatsAppChat from './WhatsAppChat';
+import { toast } from 'sonner';
 
 const WhatsAppDashboard = () => {
-  const [selectedInstance, setSelectedInstance] = useState(null);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newInstanceName, setNewInstanceName] = useState("");
-  const [activeTab, setActiveTab] = useState("instances");
+  const [newInstanceName, setNewInstanceName] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedInstance, setSelectedInstance] = useState<WhatsAppInstance | null>(null);
+  const [activeContact, setActiveContact] = useState<string>('');
 
-  // Deixando de desestruturar 'loading' e usando 'isLoading' em seu lugar
-  const { instances, isLoading, error, fetchInstances, createInstance, refreshQrCode, isCreating } = useWhatsAppInstances();
-  
-  const { messages, loading: messagesLoading, sendMessage } = useWhatsAppMessages(selectedInstance?.id);
-  
-  useEffect(() => {
-    fetchInstances();
-  }, [fetchInstances]);
+  const { 
+    instances, 
+    isLoading, 
+    createInstance, 
+    refreshQrCode,
+    isCreating,
+    fetchInstances
+  } = useWhatsAppInstances();
+
+  const { 
+    messages, 
+    loading: messagesLoading, 
+    sendMessage 
+  } = useWhatsAppMessages(
+    selectedInstance?.id || '', 
+    activeContact
+  );
 
   const handleCreateInstance = async () => {
-    if (!newInstanceName.trim()) return;
-    
-    const instance = await createInstance(newInstanceName);
-    if (instance) {
-      setIsCreateDialogOpen(false);
-      setNewInstanceName("");
-      setSelectedInstance(instance);
-      setActiveTab("chat");
+    if (!newInstanceName.trim()) {
+      toast.error('O nome da instância é obrigatório');
+      return;
+    }
+
+    try {
+      await createInstance(newInstanceName);
+      setNewInstanceName('');
+      setIsDialogOpen(false);
+      toast.success('Instância criada com sucesso');
+    } catch (error) {
+      toast.error('Erro ao criar instância');
+      console.error(error);
     }
   };
 
-  const handleRefreshQR = async (instanceId) => {
-    await refreshQrCode(instanceId);
+  const handleDeleteInstance = async (instanceId: string) => {
+    try {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evolution-api`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          instanceId
+        }),
+      });
+
+      const { error } = await supabase
+        .from('whatsapp_instances')
+        .delete()
+        .eq('id', instanceId);
+
+      if (error) throw error;
+
+      if (selectedInstance?.id === instanceId) {
+        setSelectedInstance(null);
+      }
+
+      fetchInstances();
+      toast.success('Instância excluída com sucesso');
+    } catch (error) {
+      console.error('Erro ao excluir instância:', error);
+      toast.error('Erro ao excluir instância');
+    }
   };
-  
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <p>Carregando instâncias...</p>
-      </div>
-    );
-  }
-  
-  // Adicionar função refreshMessages para compatibilidade
-  const refreshMessages = () => {
-    // Como não temos a função original, vamos recarregar a página ou fazer outra ação
-    console.log("Atualização de mensagens solicitada");
-    // Se não houver uma função real, podemos simplesmente não fazer nada
+
+  const handleSelectInstance = (instance: WhatsAppInstance) => {
+    setSelectedInstance(instance);
+  };
+
+  const handleSendMessage = async (message: string) => {
+    if (!selectedInstance || !activeContact) return false;
+    return await sendMessage(message);
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">WhatsApp Dashboard</h1>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="instances">Instâncias</TabsTrigger>
-            <TabsTrigger value="chat" disabled={!selectedInstance}>Chat</TabsTrigger>
-          </TabsList>
-          
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Instância
-          </Button>
-        </div>
-        
-        <TabsContent value="instances" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {instances.map((instance) => (
-              <WhatsAppInstanceCard
-                key={instance.id}
-                instance={instance}
-                onSelect={() => {
-                  setSelectedInstance(instance);
-                  setActiveTab("chat");
-                }}
-                onRefreshQR={() => handleRefreshQR(instance.id)}
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">WhatsApp Integration</h1>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Instância
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Criar Nova Instância WhatsApp</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="instance-name">Nome da Instância</Label>
+              <Input 
+                id="instance-name" 
+                value={newInstanceName} 
+                onChange={(e) => setNewInstanceName(e.target.value)}
+                placeholder="Ex: Atendimento"
               />
-            ))}
-          </div>
-          
-          {instances.length === 0 && (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center p-6">
-                <p className="text-muted-foreground mb-4">Nenhuma instância encontrada</p>
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Criar Primeira Instância
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="chat">
-          {selectedInstance && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex justify-between items-center">
-                  <span>Chat - {selectedInstance.name}</span>
-                  <Button variant="outline" size="sm" onClick={refreshMessages}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Atualizar
+            </div>
+            <DialogFooter>
+              <Button onClick={handleCreateInstance} disabled={isCreating}>
+                {isCreating ? 'Criando...' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-bold mb-4">Instâncias</h2>
+              
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : instances.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground mb-4">Nenhuma instância encontrada</p>
+                  <Button onClick={() => setIsDialogOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Criar Instância
                   </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <WhatsAppChat
-                  instance={selectedInstance}
-                  messages={messages}
-                  isLoading={messagesLoading}
-                  onSendMessage={sendMessage}
-                />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {instances.map((instance) => (
+                    <WhatsAppInstanceCard
+                      key={instance.id}
+                      instance={instance}
+                      onRefreshQr={refreshQrCode}
+                      onSelect={handleSelectInstance}
+                      onDelete={handleDeleteInstance}
+                    />
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-2">
+          {selectedInstance ? (
+            <WhatsAppChat
+              messages={messages}
+              isLoading={messagesLoading}
+              onSendMessage={handleSendMessage}
+            />
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center py-20">
+                <h2 className="text-xl font-bold mb-4">Chat WhatsApp</h2>
+                <p className="text-muted-foreground mb-4">Selecione uma instância para iniciar o chat</p>
               </CardContent>
             </Card>
           )}
-        </TabsContent>
-      </Tabs>
-      
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Criar Nova Instância</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="instance-name">Nome da Instância</Label>
-            <Input
-              id="instance-name"
-              value={newInstanceName}
-              onChange={(e) => setNewInstanceName(e.target.value)}
-              placeholder="Ex: Atendimento"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleCreateInstance} disabled={isCreating}>
-              {isCreating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando...
-                </>
-              ) : (
-                "Criar Instância"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 };

@@ -35,11 +35,14 @@ const AutomationFlowsPage: React.FC = () => {
         </div>
 
         <TabsContent value="list" className="mt-0">
-          <FlowsList onFlowSelect={handleSelectFlow} onFlowCreate={handleCreateFlow} />
+          <FlowsList 
+            onFlowSelect={handleSelectFlow} 
+            onFlowCreate={handleCreateFlow} 
+          />
         </TabsContent>
 
         <TabsContent value="editor" className="mt-0">
-          <FlowBuilder flowId={selectedFlowId} />
+          {selectedFlowId && <FlowBuilder flowId={selectedFlowId} />}
         </TabsContent>
       </Tabs>
     </div>

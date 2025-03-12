@@ -28,14 +28,14 @@ export const useShareWhatsApp = () => {
       // Criar uma mensagem para o WhatsApp
       const customerInfo = parseJsonObject(quotation.customer_info, {});
       
-      const customerName = customerInfo.name || "Cliente";
+      const customerName = customerInfo && customerInfo.name ? customerInfo.name : "Cliente";
       const message = `Olá ${customerName}, segue o orçamento solicitado no valor de ${formatCurrency(quotation.total_amount)}. Você pode visualizá-lo pelo link: ${quotationViewUrl}`;
       
       // Codificar a mensagem para URL
       const encodedMessage = encodeURIComponent(message);
       
       // Buscar número de telefone do cliente ou usar um padrão
-      const phone = customerInfo.phone ? customerInfo.phone.replace(/\D/g, '') : "";
+      const phone = customerInfo && customerInfo.phone ? customerInfo.phone.replace(/\D/g, '') : "";
       
       if (!phone) {
         toast.error("Não foi possível compartilhar: telefone do cliente não encontrado");

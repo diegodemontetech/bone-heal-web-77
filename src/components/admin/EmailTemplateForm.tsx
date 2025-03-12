@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
@@ -27,6 +28,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Editor } from "@tinymce/tinymce-react";
 import { EmailTemplate } from '@/types/email';
+import { stringifyForSupabase } from '@/utils/supabaseJsonUtils';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -92,15 +94,20 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({ template, onSucce
     if (template?.variables) {
       setSelectedVariables(template.variables);
     }
-  }, [template, form.setValue]);
+  }, [template, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
       const templateData = {
-        ...values,
+        name: values.name,
+        subject: values.subject,
         body: editorContent, // Usar o conteúdo do editor TinyMCE
-        variables: selectedVariables, // Usar as variáveis selecionadas
+        event_type: values.event_type,
+        trigger_event: values.trigger_event,
+        variables: stringifyForSupabase(selectedVariables), // Converter para o formato correto do Supabase
+        active: values.active,
+        auto_send: values.auto_send
       };
 
       if (template) {
@@ -142,7 +149,7 @@ const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({ template, onSucce
   const handleEditorChange = useCallback((content: string) => {
     setEditorContent(content);
     form.setValue("body", content);
-  }, [form.setValue]);
+  }, [form]);
 
   const handleVariableSelect = (variable: string) => {
     if (!selectedVariables.includes(variable)) {
