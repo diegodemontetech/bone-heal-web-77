@@ -20,8 +20,8 @@ export interface VoucherFormData {
   code: string;
   discount_type: 'percentage' | 'fixed';
   discount_amount: number;
-  valid_from: Date | string;
-  valid_until: Date | string;
+  valid_from: string;
+  valid_until: string;
   min_amount: number;
   min_items: number;
   max_uses: number;

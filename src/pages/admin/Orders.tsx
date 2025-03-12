@@ -37,8 +37,16 @@ const Orders = () => {
           throw error;
         }
         
-        console.log("Pedidos carregados:", data);
-        return data || [];
+        // Processar os dados para garantir que todos os campos necessários existam
+        const processedData = data?.map(order => ({
+          ...order,
+          payment_status: order.payment_status || 'pending',
+          profiles: order.profiles || {},
+          shipping_address: order.shipping_address || {}
+        })) || [];
+        
+        console.log("Pedidos carregados:", processedData);
+        return processedData;
       } catch (err) {
         console.error("Erro na consulta de pedidos:", err);
         throw err;

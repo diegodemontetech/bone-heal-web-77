@@ -10,12 +10,12 @@ export const useVouchersForm = () => {
     code: "",
     discount_type: "percentage",
     discount_amount: 0,
-    min_amount: undefined,
-    min_items: undefined,
-    payment_method: undefined,
+    min_amount: 0,
+    min_items: 0,
+    payment_method: "",
     valid_from: new Date().toISOString().split('T')[0],
-    valid_until: undefined,
-    max_uses: undefined,
+    valid_until: new Date().toISOString().split('T')[0],
+    max_uses: 0,
     is_active: true
   });
 
@@ -33,7 +33,13 @@ export const useVouchersForm = () => {
   };
 
   const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === 'discount_type') {
+      // Garantir que o discount_type seja apenas 'percentage' ou 'fixed'
+      const discountType = value === 'fixed' ? 'fixed' : 'percentage';
+      setFormData(prev => ({ ...prev, [field]: discountType }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const resetForm = () => {
@@ -41,12 +47,12 @@ export const useVouchersForm = () => {
       code: "",
       discount_type: "percentage",
       discount_amount: 0,
-      min_amount: undefined,
-      min_items: undefined,
-      payment_method: undefined,
+      min_amount: 0,
+      min_items: 0,
+      payment_method: "",
       valid_from: new Date().toISOString().split('T')[0],
-      valid_until: undefined,
-      max_uses: undefined,
+      valid_until: new Date().toISOString().split('T')[0],
+      max_uses: 0,
       is_active: true
     });
     setCurrentVoucher(null);
@@ -57,13 +63,13 @@ export const useVouchersForm = () => {
     setCurrentVoucher(voucher);
     setFormData({
       code: voucher.code,
-      discount_type: voucher.discount_type,
+      discount_type: voucher.discount_type === 'fixed' ? 'fixed' : 'percentage',
       discount_amount: voucher.discount_amount,
       min_amount: voucher.min_amount,
       min_items: voucher.min_items,
-      payment_method: voucher.payment_method || undefined,
+      payment_method: voucher.payment_method || "",
       valid_from: new Date(voucher.valid_from).toISOString().split('T')[0],
-      valid_until: voucher.valid_until ? new Date(voucher.valid_until).toISOString().split('T')[0] : undefined,
+      valid_until: voucher.valid_until ? new Date(voucher.valid_until).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       max_uses: voucher.max_uses,
       is_active: voucher.is_active !== undefined ? voucher.is_active : true
     });

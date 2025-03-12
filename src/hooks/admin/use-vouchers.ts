@@ -33,9 +33,21 @@ export const useVouchers = () => {
     
     try {
       if (isEditing && currentVoucher) {
-        await updateVoucher(currentVoucher.id, formData);
+        // Converter para string as datas se necessário
+        const updatedData = {
+          ...formData,
+          valid_from: typeof formData.valid_from === 'string' ? formData.valid_from : formData.valid_from.toISOString(),
+          valid_until: typeof formData.valid_until === 'string' ? formData.valid_until : formData.valid_until?.toISOString()
+        };
+        await updateVoucher(currentVoucher.id, updatedData);
       } else {
-        await createVoucher(formData);
+        // Converter para string as datas se necessário
+        const newData = {
+          ...formData,
+          valid_from: typeof formData.valid_from === 'string' ? formData.valid_from : formData.valid_from.toISOString(),
+          valid_until: typeof formData.valid_until === 'string' ? formData.valid_until : formData.valid_until?.toISOString()
+        };
+        await createVoucher(newData);
       }
       
       setIsDialogOpen(false);

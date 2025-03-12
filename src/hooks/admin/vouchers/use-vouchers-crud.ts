@@ -10,12 +10,12 @@ export const useVouchersCrud = (setVouchers: React.Dispatch<React.SetStateAction
         code: voucher.code,
         discount_type: voucher.discount_type,
         discount_amount: voucher.discount_amount,
-        min_amount: voucher.min_amount,
-        min_items: voucher.min_items,
-        payment_method: voucher.payment_method,
+        min_amount: voucher.min_amount || 0,
+        min_items: voucher.min_items || 0,
+        payment_method: voucher.payment_method || null,
         valid_from: voucher.valid_from,
-        valid_until: voucher.valid_until,
-        max_uses: voucher.max_uses,
+        valid_until: voucher.valid_until || null,
+        max_uses: voucher.max_uses || null,
         current_uses: 0,
         is_active: voucher.is_active
       };
@@ -40,19 +40,26 @@ export const useVouchersCrud = (setVouchers: React.Dispatch<React.SetStateAction
 
   const updateVoucher = async (id: string, updates: Partial<Voucher>) => {
     try {
+      // Garantir que as datas sejam convertidas para string
+      const voucherUpdates = {
+        ...updates,
+        valid_from: typeof updates.valid_from === 'string' ? updates.valid_from : updates.valid_from?.toString(),
+        valid_until: typeof updates.valid_until === 'string' ? updates.valid_until : updates.valid_until?.toString()
+      };
+
       const { data, error } = await supabase
         .from("vouchers")
         .update({
-          code: updates.code,
-          discount_type: updates.discount_type,
-          discount_amount: updates.discount_amount,
-          min_amount: updates.min_amount,
-          min_items: updates.min_items,
-          payment_method: updates.payment_method,
-          valid_from: updates.valid_from,
-          valid_until: updates.valid_until,
-          max_uses: updates.max_uses,
-          is_active: updates.is_active
+          code: voucherUpdates.code,
+          discount_type: voucherUpdates.discount_type,
+          discount_amount: voucherUpdates.discount_amount,
+          min_amount: voucherUpdates.min_amount,
+          min_items: voucherUpdates.min_items,
+          payment_method: voucherUpdates.payment_method,
+          valid_from: voucherUpdates.valid_from,
+          valid_until: voucherUpdates.valid_until,
+          max_uses: voucherUpdates.max_uses,
+          is_active: voucherUpdates.is_active
         })
         .eq("id", id)
         .select()
