@@ -7,6 +7,8 @@ import { OrderSummary } from "./order/OrderSummary";
 import { useCreateOrder } from "@/hooks/useCreateOrder";
 import { useOrderCustomers } from "@/hooks/useOrderCustomers";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
+import { ShippingSection } from "./order/ShippingSection";
+import { PaymentMethodSection } from "./order/PaymentMethodSection";
 
 interface CreateOrderProps {
   onCancel: () => void;
@@ -16,7 +18,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const {
     loading,
     createOrder,
-    calculateTotal
+    calculateTotal,
+    paymentMethod,
+    setPaymentMethod,
+    shippingFee,
+    setShippingFee,
+    selectedShipping,
+    setSelectedShipping
   } = useCreateOrder();
 
   const {
@@ -40,8 +48,10 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     handleProductQuantityChange
   } = useOrderProducts();
 
+  const [zipCode, setZipCode] = useState("");
+
   const handleCreateOrder = () => {
-    createOrder(selectedCustomer, selectedProducts);
+    createOrder(selectedCustomer, selectedProducts, selectedShipping);
   };
 
   return (
@@ -62,6 +72,26 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               setCustomerDialogOpen={setCustomerDialogOpen}
               handleRegistrationSuccess={handleRegistrationSuccess}
             />
+
+            {/* Frete - Adicionado */}
+            {selectedCustomer && (
+              <div className="mt-6">
+                <ShippingSection 
+                  zipCode={zipCode || selectedCustomer?.zip_code || ""}
+                  setZipCode={setZipCode}
+                  selectedShipping={selectedShipping}
+                  setSelectedShipping={setSelectedShipping}
+                />
+              </div>
+            )}
+
+            {/* Forma de Pagamento - Adicionado */}
+            <div className="mt-6">
+              <PaymentMethodSection 
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -82,11 +112,14 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         {/* Resumo */}
         <Card className="lg:col-span-1">
           <OrderSummary
-            total={calculateTotal(selectedProducts)}
+            subtotal={calculateTotal(selectedProducts)}
+            shippingFee={selectedShipping?.rate || 0}
+            total={calculateTotal(selectedProducts) + (selectedShipping?.rate || 0)}
             loading={loading}
             onCreateOrder={handleCreateOrder}
             onCancel={onCancel}
             hasProducts={selectedProducts.length > 0}
+            paymentMethod={paymentMethod}
           />
         </Card>
       </div>

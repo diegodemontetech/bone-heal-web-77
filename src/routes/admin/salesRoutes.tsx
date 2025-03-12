@@ -15,9 +15,9 @@ const AdminLoader = () => (
   </div>
 );
 
-export const orderRoutes: RouteObject[] = [
+export const salesRoutes: RouteObject[] = [
   {
-    path: "orders",
+    path: "vendas",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
@@ -27,7 +27,7 @@ export const orderRoutes: RouteObject[] = [
     )
   },
   {
-    path: "quotations",
+    path: "orcamentos",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>

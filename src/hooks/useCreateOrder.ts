@@ -3,9 +3,13 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { ShippingCalculationRate } from "@/types/shipping";
 
 export const useCreateOrder = () => {
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("pix");
+  const [shippingFee, setShippingFee] = useState(0);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   const navigate = useNavigate();
 
   const validateOrderData = (selectedCustomer: any, selectedProducts: any[]) => {
@@ -32,7 +36,11 @@ export const useCreateOrder = () => {
     return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   };
 
-  const createOrder = async (selectedCustomer: any, selectedProducts: any[]) => {
+  const createOrder = async (
+    selectedCustomer: any, 
+    selectedProducts: any[],
+    shippingOption: ShippingCalculationRate | null
+  ) => {
     try {
       console.log("Iniciando criação do pedido...");
       setLoading(true);
@@ -53,15 +61,25 @@ export const useCreateOrder = () => {
         omie_product_id: product.omie_product_id || null
       }));
 
-      const total = calculateTotal(selectedProducts);
+      const subtotal = calculateTotal(selectedProducts);
+      const shippingFee = shippingOption?.rate || 0;
+      const total = subtotal + shippingFee;
 
       // Valores padrão para endereço, caso não exista
       const shippingAddress = {
         address: selectedCustomer.address || "Endereço não informado",
         city: selectedCustomer.city || "Cidade não informada",
         state: selectedCustomer.state || "UF",
-        zip_code: selectedCustomer.zip_code || "00000-000"
+        zip_code: selectedCustomer.zip_code || shippingOption?.zipCode || "00000-000"
       };
+
+      // Informações de frete
+      const shippingInfo = shippingOption ? {
+        service_type: shippingOption.service_type,
+        carrier: shippingOption.name,
+        cost: shippingOption.rate,
+        estimated_days: shippingOption.delivery_days
+      } : null;
 
       console.log("Criando pedido na base de dados...");
       const { data: order, error: orderError } = await supabase
@@ -69,8 +87,10 @@ export const useCreateOrder = () => {
         .insert({
           user_id: selectedCustomer.id,
           items: orderItems,
+          payment_method: paymentMethod,
+          shipping_fee: shippingFee,
           total_amount: total,
-          subtotal: total,
+          subtotal: subtotal,
           status: 'pending',
           omie_status: "novo",
           shipping_address: shippingAddress
@@ -94,6 +114,7 @@ export const useCreateOrder = () => {
             body: {
               order_id: order.id,
               items: orderItems,
+              shipping_cost: shippingFee,
               payer: {
                 name: selectedCustomer.full_name || "Cliente",
                 email: selectedCustomer.email || "cliente@example.com",
@@ -122,7 +143,7 @@ export const useCreateOrder = () => {
       }
       
       // Redirecionar para página do pedido
-      navigate(`/admin/orders`);
+      navigate(`/admin/vendas`);
       
       return order;
     } catch (error: any) {
@@ -137,6 +158,12 @@ export const useCreateOrder = () => {
   return {
     loading,
     createOrder,
-    calculateTotal
+    calculateTotal,
+    paymentMethod,
+    setPaymentMethod,
+    shippingFee,
+    setShippingFee,
+    selectedShipping,
+    setSelectedShipping
   };
 };

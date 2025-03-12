@@ -2,32 +2,69 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 interface OrderSummaryProps {
+  subtotal: number;
+  shippingFee: number;
   total: number;
   loading: boolean;
   onCreateOrder: () => void;
   onCancel: () => void;
   hasProducts: boolean;
+  paymentMethod: string;
 }
 
 export const OrderSummary = ({
+  subtotal,
+  shippingFee,
   total,
   loading,
   onCreateOrder,
   onCancel,
   hasProducts,
+  paymentMethod,
 }: OrderSummaryProps) => {
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method) {
+      case 'pix': return 'PIX';
+      case 'credit_card': return 'Cartão de Crédito';
+      case 'boleto': return 'Boleto Bancário';
+      case 'transfer': return 'Transferência Bancária';
+      default: return method;
+    }
+  };
+  
   return (
     <Card>
       <CardContent className="p-6">
         <h2 className="text-lg font-semibold mb-4">Resumo do Pedido</h2>
         <div className="space-y-4">
-          <div className="border-t pt-4">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <span className="font-medium">Total</span>
-              <span className="font-bold">R$ {total.toFixed(2)}</span>
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-muted-foreground">Frete</span>
+              <span>{formatCurrency(shippingFee)}</span>
+            </div>
+            
+            <Separator className="my-2" />
+            
+            <div className="flex justify-between items-center font-medium">
+              <span>Total</span>
+              <span className="text-lg">{formatCurrency(total)}</span>
+            </div>
+          </div>
+
+          <div className="bg-muted p-3 rounded-md">
+            <h3 className="font-medium mb-1">Detalhes do Pagamento</h3>
+            <p className="text-sm text-muted-foreground">
+              Método: {getPaymentMethodLabel(paymentMethod)}
+            </p>
           </div>
 
           <div className="space-y-4">

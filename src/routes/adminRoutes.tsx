@@ -3,7 +3,7 @@ import { RouteObject } from "react-router-dom";
 import AdminLayout from "@/components/admin/Layout";
 import { dashboardRoutes } from "./admin/dashboardRoutes";
 import { productRoutes } from "./admin/productRoutes";
-import { orderRoutes } from "./admin/orderRoutes";
+import { salesRoutes } from "./admin/orderRoutes";
 import { userRoutes } from "./admin/userRoutes";
 import { contentRoutes } from "./admin/contentRoutes";
 import { configRoutes } from "./admin/configRoutes";
@@ -15,7 +15,7 @@ import { whatsappRoutes } from "./admin/whatsappRoutes";
 const allRoutes = [
   ...dashboardRoutes,
   ...productRoutes,
-  ...orderRoutes,
+  ...salesRoutes,
   ...userRoutes,
   ...contentRoutes,
   ...configRoutes,
