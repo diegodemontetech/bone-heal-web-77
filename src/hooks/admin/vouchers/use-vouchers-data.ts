@@ -19,10 +19,15 @@ export const useVouchersData = () => {
 
       if (error) throw error;
       
-      const formattedVouchers = data.map(voucher => ({
-        ...voucher,
-        is_active: typeof voucher.is_active === 'boolean' ? voucher.is_active : true
-      })) as Voucher[];
+      const formattedVouchers = data.map(voucher => {
+        // Garantir que todos os vouchers tenham a propriedade is_active
+        return {
+          ...voucher,
+          is_active: 'is_active' in voucher 
+            ? Boolean(voucher.is_active) 
+            : true
+        } as Voucher;
+      });
       
       setVouchers(formattedVouchers);
     } catch (err) {

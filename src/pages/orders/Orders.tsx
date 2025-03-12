@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,7 @@ const Orders = () => {
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
           
+          // Garantir que todos os campos de endereço existam
           const shippingAddress: ShippingAddress = {
             zip_code: profileData.zip_code || '',
             city: profileData.city || '',
@@ -57,6 +59,7 @@ const Orders = () => {
           
           return {
             ...order,
+            // Garantir que payment_status sempre exista
             payment_status: order.payment_status || 'pending',
             shipping_address: shippingAddress,
             items: parsedItems.map((item) => ({
