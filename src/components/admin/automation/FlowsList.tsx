@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +9,14 @@ import { AutomationFlow } from "@/types/automation";
 import FlowsTable from "./flows/FlowsTable";
 import NoFlowsMessage from "./flows/NoFlowsMessage";
 import FlowCreateForm from "./flows/FlowCreateForm";
+import { toast } from "sonner";
 
-const FlowsList = () => {
+interface FlowsListProps {
+  onFlowSelect?: (flowId: string) => void;
+  onFlowCreate?: (flowId: string) => void;
+}
+
+const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const navigate = useNavigate();
@@ -36,12 +41,21 @@ const FlowsList = () => {
     const newFlow = await createFlow(name, description);
     if (newFlow) {
       setIsCreateDialogOpen(false);
-      navigate(`/admin/automation-flows/${newFlow.id}`);
+      
+      if (onFlowCreate) {
+        onFlowCreate(newFlow.id);
+      } else {
+        navigate(`/admin/automation-flows/${newFlow.id}`);
+      }
     }
   };
 
   const handleEditFlow = (id: string) => {
-    navigate(`/admin/automation-flows/${id}`);
+    if (onFlowSelect) {
+      onFlowSelect(id);
+    } else {
+      navigate(`/admin/automation-flows/${id}`);
+    }
   };
 
   const executeFlow = async (id: string) => {
@@ -62,11 +76,15 @@ const FlowsList = () => {
       }
       
       // Feedback ao usuário
-      alert('Fluxo executado com sucesso!');
+      toast.success('Fluxo executado com sucesso!');
     } catch (error) {
       console.error('Erro ao executar fluxo:', error);
-      alert('Erro ao executar fluxo');
+      toast.error('Erro ao executar fluxo');
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
   };
 
   return (
@@ -111,7 +129,7 @@ const FlowsList = () => {
             <NoFlowsMessage
               onCreateNew={() => setIsCreateDialogOpen(true)}
               hasSearch={searchTerm.length > 0}
-              onClearSearch={() => setSearchTerm("")}
+              onClearSearch={handleClearSearch}
             />
           )}
         </CardContent>
@@ -120,7 +138,8 @@ const FlowsList = () => {
       <FlowCreateForm
         isOpen={isCreateDialogOpen}
         onClose={() => setIsCreateDialogOpen(false)}
-        onSubmit={handleCreateFlow}
+        onCreateFlow={handleCreateFlow}
+        onComplete={() => {}}
       />
     </div>
   );

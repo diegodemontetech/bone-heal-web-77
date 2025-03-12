@@ -102,12 +102,11 @@ export const useVouchers = () => {
     setIsEditing(false);
   };
 
-  const createVoucher = async (voucher: Partial<Voucher>) => {
+  const createVoucher = async (voucher: VoucherFormData) => {
     try {
       const newVoucher = {
         ...voucher,
-        current_uses: 0,
-        is_active: true
+        current_uses: 0
       };
 
       const { data, error } = await supabase
@@ -118,12 +117,7 @@ export const useVouchers = () => {
 
       if (error) throw error;
 
-      const voucherWithIsActive = {
-        ...data,
-        is_active: data.is_active ?? true
-      } as Voucher;
-
-      setVouchers(prev => [voucherWithIsActive, ...prev]);
+      setVouchers(prev => [data as Voucher, ...prev]);
       toast.success("Voucher criado com sucesso!");
       return data;
     } catch (err) {
@@ -144,14 +138,9 @@ export const useVouchers = () => {
 
       if (error) throw error;
 
-      const voucherWithIsActive = {
-        ...data,
-        is_active: data.is_active ?? true
-      } as Voucher;
-
       setVouchers(prev => 
         prev.map(voucher => 
-          voucher.id === id ? voucherWithIsActive : voucher
+          voucher.id === id ? data as Voucher : voucher
         )
       );
 
@@ -206,9 +195,9 @@ export const useVouchers = () => {
     
     try {
       if (isEditing && currentVoucher) {
-        await updateVoucher(currentVoucher.id, formData as Partial<Voucher>);
+        await updateVoucher(currentVoucher.id, formData);
       } else {
-        await createVoucher(formData as Partial<Voucher>);
+        await createVoucher(formData);
       }
       
       setIsDialogOpen(false);

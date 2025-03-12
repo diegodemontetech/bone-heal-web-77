@@ -1,65 +1,49 @@
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import FlowBuilder from "@/components/admin/automation/FlowBuilder";
-import FlowsList from "@/components/admin/automation/FlowsList";
+// Corrigindo o componente para não passar onSelectFlow
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ActionsPalette from "@/components/admin/automation/ActionsPalette";
+import FlowsList from "@/components/admin/automation/FlowsList";
+import FlowBuilder from "@/components/admin/automation/FlowBuilder";
 
-const AutomationFlows = () => {
-  const [activeTab, setActiveTab] = useState("flows");
-  const [selectedFlow, setSelectedFlow] = useState<string | null>(null);
+const AutomationFlowsPage: React.FC = () => {
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(selectedFlowId ? "editor" : "list");
+
+  const handleSelectFlow = (flowId: string) => {
+    setSelectedFlowId(flowId);
+    setActiveTab("editor");
+  };
+
+  const handleCreateFlow = (flowId: string) => {
+    setSelectedFlowId(flowId);
+    setActiveTab("editor");
+  };
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-2xl font-bold mb-6">Automação de Fluxos de Trabalho</h1>
-      
-      <Tabs defaultValue="flows" onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="flows">Meus Fluxos</TabsTrigger>
-          <TabsTrigger value="builder">Construtor de Fluxos</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="flows">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fluxos de Trabalho</CardTitle>
-              <CardDescription>
-                Visualize e gerencie seus fluxos de automação
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FlowsList onSelectFlow={(flowId) => {
-                setSelectedFlow(flowId);
-                setActiveTab("builder");
-              }} />
-            </CardContent>
-          </Card>
+    <div className="container mx-auto p-6 space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Fluxos de Automação</h1>
+          <TabsList>
+            <TabsTrigger value="list" onClick={() => setActiveTab("list")}>
+              Lista de Fluxos
+            </TabsTrigger>
+            <TabsTrigger value="editor" disabled={!selectedFlowId}>
+              Editor de Fluxo
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="list" className="mt-0">
+          <FlowsList onFlowSelect={handleSelectFlow} onFlowCreate={handleCreateFlow} />
         </TabsContent>
-        
-        <TabsContent value="builder" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            <div className="lg:col-span-1">
-              <ActionsPalette />
-            </div>
-            <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Construtor de Fluxos</CardTitle>
-                  <CardDescription>
-                    Arraste e conecte os nós para criar seu fluxo de trabalho
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <FlowBuilder flowId={selectedFlow} />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+
+        <TabsContent value="editor" className="mt-0">
+          <FlowBuilder flowId={selectedFlowId} />
         </TabsContent>
       </Tabs>
     </div>
   );
 };
 
-export default AutomationFlows;
+export default AutomationFlowsPage;

@@ -46,3 +46,16 @@ export interface ShippingAddress {
   city: string;
   state: string;
 }
+
+// Adicionando a interface ShippingCalculationRate usada pelos componentes de cotação
+export interface ShippingCalculationRate {
+  id: string;
+  rate: number;
+  delivery_days: number;
+  service_type: string;
+  name: string;
+  region?: string;
+  zipCode?: string;
+  flat_rate?: number;
+  estimated_days?: number;
+}
