@@ -39,6 +39,18 @@ const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
     return <NoFlowSelected />;
   }
 
+  const handleSave = () => {
+    saveFlow({ 
+      nodes,
+      edges,
+      name: flowName
+    });
+  };
+
+  const handleExecute = () => {
+    executeFlow();
+  };
+
   return (
     <div className="h-[600px] border rounded-md">
       {isLoading ? (
@@ -51,8 +63,8 @@ const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
             flowName={flowName}
             onFlowNameChange={setFlowName}
             nodeCount={nodes.length}
-            onSave={saveFlow}
-            onExecute={executeFlow}
+            onSave={handleSave}
+            onExecute={handleExecute}
             isSaving={isSaving}
             canExecute={nodes.length > 0 && edges.length > 0}
           />

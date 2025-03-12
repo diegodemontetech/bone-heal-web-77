@@ -5,6 +5,7 @@ import { Ticket, Plus } from "lucide-react";
 import { VoucherDialog } from "@/components/admin/vouchers/VoucherDialog";
 import { VouchersList } from "@/components/admin/vouchers/VouchersList";
 import { useVouchers } from "@/hooks/admin/use-vouchers";
+import { useCallback } from "react";
 
 const Vouchers = () => {
   const {
@@ -23,6 +24,13 @@ const Vouchers = () => {
     handleDeleteVoucher,
     formatDate
   } = useVouchers();
+
+  const handleSubmit = useCallback(() => {
+    const form = document.getElementById('voucher-form') as HTMLFormElement;
+    if (form) {
+      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    }
+  }, []);
 
   return (
     <div className="p-8">
@@ -79,7 +87,7 @@ const Vouchers = () => {
         setIsOpen={setIsDialogOpen}
         isEditing={isEditing}
         currentVoucher={currentVoucher}
-        onSubmit={handleCreateVoucher}
+        onSubmit={handleSubmit}
         formData={formData}
         handleInputChange={handleInputChange}
         handleSelectChange={handleSelectChange}

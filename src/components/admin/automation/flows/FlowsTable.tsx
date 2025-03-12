@@ -1,32 +1,35 @@
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AutomationFlow } from "@/hooks/use-automation-flow";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import FlowTableRow from "./FlowTableRow";
+import { AutomationFlow } from "@/types/automation";
 
 interface FlowsTableProps {
   flows: AutomationFlow[];
-  onSelectFlow: (id: string) => void;
-  onToggleStatus: (id: string, isActive: boolean) => Promise<any>;
-  onDuplicate: (id: string) => Promise<any>;
-  onDelete: (id: string) => Promise<boolean>;
+  onEdit: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  onDelete: (id: string) => void;
+  onToggleStatus: (id: string, isActive: boolean) => void;
+  onExecute: (id: string) => void;
 }
 
 const FlowsTable = ({
   flows,
-  onSelectFlow,
-  onToggleStatus,
+  onEdit,
   onDuplicate,
   onDelete,
+  onToggleStatus,
+  onExecute,
 }: FlowsTableProps) => {
   return (
-    <div className="border rounded-md">
+    <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome do Fluxo</TableHead>
+            <TableHead>Nome</TableHead>
+            <TableHead>Descrição</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Criado</TableHead>
             <TableHead>Ações</TableHead>
+            <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -34,10 +37,11 @@ const FlowsTable = ({
             <FlowTableRow
               key={flow.id}
               flow={flow}
-              onSelectFlow={onSelectFlow}
-              onToggleStatus={onToggleStatus}
+              onEdit={onEdit}
               onDuplicate={onDuplicate}
               onDelete={onDelete}
+              onToggleStatus={onToggleStatus}
+              onExecute={onExecute}
             />
           ))}
         </TableBody>

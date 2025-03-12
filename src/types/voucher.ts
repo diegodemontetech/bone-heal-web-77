@@ -2,15 +2,16 @@
 export interface Voucher {
   id: string;
   code: string;
-  discount_amount: number;
   discount_type: string;
-  max_uses: number | null;
-  current_uses: number;
+  discount_amount: number;
+  min_amount?: number;
+  min_items?: number;
+  payment_method?: string;
   valid_from: string;
-  valid_until: string | null;
-  min_amount: number | null;
+  valid_until?: string;
+  max_uses?: number;
+  current_uses?: number;
+  created_at?: string;
+  updated_at?: string;
   is_active: boolean;
-  created_at: string;
-  payment_method?: string | null;
-  min_items?: number | null;
 }

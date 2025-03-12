@@ -56,9 +56,9 @@ export const useVouchers = () => {
       const formattedVouchers = data.map(voucher => ({
         ...voucher,
         is_active: voucher.is_active ?? true
-      }));
+      })) as Voucher[];
       
-      setVouchers(formattedVouchers as Voucher[]);
+      setVouchers(formattedVouchers);
     } catch (err) {
       console.error("Erro ao buscar vouchers:", err);
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -102,7 +102,7 @@ export const useVouchers = () => {
     setIsEditing(false);
   };
 
-  const createVoucher = async (voucher: Omit<Voucher, "id" | "created_at" | "updated_at" | "current_uses" | "is_active">) => {
+  const createVoucher = async (voucher: Partial<Voucher>) => {
     try {
       const newVoucher = {
         ...voucher,
@@ -118,7 +118,12 @@ export const useVouchers = () => {
 
       if (error) throw error;
 
-      setVouchers(prev => [data as Voucher, ...prev]);
+      const voucherWithIsActive = {
+        ...data,
+        is_active: data.is_active ?? true
+      } as Voucher;
+
+      setVouchers(prev => [voucherWithIsActive, ...prev]);
       toast.success("Voucher criado com sucesso!");
       return data;
     } catch (err) {
@@ -139,9 +144,14 @@ export const useVouchers = () => {
 
       if (error) throw error;
 
+      const voucherWithIsActive = {
+        ...data,
+        is_active: data.is_active ?? true
+      } as Voucher;
+
       setVouchers(prev => 
         prev.map(voucher => 
-          voucher.id === id ? { ...voucher, ...data } as Voucher : voucher
+          voucher.id === id ? voucherWithIsActive : voucher
         )
       );
 
@@ -196,9 +206,9 @@ export const useVouchers = () => {
     
     try {
       if (isEditing && currentVoucher) {
-        await updateVoucher(currentVoucher.id, formData);
+        await updateVoucher(currentVoucher.id, formData as Partial<Voucher>);
       } else {
-        await createVoucher(formData);
+        await createVoucher(formData as Partial<Voucher>);
       }
       
       setIsDialogOpen(false);

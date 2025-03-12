@@ -1,78 +1,64 @@
 
-/**
- * Utilitários para lidar com JSON em resposta do Supabase
- */
-
-import { Json } from "@/integrations/supabase/types";
+import { Json } from '@/integrations/supabase/types';
 
 /**
- * Converte um valor JSON do Supabase para um array
- * Se já for um array, retorna o valor
- * Se for uma string, tenta fazer o parse
- * Caso contrário, retorna um array vazio
+ * Converte um objeto JavaScript para string JSON, tratando arrays vazios como arrays vazios
+ * ao invés de null (comportamento que o Supabase espera).
  */
-export function parseJsonArray<T = any>(jsonValue: Json | null | undefined, defaultValue: T[] = []): T[] {
-  if (!jsonValue) return defaultValue;
-  
-  if (Array.isArray(jsonValue)) {
-    return jsonValue as T[];
+export const stringifyForSupabase = (obj: any): Json => {
+  if (Array.isArray(obj) && obj.length === 0) {
+    return [];
   }
   
-  if (typeof jsonValue === 'string') {
-    try {
-      const parsed = JSON.parse(jsonValue);
-      return Array.isArray(parsed) ? parsed : defaultValue;
-    } catch (error) {
-      console.error('Erro ao converter string JSON para array:', error);
-      return defaultValue;
+  if (obj === null || obj === undefined) {
+    return [];
+  }
+  
+  return obj;
+};
+
+/**
+ * Parse um objeto JSON do Supabase para um array, com fallback caso seja null
+ */
+export const parseJsonArray = <T>(json: Json | null, fallback: T[]): T[] => {
+  if (!json) return fallback;
+  
+  if (Array.isArray(json)) {
+    return json as T[];
+  }
+  
+  try {
+    if (typeof json === 'string') {
+      const parsed = JSON.parse(json);
+      return Array.isArray(parsed) ? parsed : fallback;
     }
+  } catch (e) {
+    console.error('Erro ao parsear JSON array:', e);
   }
   
-  return defaultValue;
-}
+  return fallback;
+};
 
 /**
- * Converte um valor JSON do Supabase para um objeto
- * Se já for um objeto, retorna o valor
- * Se for uma string, tenta fazer o parse
- * Caso contrário, retorna um objeto vazio ou o valor padrão fornecido
+ * Parse um objeto JSON do Supabase para um objeto, com fallback caso seja null
  */
-export function parseJsonObject<T = Record<string, any>>(
-  jsonValue: Json | null | undefined, 
-  defaultValue: T = {} as T
-): T {
-  if (!jsonValue) return defaultValue;
+export const parseJsonObject = <T extends object>(json: Json | null, fallback: T): T => {
+  if (!json) return fallback;
   
-  if (typeof jsonValue === 'object' && !Array.isArray(jsonValue)) {
-    return jsonValue as unknown as T;
+  if (typeof json === 'object' && !Array.isArray(json) && json !== null) {
+    return json as T;
   }
   
-  if (typeof jsonValue === 'string') {
-    try {
-      const parsed = JSON.parse(jsonValue);
-      return typeof parsed === 'object' && !Array.isArray(parsed) 
-        ? parsed 
-        : defaultValue;
-    } catch (error) {
-      console.error('Erro ao converter string JSON para objeto:', error);
-      return defaultValue;
+  try {
+    if (typeof json === 'string') {
+      const parsed = JSON.parse(json);
+      return typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null
+        ? parsed
+        : fallback;
     }
+  } catch (e) {
+    console.error('Erro ao parsear JSON object:', e);
   }
   
-  return defaultValue;
-}
-
-/**
- * Prepara um objeto para ser armazenado como JSON no Supabase
- */
-export function stringifyForSupabase(value: any): Json {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value as Json;
-  }
-  
-  return JSON.stringify(value) as Json;
-}
+  return fallback;
+};

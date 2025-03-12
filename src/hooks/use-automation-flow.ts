@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Edge, Node, useNodesState, useEdgesState, ReactFlowInstance } from 'reactflow';
+import { Edge, Node, useNodesState, useEdgesState, ReactFlowInstance, addEdge } from 'reactflow';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { AutomationFlow } from '@/types/automation';
@@ -18,7 +18,7 @@ export const useAutomationFlow = (flowId: string | null) => {
   const queryClient = useQueryClient();
 
   const fetchFlowData = useCallback(async () => {
-    if (!flowId) return;
+    if (!flowId) return null;
     
     try {
       const { data, error } = await supabase

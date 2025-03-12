@@ -1,6 +1,7 @@
 
-// API do ViaCEP para buscar endereço a partir do CEP
-export interface ViaCepAddress {
+import { toast } from "sonner";
+
+interface AddressData {
   cep: string;
   logradouro: string;
   complemento: string;
@@ -13,45 +14,44 @@ export interface ViaCepAddress {
   siafi: string;
 }
 
-export async function fetchAddressFromCep(cep: string): Promise<ViaCepAddress | null> {
+export const fetchAddressFromCep = async (cep: string): Promise<AddressData | null> => {
   try {
-    // Limpa o CEP para ter apenas números
-    const cleanCep = cep.replace(/\D/g, '');
+    if (!cep || cep.length !== 8) {
+      throw new Error("CEP inválido");
+    }
+
+    const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     
-    if (cleanCep.length !== 8) {
-      throw new Error('CEP inválido');
+    if (!response.ok) {
+      throw new Error(`Erro na requisição: ${response.status}`);
     }
     
-    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
     const data = await response.json();
     
     if (data.erro) {
-      throw new Error('CEP não encontrado');
+      throw new Error("CEP não encontrado");
     }
     
     return data;
   } catch (error) {
-    console.error('Erro ao buscar endereço:', error);
+    console.error("Erro ao buscar CEP:", error);
+    toast.error(`Erro ao buscar CEP: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     return null;
   }
-}
+};
 
-// Função que será implementada futuramente com Mapbox para autocompletar endereços
-export async function searchAddressWithMapbox(query: string, accessToken: string) {
-  try {
-    const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`;
-    const params = new URLSearchParams({
-      access_token: accessToken,
-      country: 'br',
-      language: 'pt',
-      types: 'address',
-      limit: '5'
-    });
-
-    const response = await fetch(`${endpoint}?${params}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Erro ao buscar endereço com Mapbox:', error);
-    return null;
+export const formatCEP = (cep: string): string => {
+  // Remove tudo que não for número
+  const numericCep = cep.replace(/\D/g, '');
+  
+  // Formata como #####-###
+  if (numericCep.length <= 5) {
+    return numericCep;
   }
-}
+  
+  return `${numericCep.slice(0, 5)}-${numericCep.slice(5, 8)}`;
+};
+
+export const unformatCEP = (cep: string): string => {
+  return cep.replace(/\D/g, '');
+};
