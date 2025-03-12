@@ -2,7 +2,7 @@
 export interface WhatsAppInstance {
   id: string;
   instance_name: string;
-  name?: string;
+  name: string; // mudado de opcional para obrigatório
   status: string;
   qr_code?: string;
   created_at: string;

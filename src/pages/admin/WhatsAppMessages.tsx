@@ -134,7 +134,7 @@ const AdminWhatsAppMessages = () => {
       // Adicionar a mensagem à lista localmente
       setMessages(prev => [...prev, convertMessageFormat(newMessage)]);
       
-      if (handleRefresh) handleRefresh();
+      handleRefresh();
       return true;
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);

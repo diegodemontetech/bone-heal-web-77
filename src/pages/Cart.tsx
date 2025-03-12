@@ -1,127 +1,119 @@
 
-import { useState, useEffect } from 'react';
-import { useCart } from '@/hooks/use-cart';
-import { useAuth } from '@/hooks/use-auth-context';
-import { useNavigate } from 'react-router-dom';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import WhatsAppWidget from '@/components/WhatsAppWidget';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth-context";
+import { useCart } from "@/hooks/use-cart";
+import { useShipping } from "@/hooks/use-shipping";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Loader2, ShoppingCart } from "lucide-react";
 
-// Importações fictícias para simular o que seria necessário
-import { useShipping } from '@/hooks/use-shipping';
-import CartItem from '@/components/cart/CartItem';
-import CartSummary from '@/components/cart/CartSummary';
-import EmptyCart from '@/components/cart/EmptyCart';
-import ShippingCalculator from '@/components/cart/shipping/ShippingCalculator';
+// Corrigir importações para usar named exports
+import { CartItem } from "@/components/cart/CartItem";
+import { CartSummary } from "@/components/cart/CartSummary";
+import { EmptyCart } from "@/components/cart/EmptyCart";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { session, isAuthenticated } = useAuth();
-  // Para resolver os erros do useCart, criamos hooks separados
-  const cartHook = useCart();
+  const { profile } = useAuth();
+  const { cart, isLoading, removeItem, updateQuantity, clearCart, getTotalPrice } = useCart();
+  const { 
+    zipCode, 
+    setZipCode, 
+    shippingCost, 
+    calculateShipping, 
+    isCalculatingShipping, 
+    shippingError, 
+    shippingCalculated,
+    resetShipping 
+  } = useShipping();
   
-  // Criamos um hook separado para o shipping ou extraímos as propriedades necessárias
-  const [zipCode, setZipCode] = useState('');
-  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
-  const [shippingCost, setShippingCost] = useState(0);
-  const [shippingError, setShippingError] = useState<string | null>(null);
-  const [shippingCalculated, setShippingCalculated] = useState(false);
-  
-  const calculateShipping = async (zip: string) => {
-    if (!zip) {
-      setShippingError('Informe o CEP para calcular o frete');
-      return;
-    }
-    
-    setIsCalculatingShipping(true);
-    setShippingError(null);
-    
-    try {
-      // Lógica de cálculo de frete
-      // ...
-      setShippingCost(15.90); // Valor de exemplo
-      setShippingCalculated(true);
-    } catch (error) {
-      console.error('Erro ao calcular frete:', error);
-      setShippingError('Não foi possível calcular o frete. Tente novamente.');
-    } finally {
-      setIsCalculatingShipping(false);
-    }
-  };
-  
-  const resetShipping = () => {
-    setShippingCost(0);
-    setShippingCalculated(false);
-    setShippingError(null);
-  };
-  
+  // Função para lidar com o checkout
   const handleCheckout = () => {
-    if (!isAuthenticated) {
-      toast.error('Faça login para continuar com a compra');
-      navigate('/login', { state: { from: '/cart' } });
+    if (!profile) {
+      toast.error("É necessário estar logado para finalizar a compra");
+      navigate("/login", { state: { from: "/cart" } });
       return;
     }
-    
+
     if (!shippingCalculated) {
-      toast.error('Calcule o frete antes de prosseguir');
+      toast.error("Por favor, calcule o frete antes de continuar");
       return;
     }
-    
-    navigate('/checkout');
+
+    navigate("/checkout");
   };
-  
-  // O resto do componente continuaria normalmente...
-  
+
+  // Reset shipping when cart changes
+  useEffect(() => {
+    resetShipping();
+  }, [cart, resetShipping]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex justify-center items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <main className="flex-grow container mx-auto p-4 py-8">
-        <h1 className="text-2xl font-semibold mb-6">Meu Carrinho</h1>
-        
-        {cartHook.cart.length === 0 ? (
+      <div className="container mx-auto p-4 py-8 flex-1">
+        <h1 className="text-2xl font-bold mb-6 flex items-center">
+          <ShoppingCart className="mr-2 h-6 w-6" />
+          Meu Carrinho
+        </h1>
+
+        {cart.length === 0 ? (
           <EmptyCart />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-4">
-              {cartHook.cart.map(item => (
-                <CartItem 
-                  key={item.id} 
-                  item={item} 
-                  updateQuantity={cartHook.updateQuantity}
-                  removeItem={cartHook.removeItem}
+              {cart.map((item) => (
+                <CartItem
+                  key={item.id}
+                  item={item}
+                  onRemove={removeItem}
+                  onUpdateQuantity={updateQuantity}
                 />
               ))}
             </div>
-            
+
             <div className="lg:col-span-1">
-              <CartSummary 
-                subtotal={cartHook.getTotalPrice()} 
+              <CartSummary
+                cartTotal={getTotalPrice()}
                 shippingCost={shippingCost}
-                total={cartHook.getTotalPrice() + shippingCost}
-              />
-              
-              <ShippingCalculator 
                 zipCode={zipCode}
                 setZipCode={setZipCode}
-                calculateShipping={calculateShipping}
+                calculateShipping={(zip) => calculateShipping(zip)} // Corrigir a assinatura do método
                 isCalculatingShipping={isCalculatingShipping}
                 shippingError={shippingError}
                 shippingCalculated={shippingCalculated}
-                resetShipping={resetShipping}
               />
-              
-              <button
-                onClick={handleCheckout}
-                disabled={cartHook.cart.length === 0 || !shippingCalculated}
-                className="w-full mt-4 bg-primary text-white py-3 rounded-md font-medium hover:bg-primary/80 transition-colors"
-              >
-                Finalizar Compra
-              </button>
+
+              <div className="mt-4">
+                <Button
+                  onClick={handleCheckout}
+                  className="w-full"
+                  size="lg"
+                  disabled={cart.length === 0 || !shippingCalculated}
+                >
+                  Finalizar Compra
+                </Button>
+              </div>
             </div>
           </div>
         )}
-      </main>
+      </div>
       <Footer />
       <WhatsAppWidget />
     </div>

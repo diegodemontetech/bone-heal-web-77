@@ -48,9 +48,10 @@ const Orders = () => {
         const formattedOrders = data.map(order => {
           // Parse JSON fields
           const parsedItems = parseJsonArray(order.items, []);
+          // Garantir que profileData sempre seja um objeto
           const profileData = order.profiles || {};
           
-          // Cria um objeto de endereço com valores padrão
+          // Criar endereço de entrega com valores padrão
           const shippingAddress: ShippingAddress = {
             zip_code: profileData.zip_code || '',
             city: profileData.city || '',
@@ -70,7 +71,7 @@ const Orders = () => {
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
               product_name: item.product_name,
-              name: item.product_name || item.name || '',  // Adicionando name
+              name: item.product_name || item.name || '',
               quantity: item.quantity,
               price: item.price,
               total_price: item.total_price
