@@ -19,13 +19,46 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Buscar todos os perfis de usuários
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data as UserData[]);
+      if (profilesError) throw profilesError;
+
+      // Buscar permissões para todos os usuários
+      const { data: permissionsData, error: permissionsError } = await supabase
+        .from('user_permissions')
+        .select('user_id, permission');
+
+      if (permissionsError) throw permissionsError;
+
+      // Criar um mapa de permissões por ID de usuário
+      const permissionsByUser: Record<string, string[]> = {};
+      permissionsData.forEach((item) => {
+        if (!permissionsByUser[item.user_id]) {
+          permissionsByUser[item.user_id] = [];
+        }
+        permissionsByUser[item.user_id].push(item.permission);
+      });
+
+      // Mapear os perfis para o formato UserData
+      const mappedUsers: UserData[] = profilesData.map((profile) => {
+        return {
+          id: profile.id,
+          email: profile.email || '',
+          full_name: profile.full_name || '',
+          role: profile.role as UserRole || UserRole.ADMIN,
+          is_admin: profile.is_admin || false,
+          created_at: profile.created_at,
+          permissions: permissionsByUser[profile.id] || [],
+          omie_code: profile.omie_code,
+          omie_sync: profile.omie_sync
+        };
+      });
+
+      setUsers(mappedUsers);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err : new Error(String(err)));

@@ -1,25 +1,18 @@
 
-import { useState } from "react";
+import React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { UserRole } from "@/types/auth";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { UserData } from "./types";
 import { availablePermissions } from "./permissions";
-
-interface UserData {
-  id: string;
-  email: string;
-  full_name: string;
-  role: UserRole;
-  permissions: string[];
-  created_at: string;
-}
 
 interface EditUserDialogProps {
   isOpen: boolean;
@@ -30,57 +23,77 @@ interface EditUserDialogProps {
   onSavePermissions: () => Promise<void>;
 }
 
-const EditUserDialog = ({
+const EditUserDialog: React.FC<EditUserDialogProps> = ({
   isOpen,
   onClose,
   selectedUser,
   selectedPermissions,
   onPermissionToggle,
-  onSavePermissions
-}: EditUserDialogProps) => {
+  onSavePermissions,
+}) => {
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSavePermissions();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Permissões do Usuário</DialogTitle>
+          <DialogTitle>Editar Permissões de Usuário</DialogTitle>
         </DialogHeader>
 
-        <div className="py-4">
-          <div className="mb-4">
-            <p><strong>Usuário:</strong> {selectedUser?.full_name}</p>
-            <p><strong>Email:</strong> {selectedUser?.email}</p>
-          </div>
+        {selectedUser && (
+          <div className="py-4">
+            <div className="mb-4">
+              <p className="font-semibold">{selectedUser.full_name}</p>
+              <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+            </div>
 
-          <div className="space-y-2">
-            <Label>Permissões</Label>
-            <div className="grid grid-cols-2 gap-4">
-              {availablePermissions.map((permission) => (
-                <div key={permission.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={permission.id}
-                    checked={selectedPermissions.includes(permission.id)}
-                    onCheckedChange={() => onPermissionToggle(permission.id)}
-                  />
-                  <label
-                    htmlFor={permission.id}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {permission.label}
-                  </label>
-                </div>
-              ))}
+            <div className="space-y-4">
+              <Label>Permissões</Label>
+              <div className="grid grid-cols-2 gap-4">
+                {availablePermissions.map((permission) => (
+                  <div key={permission.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`edit-${permission.id}`}
+                      checked={selectedPermissions.includes(permission.id)}
+                      onCheckedChange={() => onPermissionToggle(permission.id)}
+                    />
+                    <label
+                      htmlFor={`edit-${permission.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      {permission.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="flex justify-end gap-4">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={onSavePermissions}>
-            Salvar Permissões
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar Alterações"
+            )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
