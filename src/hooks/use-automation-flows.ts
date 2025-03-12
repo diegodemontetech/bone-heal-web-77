@@ -1,180 +1,174 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
-import { Node, Edge } from 'reactflow';
-import { Json } from "@/integrations/supabase/types";
-import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 
-export interface AutomationFlow {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  name: string;
-  description: string;
-  is_active: boolean;
-  nodes: any[];
-  edges: any[];
-}
+import { useState, useCallback } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { AutomationFlow } from './use-automation-flow';
+import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 
 export const useAutomationFlows = () => {
   const [flows, setFlows] = useState<AutomationFlow[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { toast } = useToast();
 
-  const fetchFlows = async () => {
+  const fetchFlows = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase
-        .from("automation_flows")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Erro ao buscar fluxos de automação:", error);
-        setError(error);
-        toast({
-          title: "Erro ao buscar fluxos de automação",
-          description: "Ocorreu um erro ao carregar os fluxos de automação.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data) {
-        const processedFlows = data.map(flow => ({
-          ...flow,
-          nodes: parseJsonArray(flow.nodes, []),
-          edges: parseJsonArray(flow.edges, [])
-        }));
-        setFlows(processedFlows);
-      }
-    } catch (err: any) {
-      console.error("Erro inesperado ao buscar fluxos:", err);
-      setError(err);
-      toast({
-        title: "Erro inesperado",
-        description: "Ocorreu um erro inesperado ao carregar os fluxos.",
-        variant: "destructive",
-      });
+        .from('automation_flows')
+        .select('*')
+        .order('name', { ascending: true });
+        
+      if (error) throw error;
+      
+      // Converter dados JSON para objetos
+      const processedFlows = data.map(flow => ({
+        ...flow,
+        nodes: parseJsonArray(flow.nodes),
+        edges: parseJsonArray(flow.edges)
+      }));
+      
+      setFlows(processedFlows as AutomationFlow[]);
+    } catch (err) {
+      console.error("Erro ao buscar fluxos:", err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      toast.error("Falha ao carregar fluxos de automação");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchFlows();
   }, []);
 
-  const createFlow = async (flow: Omit<AutomationFlow, 'id' | 'created_at' | 'updated_at'>) => {
-    setIsLoading(true);
+  const createFlow = useCallback(async (name: string, description: string) => {
     try {
+      const newFlow = {
+        name,
+        description,
+        is_active: true,
+        nodes: [],
+        edges: []
+      };
+      
       const { data, error } = await supabase
-        .from("automation_flows")
-        .insert([flow])
-        .select();
-
-      if (error) {
-        console.error("Erro ao criar fluxo de automação:", error);
-        toast({
-          title: "Erro ao criar fluxo",
-          description: "Ocorreu um erro ao criar o fluxo de automação.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data && data.length > 0) {
-        setFlows((prev) => [...prev, data[0] as AutomationFlow]);
-        toast({
-          title: "Fluxo criado",
-          description: "Fluxo de automação criado com sucesso!",
-        });
-      }
-    } catch (err: any) {
+        .from('automation_flows')
+        .insert([newFlow])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setFlows(prev => [
+        {
+          ...data,
+          nodes: [],
+          edges: []
+        } as AutomationFlow,
+        ...prev
+      ]);
+      
+      toast.success("Fluxo criado com sucesso!");
+      return data;
+    } catch (err) {
       console.error("Erro ao criar fluxo:", err);
-      toast({
-        title: "Erro",
-        description: `Ocorreu um erro: ${err.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      toast.error("Falha ao criar fluxo de automação");
+      throw err;
     }
-  };
+  }, []);
 
-  const updateFlow = async (id: string, updates: Partial<AutomationFlow>) => {
-    setIsLoading(true);
+  const updateFlow = useCallback(async (id: string, updates: Partial<AutomationFlow>) => {
     try {
       const { data, error } = await supabase
-        .from("automation_flows")
+        .from('automation_flows')
         .update(updates)
-        .eq("id", id)
-        .select();
-
-      if (error) {
-        console.error("Erro ao atualizar fluxo de automação:", error);
-        toast({
-          title: "Erro ao atualizar fluxo",
-          description: "Ocorreu um erro ao atualizar o fluxo de automação.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setFlows((prev) =>
-        prev.map((flow) => (flow.id === id ? { ...flow, ...updates } : flow))
-      );
-      toast({
-        title: "Fluxo atualizado",
-        description: "Fluxo de automação atualizado com sucesso!",
-      });
-    } catch (err: any) {
+        .eq('id', id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setFlows(prev => prev.map(flow => 
+        flow.id === id ? { 
+          ...flow, 
+          ...data,
+          nodes: parseJsonArray(data.nodes, flow.nodes),
+          edges: parseJsonArray(data.edges, flow.edges)
+        } as AutomationFlow : flow
+      ));
+      
+      toast.success("Fluxo atualizado com sucesso!");
+      return data;
+    } catch (err) {
       console.error("Erro ao atualizar fluxo:", err);
-      toast({
-        title: "Erro",
-        description: `Ocorreu um erro: ${err.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      toast.error("Falha ao atualizar fluxo de automação");
+      throw err;
     }
-  };
+  }, []);
 
-  const deleteFlow = async (id: string) => {
-    setIsLoading(true);
+  const deleteFlow = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
-        .from("automation_flows")
+        .from('automation_flows')
         .delete()
-        .eq("id", id);
-
-      if (error) {
-        console.error("Erro ao excluir fluxo de automação:", error);
-        toast({
-          title: "Erro ao excluir fluxo",
-          description: "Ocorreu um erro ao excluir o fluxo de automação.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setFlows((prev) => prev.filter((flow) => flow.id !== id));
-      toast({
-        title: "Fluxo excluído",
-        description: "Fluxo de automação excluído com sucesso!",
-      });
-    } catch (err: any) {
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setFlows(prev => prev.filter(flow => flow.id !== id));
+      toast.success("Fluxo excluído com sucesso!");
+      return true;
+    } catch (err) {
       console.error("Erro ao excluir fluxo:", err);
-      toast({
-        title: "Erro",
-        description: `Ocorreu um erro: ${err.message}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      toast.error("Falha ao excluir fluxo de automação");
+      return false;
     }
-  };
+  }, []);
+
+  const duplicateFlow = useCallback(async (id: string) => {
+    try {
+      // Primeiro obter o fluxo a ser duplicado
+      const originalFlow = flows.find(f => f.id === id);
+      if (!originalFlow) {
+        throw new Error('Fluxo não encontrado');
+      }
+      
+      // Criar novo fluxo com os mesmos dados
+      const newFlow = {
+        name: `${originalFlow.name} (cópia)`,
+        description: originalFlow.description,
+        is_active: originalFlow.is_active,
+        nodes: originalFlow.nodes,
+        edges: originalFlow.edges
+      };
+      
+      const { data, error } = await supabase
+        .from('automation_flows')
+        .insert([newFlow])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      setFlows(prev => [
+        {
+          ...data,
+          nodes: parseJsonArray(data.nodes, originalFlow.nodes),
+          edges: parseJsonArray(data.edges, originalFlow.edges)
+        } as AutomationFlow,
+        ...prev
+      ]);
+      
+      toast.success("Fluxo duplicado com sucesso!");
+      return data;
+    } catch (err) {
+      console.error("Erro ao duplicar fluxo:", err);
+      toast.error("Falha ao duplicar fluxo de automação");
+      return null;
+    }
+  }, [flows]);
+
+  const toggleFlowStatus = useCallback(async (id: string, isActive: boolean) => {
+    return updateFlow(id, { is_active: !isActive });
+  }, [updateFlow]);
 
   return {
     flows,
@@ -184,5 +178,7 @@ export const useAutomationFlows = () => {
     createFlow,
     updateFlow,
     deleteFlow,
+    duplicateFlow,
+    toggleFlowStatus
   };
 };

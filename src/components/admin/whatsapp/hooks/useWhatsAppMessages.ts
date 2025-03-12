@@ -1,135 +1,108 @@
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth-context";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-// Interface para mensagens do WhatsApp
-export interface WhatsAppMessageType {
+export interface WhatsAppMessage {
   id: string;
-  created_at: string;
-  direction: string;
-  message: string;
   lead_id: string;
+  message: string;
+  sent_by: string;
+  direction: string;
   is_bot: boolean;
-  media_url?: string | null;
-  media_type?: string | null;
-  sender_id?: string | null;
-  instance_id?: string | null;
+  created_at: string;
+  media_type?: string;
+  media_url?: string;
+  instance_id?: string;
+  sender_id?: string;
 }
 
-export const useWhatsAppMessages = (leadId?: string) => {
-  const { profile } = useAuth();
-  const [messages, setMessages] = useState<WhatsAppMessageType[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+export const useWhatsAppMessages = (leadId: string | undefined) => {
+  const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Função para carregar mensagens
-  const fetchMessages = async () => {
-    if (!leadId) {
-      setMessages([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("whatsapp_messages")
-        .select("*")
-        .eq("lead_id", leadId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        throw error;
-      }
-
-      // Converte os dados para o tipo WhatsAppMessageType
-      setMessages(data as WhatsAppMessageType[]);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Erro desconhecido ao carregar mensagens"));
-      console.error("Erro ao carregar mensagens do WhatsApp:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Função para enviar mensagem
-  const sendMessage = async (message: string, media?: { url: string; type: string }) => {
-    if (!leadId || !profile) {
-      console.error("Não é possível enviar mensagem: leadId ou profile não definidos");
-      return false;
-    }
-
-    try {
-      const newMessage = {
-        lead_id: leadId,
-        message,
-        direction: "outgoing",
-        is_bot: false,
-        sender_id: profile.id,
-        media_url: media?.url,
-        media_type: media?.type
-      };
-
-      const { data, error } = await supabase
-        .from("whatsapp_messages")
-        .insert([newMessage])
-        .select();
-
-      if (error) throw error;
-
-      // Adiciona a nova mensagem à lista
-      if (data && data.length > 0) {
-        setMessages(prevMessages => [...prevMessages, data[0] as WhatsAppMessageType]);
-      }
-
-      // Aqui você pode adicionar lógica para enviar a mensagem pelo WhatsApp
-      // Usando uma função Edge do Supabase, por exemplo
-
-      return true;
-    } catch (err) {
-      console.error("Erro ao enviar mensagem:", err);
-      return false;
-    }
-  };
-
-  // Carregar mensagens iniciais
-  useEffect(() => {
-    fetchMessages();
-  }, [leadId]);
-
-  // Configurar subscription para atualização em tempo real
   useEffect(() => {
     if (!leadId) return;
-
+    
+    const fetchMessages = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('whatsapp_messages')
+          .select('*')
+          .eq('lead_id', leadId)
+          .order('created_at');
+          
+        if (error) throw error;
+        
+        // Mapear para garantir a tipagem correta
+        const typedMessages = data.map(msg => ({
+          ...msg,
+          sent_by: msg.direction === 'outbound' ? 'us' : 'them'
+        })) as WhatsAppMessage[];
+        
+        setMessages(typedMessages);
+      } catch (error) {
+        console.error("Erro ao buscar mensagens:", error);
+        toast.error("Falha ao carregar histórico de conversas");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMessages();
+    
+    // Configurar subscription para mensagens em tempo real
     const subscription = supabase
-      .channel(`lead-${leadId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT", 
-          schema: "public",
-          table: "whatsapp_messages",
-          filter: `lead_id=eq.${leadId}`
-        },
-        (payload) => {
-          // Tipando corretamente o payload
-          const newMessage = payload.new as WhatsAppMessageType;
-          setMessages(prevMessages => [...prevMessages, newMessage]);
-        }
-      )
+      .channel('whatsapp_messages_channel')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'whatsapp_messages',
+        filter: `lead_id=eq.${leadId}`
+      }, (payload) => {
+        const newMessage = {
+          ...payload.new,
+          sent_by: payload.new.direction === 'outbound' ? 'us' : 'them'
+        } as WhatsAppMessage;
+        
+        setMessages(prev => [...prev, newMessage]);
+      })
       .subscribe();
-
+      
     return () => {
-      supabase.removeChannel(subscription);
+      subscription.unsubscribe();
     };
   }, [leadId]);
+
+  const sendMessage = async (message: string, media?: { url: string, type: string }) => {
+    if (!leadId || !message.trim()) return false;
+    
+    try {
+      const { error } = await supabase
+        .from('whatsapp_messages')
+        .insert([{
+          lead_id: leadId,
+          message,
+          direction: 'outbound',
+          is_bot: false,
+          media_url: media?.url,
+          media_type: media?.type
+        }]);
+        
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      toast.error("Falha ao enviar mensagem");
+      return false;
+    }
+  };
 
   return {
     messages,
     loading,
-    error,
-    sendMessage,
-    refreshMessages: fetchMessages
+    sendMessage
   };
 };

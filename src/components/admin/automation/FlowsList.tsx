@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
-import { useAutomationFlows, Flow } from "@/hooks/use-automation-flows";
+import { useAutomationFlows } from "@/hooks/use-automation-flows";
+import { AutomationFlow } from "@/hooks/use-automation-flow";
 import FlowCreateForm from "./flows/FlowCreateForm";
 import NoFlowsMessage from "./flows/NoFlowsMessage";
 import FlowsTable from "./flows/FlowsTable";
@@ -16,7 +17,7 @@ const FlowsList = ({ onSelectFlow }: FlowsListProps) => {
   const [newFlowOpen, setNewFlowOpen] = useState(false);
   const {
     flows,
-    loading,
+    isLoading,
     createFlow,
     deleteFlow,
     duplicateFlow,
@@ -60,7 +61,7 @@ const FlowsList = ({ onSelectFlow }: FlowsListProps) => {
         </Dialog>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-8">Carregando fluxos...</div>
       ) : flows.length === 0 ? (
         <NoFlowsMessage onCreateNew={() => setNewFlowOpen(true)} />

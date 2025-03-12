@@ -1,140 +1,132 @@
+
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth-context";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Order } from "@/types/order";
-import { formatCurrency } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+import { OrderDetails } from "@/components/admin/order/OrderDetails";
+import OrdersHeader from "@/components/admin/orders/OrdersHeader";
+import OrdersTabs from "@/components/admin/orders/OrdersTabs";
+import OrdersLoading from "@/components/admin/orders/OrdersLoading";
 import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
+import { Order, OrderItem } from "@/types/order";
 
-const statusColors: { [key: string]: string } = {
-  pending: "bg-yellow-100 text-yellow-800",
-  processing: "bg-blue-100 text-blue-800",
-  shipped: "bg-sky-100 text-sky-800",
-  delivered: "bg-green-100 text-green-800",
-  canceled: "bg-red-100 text-red-800",
-  refunded: "bg-gray-100 text-gray-800",
-};
+const Orders = () => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState("kanban");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-export default function Orders() {
-  const { session, profile } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [date, setDate] = useState<Date | undefined>(undefined)
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (!session || !profile) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
+  // Buscar pedidos
+  const { data: ordersData, isLoading, error, refetch } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from("orders")
-          .select("*")
-          .eq("user_id", profile.id)
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              phone,
+              zip_code,
+              omie_code
+            )
+          `)
           .order("created_at", { ascending: false });
 
         if (error) {
           console.error("Erro ao buscar pedidos:", error);
-          setError("Erro ao buscar pedidos. Por favor, tente novamente.");
-          return;
+          throw error;
         }
-
-        if (data) {
-          setOrders(data as Order[]);
-        }
-      } catch (err: any) {
-        console.error("Erro inesperado ao buscar pedidos:", err);
-        setError("Erro inesperado ao buscar pedidos. Por favor, tente novamente.");
-      } finally {
-        setLoading(false);
+        
+        console.log("Pedidos carregados:", data);
+        return data || [];
+      } catch (err) {
+        console.error("Erro na consulta de pedidos:", err);
+        throw err;
       }
+    },
+  });
+
+  // Processar dados de pedidos
+  const orders: Order[] = (ordersData || []).map(order => {
+    // Processar os itens do pedido
+    const items = parseJsonArray<OrderItem>(order.items, []);
+    
+    // Processar informações de endereço
+    const profileData = parseJsonObject(order.profiles);
+    
+    return {
+      id: order.id,
+      user_id: order.user_id,
+      status: order.status,
+      total: order.total_price || 0,
+      subtotal: order.subtotal || 0,
+      shipping_cost: order.shipping_cost || 0,
+      payment_method: order.payment_method || '',
+      payment_status: order.payment_status || '',
+      items: items,
+      shipping_address: {
+        zip_code: profileData.zip_code || '',
+        city: profileData.city || '',
+        state: profileData.state || '',
+        address: profileData.address || ''
+      },
+      created_at: order.created_at
     };
+  });
 
-    fetchOrders();
-  }, [session, profile]);
+  // Exibir erros com toast
+  useEffect(() => {
+    if (error) {
+      toast.error("Erro ao carregar pedidos. Por favor, tente novamente.");
+      console.error("Erro detalhado:", error);
+    }
+  }, [error]);
 
-  if (loading) {
-    return <div className="text-center">Carregando seus pedidos...</div>;
-  }
+  // Mudar para a tab de criação quando clicar no botão
+  useEffect(() => {
+    if (isCreating) {
+      setActiveTab("create");
+    }
+  }, [isCreating]);
 
-  if (error) {
-    return <div className="text-center text-red-500">{error}</div>;
-  }
+  const handleViewOrder = (order: any) => {
+    setSelectedOrder(order);
+  };
 
-  if (!orders.length) {
-    return <div className="text-center">Nenhum pedido encontrado.</div>;
+  if (isLoading) {
+    return <OrdersLoading />;
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-2xl font-bold mb-4">Seus Pedidos</h1>
+    <div className="p-6">
+      <Card>
+        <CardContent className="p-6">
+          <OrdersHeader setIsCreating={setIsCreating} />
+          
+          <OrdersTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isCreating={isCreating}
+            setIsCreating={setIsCreating}
+            orders={orders}
+            error={error}
+            refetch={refetch}
+            onViewOrder={handleViewOrder}
+          />
+        </CardContent>
+      </Card>
 
-      <Table>
-        <TableCaption>Uma lista de seus pedidos recentes.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">Pedido #</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead>Itens</TableHead>
-            <TableHead>Valor Total</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Endereço de Entrega</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map((order) => {
-            const itemsArray = parseJsonArray(order.items, []);
-            const displayItems = itemsArray.map(item => {
-              return `${item.quantity}x ${item.name}`;
-            }).join(', ');
-
-            const shippingInfo = parseJsonObject(order.shipping_address, {});
-            const zipCode = shippingInfo.zip_code || '';
-            const city = shippingInfo.city || '';
-            const state = shippingInfo.state || '';
-            const address = shippingInfo.address || '';
-
-            return (
-              <TableRow key={order.id}>
-                <TableCell className="font-medium">{order.id.substring(0, 8)}</TableCell>
-                <TableCell>
-                  {new Date(order.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>{displayItems}</TableCell>
-                <TableCell>{formatCurrency(order.total_amount)}</TableCell>
-                <TableCell>
-                  <Badge className={statusColors[order.status]}>
-                    {order.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {address}, {city} - {state}, {zipCode}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+      {selectedOrder && (
+        <OrderDetails
+          order={selectedOrder}
+          isOpen={!!selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
-}
+};
+
+export default Orders;
