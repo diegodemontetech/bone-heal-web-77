@@ -30,4 +30,10 @@ export interface UseShippingRatesReturn {
   exportRates: () => void;
   insertShippingRates: (rates: any[]) => Promise<boolean>;
   shippingOptions: ShippingCalculationRate[];
+  // Propriedades para compatibilidade
+  shippingRates: any[];
+  selectedShippingRate: any;
+  calculateShipping: () => void;
+  handleShippingRateChange: () => void;
+  resetShipping: () => void;
 }
