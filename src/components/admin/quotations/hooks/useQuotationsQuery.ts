@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 // Interface para os dados do cliente com tipagem melhorada
 export interface CustomerProfile {
@@ -77,69 +78,26 @@ export const useQuotationsQuery = () => {
             : quotation.customer;
           
           // Garantir que items seja um array e processar cada item corretamente
-          let items: QuotationItem[] = [];
-          
-          // Processar o campo items que pode ser um JSON string ou um array
-          if (quotation.items) {
-            if (typeof quotation.items === 'string') {
+          const parsedItems = parseJsonArray<any>(quotation.items, []);
+          const items = parsedItems.map(item => {
+            // Se o item for um objeto ou uma string JSON, processá-lo corretamente
+            if (typeof item === 'string') {
               try {
-                const parsedItems = JSON.parse(quotation.items);
-                if (Array.isArray(parsedItems)) {
-                  items = parsedItems.map(item => ({
-                    product_id: String(item.product_id || ''),
-                    product_name: String(item.product_name || ''),
-                    quantity: Number(item.quantity || 0),
-                    unit_price: Number(item.unit_price || 0),
-                    total_price: Number(item.total_price || 0)
-                  }));
-                }
+                item = JSON.parse(item);
               } catch (e) {
-                console.error("Erro ao parsear items:", e);
+                console.error("Erro ao parsear item como string JSON:", e);
+                item = {};
               }
-            } else if (Array.isArray(quotation.items)) {
-              items = quotation.items.map(item => {
-                if (typeof item === 'string') {
-                  try {
-                    const parsedItem = JSON.parse(item);
-                    return {
-                      product_id: String(parsedItem.product_id || ''),
-                      product_name: String(parsedItem.product_name || ''),
-                      quantity: Number(parsedItem.quantity || 0),
-                      unit_price: Number(parsedItem.unit_price || 0),
-                      total_price: Number(parsedItem.total_price || 0)
-                    };
-                  } catch (e) {
-                    console.error("Erro ao parsear item individual:", e);
-                    return {
-                      product_id: '',
-                      product_name: '',
-                      quantity: 0,
-                      unit_price: 0,
-                      total_price: 0
-                    };
-                  }
-                } else {
-                  return {
-                    product_id: String(item.product_id || ''),
-                    product_name: String(item.product_name || ''),
-                    quantity: Number(item.quantity || 0),
-                    unit_price: Number(item.unit_price || 0),
-                    total_price: Number(item.total_price || 0)
-                  };
-                }
-              });
-            } else if (typeof quotation.items === 'object') {
-              // Se for um objeto, converter para array com um único item
-              const item = quotation.items;
-              items = [{
-                product_id: String(item.product_id || ''),
-                product_name: String(item.product_name || ''),
-                quantity: Number(item.quantity || 0),
-                unit_price: Number(item.unit_price || 0),
-                total_price: Number(item.total_price || 0)
-              }];
             }
-          }
+            
+            return {
+              product_id: String(item?.product_id || ''),
+              product_name: String(item?.product_name || ''),
+              quantity: Number(item?.quantity || 0),
+              unit_price: Number(item?.unit_price || 0),
+              total_price: Number(item?.total_price || 0)
+            };
+          });
           
           // Converter valores numéricos corretamente
           const total_amount = typeof quotation.total_amount === 'number' 

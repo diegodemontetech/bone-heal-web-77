@@ -1,163 +1,88 @@
-
-import { useState, useCallback } from "react";
-import {
-  Connection,
-  Edge,
-  Node,
-  ReactFlowInstance,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-} from "reactflow";
-import { useToast } from "@/components/ui/use-toast";
+import { useState, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Node, Edge, useNodesState, useEdgesState, XYPosition } from 'reactflow';
+import { Json } from '@/integrations/supabase/types';
+import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 
-export const useAutomationFlow = (flowId: string | null) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
-  const [flowName, setFlowName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const { toast } = useToast();
+export interface AutomationFlow {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  nodes: Node[];
+  edges: Edge[];
+  created_at: string;
+  updated_at: string;
+}
 
-  const fetchFlowData = useCallback(async () => {
-    if (!flowId) return;
+export const useAutomationFlow = (flowId: string) => {
+  const [nodes, setNodes, onNodesChange] = useNodesState<any>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
 
-    setIsLoading(true);
-    try {
+  const queryClient = useQueryClient();
+
+  const { data: flowData, isLoading, error } = useQuery({
+    queryKey: ['automationFlow', flowId],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("automation_flows")
-        .select("*")
-        .eq("id", flowId)
+        .from('automation_flows')
+        .select('*')
+        .eq('id', flowId)
         .single();
 
-      if (error) throw error;
-
-      if (data) {
-        setFlowName(data.name);
-        setNodes(data.nodes || []);
-        setEdges(data.edges || []);
+      if (error) {
+        throw new Error(error.message);
       }
-    } catch (error) {
-      console.error("Erro ao carregar fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar o fluxo de trabalho",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [flowId, toast]);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
-    [setEdges]
-  );
-
-  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const onDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-
-      if (!reactFlowInstance) return;
-
-      const reactFlowBounds = event.currentTarget.getBoundingClientRect();
-      const nodeData = JSON.parse(event.dataTransfer.getData('application/reactflow'));
-
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-
-      const newNode = {
-        id: `${nodeData.type}_${Date.now()}`,
-        type: nodeData.nodeType,
-        position,
-        data: { 
-          label: nodeData.label, 
-          action: nodeData.action,
-          service: nodeData.service,
-          icon: nodeData.icon
-        },
-      };
-
-      setNodes((nds) => nds.concat(newNode));
+      return data;
     },
-    [reactFlowInstance, setNodes]
+    onSuccess: (flow) => {
+      setNodes(flow.nodes ? parseJsonArray(flow.nodes, []) : []);
+      setEdges(flow.edges ? parseJsonArray(flow.edges, []) : []);
+    },
+  });
+
+  const upsertFlowMutation = useMutation(
+    async (flow: Partial<AutomationFlow>) => {
+      const { data, error } = await supabase
+        .from('automation_flows')
+        .upsert({ ...flow, id: flowId }, { onConflict: 'id' })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data;
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['automationFlow', flowId]);
+      },
+    }
   );
 
-  const saveFlow = async () => {
-    if (!flowId) return;
-
-    setIsSaving(true);
-    try {
-      const { error } = await supabase
-        .from("automation_flows")
-        .update({
-          nodes,
-          edges,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", flowId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Fluxo de trabalho salvo com sucesso",
-      });
-    } catch (error) {
-      console.error("Erro ao salvar fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o fluxo de trabalho",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const executeFlow = async () => {
-    if (!flowId) return;
-
-    try {
-      toast({
-        title: "Executando fluxo",
-        description: "O fluxo foi iniciado. Acompanhe o progresso nos logs.",
-      });
-    } catch (error) {
-      console.error("Erro ao executar fluxo:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível executar o fluxo de trabalho",
-        variant: "destructive",
-      });
-    }
-  };
+  const onSave = useCallback(async (flowData: Partial<AutomationFlow>) => {
+    const updatedFlow = {
+      ...flowData,
+      nodes: JSON.stringify(nodes),
+      edges: JSON.stringify(edges)
+    };
+    upsertFlowMutation.mutate(updatedFlow);
+  }, [nodes, edges, upsertFlowMutation]);
 
   return {
     nodes,
+    setNodes,
     edges,
-    flowName,
-    isLoading,
-    isSaving,
-    reactFlowInstance,
+    setEdges,
     onNodesChange,
     onEdgesChange,
-    onConnect,
-    onDragOver,
-    onDrop,
-    setReactFlowInstance,
-    fetchFlowData,
-    saveFlow,
-    executeFlow,
-    setFlowName,
+    flowData,
+    isLoading,
+    error,
+    onSave,
   };
 };

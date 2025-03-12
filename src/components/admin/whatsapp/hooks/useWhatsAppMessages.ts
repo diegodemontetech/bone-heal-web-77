@@ -57,7 +57,7 @@ export const useWhatsAppMessages = (leadId?: string) => {
   const sendMessage = async (message: string, media?: { url: string; type: string }) => {
     if (!leadId || !profile) {
       console.error("Não é possível enviar mensagem: leadId ou profile não definidos");
-      return;
+      return false;
     }
 
     try {

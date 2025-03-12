@@ -1,155 +1,280 @@
-
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-
-const formSchema = z.object({
-  name: z.string().min(2, "Nome muito curto"),
-  event_type: z.string().min(2, "Tipo de evento muito curto"),
-  subject: z.string().min(2, "Assunto muito curto"),
-  body: z.string().min(10, "Corpo do email muito curto"),
-  variables: z.string().optional(),
-});
+import { Loader2 } from "lucide-react";
+import { EmailTemplate } from "@/types/email";
 
 interface EmailTemplateFormProps {
-  template?: any;
-  onSuccess: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+  template?: EmailTemplate;
+  onSuccess?: () => void;
 }
 
-export const EmailTemplateForm = ({ template, onSuccess }: EmailTemplateFormProps) => {
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: template ? {
-      name: template.name,
-      event_type: template.event_type,
-      subject: template.subject,
-      body: template.body,
-      variables: template.variables ? JSON.stringify(template.variables) : "[]",
-    } : {
-      variables: "[]",
-    },
+const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
+  isOpen,
+  onClose,
+  template,
+  onSuccess,
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [templateData, setTemplateData] = useState<Partial<EmailTemplate>>({
+    name: "",
+    subject: "",
+    body: "",
+    event_type: "order_created",
+    variables: [],
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      const templateData = {
-        ...values,
-        variables: JSON.parse(values.variables || "[]"),
-      };
+  useEffect(() => {
+    if (template) {
+      setTemplateData({
+        name: template.name,
+        subject: template.subject,
+        body: template.body,
+        event_type: template.event_type,
+        variables: template.variables || [],
+      });
+    } else {
+      setTemplateData({
+        name: "",
+        subject: "",
+        body: "",
+        event_type: "order_created",
+        variables: [],
+      });
+    }
+  }, [template, isOpen]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
       if (template?.id) {
+        // Update existing template
         const { error } = await supabase
           .from("email_templates")
-          .update(templateData)
+          .update({
+            name: templateData.name || 'Novo template', 
+            body: templateData.body || 'Conteúdo do template',
+            subject: templateData.subject || 'Assunto do template', 
+            event_type: templateData.event_type || 'generic',
+            variables: templateData.variables || []
+          })
           .eq("id", template.id);
 
         if (error) throw error;
         toast.success("Template atualizado com sucesso!");
       } else {
-        const { error } = await supabase
-          .from("email_templates")
-          .insert([templateData]);
+        // Create new template
+        const { error } = await supabase.from('email_templates').insert({
+          name: templateData.name || 'Novo template', 
+          body: templateData.body || 'Conteúdo do template',
+          subject: templateData.subject || 'Assunto do template', 
+          event_type: templateData.event_type || 'generic',
+          variables: templateData.variables || []
+        });
 
         if (error) throw error;
         toast.success("Template criado com sucesso!");
       }
 
-      onSuccess();
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("Erro ao salvar template:", error);
+      toast.error(`Erro ao salvar template: ${error.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setTemplateData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setTemplateData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddVariable = () => {
+    setTemplateData((prev) => ({
+      ...prev,
+      variables: [...(prev.variables || []), { name: "", description: "" }],
+    }));
+  };
+
+  const handleVariableChange = (
+    index: number,
+    field: string,
+    value: string
+  ) => {
+    setTemplateData((prev) => {
+      const variables = [...(prev.variables || [])];
+      variables[index] = { ...variables[index], [field]: value };
+      return { ...prev, variables };
+    });
+  };
+
+  const handleRemoveVariable = (index: number) => {
+    setTemplateData((prev) => {
+      const variables = [...(prev.variables || [])];
+      variables.splice(index, 1);
+      return { ...prev, variables };
+    });
+  };
+
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome do Template</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>
+            {template ? "Editar Template" : "Novo Template"}
+          </DialogTitle>
+        </DialogHeader>
 
-        <FormField
-          control={form.control}
-          name="event_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de Evento</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome do Template</Label>
+            <Input
+              id="name"
+              name="name"
+              value={templateData.name || ""}
+              onChange={handleChange}
+              placeholder="Ex: Confirmação de Pedido"
+              required
+            />
+          </div>
 
-        <FormField
-          control={form.control}
-          name="subject"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assunto</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <div className="space-y-2">
+            <Label htmlFor="event_type">Tipo de Evento</Label>
+            <Select
+              value={templateData.event_type}
+              onValueChange={(value) =>
+                handleSelectChange("event_type", value)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de evento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="order_created">Pedido Criado</SelectItem>
+                <SelectItem value="order_paid">Pagamento Confirmado</SelectItem>
+                <SelectItem value="order_shipped">Pedido Enviado</SelectItem>
+                <SelectItem value="order_delivered">Pedido Entregue</SelectItem>
+                <SelectItem value="order_canceled">Pedido Cancelado</SelectItem>
+                <SelectItem value="welcome">Boas-vindas</SelectItem>
+                <SelectItem value="password_reset">Redefinição de Senha</SelectItem>
+                <SelectItem value="custom">Personalizado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <FormField
-          control={form.control}
-          name="body"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Corpo do Email (HTML)</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={10} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <div className="space-y-2">
+            <Label htmlFor="subject">Assunto do Email</Label>
+            <Input
+              id="subject"
+              name="subject"
+              value={templateData.subject || ""}
+              onChange={handleChange}
+              placeholder="Ex: Seu pedido foi confirmado"
+              required
+            />
+          </div>
 
-        <FormField
-          control={form.control}
-          name="variables"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Variáveis (JSON Array)</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder='["nome", "email"]' />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <div className="space-y-2">
+            <Label htmlFor="body">Conteúdo do Email</Label>
+            <Textarea
+              id="body"
+              name="body"
+              value={templateData.body || ""}
+              onChange={handleChange}
+              placeholder="Conteúdo do email com marcadores HTML..."
+              rows={10}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Você pode usar HTML e variáveis como {"{nome}"}, {"{pedido_id}"},
+              etc.
+            </p>
+          </div>
 
-        <Button type="submit">
-          {template ? "Atualizar" : "Criar"} Template
-        </Button>
-      </form>
-    </Form>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Variáveis Disponíveis</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddVariable}
+              >
+                Adicionar Variável
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {templateData.variables?.map((variable, index) => (
+                <div
+                  key={index}
+                  className="flex items-center space-x-2 border p-2 rounded-md"
+                >
+                  <Input
+                    value={variable.name || ""}
+                    onChange={(e) =>
+                      handleVariableChange(index, "name", e.target.value)
+                    }
+                    placeholder="Nome da variável"
+                    className="flex-1"
+                  />
+                  <Input
+                    value={variable.description || ""}
+                    onChange={(e) =>
+                      handleVariableChange(index, "description", e.target.value)
+                    }
+                    placeholder="Descrição"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleRemoveVariable(index)}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {template ? "Atualizar" : "Criar"} Template
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
+
+export default EmailTemplateForm;

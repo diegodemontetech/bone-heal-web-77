@@ -1,183 +1,140 @@
-
-import { useSession } from "@supabase/auth-helpers-react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth-context";
 import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
-import { Loader2, Truck, Package, CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Order } from "@/types/order";
+import { formatCurrency } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Calendar } from "@/components/ui/calendar"
+import { CalendarIcon } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { Button } from "@/components/ui/button";
+import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
 
-const statusIcons: Record<string, any> = {
-  novo: Package,
-  aguardando_pagamento: CreditCard,
-  pago: CheckCircle2,
-  faturando: Package,
-  faturado: Package,
-  separacao: Package,
-  aguardando_envio: Package,
-  enviado: Truck,
-  entregue: CheckCircle2,
-  cancelado: AlertCircle,
+const statusColors: { [key: string]: string } = {
+  pending: "bg-yellow-100 text-yellow-800",
+  processing: "bg-blue-100 text-blue-800",
+  shipped: "bg-sky-100 text-sky-800",
+  delivered: "bg-green-100 text-green-800",
+  canceled: "bg-red-100 text-red-800",
+  refunded: "bg-gray-100 text-gray-800",
 };
 
-const statusLabels: Record<string, string> = {
-  novo: "Pedido Recebido",
-  aguardando_pagamento: "Aguardando Pagamento",
-  pago: "Pagamento Confirmado",
-  faturando: "Preparando Pedido",
-  faturado: "Pedido Faturado",
-  separacao: "Em Separação",
-  aguardando_envio: "Pronto para Envio",
-  enviado: "Em Transporte",
-  entregue: "Entregue",
-  cancelado: "Cancelado",
-};
+export default function Orders() {
+  const { session, profile } = useAuth();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [date, setDate] = useState<Date | undefined>(undefined)
 
-const Orders = () => {
-  const session = useSession();
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!session || !profile) {
+        setLoading(false);
+        return;
+      }
 
-  const { data: orders, isLoading } = useQuery({
-    queryKey: ["orders", session?.user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*, payments(*)")
-        .eq("user_id", session?.user?.id)
-        .order("created_at", { ascending: false });
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("orders")
+          .select("*")
+          .eq("user_id", profile.id)
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!session?.user?.id,
-  });
+        if (error) {
+          console.error("Erro ao buscar pedidos:", error);
+          setError("Erro ao buscar pedidos. Por favor, tente novamente.");
+          return;
+        }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold mb-8">Meus Pedidos</h1>
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        </div>
-      </div>
-    );
+        if (data) {
+          setOrders(data as Order[]);
+        }
+      } catch (err: any) {
+        console.error("Erro inesperado ao buscar pedidos:", err);
+        setError("Erro inesperado ao buscar pedidos. Por favor, tente novamente.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [session, profile]);
+
+  if (loading) {
+    return <div className="text-center">Carregando seus pedidos...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500">{error}</div>;
+  }
+
+  if (!orders.length) {
+    return <div className="text-center">Nenhum pedido encontrado.</div>;
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Meus Pedidos</h1>
-        {orders && orders.length > 0 ? (
-          <div className="grid gap-6">
-            {orders.map((order) => {
-              const StatusIcon = statusIcons[order.omie_status || "novo"] || Package;
-              
-              return (
-                <Card key={order.id} className="overflow-hidden">
-                  <CardHeader className="bg-gray-50">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-gray-500">
-                          Pedido realizado em {format(new Date(order.created_at), "dd/MM/yyyy")}
-                        </p>
-                        <CardTitle className="text-lg mt-1">
-                          Pedido #{order.id.slice(0, 8)}
-                        </CardTitle>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">Total do pedido:</p>
-                        <p className="text-lg font-bold text-primary">
-                          {new Intl.NumberFormat("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(order.total_amount)}
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <StatusIcon className="w-6 h-6 text-primary" />
-                      <div>
-                        <p className="font-medium">
-                          {statusLabels[order.omie_status || "novo"]}
-                        </p>
-                        {order.omie_status === "enviado" && (
-                          <p className="text-sm text-gray-500 mt-1">
-                            Previsão de entrega em até 5 dias úteis
-                          </p>
-                        )}
-                      </div>
-                    </div>
+    <div className="container mx-auto py-8">
+      <h1 className="text-2xl font-bold mb-4">Seus Pedidos</h1>
 
-                    <div className="space-y-4">
-                      {/* Produtos do pedido */}
-                      <div className="border rounded-lg p-4">
-                        <h3 className="font-medium mb-3">Produtos</h3>
-                        <div className="space-y-3">
-                          {order.items.map((item: any, index: number) => (
-                            <div key={index} className="flex justify-between items-center">
-                              <div>
-                                <p className="font-medium">{item.quantity}x {item.name || "Produto"}</p>
-                              </div>
-                              <p className="text-gray-600">
-                                {new Intl.NumberFormat("pt-BR", {
-                                  style: "currency",
-                                  currency: "BRL",
-                                }).format(item.price * item.quantity)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+      <Table>
+        <TableCaption>Uma lista de seus pedidos recentes.</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[100px]">Pedido #</TableHead>
+            <TableHead>Data</TableHead>
+            <TableHead>Itens</TableHead>
+            <TableHead>Valor Total</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Endereço de Entrega</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orders.map((order) => {
+            const itemsArray = parseJsonArray(order.items, []);
+            const displayItems = itemsArray.map(item => {
+              return `${item.quantity}x ${item.name}`;
+            }).join(', ');
 
-                      {/* Informações de entrega */}
-                      <div className="border rounded-lg p-4">
-                        <h3 className="font-medium mb-3">Entrega</h3>
-                        <p className="text-gray-600">
-                          CEP: {order.shipping_address?.zip_code}
-                        </p>
-                        <p className="text-gray-600 mt-2">
-                          Frete: {new Intl.NumberFormat("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(order.shipping_fee)}
-                        </p>
-                      </div>
+            const shippingInfo = parseJsonObject(order.shipping_address, {});
+            const zipCode = shippingInfo.zip_code || '';
+            const city = shippingInfo.city || '';
+            const state = shippingInfo.state || '';
+            const address = shippingInfo.address || '';
 
-                      {/* Status do pagamento */}
-                      <div className="border rounded-lg p-4">
-                        <h3 className="font-medium mb-3">Pagamento</h3>
-                        <div className="flex items-center space-x-2">
-                          <CreditCard className="w-4 h-4 text-gray-500" />
-                          <p className="text-gray-600">
-                            {order.payment_method === "credit" ? "Cartão de Crédito" : "PIX"}
-                          </p>
-                        </div>
-                        <p className="text-gray-600 mt-2">
-                          Status: {order.payments?.[0]?.status === "paid" ? "Pago" : "Pendente"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-gray-500">Você ainda não tem pedidos.</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            return (
+              <TableRow key={order.id}>
+                <TableCell className="font-medium">{order.id.substring(0, 8)}</TableCell>
+                <TableCell>
+                  {new Date(order.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell>{displayItems}</TableCell>
+                <TableCell>{formatCurrency(order.total_amount)}</TableCell>
+                <TableCell>
+                  <Badge className={statusColors[order.status]}>
+                    {order.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {address}, {city} - {state}, {zipCode}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
-};
-
-export default Orders;
+}

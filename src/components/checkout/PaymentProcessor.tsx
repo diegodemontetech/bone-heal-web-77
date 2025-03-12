@@ -1,139 +1,130 @@
-
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCart } from "@/hooks/use-cart";
+import { useAuth } from "@/hooks/use-auth-context";
+import { formatCurrency } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import { useRouter } from 'next/navigation';
+import { stringifyForSupabase } from "@/utils/supabaseJsonUtils";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { UserProfile } from "@/types/auth";
-import { CartItem } from "@/hooks/use-cart";
 
 interface PaymentProcessorProps {
-  cartItems: CartItem[];
-  total: number;
-  profile: UserProfile | null;
-  shippingInfo: {
-    zipCode?: string;
-    cost?: number;
-  } | null;
-  paymentMethod: string;
-  setPixCode: (code: string) => void;
-  setPixQrCodeImage: (image: string) => void;
-  setOrderId: (id: string) => void;
+  shippingCost: number;
+  voucherDiscount: number;
+  voucherId: string | null;
 }
 
-export const usePaymentProcessor = ({
-  cartItems,
-  total,
-  profile,
-  shippingInfo,
-  paymentMethod,
-  setPixCode,
-  setPixQrCodeImage,
-  setOrderId
-}: PaymentProcessorProps) => {
-  const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
+const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ shippingCost, voucherDiscount, voucherId }) => {
+  const [installments, setInstallments] = useState<number>(1);
+  const [processing, setProcessing] = useState<boolean>(false);
+  const { cart, getTotalPrice, clearCart } = useCart();
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
 
-  const processPayment = async () => {
-    if (isProcessing) return;
-    
-    setIsProcessing(true);
+  const totalPrice = getTotalPrice();
+  const totalWithShipping = totalPrice + shippingCost - voucherDiscount;
+
+  const handlePayment = async () => {
+    if (!profile) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para finalizar a compra.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessing(true);
+
     try {
-      // Criar um ID de pedido único
-      const orderId = crypto.randomUUID();
-      setOrderId(orderId);
-      
-      // Preparar os itens para o MercadoPago
-      const orderItems = cartItems.map(item => ({
-        title: String(item.name || '').substring(0, 256),
-        quantity: item.quantity,
-        price: item.price
-      }));
-
-      // Obter informações do comprador
-      const buyerInfo = {
-        name: profile?.full_name || '',
-        email: profile?.email || ''
-      };
-
-      console.log("Dados para processamento:", {
-        orderId,
-        items: orderItems,
-        shipping_cost: shippingInfo?.cost || 0,
-        buyer: buyerInfo,
-        paymentType: 'standard' // Forçando checkout padrão do MercadoPago
-      });
-
-      // Chamar a Edge Function do MercadoPago
-      const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
-        body: {
-          orderId,
-          items: orderItems,
-          shipping_cost: shippingInfo?.cost || 0,
-          buyer: buyerInfo,
-          paymentType: 'standard' // Forçando checkout padrão do MercadoPago
-        }
-      });
+      // Criar pedido no Supabase
+      const { data, error } = await supabase.from('orders').insert({
+        customer_id: profile.id,
+        total_amount: totalWithShipping,
+        shipping_cost: shippingCost,
+        discount: voucherDiscount,
+        installments: installments,
+        items: stringifyForSupabase(cart.items),
+        voucher_id: voucherId,
+      }).select().single();
 
       if (error) {
-        console.error("Erro da Edge Function:", error);
-        throw new Error(`Erro ao processar pagamento: ${error.message}`);
+        console.error("Erro ao criar pedido:", error);
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao criar o pedido. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      console.log("Resposta do MercadoPago:", data);
-
-      // Registrar o pedido e pagamento no banco de dados
-      await createOrderRecord(orderId, data);
-
-      // Redirecionar para checkout do MercadoPago
-      if (data?.init_point) {
-        window.location.href = data.init_point;
-      } else {
-        toast.error("Não foi possível processar o pagamento. Tente novamente.");
-      }
-
-    } catch (error: any) {
-      console.error("Erro ao processar pagamento:", error);
-      toast.error(error.message || "Erro ao processar o pagamento. Tente novamente.");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Função para registrar o pedido no banco de dados
-  const createOrderRecord = async (orderId: string, paymentData: any) => {
-    try {
-      // Criar registro de pedido
-      const { error: orderError } = await supabase.from('orders').insert({
-        id: orderId,
-        user_id: profile?.id,
-        status: 'pending',
-        items: cartItems,
-        shipping_address: {
-          zip_code: shippingInfo?.zipCode || ''
-        },
-        shipping_fee: shippingInfo?.cost || 0,
-        total_amount: total + (shippingInfo?.cost || 0)
+      toast({
+        title: "Sucesso",
+        description: "Pedido criado com sucesso!",
       });
 
-      if (orderError) throw orderError;
-
-      // Criar registro de pagamento
-      const { error: paymentError } = await supabase.from('payments').insert({
-        order_id: orderId,
-        user_id: profile?.id,
-        amount: total + (shippingInfo?.cost || 0),
-        status: 'pending',
-        payment_method: 'mercadopago',
-        preference_id: paymentData.id
-      });
-
-      if (paymentError) throw paymentError;
-
+      clearCart();
+      router.push('/orders');
     } catch (error) {
-      console.error("Erro ao salvar pedido:", error);
-      // Não interrompe o fluxo, apenas loga o erro
+      console.error("Erro ao processar pagamento:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
     }
   };
 
-  return { processPayment, isProcessing };
+  return (
+    <Card className="w-full">
+      <CardContent className="grid gap-4">
+        <h2 className="text-lg font-semibold">Resumo do Pedido</h2>
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>{formatCurrency(totalPrice)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Frete:</span>
+          <span>{formatCurrency(shippingCost)}</span>
+        </div>
+        {voucherDiscount > 0 && (
+          <div className="flex justify-between">
+            <span>Desconto:</span>
+            <span>-{formatCurrency(voucherDiscount)}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-semibold">
+          <span>Total:</span>
+          <span>{formatCurrency(totalWithShipping)}</span>
+        </div>
+
+        <div>
+          <Label htmlFor="installments">Parcelas</Label>
+          <Select value={installments.toString()} onValueChange={(value) => setInstallments(parseInt(value))}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">1x à vista</SelectItem>
+              <SelectItem value="2">2x sem juros</SelectItem>
+              <SelectItem value="3">3x sem juros</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Button onClick={handlePayment} disabled={processing}>
+          {processing ? "Processando..." : "Finalizar Pedido"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 };
+
+export default PaymentProcessor;

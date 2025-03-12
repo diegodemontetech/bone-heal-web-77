@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 export const useShareWhatsApp = () => {
   const [isSharing, setIsSharing] = useState(false);
@@ -25,29 +26,16 @@ export const useShareWhatsApp = () => {
       const quotationViewUrl = `${window.location.origin}/quotations/view/${quotationId}`;
       
       // Criar uma mensagem para o WhatsApp
-      let customerInfo = {};
+      const customerInfo = parseJsonObject(quotation.customer_info, {});
       
-      if (quotation.customer_info) {
-        if (typeof quotation.customer_info === 'string') {
-          try {
-            customerInfo = JSON.parse(quotation.customer_info);
-          } catch (e) {
-            console.error("Erro ao fazer parse do customer_info:", e);
-            customerInfo = {};
-          }
-        } else {
-          customerInfo = quotation.customer_info;
-        }
-      }
-      
-      const customerName = (customerInfo as any).name || "Cliente";
+      const customerName = customerInfo.name || "Cliente";
       const message = `Olá ${customerName}, segue o orçamento solicitado no valor de ${formatCurrency(quotation.total_amount)}. Você pode visualizá-lo pelo link: ${quotationViewUrl}`;
       
       // Codificar a mensagem para URL
       const encodedMessage = encodeURIComponent(message);
       
       // Buscar número de telefone do cliente ou usar um padrão
-      const phone = (customerInfo as any).phone?.replace(/\D/g, '') || "";
+      const phone = customerInfo.phone?.replace(/\D/g, '') || "";
       
       // Criar URL do WhatsApp
       const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;

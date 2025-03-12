@@ -7,11 +7,18 @@ import EmptyChat from './chat/EmptyChat';
 
 interface WhatsAppChatProps {
   selectedLead: any;
-  onMessageSent: () => void;
+  onMessageSent?: () => void;
 }
 
 const WhatsAppChat = ({ selectedLead, onMessageSent }: WhatsAppChatProps) => {
-  const { messages, loading, sendMessage } = useWhatsAppMessages(selectedLead, onMessageSent);
+  const { messages, loading, sendMessage } = useWhatsAppMessages(selectedLead?.id);
+
+  const handleSendMessage = async (message: string) => {
+    await sendMessage(message);
+    if (onMessageSent) {
+      onMessageSent();
+    }
+  };
 
   if (!selectedLead) {
     return <EmptyChat />;
@@ -25,7 +32,7 @@ const WhatsAppChat = ({ selectedLead, onMessageSent }: WhatsAppChatProps) => {
         <MessagesList messages={messages} loading={loading} />
       </div>
       
-      <MessageInput onSendMessage={sendMessage} />
+      <MessageInput onSendMessage={handleSendMessage} />
     </div>
   );
 };

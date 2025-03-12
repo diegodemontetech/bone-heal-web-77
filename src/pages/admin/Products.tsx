@@ -1,8 +1,8 @@
-
 import { useAdminProducts } from "@/hooks/use-admin-products";
 import ProductForm from "@/components/admin/ProductForm";
 import ProductsTable from "@/components/admin/products/ProductsTable";
 import ProductsActions from "@/components/admin/products/ProductsActions";
+import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 const AdminProducts = () => {
   const {
@@ -20,6 +20,11 @@ const AdminProducts = () => {
     handleFormSuccess
   } = useAdminProducts();
 
+  const processedProducts = products.map(product => ({
+    ...product,
+    technical_details: parseJsonObject(product.technical_details, {})
+  }));
+
   return (
     <div className="p-8">
       <ProductsActions 
@@ -29,7 +34,7 @@ const AdminProducts = () => {
       />
 
       <ProductsTable
-        products={products}
+        products={processedProducts}
         isLoading={isLoading}
         error={error}
         onEdit={openProductForm}

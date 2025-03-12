@@ -14,6 +14,7 @@ import {
   addFooter
 } from "./pdf/sections";
 import type { QuotationData, EnhancedItem } from "./pdf/types";
+import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 export const usePdfGenerator = () => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -51,33 +52,11 @@ export const usePdfGenerator = () => {
     if (!quotation) throw new Error("Orçamento não encontrado");
 
     // Processar o campo items, garantindo que seja um array
-    let processedItems = [];
-    if (quotation.items) {
-      if (typeof quotation.items === 'string') {
-        try {
-          processedItems = JSON.parse(quotation.items);
-        } catch (e) {
-          console.error("Erro ao parsear items no PDF:", e);
-          processedItems = [];
-        }
-      } else if (Array.isArray(quotation.items)) {
-        processedItems = quotation.items;
-      }
-    }
+    const processedItems = parseJsonArray(quotation.items, []);
 
     // Processar shipping_info, garantindo que seja um objeto
-    let shippingInfo = { cost: 0 };
-    if (quotation.shipping_info) {
-      if (typeof quotation.shipping_info === 'string') {
-        try {
-          shippingInfo = JSON.parse(quotation.shipping_info);
-        } catch (e) {
-          console.error("Erro ao parsear shipping_info:", e);
-        }
-      } else {
-        shippingInfo = quotation.shipping_info;
-      }
-    }
+    const defaultShippingInfo = { cost: 0 };
+    const shippingInfo = parseJsonObject(quotation.shipping_info, defaultShippingInfo);
 
     return {
       ...quotation,

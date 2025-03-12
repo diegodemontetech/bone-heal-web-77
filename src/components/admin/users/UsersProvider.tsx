@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useState,
@@ -9,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UserData, NewUser, UsersContextType } from "./types";
 import { UserRole } from "@/types/auth";
-import { useProfile } from "@/hooks/use-profile";
+import { useAuth } from "@/hooks/use-auth-context";
 
 interface UsersProviderProps {
   children: React.ReactNode;
@@ -21,7 +22,7 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { profile } = useProfile();
+  const { profile } = useAuth();
 
   const fetchUsers = useCallback(async () => {
     setIsLoading(true);
