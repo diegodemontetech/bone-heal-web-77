@@ -27,6 +27,16 @@ export const salesRoutes: RouteObject[] = [
     )
   },
   {
+    path: "orders",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
+          <AdminOrders />
+        </ProtectedRoute>
+      </Suspense>
+    )
+  },
+  {
     path: "orcamentos",
     element: (
       <Suspense fallback={<AdminLoader />}>
