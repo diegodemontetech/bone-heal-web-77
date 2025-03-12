@@ -2,14 +2,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Headset, MessageSquare, Plus } from "lucide-react";
+import { Headset, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth-context";
+import CreateTicketDialog from "@/components/support/tickets/CreateTicketDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export const TicketsSection = () => {
@@ -88,86 +84,24 @@ export const TicketsSection = () => {
           Meus Chamados
         </Button>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="default">
-              <Plus className="w-4 h-4 mr-2" />
-              Abrir Chamado
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Novo Chamado de Suporte</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="subject">Assunto</Label>
-                <Input
-                  id="subject"
-                  name="subject"
-                  value={ticketData.subject}
-                  onChange={handleInputChange}
-                  placeholder="Assunto do chamado"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="priority">Prioridade</Label>
-                <Select 
-                  value={ticketData.priority} 
-                  onValueChange={handlePriorityChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="high">Alta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={ticketData.description}
-                  onChange={handleInputChange}
-                  placeholder="Descreva seu problema em detalhes"
-                  rows={5}
-                />
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={handleCreateTicket}
-                  disabled={isCreating || !ticketData.subject || !ticketData.description}
-                >
-                  {isCreating ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Criando...
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Enviar Chamado
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          variant="default"
+          onClick={() => setIsDialogOpen(true)}
+        >
+          <MessageSquare className="w-4 h-4 mr-2" />
+          Abrir Chamado
+        </Button>
       </div>
+
+      <CreateTicketDialog
+        isOpen={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onCreateTicket={handleCreateTicket}
+        isCreating={isCreating}
+        ticketData={ticketData}
+        onInputChange={handleInputChange}
+        onPriorityChange={handlePriorityChange}
+      />
     </div>
   );
 };
