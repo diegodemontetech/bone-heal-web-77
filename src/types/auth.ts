@@ -1,3 +1,6 @@
+
+import { Session } from '@supabase/supabase-js';
+
 export enum UserRole {
   DENTIST = 'dentist',
   ADMIN = 'admin',

@@ -1,5 +1,8 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { CartItem } from '@/types/cart';
+
+export { CartItem };
 
 export interface CartStore {
   cart: CartItem[];
@@ -10,6 +13,9 @@ export interface CartStore {
   getTotalPrice: () => number;
   getTotalItems: () => number;
   isLoading: boolean;
+  cartItems: CartItem[]; // Alias para cart para compatibilidade
+  total: number; // Alias para getTotalPrice para compatibilidade
+  clear: () => void; // Alias para clearCart para compatibilidade
 }
 
 const useCartStore = (): CartStore => {
@@ -75,7 +81,11 @@ const useCartStore = (): CartStore => {
     clearCart,
     getTotalPrice,
     getTotalItems,
-    isLoading
+    isLoading,
+    // Aliases para compatibilidade
+    cartItems: cart,
+    total: getTotalPrice(),
+    clear: clearCart
   };
 };
 
