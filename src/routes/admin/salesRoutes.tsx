@@ -37,6 +37,16 @@ export const salesRoutes: RouteObject[] = [
     )
   },
   {
+    path: "quotations",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
+          <AdminQuotations />
+        </ProtectedRoute>
+      </Suspense>
+    )
+  },
+  {
     path: "orcamentos",
     element: (
       <Suspense fallback={<AdminLoader />}>
@@ -47,3 +57,4 @@ export const salesRoutes: RouteObject[] = [
     )
   }
 ];
+
