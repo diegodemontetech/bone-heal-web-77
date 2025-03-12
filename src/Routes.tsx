@@ -17,7 +17,6 @@ import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
 import { AdminRoute } from "@/routes/admin/adminLoader"; 
 import Layout from "@/components/admin/Layout";
-import AdminDashboard from "@/pages/admin/Dashboard";
 
 export function Routes() {
   return (
@@ -37,13 +36,13 @@ export function Routes() {
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/:id" element={<OrderDetails />} />
         
-        {/* Rotas de Admin */}
-        <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          {adminRoutes.children && adminRoutes.children.filter(Boolean).map((route, index) => (
-            <Route key={index} path={route.path} element={route.element} />
-          ))}
+        {/* Rotas de Admin - usando o componente das rotas administrativas diretamente */}
+        <Route path="/admin" element={<AdminRoute>{adminRoutes.element}</AdminRoute>}>
+          {adminRoutes.children && adminRoutes.children
+            .filter(Boolean)
+            .map((route, index) => (
+              <Route key={index} path={route.path} element={route.element} />
+            ))}
         </Route>
         
         {/* Rotas de Suporte */}
