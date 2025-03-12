@@ -79,21 +79,29 @@ serve(async (req) => {
     };
     
     const baseRate = getBaseRateByRegion(cepPrefix);
+    // Garantir um fator de peso mínimo para evitar valores zerados
     const weightFactor = Math.max(1, totalWeight);
     
+    // Garantir valor mínimo de frete (nunca zero)
+    const calculateShippingRate = (baseCost: number, factor: number, multiplier: number = 1) => {
+      const calculatedRate = Math.round(baseCost * factor * multiplier * 100) / 100;
+      // Garantir um valor mínimo de 15 reais para qualquer opção de frete
+      return Math.max(15, calculatedRate);
+    };
+
     // Sempre retornar duas opções: PAC e SEDEX
     const shippingRates = [
       {
         service_type: "PAC",
         name: "PAC (Convencional)",
-        rate: Math.round(baseRate * weightFactor * 100) / 100,
+        rate: calculateShippingRate(baseRate, weightFactor),
         delivery_days: Math.floor(5 + Math.random() * 3), // 5 a 7 dias
         zipCode: cleanZipCode
       },
       {
         service_type: "SEDEX",
         name: "SEDEX (Express)",
-        rate: Math.round(baseRate * weightFactor * 1.8 * 100) / 100, // SEDEX é 80% mais caro que PAC
+        rate: calculateShippingRate(baseRate, weightFactor, 1.8), // SEDEX é 80% mais caro que PAC
         delivery_days: Math.floor(1 + Math.random() * 3), // 1 a 3 dias
         zipCode: cleanZipCode
       }

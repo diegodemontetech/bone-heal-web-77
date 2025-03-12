@@ -124,19 +124,78 @@ const ShippingSection = ({
           });
 
           applicableRates = Array.from(uniqueServices.values()).map(rate => ({
-            rate: rate.flat_rate || 0,
+            rate: Math.max(15, rate.flat_rate || 15), // Garantir valor mínimo de 15 reais
             delivery_days: rate.estimated_days || 5,
             service_type: rate.service_type || 'PAC',
             name: rate.service_type || 'Padrão',
             id: rate.id,
             region: rate.region,
-            cost: rate.flat_rate || 0
+            cost: Math.max(15, rate.flat_rate || 15) // Garantir valor mínimo de 15 reais
           }));
         }
       }
       
+      // Se não encontrou nenhuma taxa aplicável no banco de dados,
+      // vamos buscar da API de cálculo de frete
+      if (applicableRates.length === 0) {
+        // Fazer requisição para a API de cálculo de frete
+        const response = await fetch(`${supabase.functions.url}/correios-shipping`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            zipCode: cleanZipCode,
+            items: [] // Enviar lista vazia, a API usará um peso padrão
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Falha ao calcular o frete');
+        }
+        
+        // Processar a resposta da API
+        const apiRates = await response.json();
+        
+        // Mapear para nosso formato
+        applicableRates = apiRates.map((rate: any, index: number) => ({
+          id: `api-${index}`,
+          rate: Math.max(15, rate.rate || 15), // Garantir valor mínimo de 15 reais
+          delivery_days: rate.delivery_days || 5,
+          service_type: rate.service_type || 'PAC',
+          name: rate.name || rate.service_type || 'Padrão',
+          zipCode: cleanZipCode,
+          cost: Math.max(15, rate.rate || 15) // Garantir valor mínimo de 15 reais
+        }));
+      }
+      
       // Ordenar por preço
       applicableRates.sort((a, b) => a.rate - b.rate);
+      
+      // Verificar se há opções disponíveis
+      if (applicableRates.length === 0) {
+        // Criar opções padrão para que a UI sempre tenha algo para mostrar
+        applicableRates = [
+          {
+            id: 'default-pac',
+            rate: 25.00,
+            delivery_days: 7,
+            service_type: 'PAC',
+            name: 'PAC (Convencional)',
+            zipCode: cleanZipCode,
+            cost: 25.00
+          },
+          {
+            id: 'default-sedex',
+            rate: 45.00,
+            delivery_days: 2,
+            service_type: 'SEDEX',
+            name: 'SEDEX (Express)',
+            zipCode: cleanZipCode,
+            cost: 45.00
+          }
+        ];
+      }
       
       setShippingOptions(applicableRates);
       
@@ -146,7 +205,37 @@ const ShippingSection = ({
       }
     } catch (error) {
       console.error('Erro ao calcular frete:', error);
-      toast.error('Erro ao calcular frete. Tente novamente.');
+      
+      // Mesmo em caso de erro, vamos criar opções padrão para melhorar a UX
+      const defaultOptions = [
+        {
+          id: 'default-pac',
+          rate: 25.00,
+          delivery_days: 7,
+          service_type: 'PAC',
+          name: 'PAC (Convencional)',
+          zipCode: zipCode.replace(/\D/g, ''),
+          cost: 25.00
+        },
+        {
+          id: 'default-sedex',
+          rate: 45.00,
+          delivery_days: 2,
+          service_type: 'SEDEX',
+          name: 'SEDEX (Express)',
+          zipCode: zipCode.replace(/\D/g, ''),
+          cost: 45.00
+        }
+      ];
+      
+      setShippingOptions(defaultOptions);
+      
+      // Selecionar a opção mais barata por padrão se não houver nenhuma selecionada
+      if (!selectedShipping) {
+        setSelectedShipping(defaultOptions[0]);
+      }
+      
+      toast.error('Erro ao calcular frete. Usando valores padrão.');
     } finally {
       setIsCalculatingShipping(false);
     }
