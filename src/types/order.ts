@@ -1,3 +1,4 @@
+
 export interface OrderItem {
   product_id: string;
   quantity: number;
@@ -33,6 +34,14 @@ export interface Order {
   shipping_address?: ShippingAddress;
   created_at: string;
   updated_at: string;
+  omie_status: string;
+  omie_order_id?: string;
+  omie_invoice_number?: string;
+  omie_invoice_key?: string;
+  omie_invoice_date?: string;
+  omie_tracking_code?: string;
+  omie_shipping_code?: string;
+  omie_shipping_company?: string;
   profiles?: {
     id?: string;
     full_name?: string;

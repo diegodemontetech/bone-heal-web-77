@@ -40,11 +40,12 @@ const Orders = () => {
 
         if (error) throw error;
         
-        return data?.map(order => ({
+        return data.map((order: any) => ({
           ...order,
           payment_status: order.payment_status || 'pending',
           items: parseJsonArray(order.items, []),
-          shipping_address: order.shipping_address || {}
+          shipping_address: order.shipping_address || {},
+          omie_status: order.omie_status || 'novo'
         })) as Order[];
       } catch (err) {
         console.error("Erro na consulta de pedidos:", err);
