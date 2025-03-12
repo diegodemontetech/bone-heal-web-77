@@ -30,6 +30,17 @@ export const useProductImages = (initialImages: string[] = []) => {
     const newImages: string[] = [...images];
 
     try {
+      // Verificar se o bucket 'products' existe, senão criar
+      const { data: bucketsData } = await supabase.storage.listBuckets();
+      const bucketExists = bucketsData?.some(bucket => bucket.name === 'products');
+      
+      if (!bucketExists) {
+        await supabase.storage.createBucket('products', {
+          public: true
+        });
+        console.log("Bucket 'products' criado com sucesso");
+      }
+
       for (const file of files) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${fileExt}`;
@@ -38,7 +49,10 @@ export const useProductImages = (initialImages: string[] = []) => {
 
         const { error: uploadError } = await supabase.storage
           .from('products')
-          .upload(fileName, file);
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (uploadError) {
           console.error("Erro no upload:", uploadError);
@@ -49,6 +63,8 @@ export const useProductImages = (initialImages: string[] = []) => {
           .from('products')
           .getPublicUrl(fileName);
 
+        console.log("URL pública gerada:", publicUrlData.publicUrl);
+        
         newImages.push(fileName);
         console.log("Imagem enviada com sucesso:", fileName);
       }

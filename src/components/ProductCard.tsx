@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Product } from "@/types/product";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProductCardProps {
   product: Product;
@@ -23,8 +24,26 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const productUrl = `/products/${encodeURIComponent(slug)}`;
 
   // Garantir que a imagem tenha um fallback válido
-  const fallbackImage = "https://images.unsplash.com/photo-1616763355548-1b606f439f86?q=80&w=1470&auto=format&fit=crop";
-  const productImage = product.main_image || product.default_image_url || fallbackImage;
+  const fallbackImage = "/placeholder.svg";
+  
+  // Obter URL pública da imagem do produto
+  const getProductImageUrl = () => {
+    if (!product.main_image) {
+      return product.default_image_url || fallbackImage;
+    }
+    
+    if (product.main_image.startsWith('http')) {
+      return product.main_image;
+    }
+    
+    const { data } = supabase.storage
+      .from('products')
+      .getPublicUrl(product.main_image);
+    
+    return data.publicUrl;
+  };
+
+  const productImage = getProductImageUrl();
 
   return (
     <Card className="relative group h-full">
@@ -37,7 +56,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
               alt={product.name}
               className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = fallbackImage;
+                console.error("Erro ao carregar imagem:", productImage);
+                const target = e.target as HTMLImageElement;
+                target.src = fallbackImage;
               }}
             />
           </div>

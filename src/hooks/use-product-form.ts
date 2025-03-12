@@ -52,7 +52,9 @@ export const useProductForm = (
         throw new Error("Já existe um produto cadastrado com este código Omie");
       }
 
-      // Remover a propriedade categories para evitar o erro no Supabase
+      console.log("Imagens a serem salvas:", images);
+
+      // Preparar dados para salvar no banco
       const data = {
         name: values.name,
         slug: values.slug,
@@ -64,7 +66,6 @@ export const useProductForm = (
         main_image: images[0] || null,
         gallery: images.slice(1),
         active: true,
-        // Não estamos mais enviando a propriedade categories
       };
 
       console.log("Dados do produto a serem salvos:", data);

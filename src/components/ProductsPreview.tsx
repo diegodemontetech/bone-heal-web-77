@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
+import { Product } from "@/types/product";
 
 const ProductsPreview = () => {
   const { data: products, isLoading, error } = useQuery({
@@ -24,7 +25,7 @@ const ProductsPreview = () => {
       }
 
       console.log('Produtos do banco:', products);
-      return products;
+      return products as Product[];
     },
   });
 

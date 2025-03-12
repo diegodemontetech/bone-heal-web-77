@@ -53,6 +53,7 @@ const ProductImageUpload = ({ images: initialImages = [], onChange, maxImages = 
               className="w-full h-full object-cover"
               onError={(e) => {
                 console.error("Erro ao carregar imagem:", image);
+                console.log("URL da imagem:", getImageUrl(image));
                 const target = e.target as HTMLImageElement;
                 target.src = "/placeholder.svg";
               }}
