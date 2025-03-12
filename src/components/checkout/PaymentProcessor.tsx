@@ -26,8 +26,10 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ orderId }) => {
         // Exemplo: await updateOrderPaymentStatus(orderId, 'paid');
 
         // Limpar o carrinho e redirecionar para a página de sucesso
-        if (typeof cart.clearCart === 'function') {
+        if (cart && typeof cart.clearCart === 'function') {
           cart.clearCart();
+        } else {
+          console.warn('Função clearCart não encontrada no contexto do carrinho');
         }
         toast.success("Pagamento processado com sucesso!");
         navigate('/success');
@@ -43,7 +45,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ orderId }) => {
   }, [orderId, navigate, cart]);
 
   const getTotalPrice = () => {
-    if (typeof cart.getTotalPrice === 'function') {
+    if (cart && typeof cart.getTotalPrice === 'function') {
       return cart.getTotalPrice();
     }
     return 0;

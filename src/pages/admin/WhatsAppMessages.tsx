@@ -37,7 +37,7 @@ const AdminWhatsAppMessages = () => {
       .subscribe();
       
     return () => {
-      subscription.removeChannel(subscription);
+      subscription.unsubscribe();
     };
   }, [profile]);
 

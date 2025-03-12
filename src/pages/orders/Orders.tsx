@@ -42,6 +42,7 @@ interface Order {
   created_at: string;
   updated_at: string;
   discount: number;
+  profiles?: Record<string, any>;
 }
 
 const Orders = () => {
@@ -80,6 +81,7 @@ const Orders = () => {
           // Parse JSON fields
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
+          
           // Cria um objeto de endereço com valores padrão
           const shippingAddress: OrderAddress = {
             zip_code: profileData.zip_code || '',
@@ -107,7 +109,8 @@ const Orders = () => {
             shipping_address: shippingAddress,
             created_at: order.created_at,
             updated_at: order.updated_at || order.created_at,
-            discount: order.discount || 0
+            discount: order.discount || 0,
+            profiles: order.profiles
           };
         });
         
