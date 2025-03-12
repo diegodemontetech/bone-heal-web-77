@@ -3,7 +3,7 @@ import { RouteObject } from "react-router-dom";
 import AdminLayout from "@/components/admin/Layout";
 import { dashboardRoutes } from "./admin/dashboardRoutes";
 import { productRoutes } from "./admin/productRoutes";
-import { salesRoutes } from "./admin/orderRoutes";
+import { salesRoutes } from "./admin/salesRoutes";
 import { userRoutes } from "./admin/userRoutes";
 import { contentRoutes } from "./admin/contentRoutes";
 import { configRoutes } from "./admin/configRoutes";
