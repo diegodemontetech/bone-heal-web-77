@@ -1,7 +1,10 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Order, ShippingAddress, OrderItem } from "@/types/order";
+import { parseJsonArray } from "@/utils/supabaseJsonUtils";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
@@ -9,9 +12,6 @@ import OrdersHeader from "@/components/orders/OrdersHeader";
 import OrdersList from "@/components/orders/OrdersList";
 import OrdersLoading from "@/components/orders/OrdersLoading";
 import OrdersEmpty from "@/components/orders/OrdersEmpty";
-import { toast } from "sonner";
-import { parseJsonArray } from "@/utils/supabaseJsonUtils";
-import { Order, ShippingAddress, OrderItem } from "@/types/order";
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -46,6 +46,7 @@ const Orders = () => {
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
           
+          // Garantir que todos os campos de endereço existam
           const shippingAddress: ShippingAddress = {
             zip_code: profileData.zip_code || '',
             city: profileData.city || '',
@@ -58,13 +59,13 @@ const Orders = () => {
           
           return {
             ...order,
+            // Garantir que payment_status sempre exista
             payment_status: order.payment_status || 'pending',
             shipping_address: shippingAddress,
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
               quantity: item.quantity,
               price: item.price,
-              product_name: item.product_name,
               name: item.product_name || item.name || '',
               total_price: item.total_price
             })) as OrderItem[]

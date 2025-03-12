@@ -33,7 +33,7 @@ export const useWhatsAppDashboard = () => {
     messages, 
     loading: messagesLoading, 
     sendMessage 
-  } = useWhatsAppMessages(selectedInstanceId || "");
+  } = useWhatsAppMessages(selectedInstanceId || "", "");
   
   const {
     handleCreateInstance,

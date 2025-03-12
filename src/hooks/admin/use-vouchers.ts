@@ -33,19 +33,35 @@ export const useVouchers = () => {
     
     try {
       if (isEditing && currentVoucher) {
-        // Converter para string as datas se necessário
+        // Converter as datas para string
         const updatedData = {
           ...formData,
-          valid_from: typeof formData.valid_from === 'string' ? formData.valid_from : formData.valid_from.toISOString(),
-          valid_until: typeof formData.valid_until === 'string' ? formData.valid_until : formData.valid_until?.toISOString()
+          valid_from: typeof formData.valid_from === 'string' 
+            ? formData.valid_from 
+            : formData.valid_from instanceof Date 
+              ? formData.valid_from.toISOString() 
+              : formData.valid_from,
+          valid_until: typeof formData.valid_until === 'string' 
+            ? formData.valid_until 
+            : formData.valid_until instanceof Date 
+              ? formData.valid_until.toISOString() 
+              : formData.valid_until
         };
         await updateVoucher(currentVoucher.id, updatedData);
       } else {
-        // Converter para string as datas se necessário
+        // Converter as datas para string
         const newData = {
           ...formData,
-          valid_from: typeof formData.valid_from === 'string' ? formData.valid_from : formData.valid_from.toISOString(),
-          valid_until: typeof formData.valid_until === 'string' ? formData.valid_until : formData.valid_until?.toISOString()
+          valid_from: typeof formData.valid_from === 'string' 
+            ? formData.valid_from 
+            : formData.valid_from instanceof Date 
+              ? formData.valid_from.toISOString() 
+              : formData.valid_from,
+          valid_until: typeof formData.valid_until === 'string' 
+            ? formData.valid_until 
+            : formData.valid_until instanceof Date 
+              ? formData.valid_until.toISOString() 
+              : formData.valid_until
         };
         await createVoucher(newData);
       }
