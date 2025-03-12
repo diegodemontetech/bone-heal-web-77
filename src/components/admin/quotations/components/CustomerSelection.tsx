@@ -29,18 +29,28 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
 
   // Buscar clientes
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ["customers", searchTerm],
     queryFn: async () => {
-      const { data, error } = await supabase
+      console.log("Buscando clientes com filtro:", searchTerm);
+      let query = supabase
         .from("profiles")
-        .select("*")
-        .order("full_name");
+        .select("*");
+      
+      if (searchTerm) {
+        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+      }
+      
+      query = query.order("full_name");
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Erro ao buscar clientes:", error);
+        toast.error("Erro ao buscar clientes");
         return [];
       }
       
+      console.log(`Encontrados ${data?.length || 0} clientes`);
       return data || [];
     },
   });
