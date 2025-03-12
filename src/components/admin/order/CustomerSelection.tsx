@@ -29,8 +29,8 @@ export const CustomerSelection = ({
   setCustomerDialogOpen,
   handleRegistrationSuccess
 }: CustomerSelectionProps) => {
-  console.log("CustomerSelection - clientes disponíveis:", customers);
-  console.log("CustomerSelection - cliente selecionado:", selectedCustomer);
+  console.log("CustomerSelection renderizando com", customers?.length || 0, "clientes");
+  console.log("Cliente selecionado:", selectedCustomer);
 
   return (
     <div>
@@ -57,7 +57,10 @@ export const CustomerSelection = ({
                 <div
                   key={customer.id}
                   className="p-3 border-b last:border-0 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedCustomer(customer)}
+                  onClick={() => {
+                    console.log("Cliente selecionado:", customer);
+                    setSelectedCustomer(customer);
+                  }}
                 >
                   <p className="font-medium">{customer.full_name || "Sem nome"}</p>
                   <p className="text-sm text-muted-foreground">
@@ -68,7 +71,9 @@ export const CustomerSelection = ({
               ))
             ) : (
               <div className="p-4 text-center text-muted-foreground">
-                Nenhum cliente encontrado
+                {customerSearchTerm 
+                  ? "Nenhum cliente encontrado com esse termo" 
+                  : "Digite para buscar clientes"}
               </div>
             )}
           </div>
