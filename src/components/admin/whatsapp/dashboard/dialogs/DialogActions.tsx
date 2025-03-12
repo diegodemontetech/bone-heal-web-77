@@ -1,12 +1,11 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 
 interface DialogActionsProps {
   onCancel: () => void;
   onConfirm: () => void;
-  isLoading: boolean;
+  isSubmitting?: boolean;
   confirmText?: string;
   cancelText?: string;
 }
@@ -14,26 +13,19 @@ interface DialogActionsProps {
 export const DialogActions: React.FC<DialogActionsProps> = ({
   onCancel,
   onConfirm,
-  isLoading,
-  confirmText = "Criar",
+  isSubmitting = false,
+  confirmText = "Confirmar",
   cancelText = "Cancelar"
 }) => {
   return (
-    <div className="flex justify-end space-x-2">
-      <Button
-        variant="outline"
-        onClick={onCancel}
-        disabled={isLoading}
-      >
+    <div className="flex justify-end gap-2 mt-4">
+      <Button variant="outline" onClick={onCancel} disabled={isSubmitting}>
         {cancelText}
       </Button>
-      <Button 
-        onClick={onConfirm}
-        disabled={isLoading}
-      >
-        {isLoading ? (
+      <Button onClick={onConfirm} disabled={isSubmitting}>
+        {isSubmitting ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <span className="animate-spin mr-2">⌛</span>
             Processando...
           </>
         ) : (

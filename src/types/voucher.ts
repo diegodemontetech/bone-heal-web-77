@@ -1,29 +1,17 @@
+
 export interface Voucher {
   id: string;
   code: string;
-  discount_type: "percentage" | "fixed";
   discount_amount: number;
-  min_amount?: number;
-  min_items?: number;
-  payment_method?: string;
+  discount_type: string;
   valid_from: string;
-  valid_until?: string;
-  max_uses?: number;
+  valid_until: string | null;
+  max_uses: number | null;
   current_uses: number;
+  min_amount: number | null;
+  min_items: number | null;
+  payment_method: string | null;
   created_at: string;
   updated_at: string;
-  is_active: boolean;
-}
-
-export interface VoucherFormData {
-  code: string;
-  discount_type: "percentage" | "fixed";
-  discount_amount: number;
-  min_amount?: number;
-  min_items?: number;
-  payment_method?: string;
-  valid_from: string;
-  valid_until?: string;
-  max_uses?: number;
-  is_active: boolean;
+  is_active: boolean; // Propriedade adicionada para controlar se o voucher está ativo
 }

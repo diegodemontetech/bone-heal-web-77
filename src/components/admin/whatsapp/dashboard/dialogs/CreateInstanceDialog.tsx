@@ -1,61 +1,54 @@
 
 import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { InstanceNameInput } from "./InstanceNameInput";
 import { DialogActions } from "./DialogActions";
 
-export interface CreateInstanceDialogProps {
+interface CreateInstanceDialogProps {
   isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (instanceName: string) => Promise<boolean>;
   isCreating: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCreateInstance: (name: string) => Promise<any>;
 }
 
 export const CreateInstanceDialog: React.FC<CreateInstanceDialogProps> = ({
   isOpen,
-  isCreating,
-  onOpenChange,
-  onCreateInstance,
+  onClose,
+  onConfirm,
+  isCreating
 }) => {
-  const [newInstanceName, setNewInstanceName] = useState("");
+  const [instanceName, setInstanceName] = useState("");
 
-  const handleCreateInstance = async () => {
-    if (!newInstanceName.trim()) return;
-    const success = await onCreateInstance(newInstanceName);
+  const handleConfirm = async () => {
+    const success = await onConfirm(instanceName);
     if (success) {
-      setNewInstanceName("");
+      setInstanceName("");
     }
   };
 
+  const handleClose = () => {
+    setInstanceName("");
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Criar Nova Instância WhatsApp</DialogTitle>
-          <DialogDescription>
-            Insira um nome para identificar sua nova instância WhatsApp.
-          </DialogDescription>
+          <DialogTitle>Nova Instância WhatsApp</DialogTitle>
         </DialogHeader>
-
+        
         <InstanceNameInput
-          value={newInstanceName}
-          onChange={setNewInstanceName}
+          value={instanceName}
+          onChange={setInstanceName}
         />
-
-        <DialogFooter>
-          <DialogActions
-            onCancel={() => onOpenChange(false)}
-            onConfirm={handleCreateInstance}
-            isLoading={isCreating}
-          />
-        </DialogFooter>
+        
+        <DialogActions
+          onCancel={handleClose}
+          onConfirm={handleConfirm}
+          isSubmitting={isCreating}
+          confirmText="Criar Instância"
+        />
       </DialogContent>
     </Dialog>
   );

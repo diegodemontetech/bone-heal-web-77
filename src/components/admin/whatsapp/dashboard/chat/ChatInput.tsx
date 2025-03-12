@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SendHorizontal, Loader2 } from "lucide-react";
+import { Send } from "lucide-react";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => Promise<boolean>;
@@ -16,10 +16,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
 
-  const handleSendMessage = async () => {
+  const handleSend = async () => {
     if (!message.trim() || disabled || isSending) return;
     
     setIsSending(true);
+    
     try {
       const success = await onSendMessage(message);
       if (success) {
@@ -31,31 +32,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      handleSend();
     }
   };
 
   return (
-    <div className="flex items-center space-x-2 border-t p-3">
+    <div className="p-3 border-t bg-background flex gap-2 items-center">
       <Input
-        placeholder={disabled ? "Selecione uma instância para enviar mensagens..." : "Digite sua mensagem..."}
+        placeholder={disabled ? "Selecione uma instância para enviar mensagens" : "Digite uma mensagem..."}
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
+        className="flex-1"
       />
-      <Button
-        size="icon"
-        onClick={handleSendMessage}
+      <Button 
+        onClick={handleSend} 
         disabled={disabled || !message.trim() || isSending}
+        size="icon"
       >
-        {isSending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <SendHorizontal className="h-4 w-4" />
-        )}
+        <Send className="h-4 w-4" />
       </Button>
     </div>
   );

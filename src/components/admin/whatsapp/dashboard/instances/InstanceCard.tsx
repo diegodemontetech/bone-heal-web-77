@@ -1,12 +1,10 @@
 
 import React from "react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Trash2, MessageSquare } from "lucide-react";
+import { RefreshCw, Trash, MessageCircle } from "lucide-react";
 import { WhatsAppInstance } from "../../../types";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface InstanceCardProps {
   instance: WhatsAppInstance;
@@ -19,55 +17,77 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
   instance,
   onSelect,
   onRefreshQr,
-  onDelete,
+  onDelete
 }) => {
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case "connected":
-        return "bg-green-500";
-      case "disconnected":
-        return "bg-red-500";
-      case "connecting":
-        return "bg-yellow-500";
+      case 'connected':
+        return <Badge className="bg-green-500">Conectado</Badge>;
+      case 'disconnected':
+        return <Badge variant="destructive">Desconectado</Badge>;
+      case 'connecting':
+        return <Badge className="bg-yellow-500">Conectando</Badge>;
       default:
-        return "bg-gray-500";
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const formattedDate = formatDistanceToNow(new Date(instance.created_at), {
-    addSuffix: true,
-    locale: ptBR
-  });
+  const handleRefreshQr = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await onRefreshQr();
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete();
+  };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <h3 className="font-semibold">{instance.name || instance.instance_name}</h3>
-          <Badge className={getStatusColor(instance.status)}>
-            {instance.status}
-          </Badge>
-        </div>
+    <Card 
+      className="cursor-pointer hover:border-primary transition-colors"
+      onClick={onSelect}
+    >
+      <CardHeader className="pb-2">
+        <CardTitle className="flex justify-between items-center">
+          <span>{instance.instance_name}</span>
+          {getStatusBadge(instance.status)}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="pb-3">
-        <p className="text-sm text-muted-foreground">Criado {formattedDate}</p>
-      </CardContent>
-      <CardFooter className="flex justify-between pt-3">
-        <Button variant="outline" size="sm" onClick={onDelete}>
-          <Trash2 className="h-4 w-4 mr-1" />
-          Excluir
-        </Button>
-        <div className="space-x-2">
-          <Button variant="outline" size="sm" onClick={onRefreshQr}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            QR Code
-          </Button>
-          <Button size="sm" onClick={onSelect}>
-            <MessageSquare className="h-4 w-4 mr-1" />
-            Chat
-          </Button>
+      <CardContent>
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Criado em: {new Date(instance.created_at).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleRefreshQr}
+              title="Atualizar QR Code"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onSelect}
+              title="Ver Mensagens"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleDelete}
+              title="Excluir Instância"
+            >
+              <Trash className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-      </CardFooter>
+      </CardContent>
     </Card>
   );
 };
