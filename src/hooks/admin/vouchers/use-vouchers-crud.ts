@@ -9,11 +9,15 @@ export const useVouchersCrud = (setVouchers: React.Dispatch<React.SetStateAction
       // Converter explicitamente as datas para string
       const validFrom = typeof voucher.valid_from === 'string' 
         ? voucher.valid_from 
-        : voucher.valid_from?.toISOString();
+        : voucher.valid_from instanceof Date
+          ? voucher.valid_from.toISOString()
+          : new Date().toISOString();
       
       const validUntil = typeof voucher.valid_until === 'string' 
         ? voucher.valid_until 
-        : voucher.valid_until?.toISOString();
+        : voucher.valid_until instanceof Date
+          ? voucher.valid_until.toISOString()
+          : null;
 
       const newVoucher = {
         code: voucher.code,
@@ -50,13 +54,21 @@ export const useVouchersCrud = (setVouchers: React.Dispatch<React.SetStateAction
   const updateVoucher = async (id: string, updates: Partial<VoucherFormData>) => {
     try {
       // Converter explicitamente as datas para string
-      const validFrom = typeof updates.valid_from === 'string' 
-        ? updates.valid_from 
-        : updates.valid_from?.toISOString();
+      const validFrom = updates.valid_from !== undefined 
+        ? (typeof updates.valid_from === 'string' 
+            ? updates.valid_from 
+            : updates.valid_from instanceof Date
+              ? updates.valid_from.toISOString()
+              : null)
+        : undefined;
       
-      const validUntil = typeof updates.valid_until === 'string' 
-        ? updates.valid_until 
-        : updates.valid_until?.toISOString();
+      const validUntil = updates.valid_until !== undefined 
+        ? (typeof updates.valid_until === 'string' 
+            ? updates.valid_until 
+            : updates.valid_until instanceof Date
+              ? updates.valid_until.toISOString()
+              : null)
+        : undefined;
 
       const { data, error } = await supabase
         .from("vouchers")

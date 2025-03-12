@@ -1,104 +1,134 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Order, ShippingAddress, OrderItem } from "@/types/order";
-import { parseJsonArray } from "@/utils/supabaseJsonUtils";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import WhatsAppWidget from "@/components/WhatsAppWidget";
-import OrdersHeader from "@/components/orders/OrdersHeader";
-import OrdersList from "@/components/orders/OrdersList";
-import OrdersLoading from "@/components/orders/OrdersLoading";
-import OrdersEmpty from "@/components/orders/OrdersEmpty";
+import { OrderDetails } from "@/components/admin/order/OrderDetails";
+import OrdersHeader from "@/components/admin/orders/OrdersHeader";
+import OrdersTabs from "@/components/admin/orders/OrdersTabs";
+import OrdersLoading from "@/components/admin/orders/OrdersLoading";
 
 const Orders = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState("kanban");
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
+  // Buscar pedidos
+  const { data: orders, isLoading, error, refetch } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        
-        if (!sessionData?.session?.user?.id) {
-          toast.error("É necessário estar logado para visualizar seus pedidos");
-          navigate("/login", { state: { from: "/orders" } });
-          return;
-        }
-        
         const { data, error } = await supabase
-          .from('orders')
-          .select('*, profiles:user_id(*)')
-          .eq('user_id', sessionData.session.user.id)
-          .order('created_at', { ascending: false });
-          
-        if (error) throw error;
-        
-        if (!data) {
-          setOrders([]);
-          return;
-        }
+          .from("orders")
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              phone,
+              zip_code,
+              omie_code
+            )
+          `)
+          .order("created_at", { ascending: false });
 
-        const formattedOrders = data.map(order => {
-          const parsedItems = parseJsonArray(order.items, []);
-          const profileData = order.profiles || {};
+        if (error) {
+          console.error("Erro ao buscar pedidos:", error);
+          throw error;
+        }
+        
+        // Processar os dados para garantir que todos os campos necessários existam
+        const processedData = data?.map(order => {
+          // Garantir que profiles seja um objeto, mesmo que vazio
+          const profiles = order.profiles || {};
           
-          // Garantir que todos os campos de endereço existam
-          const shippingAddress: ShippingAddress = {
-            zip_code: profileData.zip_code || '',
-            city: profileData.city || '',
-            state: profileData.state || '',
-            address: profileData.address || '',
-            number: profileData.endereco_numero || '',
-            complement: profileData.complemento || '',
-            neighborhood: profileData.neighborhood || ''
-          };
+          // Garantir que shipping_address exista e tenha todas as propriedades necessárias
+          const shippingAddress = order.shipping_address || {};
           
           return {
             ...order,
-            // Garantir que payment_status sempre exista
             payment_status: order.payment_status || 'pending',
-            shipping_address: shippingAddress,
-            items: parsedItems.map((item) => ({
-              product_id: item.product_id,
-              quantity: item.quantity,
-              price: item.price,
-              name: item.product_name || item.name || '',
-              total_price: item.total_price
-            })) as OrderItem[]
-          } as Order;
-        });
+            profiles: {
+              ...profiles,
+              zip_code: profiles.zip_code || '',
+              city: profiles.city || '',
+              state: profiles.state || '',
+              address: profiles.address || '',
+              endereco_numero: profiles.endereco_numero || '',
+              complemento: profiles.complemento || '',
+              neighborhood: profiles.neighborhood || ''
+            },
+            shipping_address: {
+              ...shippingAddress,
+              zip_code: shippingAddress.zip_code || profiles.zip_code || '',
+              city: shippingAddress.city || profiles.city || '',
+              state: shippingAddress.state || profiles.state || '',
+              address: shippingAddress.address || profiles.address || '',
+              number: shippingAddress.number || profiles.endereco_numero || '',
+              complement: shippingAddress.complement || profiles.complemento || '',
+              neighborhood: shippingAddress.neighborhood || profiles.neighborhood || ''
+            }
+          };
+        }) || [];
         
-        setOrders(formattedOrders);
-      } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
-      } finally {
-        setLoading(false);
+        console.log("Pedidos carregados:", processedData);
+        return processedData;
+      } catch (err) {
+        console.error("Erro na consulta de pedidos:", err);
+        throw err;
       }
-    };
-    
-    fetchOrders();
-  }, [navigate]);
+    },
+  });
+
+  // Exibir erros com toast
+  useEffect(() => {
+    if (error) {
+      toast.error("Erro ao carregar pedidos. Por favor, tente novamente.");
+      console.error("Erro detalhado:", error);
+    }
+  }, [error]);
+
+  // Mudar para a tab de criação quando clicar no botão
+  useEffect(() => {
+    if (isCreating) {
+      setActiveTab("create");
+    }
+  }, [isCreating]);
+
+  const handleViewOrder = (order: any) => {
+    setSelectedOrder(order);
+  };
+
+  if (isLoading) {
+    return <OrdersLoading />;
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      <div className="container mx-auto p-4 py-8 flex-1">
-        <OrdersHeader />
-        
-        {loading ? (
-          <OrdersLoading />
-        ) : orders.length === 0 ? (
-          <OrdersEmpty navigate={navigate} />
-        ) : (
-          <OrdersList orders={orders} navigate={navigate} />
-        )}
-      </div>
-      <Footer />
-      <WhatsAppWidget />
+    <div className="p-6">
+      <Card>
+        <CardContent className="p-6">
+          <OrdersHeader setIsCreating={setIsCreating} />
+          
+          <OrdersTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            isCreating={isCreating}
+            setIsCreating={setIsCreating}
+            orders={orders}
+            error={error}
+            refetch={refetch}
+            onViewOrder={handleViewOrder}
+          />
+        </CardContent>
+      </Card>
+
+      {selectedOrder && (
+        <OrderDetails
+          order={selectedOrder}
+          isOpen={!!selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
 };

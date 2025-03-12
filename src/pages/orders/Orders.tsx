@@ -61,7 +61,7 @@ const Orders = () => {
             ...order,
             // Garantir que payment_status sempre exista
             payment_status: order.payment_status || 'pending',
-            shipping_address: shippingAddress,
+            shipping_address: order.shipping_address || shippingAddress,
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
               quantity: item.quantity,
