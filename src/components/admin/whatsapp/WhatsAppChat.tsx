@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Send } from "lucide-react";
-import { WhatsAppChatProps } from "./types";
+import { WhatsAppChatProps, WhatsAppMessage, convertMessageFormat } from "./types";
 
 const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ 
   messages, 
   isLoading, 
-  onSendMessage 
+  onSendMessage,
+  selectedLead,
+  onMessageSent
 }) => {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -28,6 +30,9 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({
       const success = await onSendMessage(newMessage);
       if (success) {
         setNewMessage("");
+        if (onMessageSent) {
+          onMessageSent();
+        }
       }
     } finally {
       setSending(false);
@@ -61,19 +66,20 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({
                   <div
                     key={msg.id}
                     className={`flex ${
-                      msg.sent_by === "us" ? "justify-end" : "justify-start"
+                      msg.sent_by === "us" || msg.is_sent_by_me ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        msg.sent_by === "us"
+                        msg.sent_by === "us" || msg.is_sent_by_me
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
                       }`}
                     >
-                      {msg.media_url && (
+                      {(msg.media_url || msg.media_type) && (
                         <div className="mb-2">
-                          {msg.media_type?.startsWith("image/") ? (
+                          {(msg.media_type?.startsWith("image/") || 
+                            (msg.type === "image" && msg.media_url)) ? (
                             <img
                               src={msg.media_url}
                               alt="Media"
@@ -91,15 +97,15 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({
                           )}
                         </div>
                       )}
-                      <p className="break-words">{msg.message}</p>
+                      <p className="break-words">{msg.message || msg.body}</p>
                       <p
                         className={`text-xs mt-1 ${
-                          msg.sent_by === "us"
+                          msg.sent_by === "us" || msg.is_sent_by_me
                             ? "text-primary-foreground/70"
                             : "text-muted-foreground"
                         }`}
                       >
-                        {new Date(msg.created_at).toLocaleTimeString()}
+                        {new Date(msg.created_at || msg.timestamp || "").toLocaleTimeString()}
                       </p>
                     </div>
                   </div>

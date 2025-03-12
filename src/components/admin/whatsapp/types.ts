@@ -20,12 +20,12 @@ export interface WhatsAppChatProps {
 
 export interface WhatsAppMessage {
   id: string;
-  lead_id: string;
-  message: string;
-  direction: string;
-  sent_by: string;
-  is_bot: boolean;
-  created_at: string;
+  lead_id?: string;
+  message?: string;
+  direction?: string;
+  sent_by?: string;
+  is_bot?: boolean;
+  created_at?: string;
   media_type?: string;
   media_url?: string;
   instance_id?: string;

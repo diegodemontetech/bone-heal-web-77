@@ -42,7 +42,13 @@ interface Order {
   created_at: string;
   updated_at: string;
   discount: number;
-  profiles?: Record<string, any>;
+  profiles?: {
+    zip_code?: string;
+    city?: string;
+    state?: string;
+    address?: string;
+    [key: string]: any;
+  };
 }
 
 const Orders = () => {
@@ -110,7 +116,7 @@ const Orders = () => {
             created_at: order.created_at,
             updated_at: order.updated_at || order.created_at,
             discount: order.discount || 0,
-            profiles: order.profiles
+            profiles: profileData
           };
         });
         

@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Truck, Plus, Download } from "lucide-react";
@@ -7,7 +6,6 @@ import { useShippingRates } from "@/hooks/admin/use-shipping-rates";
 import { ShippingRateForm } from "@/components/admin/shipping/ShippingRateForm";
 import { ShippingRatesTable } from "@/components/admin/shipping/ShippingRatesTable";
 import { ShippingRatesEmptyState } from "@/components/admin/shipping/ShippingRatesEmptyState";
-import { DialogTrigger } from "@/components/ui/dialog";
 
 const ShippingRates = () => {
   const {
@@ -78,7 +76,7 @@ const ShippingRates = () => {
         formData={formData}
         handleInputChange={handleInputChange}
         handleSelectChange={handleSelectChange}
-        handleCreateRate={handleCreateRate}
+        handleCreateRate={(e) => handleCreateRate(e)}
         resetForm={resetForm}
       />
     </div>

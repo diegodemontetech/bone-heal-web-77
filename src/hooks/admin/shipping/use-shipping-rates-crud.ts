@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ShippingRateFormData } from "./types";
 
 export const useShippingRatesCrud = () => {
-  const [formData, setFormData] = useState<Partial<ShippingRateFormData>>({
+  const [formData, setFormData] = useState<Partial<ShippingRateFormData> & { id?: string }>({
     region: "",
     state: "",
     zip_code_start: "",
@@ -52,7 +52,10 @@ export const useShippingRatesCrud = () => {
   };
 
   const openEditDialog = (rate: any) => {
-    setFormData(rate);
+    setFormData({
+      ...rate,
+      id: rate.id
+    });
     setIsEditing(true);
     setIsDialogOpen(true);
   };
@@ -63,7 +66,7 @@ export const useShippingRatesCrud = () => {
     // Validação básica
     if (!formData.region || !formData.state || !formData.zip_code_start || !formData.zip_code_end) {
       toast.error("Preencha todos os campos obrigatórios");
-      return;
+      return false;
     }
 
     try {
@@ -119,7 +122,7 @@ export const useShippingRatesCrud = () => {
 
   const handleDeleteRate = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir esta taxa de envio?")) {
-      return;
+      return false;
     }
 
     try {
