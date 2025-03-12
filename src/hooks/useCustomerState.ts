@@ -69,7 +69,6 @@ export const useCustomerState = () => {
     fetchCustomers();
   }, [searchTerm]); // Agora a busca é refeita quando o searchTerm muda
 
-  // Removemos o filtro local já que agora filtramos direto no Supabase
   return {
     customers,
     selectedCustomer,

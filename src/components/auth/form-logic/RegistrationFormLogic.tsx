@@ -43,8 +43,8 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
       if (isModal) {
         // No modo modal, inserimos diretamente no banco de dados sem autenticação
         try {
-          // Modificamos para usar .from('users') para criar o usuário
-          const { data: newUserId, error: authError } = await supabase.auth.signUp({
+          // Modificamos para usar .auth.signUp para criar o usuário
+          const { data: newUser, error: authError } = await supabase.auth.signUp({
             email: data.email,
             password: data.password || "123456", // Senha padrão se não fornecida
             options: {
@@ -57,9 +57,12 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
 
           if (authError) throw authError;
           
-          console.log("Usuário criado com sucesso:", newUserId);
+          console.log("Usuário criado com sucesso:", newUser);
           
           // Buscar o profile criado pelo trigger depois do signUp
+          // Adicionamos um pequeno delay para permitir que o trigger execute
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
           const { data: newCustomer, error: profileError } = await supabase
             .from("profiles")
             .select("*")
@@ -67,6 +70,8 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
             .single();
             
           if (profileError) throw profileError;
+          
+          console.log("Perfil de cliente obtido:", newCustomer);
           
           // Tentar sincronizar com o Omie
           try {
@@ -102,6 +107,7 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
           
           // Chamar o callback de sucesso, se fornecido
           if (onSuccess) {
+            console.log("Chamando callback onSuccess com:", newCustomer);
             onSuccess(newCustomer);
           }
           
