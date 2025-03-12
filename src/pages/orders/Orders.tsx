@@ -11,7 +11,7 @@ import OrdersLoading from "@/components/orders/OrdersLoading";
 import OrdersEmpty from "@/components/orders/OrdersEmpty";
 import { toast } from "sonner";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
-import { Order, ShippingAddress } from "@/types/order";
+import { Order, ShippingAddress, OrderItem } from "@/types/order";
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -70,16 +70,17 @@ const Orders = () => {
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
               product_name: item.product_name,
+              name: item.product_name || item.name || '',  // Adicionando a propriedade name requerida
               quantity: item.quantity,
               price: item.price,
               total_price: item.total_price
-            })),
+            })) as OrderItem[],
             shipping_address: shippingAddress,
             created_at: order.created_at,
             updated_at: order.updated_at || order.created_at,
             discount: order.discount || 0,
             profiles: profileData
-          };
+          } as Order;
         });
         
         setOrders(formattedOrders);

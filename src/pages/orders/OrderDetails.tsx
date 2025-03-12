@@ -11,11 +11,12 @@ import OrderLoading from "@/components/orders/details/OrderLoading";
 import OrderNotFound from "@/components/orders/details/OrderNotFound";
 import OrderDetailsContent from "@/components/orders/details/OrderDetailsContent";
 import OrderSummaryCard from "@/components/orders/details/OrderSummaryCard";
+import { Order } from "@/types/order";
 
 const OrderDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const OrderDetails = () => {
           return;
         }
         
-        setOrder(data);
+        setOrder(data as unknown as Order);
       } catch (error) {
         console.error("Erro ao buscar detalhes do pedido:", error);
         toast.error("Erro ao carregar detalhes do pedido");

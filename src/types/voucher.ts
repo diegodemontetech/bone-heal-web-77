@@ -2,7 +2,7 @@
 export interface Voucher {
   id: string;
   code: string;
-  discount_type: string;
+  discount_type: "percentage" | "fixed";
   discount_amount: number;
   min_amount?: number;
   min_items?: number;
@@ -18,7 +18,7 @@ export interface Voucher {
 
 export interface VoucherFormData {
   code: string;
-  discount_type: string;
+  discount_type: "percentage" | "fixed";
   discount_amount: number;
   min_amount?: number;
   min_items?: number;
@@ -28,5 +28,3 @@ export interface VoucherFormData {
   max_uses?: number;
   is_active: boolean;
 }
-
-// Outros tipos relacionados aos vouchers, se existirem

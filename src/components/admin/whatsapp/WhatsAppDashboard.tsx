@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,7 @@ import { useWhatsAppInstances } from "@/hooks/use-whatsapp-instances";
 import { useWhatsAppMessages } from "@/hooks/use-whatsapp-messages";
 import QRCode from "react-qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WhatsAppInstanceCard } from "./WhatsAppInstanceCard";
+import WhatsAppInstanceCard from "./WhatsAppInstanceCard";
 import WhatsAppChat from "./WhatsAppChat";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus } from "lucide-react";
@@ -50,7 +49,7 @@ const WhatsAppDashboard = () => {
     messages, 
     loading: messagesLoading, 
     sendMessage 
-  } = useWhatsAppMessages(selectedInstanceId ? undefined : undefined);
+  } = useWhatsAppMessages(selectedInstanceId);
 
   // Fetch instances on component mount
   useEffect(() => {
