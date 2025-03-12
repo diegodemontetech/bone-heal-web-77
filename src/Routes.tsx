@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
 import Home from "@/pages/Index";
 import About from "@/pages/About";
@@ -23,6 +22,7 @@ export function Routes() {
   return (
     <BrowserRouter>
       <RoutesList>
+        {/* Rotas públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/products" element={<Products />} />
@@ -34,14 +34,11 @@ export function Routes() {
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
         
-        {/* Rotas de Pedidos */}
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/orders/:id" element={<OrderDetails />} />
-
         {/* Rotas de Admin */}
         <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          {adminRoutes.children && adminRoutes.children.map((route, index) => (
+          <Route index element={<AdminDashboard />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          {adminRoutes.children && adminRoutes.children.filter(Boolean).map((route, index) => (
             <Route key={index} path={route.path} element={route.element} />
           ))}
         </Route>

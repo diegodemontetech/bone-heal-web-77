@@ -1,5 +1,7 @@
 
 import { ReactNode, Suspense } from "react";
+import { useAuth } from "@/hooks/use-auth-context";
+import { Navigate, useLocation } from "react-router-dom";
 
 export const AdminLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -8,7 +10,17 @@ export const AdminLoader = () => (
 );
 
 export const AdminRoute = ({ children }: { children?: ReactNode }) => {
-  console.log("AdminRoute renderizado");
+  const { profile, isAdmin } = useAuth();
+  const location = useLocation();
+
+  if (!profile) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
   return (
     <Suspense fallback={<AdminLoader />}>
       {children}
