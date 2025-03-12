@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { UserPermission } from "@/types/auth";
+import AdminLayout from "@/components/admin/Layout";
 
 // CRM-related pages
 const AdminLeads = lazy(() => import("@/pages/admin/Leads"));
@@ -21,7 +22,9 @@ export const crmRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
-          <AdminLeads />
+          <AdminLayout>
+            <AdminLeads />
+          </AdminLayout>
         </ProtectedRoute>
       </Suspense>
     )
@@ -31,7 +34,9 @@ export const crmRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
-          <LeadsKanbanPage />
+          <AdminLayout>
+            <LeadsKanbanPage />
+          </AdminLayout>
         </ProtectedRoute>
       </Suspense>
     )
