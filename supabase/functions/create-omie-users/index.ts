@@ -78,6 +78,15 @@ async function criarUsuariosOmie() {
             .update({ cliente_id: cliente.id })
             .eq('cnpj_cpf', cliente.cnpj_cpf);
             
+          // Atualizar informações de Omie no perfil do usuário
+          await supabase
+            .from('profiles')
+            .update({ 
+              omie_code: cliente.codigo_cliente_omie,
+              omie_sync: true
+            })
+            .eq('id', userWithEmail.id);
+            
           stats.updated++;
           continue;
         }

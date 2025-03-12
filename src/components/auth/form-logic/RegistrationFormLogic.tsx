@@ -55,7 +55,10 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
             }
           });
 
-          if (authError) throw authError;
+          if (authError) {
+            console.error("Erro ao criar usuário:", authError);
+            throw authError;
+          }
           
           console.log("Usuário criado com sucesso:", newUser);
           
@@ -117,6 +120,12 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
             
             // Tentar sincronizar com o Omie
             const syncedCustomer = await syncCustomerWithOmie(newCustomer);
+            
+            // Verificar que temos um cliente com dados completos
+            if (!syncedCustomer || !syncedCustomer.id) {
+              console.error("Cliente sincronizado incompleto:", syncedCustomer);
+              throw new Error("Dados do cliente sincronizado incompletos");
+            }
             
             // Chamar o callback de sucesso, se fornecido
             if (onSuccess) {
@@ -210,13 +219,20 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Erro na resposta da API Omie:", errorText);
-        throw new Error(`Erro na API Omie: ${response.status} ${errorText}`);
+        console.warn("Continuando com o cliente não-sincronizado...");
+        return customer; // Retorna o cliente original se a sincronização falhar
       }
       
-      const result = await response.json();
-      console.log("Resultado da sincronização com Omie:", result);
+      let result;
+      try {
+        result = await response.json();
+        console.log("Resultado da sincronização com Omie:", result);
+      } catch (jsonError) {
+        console.error("Erro ao processar resposta da API Omie:", jsonError);
+        return customer;
+      }
       
-      if (result.success) {
+      if (result && result.success) {
         console.log("Sincronização com Omie realizada com sucesso");
         
         // Atualizar o cliente com o código Omie
@@ -228,6 +244,7 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
           .single();
           
         if (!updateError && updatedCustomer) {
+          console.log("Cliente atualizado com código Omie:", updatedCustomer);
           return updatedCustomer;
         }
       }

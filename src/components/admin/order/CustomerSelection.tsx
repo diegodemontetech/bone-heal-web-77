@@ -71,6 +71,9 @@ export const CustomerSelection = ({
                   <p className="text-sm text-muted-foreground">
                     {customer.email} {customer.phone && `• ${customer.phone}`}
                   </p>
+                  {customer.omie_code && (
+                    <p className="text-xs text-green-600">Cód. Omie: {customer.omie_code}</p>
+                  )}
                 </div>
               ))
             ) : (
