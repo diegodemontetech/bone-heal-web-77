@@ -4,6 +4,18 @@ export interface OrderItem {
   quantity: number;
   price: number;
   name: string;
+  product_name?: string;
+  total_price?: number;
+}
+
+export interface ShippingAddress {
+  zip_code: string;
+  city: string;
+  state: string;
+  address: string;
+  number?: string;
+  complement?: string;
+  neighborhood?: string;
 }
 
 export interface Order {
@@ -16,23 +28,18 @@ export interface Order {
   shipping_fee: number;
   total_amount: number;
   payment_method?: string;
+  payment_status?: string;
   installments?: number;
   mp_preference_id?: string;
-  shipping_address?: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zip_code: string;
-  };
+  shipping_address?: ShippingAddress;
   created_at: string;
   updated_at: string;
+  profiles?: Record<string, any>;
+  omie_status?: string;
 }
 
 export interface CreateOrderDTO {
   items: OrderItem[];
-  shipping_address: NonNullable<Order['shipping_address']>;
+  shipping_address: ShippingAddress;
   voucher_code?: string;
 }

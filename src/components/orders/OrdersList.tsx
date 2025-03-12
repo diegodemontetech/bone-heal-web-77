@@ -1,14 +1,6 @@
 
 import OrderCard from "./OrderCard";
-
-interface Order {
-  id: string;
-  status: string;
-  created_at: string;
-  payment_method: string;
-  total_amount: number;
-  items: any[];
-}
+import { Order } from "@/types/order";
 
 interface OrdersListProps {
   orders: Order[];

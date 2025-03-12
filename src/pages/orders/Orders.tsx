@@ -10,10 +10,11 @@ import OrdersList from "@/components/orders/OrdersList";
 import OrdersLoading from "@/components/orders/OrdersLoading";
 import OrdersEmpty from "@/components/orders/OrdersEmpty";
 import { toast } from "sonner";
-import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
+import { parseJsonArray } from "@/utils/supabaseJsonUtils";
+import { Order, ShippingAddress } from "@/types/order";
 
 const Orders = () => {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -50,11 +51,11 @@ const Orders = () => {
           const profileData = order.profiles || {};
           
           // Cria um objeto de endereço com valores padrão
-          const shippingAddress = {
-            zip_code: profileData?.zip_code || '',
-            city: profileData?.city || '',
-            state: profileData?.state || '',
-            address: profileData?.address || ''
+          const shippingAddress: ShippingAddress = {
+            zip_code: profileData.zip_code || '',
+            city: profileData.city || '',
+            state: profileData.state || '',
+            address: profileData.address || ''
           };
           
           return {

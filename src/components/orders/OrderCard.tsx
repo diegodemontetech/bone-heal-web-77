@@ -3,15 +3,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
-
-interface Order {
-  id: string;
-  status: string;
-  created_at: string;
-  payment_method: string;
-  total_amount: number;
-  items: any[];
-}
+import { Order } from "@/types/order";
 
 interface OrderCardProps {
   order: Order;
