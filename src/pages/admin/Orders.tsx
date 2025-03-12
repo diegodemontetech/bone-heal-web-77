@@ -36,11 +36,32 @@ const Orders = () => {
     queryKey: ["admin-orders"],
     queryFn: async () => {
       try {
-        if (!isAdmin) {
+        // Verificar se o usuário é admin antes de fazer a consulta
+        const { data: session } = await supabase.auth.getSession();
+        if (!session?.session?.user?.id) {
+          toast.error("Você precisa estar autenticado");
+          navigate("/admin/login");
+          return [];
+        }
+        
+        // Verificar permissões diretamente no frontend
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("is_admin, role")
+          .eq("id", session.session.user.id)
+          .single();
+          
+        const hasAdminPermission = 
+          profileData?.is_admin === true || 
+          profileData?.role === 'admin' || 
+          profileData?.role === 'admin_master';
+          
+        if (!hasAdminPermission) {
           toast.error("Você não tem permissão para ver os pedidos");
           return [];
         }
 
+        // Buscar pedidos apenas se tiver permissão
         const { data, error } = await supabase
           .from("orders")
           .select(`
@@ -69,6 +90,7 @@ const Orders = () => {
       }
     },
     enabled: isAdmin, // Só executa a query se o usuário for admin
+    refetchOnWindowFocus: false, // Evita recarregar os dados toda vez que a janela ganhar foco
   });
 
   useEffect(() => {
@@ -88,6 +110,7 @@ const Orders = () => {
     setSelectedOrder(order);
   };
 
+  // Retorna null se não for admin para prevenir renderização do conteúdo
   if (!isAdmin) {
     return null;
   }

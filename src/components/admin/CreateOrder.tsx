@@ -67,8 +67,31 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
 
   const [zipCode, setZipCode] = useState("");
 
-  const handleCreateOrder = () => {
+  const handleCreateOrder = async () => {
     if (!isAdmin) {
+      toast.error("Você não tem permissão para criar pedidos");
+      return;
+    }
+
+    // Verificar diretamente no Supabase se o usuário tem permissão
+    const { data: session } = await supabase.auth.getSession();
+    if (!session?.session?.user?.id) {
+      toast.error("Você precisa estar autenticado");
+      return;
+    }
+    
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("is_admin, role")
+      .eq("id", session.session.user.id)
+      .single();
+      
+    const hasAdminPermission = 
+      profileData?.is_admin === true || 
+      profileData?.role === 'admin' || 
+      profileData?.role === 'admin_master';
+      
+    if (!hasAdminPermission) {
       toast.error("Você não tem permissão para criar pedidos");
       return;
     }
@@ -77,6 +100,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
       toast.error("Selecione um cliente para criar o pedido");
       return;
     }
+    
     createOrder(selectedCustomer, selectedProducts, selectedShipping);
   };
 
