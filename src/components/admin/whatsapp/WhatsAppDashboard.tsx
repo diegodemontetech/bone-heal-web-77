@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
@@ -79,6 +78,13 @@ const WhatsAppDashboard = () => {
       setNewInstanceName("");
       setSelectedInstanceId(instance.id);
       setActiveTab("chat");
+    }
+  };
+
+  const handleDeleteInstance = async (instanceId: string) => {
+    if (window.confirm("Tem certeza que deseja excluir esta instância?")) {
+      // Implemente a lógica de exclusão aqui
+      console.log("Deletando instância:", instanceId);
     }
   };
 
@@ -179,6 +185,7 @@ const WhatsAppDashboard = () => {
                   instance={instance}
                   onSelect={() => handleSelectInstance(instance.id)}
                   onRefreshQr={() => refreshQrCode(instance.id)}
+                  onDelete={() => handleDeleteInstance(instance.id)}
                 />
               ))}
             </div>

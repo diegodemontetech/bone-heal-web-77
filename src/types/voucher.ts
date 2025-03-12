@@ -1,4 +1,3 @@
-
 export interface Voucher {
   id: string;
   code: string;
@@ -13,7 +12,7 @@ export interface Voucher {
   current_uses: number;
   created_at: string;
   updated_at: string;
-  is_active: boolean; // Campo obrigatório
+  is_active: boolean;
 }
 
 export interface VoucherFormData {

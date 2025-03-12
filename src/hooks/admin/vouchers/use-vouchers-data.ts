@@ -21,7 +21,7 @@ export const useVouchersData = () => {
       
       const formattedVouchers = data.map(voucher => ({
         ...voucher,
-        is_active: voucher.is_active !== undefined ? voucher.is_active : true
+        is_active: typeof voucher.is_active === 'boolean' ? voucher.is_active : true
       })) as Voucher[];
       
       setVouchers(formattedVouchers);
