@@ -1,251 +1,271 @@
-
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CartItem } from "@/hooks/use-cart";
-import { ShippingRate, ShippingCalculationRate } from "@/types/shipping";
+import { ShippingCalculationRate } from "@/types/shipping";
+
+interface ShippingRate {
+  id?: string;
+  region: string;
+  state: string;
+  zip_code_start: string;
+  zip_code_end: string;
+  flat_rate: number;
+  rate: number;
+  additional_kg_rate: number;
+  estimated_days: number;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export const useShippingRates = () => {
-  const [shippingRates, setShippingRates] = useState<ShippingCalculationRate[]>([]);
-  const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingCalculationRate | null>(null);
-  const [loading, setLoading] = useState(false);
-  const calculationInProgress = useRef(false);
-  const lastCalculatedZipCode = useRef("");
-  const maxRetries = useRef(3);
-  const retryCount = useRef(0);
+  const [rates, setRates] = useState<ShippingRate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<Partial<ShippingRate>>({
+    region: "",
+    state: "",
+    zip_code_start: "",
+    zip_code_end: "",
+    flat_rate: 0,
+    rate: 0,
+    additional_kg_rate: 0,
+    estimated_days: 3,
+    is_active: true
+  });
+  const [shippingOptions, setShippingOptions] = useState<ShippingCalculationRate[]>([]);
 
-  // Função para calcular o frete usando a tabela de fretes
-  const calculateShipping = async (zipCodeInput: string, cartItems: CartItem[]) => {
-    // Verificar parâmetros de entrada
-    if (!zipCodeInput) {
-      console.log("CEP não fornecido para cálculo");
-      return;
-    }
-    
-    // Limpar o CEP para ter apenas números
-    const cleanZipCode = zipCodeInput.replace(/\D/g, '');
-    
-    if (cleanZipCode.length !== 8) {
-      console.log("CEP inválido para cálculo (deve ter 8 dígitos):", cleanZipCode);
-      return;
-    }
-    
-    // Evitar recálculos para o mesmo CEP
-    if (lastCalculatedZipCode.current === cleanZipCode && shippingRates.length > 0) {
-      console.log("Usando taxas de frete já calculadas para o CEP:", cleanZipCode);
-      return;
-    }
-    
-    // Evitar cálculos simultâneos
-    if (calculationInProgress.current) {
-      console.log("Cálculo de frete já em andamento, ignorando nova solicitação");
-      return;
-    }
-    
-    calculationInProgress.current = true;
+  useEffect(() => {
+    fetchRates();
+  }, []);
+
+  const fetchRates = async () => {
     setLoading(true);
-    retryCount.current = 0;
-    
     try {
-      console.log(`Calculando frete para CEP: ${cleanZipCode} com ${cartItems.length} itens`);
-      
-      // Preparar itens para envio (incluindo peso)
-      const itemsWithWeight = cartItems.map(item => ({
-        ...item,
-        weight: item.weight || 0.5 // Peso padrão de 500g se não especificado
-      }));
-      
-      // Peso total do pedido (importante para fretes que cobram por kg)
-      const totalWeight = itemsWithWeight.reduce((acc, item) => acc + (item.weight * item.quantity), 0);
-      console.log(`Peso total do pedido: ${totalWeight}kg`);
-      
-      // Calcular peso considerando que cada kg é arredondado para cima (peso dimensional)
-      const weightForShipping = Math.ceil(totalWeight);
-      console.log(`Peso arredondado para cálculo: ${weightForShipping}kg`);
-      
-      // Identificar a região baseada no CEP
-      const region = getRegionFromZipCode(cleanZipCode);
-      console.log(`Região identificada pelo CEP: ${region}`);
-      
-      if (!region) {
-        throw new Error("Não foi possível identificar a região pelo CEP");
-      }
-      
-      // Buscar taxas da tabela para a região e faixa de CEP
-      const { data: ratesFromDb, error: ratesError } = await supabase
-        .from('shipping_rates')
-        .select('*')
-        .eq('region', region)
-        .lte('zip_code_start', cleanZipCode)
-        .gte('zip_code_end', cleanZipCode)
-        .eq('is_active', true);
-      
-      if (ratesError) {
-        throw new Error(ratesError.message);
-      }
-      
-      let ratesData = ratesFromDb;
-      
-      if (!ratesData || ratesData.length === 0) {
-        console.log("Nenhuma taxa encontrada para a região e CEP específicos, buscando taxas gerais da região");
-        
-        // Tentar buscar taxas gerais para a região
-        const { data: regionRates, error: regionError } = await supabase
-          .from('shipping_rates')
-          .select('*')
-          .eq('region', region)
-          .eq('is_active', true);
-          
-        if (regionError) {
-          throw new Error(regionError.message);
-        }
-        
-        if (!regionRates || regionRates.length === 0) {
-          throw new Error("Nenhuma taxa de entrega disponível para a região");
-        }
-        
-        ratesData = regionRates;
-      }
-      
-      console.log("Taxas encontradas na tabela:", ratesData);
-      
-      // Processar as taxas da tabela para o formato compatível com o componente ShippingOptions
-      const processedRates: ShippingCalculationRate[] = ratesData.map((rate: ShippingRate) => {
-        // Calcular o valor final considerando o peso
-        const baseRate = rate.flat_rate || 0;
-        let finalRate = baseRate;
-        
-        // Se o peso for maior que 1kg, adicionar taxa por kg adicional
-        if (weightForShipping > 1 && rate.additional_kg_rate) {
-          const additionalWeight = weightForShipping - 1;
-          finalRate += additionalWeight * rate.additional_kg_rate;
-        }
-        
-        const serviceCode = rate.id;
-        const serviceName = `${rate.region} - ${rate.estimated_days} dias`;
-        
-        return {
-          id: rate.id,
-          region: rate.region,
-          zip_code_start: rate.zip_code_start,
-          zip_code_end: rate.zip_code_end,
-          flat_rate: rate.flat_rate,
-          additional_kg_rate: rate.additional_kg_rate,
-          estimated_days: rate.estimated_days,
-          is_active: rate.is_active,
-          
-          // Campos para compatibilidade com o componente ShippingOptions
-          service_type: serviceCode,
-          name: serviceName,
-          rate: finalRate,
-          delivery_days: rate.estimated_days,
-          zipCode: cleanZipCode
-        };
-      });
-      
-      // Ordenar por preço (mais barato primeiro)
-      processedRates.sort((a, b) => a.rate - b.rate);
-      
-      setShippingRates(processedRates);
-      
-      // Seleciona a opção mais barata por padrão
-      if (processedRates.length > 0) {
-        setSelectedShippingRate(processedRates[0]);
-      }
-      
-      // Guarda o CEP calculado para evitar recálculos
-      lastCalculatedZipCode.current = cleanZipCode;
-      
-    } catch (error) {
-      console.error('Erro ao calcular frete:', error);
-      
-      // Tentar novamente se não excedemos o número máximo de tentativas
-      if (retryCount.current < maxRetries.current) {
-        retryCount.current += 1;
-        console.log(`Tentativa ${retryCount.current} de ${maxRetries.current} para calcular frete`);
-        
-        // Definir opções de frete padrão para evitar tela vazia
-        const defaultRates: ShippingCalculationRate[] = [
-          {
-            service_type: "PAC",
-            name: "PAC (Convencional)",
-            rate: 25.00,
-            delivery_days: 7,
-            zipCode: cleanZipCode
-          },
-          {
-            service_type: "SEDEX",
-            name: "SEDEX (Express)",
-            rate: 45.00,
-            delivery_days: 2,
-            zipCode: cleanZipCode
-          }
-        ];
-        
-        setShippingRates(defaultRates);
-        setSelectedShippingRate(defaultRates[0]);
-        lastCalculatedZipCode.current = cleanZipCode;
-      } else {
-        toast.error("Não foi possível calcular o frete. Por favor, tente novamente.");
-      }
+      const { data, error } = await supabase
+        .from("shipping_rates")
+        .select("*")
+        .order("region", { ascending: true });
+
+      if (error) throw error;
+      setRates(data);
+    } catch (err) {
+      console.error("Erro ao buscar taxas de envio:", err);
+      toast.error("Erro ao carregar taxas de envio");
     } finally {
       setLoading(false);
-      calculationInProgress.current = false;
     }
   };
 
-  // Função para mudar a opção de frete selecionada
-  const handleShippingRateChange = (rate: ShippingCalculationRate) => {
-    setSelectedShippingRate(rate);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (type === "number") {
+      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
-  // Função para limpar/resetar o cálculo
-  const resetShipping = () => {
-    lastCalculatedZipCode.current = "";
-    setShippingRates([]);
-    setSelectedShippingRate(null);
+  const handleSelectChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Função para determinar a região com base no CEP
-  const getRegionFromZipCode = (zipCode: string): string => {
-    const prefix = parseInt(zipCode.substring(0, 2));
+  const resetForm = () => {
+    setFormData({
+      region: "",
+      state: "",
+      zip_code_start: "",
+      zip_code_end: "",
+      flat_rate: 0,
+      rate: 0,
+      additional_kg_rate: 0,
+      estimated_days: 3,
+      is_active: true
+    });
+    setIsEditing(false);
+  };
+
+  const openEditDialog = (rate: ShippingRate) => {
+    setFormData(rate);
+    setIsEditing(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleCreateRate = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Mapeamento de faixas de CEP para regiões brasileiras
-    if (prefix >= 1 && prefix <= 19) return 'Sudeste';
-    if (prefix >= 20 && prefix <= 28) return 'Sudeste';
-    if (prefix >= 29 && prefix <= 29) return 'Sudeste';
-    if (prefix >= 30 && prefix <= 39) return 'Sudeste';
-    if (prefix >= 40 && prefix <= 48) return 'Nordeste';
-    if (prefix >= 49 && prefix <= 49) return 'Nordeste';
-    if (prefix >= 50 && prefix <= 56) return 'Nordeste';
-    if (prefix >= 57 && prefix <= 57) return 'Nordeste';
-    if (prefix >= 58 && prefix <= 58) return 'Nordeste';
-    if (prefix >= 59 && prefix <= 59) return 'Nordeste';
-    if (prefix >= 60 && prefix <= 63) return 'Nordeste';
-    if (prefix >= 64 && prefix <= 64) return 'Nordeste';
-    if (prefix >= 65 && prefix <= 65) return 'Nordeste';
-    if (prefix >= 66 && prefix <= 68) return 'Norte';
-    if (prefix >= 69 && prefix <= 69) return 'Norte';
-    if (prefix >= 70 && prefix <= 72) return 'Centro-Oeste';
-    if (prefix >= 73 && prefix <= 73) return 'Centro-Oeste';
-    if (prefix >= 74 && prefix <= 76) return 'Centro-Oeste';
-    if (prefix >= 77 && prefix <= 77) return 'Norte';
-    if (prefix >= 78 && prefix <= 78) return 'Centro-Oeste';
-    if (prefix >= 79 && prefix <= 79) return 'Centro-Oeste';
-    if (prefix >= 80 && prefix <= 87) return 'Sul';
-    if (prefix >= 88 && prefix <= 89) return 'Sul';
-    if (prefix >= 90 && prefix <= 99) return 'Sul';
-    
-    // Valores padrão
-    return 'Sudeste';
+    // Validação básica
+    if (!formData.region || !formData.state || !formData.zip_code_start || !formData.zip_code_end) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    try {
+      if (isEditing && formData.id) {
+        // Atualizar
+        const { error } = await supabase
+          .from("shipping_rates")
+          .update({
+            region: formData.region,
+            state: formData.state,
+            zip_code_start: formData.zip_code_start,
+            zip_code_end: formData.zip_code_end,
+            flat_rate: formData.flat_rate || 0,
+            rate: formData.rate || 0,
+            additional_kg_rate: formData.additional_kg_rate || 0,
+            estimated_days: formData.estimated_days || 3,
+            is_active: formData.is_active === undefined ? true : formData.is_active
+          })
+          .eq("id", formData.id);
+
+        if (error) throw error;
+        toast.success("Taxa de envio atualizada com sucesso");
+      } else {
+        // Criar
+        const { error } = await supabase
+          .from("shipping_rates")
+          .insert([{
+            region: formData.region,
+            state: formData.state,
+            zip_code_start: formData.zip_code_start,
+            zip_code_end: formData.zip_code_end,
+            flat_rate: formData.flat_rate || 0,
+            rate: formData.rate || 0,
+            additional_kg_rate: formData.additional_kg_rate || 0,
+            estimated_days: formData.estimated_days || 3,
+            is_active: formData.is_active === undefined ? true : formData.is_active
+          }]);
+
+        if (error) throw error;
+        toast.success("Taxa de envio criada com sucesso");
+      }
+
+      // Recarregar dados e fechar diálogo
+      await fetchRates();
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (err) {
+      console.error("Erro ao salvar taxa de envio:", err);
+      toast.error("Erro ao salvar taxa de envio");
+    }
+  };
+
+  const handleDeleteRate = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta taxa de envio?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("shipping_rates")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      
+      setRates(prev => prev.filter(rate => rate.id !== id));
+      toast.success("Taxa de envio excluída com sucesso");
+    } catch (err) {
+      console.error("Erro ao excluir taxa de envio:", err);
+      toast.error("Erro ao excluir taxa de envio");
+    }
+  };
+
+  const calculateShipping = async (zipCode: string, serviceType: string) => {
+    try {
+      // Remove caracteres não numéricos do CEP
+      const cleanedZipCode = zipCode.replace(/\D/g, '');
+  
+      // Busca a taxa de envio no banco de dados
+      const { data: shippingRate, error } = await supabase
+        .from('shipping_rates')
+        .select('*')
+        .eq('zip_code_start', cleanedZipCode)
+        .single();
+  
+      if (error) {
+        console.error("Erro ao buscar taxa de envio:", error);
+        return null;
+      }
+  
+      if (!shippingRate) {
+        console.log("Taxa de envio não encontrada para o CEP:", cleanedZipCode);
+        return null;
+      }
+  
+      // Calcula o preço total com base na taxa e outros fatores (peso, etc.)
+      const totalPrice = shippingRate.flat_rate || 0; // Usando apenas a taxa fixa por enquanto
+      const estimatedDays = shippingRate.estimated_days || 3; // Usando dias estimados
+  
+      return {
+        totalPrice,
+        estimatedDays
+      };
+    } catch (error) {
+      console.error("Erro ao calcular frete:", error);
+      return null;
+    }
+  };
+
+  const getShippingByZipCode = async (zipCode: string) => {
+    setLoading(true);
+    setShippingOptions([]);
+    try {
+      const options: ShippingCalculationRate[] = [];
+
+      // Ao criar ShippingCalculationRate em getShippingByZipCode
+      const sedexResponse = await calculateShipping(zipCode, "SEDEX");
+      if (sedexResponse) {
+        options.push({
+          id: 'sedex-' + zipCode, // Adicionando ID único
+          name: "SEDEX",
+          service_type: "SEDEX",
+          rate: sedexResponse.totalPrice,
+          delivery_days: sedexResponse.estimatedDays,
+          zipCode
+        });
+      }
+
+      const pacResponse = await calculateShipping(zipCode, "PAC");
+      if (pacResponse) {
+        options.push({
+          id: 'pac-' + zipCode, // Adicionando ID único
+          name: "PAC",
+          service_type: "PAC",
+          rate: pacResponse.totalPrice,
+          delivery_days: pacResponse.estimatedDays,
+          zipCode
+        });
+      }
+
+      setShippingOptions(options);
+    } catch (error) {
+      console.error("Erro ao obter opções de frete:", error);
+      toast.error("Erro ao obter opções de frete");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return {
-    shippingRates,
-    selectedShippingRate,
+    rates,
     loading,
-    calculateShipping,
-    handleShippingRateChange,
-    resetShipping,
+    isDialogOpen,
+    setIsDialogOpen,
+    isEditing,
+    formData,
+    handleInputChange,
+    handleSelectChange,
+    resetForm,
+    openEditDialog,
+    handleCreateRate,
+    handleDeleteRate,
+    getShippingByZipCode,
+    shippingOptions
   };
 };

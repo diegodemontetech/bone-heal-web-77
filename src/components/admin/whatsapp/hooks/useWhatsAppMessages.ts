@@ -7,14 +7,21 @@ export interface WhatsAppMessage {
   id: string;
   lead_id: string;
   message: string;
-  sent_by: string;
   direction: string;
+  sent_by: string;
   is_bot: boolean;
   created_at: string;
   media_type?: string;
   media_url?: string;
   instance_id?: string;
   sender_id?: string;
+  // Campos compatíveis com a interface esperada em outros componentes
+  from?: string;
+  to?: string;
+  body?: string;
+  type?: string;
+  timestamp?: string;
+  is_sent_by_me?: boolean;
 }
 
 export const useWhatsAppMessages = (leadId: string | undefined) => {
@@ -35,10 +42,17 @@ export const useWhatsAppMessages = (leadId: string | undefined) => {
           
         if (error) throw error;
         
-        // Mapear para garantir a tipagem correta
+        // Mapear para garantir a tipagem correta e adicionar os campos compatíveis
         const typedMessages = data.map(msg => ({
           ...msg,
-          sent_by: msg.direction === 'outbound' ? 'us' : 'them'
+          sent_by: msg.direction === 'outbound' ? 'us' : 'them',
+          // Campos compatíveis
+          from: msg.direction === 'outbound' ? 'system' : leadId,
+          to: msg.direction === 'outbound' ? leadId : 'system',
+          body: msg.message,
+          type: msg.media_type || 'text',
+          timestamp: msg.created_at,
+          is_sent_by_me: msg.direction === 'outbound'
         })) as WhatsAppMessage[];
         
         setMessages(typedMessages);
@@ -63,7 +77,14 @@ export const useWhatsAppMessages = (leadId: string | undefined) => {
       }, (payload) => {
         const newMessage = {
           ...payload.new,
-          sent_by: payload.new.direction === 'outbound' ? 'us' : 'them'
+          sent_by: payload.new.direction === 'outbound' ? 'us' : 'them',
+          // Campos compatíveis
+          from: payload.new.direction === 'outbound' ? 'system' : leadId,
+          to: payload.new.direction === 'outbound' ? leadId : 'system',
+          body: payload.new.message,
+          type: payload.new.media_type || 'text',
+          timestamp: payload.new.created_at,
+          is_sent_by_me: payload.new.direction === 'outbound'
         } as WhatsAppMessage;
         
         setMessages(prev => [...prev, newMessage]);

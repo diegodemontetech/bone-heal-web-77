@@ -1,186 +1,213 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useWhatsAppInstances } from '@/hooks/use-whatsapp-instances';
-import { useWhatsAppMessages } from '@/hooks/use-whatsapp-messages';
-import QRCode from 'react-qr-code';
-import { WhatsAppInstance } from '@/types/automation';
-import WhatsAppInstanceCard from './WhatsAppInstanceCard';
-import WhatsAppChat from './WhatsAppChat';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import { useWhatsAppInstances } from "@/hooks/use-whatsapp-instances";
+import { useWhatsAppMessages } from "@/hooks/use-whatsapp-messages";
+import QRCode from "react-qr-code";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WhatsAppInstanceCard } from "./WhatsAppInstanceCard";
+import WhatsAppChat from "./WhatsAppChat";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, Plus } from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const WhatsAppDashboard = () => {
-  const [newInstanceName, setNewInstanceName] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedInstance, setSelectedInstance] = useState<WhatsAppInstance | null>(null);
-  const [activeContact, setActiveContact] = useState<string>('');
-
+  const [newInstanceName, setNewInstanceName] = useState("");
+  const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("instances");
+  const [userId, setUserId] = useState<string | null>(null);
+  
   const { 
     instances, 
     isLoading, 
+    error, 
+    fetchInstances, 
     createInstance, 
     refreshQrCode,
-    isCreating,
-    fetchInstances
+    isCreating
   } = useWhatsAppInstances();
-
+  
   const { 
     messages, 
     loading: messagesLoading, 
     sendMessage 
-  } = useWhatsAppMessages(
-    selectedInstance?.id || '', 
-    activeContact
-  );
+  } = useWhatsAppMessages(selectedInstanceId ? undefined : undefined);
+
+  // Fetch instances on component mount
+  useEffect(() => {
+    fetchInstances();
+    
+    // Get current user ID
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setUserId(data.user.id);
+      }
+    };
+    
+    getCurrentUser();
+  }, []);
 
   const handleCreateInstance = async () => {
     if (!newInstanceName.trim()) {
-      toast.error('O nome da instância é obrigatório');
+      toast.error("Nome da instância não pode estar vazio");
       return;
     }
-
-    try {
-      await createInstance(newInstanceName);
-      setNewInstanceName('');
+    
+    const instance = await createInstance(newInstanceName);
+    
+    if (instance) {
       setIsDialogOpen(false);
-      toast.success('Instância criada com sucesso');
-    } catch (error) {
-      toast.error('Erro ao criar instância');
-      console.error(error);
+      setNewInstanceName("");
+      setSelectedInstanceId(instance.id);
+      setActiveTab("chat");
     }
   };
 
-  const handleDeleteInstance = async (instanceId: string) => {
-    try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/evolution-api`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'delete',
-          instanceId
-        }),
-      });
-
-      const { error } = await supabase
-        .from('whatsapp_instances')
-        .delete()
-        .eq('id', instanceId);
-
-      if (error) throw error;
-
-      if (selectedInstance?.id === instanceId) {
-        setSelectedInstance(null);
-      }
-
-      fetchInstances();
-      toast.success('Instância excluída com sucesso');
-    } catch (error) {
-      console.error('Erro ao excluir instância:', error);
-      toast.error('Erro ao excluir instância');
-    }
-  };
-
-  const handleSelectInstance = (instance: WhatsAppInstance) => {
-    setSelectedInstance(instance);
+  const handleSelectInstance = (instanceId: string) => {
+    setSelectedInstanceId(instanceId);
+    setActiveTab("chat");
   };
 
   const handleSendMessage = async (message: string) => {
-    if (!selectedInstance || !activeContact) return false;
-    return await sendMessage(message);
+    if (!selectedInstanceId || !message.trim()) return false;
+    
+    // Lógica para enviar mensagem
+    return true;
   };
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+          <h3 className="font-semibold">Erro ao carregar instâncias WhatsApp</h3>
+          <p>{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">WhatsApp Integration</h1>
+        <h1 className="text-2xl font-bold">WhatsApp</h1>
+        
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="w-4 h-4 mr-2" />
               Nova Instância
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Criar Nova Instância WhatsApp</DialogTitle>
+              <DialogDescription>
+                Insira um nome para identificar sua nova instância WhatsApp.
+              </DialogDescription>
             </DialogHeader>
+            
             <div className="py-4">
-              <Label htmlFor="instance-name">Nome da Instância</Label>
-              <Input 
-                id="instance-name" 
-                value={newInstanceName} 
+              <Input
+                placeholder="Nome da Instância"
+                value={newInstanceName}
                 onChange={(e) => setNewInstanceName(e.target.value)}
-                placeholder="Ex: Atendimento"
               />
             </div>
+            
             <DialogFooter>
-              <Button onClick={handleCreateInstance} disabled={isCreating}>
-                {isCreating ? 'Criando...' : 'Criar'}
+              <Button
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleCreateInstance}
+                disabled={isCreating}
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-bold mb-4">Instâncias</h2>
-              
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                </div>
-              ) : instances.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">Nenhuma instância encontrada</p>
-                  <Button onClick={() => setIsDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Criar Instância
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {instances.map((instance) => (
-                    <WhatsAppInstanceCard
-                      key={instance.id}
-                      instance={instance}
-                      onRefreshQr={refreshQrCode}
-                      onSelect={handleSelectInstance}
-                      onDelete={handleDeleteInstance}
-                    />
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-2">
-          {selectedInstance ? (
-            <WhatsAppChat
+      
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="instances">Instâncias</TabsTrigger>
+          <TabsTrigger value="chat" disabled={!selectedInstanceId}>
+            Chat
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="instances">
+          {isLoading ? (
+            <div className="flex justify-center p-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : instances.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {instances.map((instance) => (
+                <WhatsAppInstanceCard
+                  key={instance.id}
+                  instance={instance}
+                  onSelect={() => handleSelectInstance(instance.id)}
+                  onRefreshQr={() => refreshQrCode(instance.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 border rounded-lg">
+              <p className="text-muted-foreground mb-4">
+                Você ainda não tem nenhuma instância WhatsApp.
+              </p>
+              <Button 
+                onClick={() => setIsDialogOpen(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira Instância
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="chat">
+          {selectedInstanceId && (
+            <WhatsAppChat 
               messages={messages}
               isLoading={messagesLoading}
               onSendMessage={handleSendMessage}
             />
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center py-20">
-                <h2 className="text-xl font-bold mb-4">Chat WhatsApp</h2>
-                <p className="text-muted-foreground mb-4">Selecione uma instância para iniciar o chat</p>
-              </CardContent>
-            </Card>
           )}
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

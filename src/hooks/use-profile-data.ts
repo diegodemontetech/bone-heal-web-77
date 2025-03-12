@@ -1,63 +1,105 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserProfile } from "@/types/auth";
-import { useAuth } from "@/hooks/use-auth-context";
 import { toast } from "sonner";
+import { UserRole } from "@/types/auth";
 
-export interface ProfileData extends UserProfile {}
+export interface ProfileData {
+  id: string;
+  full_name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  neighborhood?: string;
+  complemento?: string;
+  endereco_numero?: string;
+  cro?: string;
+  specialty?: string;
+  cpf?: string;
+  cnpj?: string;
+  role: UserRole;
+  is_admin?: boolean;
+  omie_sync?: boolean;
+  omie_code?: string;
+  // Outros campos do perfil
+}
 
 export const useProfileData = () => {
-  const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData>({
+    id: "",
+    full_name: "",
+    email: "",
+    role: UserRole.DENTIST // Valor padrão
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { session } = useAuth();
 
   useEffect(() => {
-    const fetchProfileData = async () => {
-      if (!session?.user.id) {
-        setLoading(false);
-        return;
-      }
+    fetchProfile();
+  }, []);
 
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
+  const fetchProfile = async () => {
+    setLoading(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      
+      if (userData?.user) {
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", session.user.id)
+          .eq("id", userData.user.id)
           .single();
+          
+        if (profileError) throw profileError;
+        
+        if (profile) {
+          // Converter string do role para o enum UserRole
+          const userRole = profile.role as string;
+          const mappedRole = Object.values(UserRole).includes(userRole as UserRole) 
+            ? userRole as UserRole 
+            : UserRole.DENTIST;
 
-        if (error) throw error;
-        setProfileData(data);
-      } catch (err) {
-        console.error("Erro ao buscar perfil:", err);
-        setError(err instanceof Error ? err : new Error("Erro desconhecido"));
-      } finally {
-        setLoading(false);
+          setProfileData({
+            ...profile,
+            role: mappedRole
+          });
+        }
       }
-    };
-
-    fetchProfileData();
-  }, [session]);
+    } catch (err) {
+      console.error("Erro ao buscar perfil:", err);
+      setError(err instanceof Error ? err : new Error("Erro ao buscar perfil"));
+      toast.error("Não foi possível carregar os dados do perfil");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateProfile = async (updates: Partial<ProfileData>): Promise<boolean> => {
-    if (!session?.user.id) return false;
-
     try {
+      if (!profileData.id) {
+        throw new Error("ID do perfil não encontrado");
+      }
+      
       const { error } = await supabase
         .from("profiles")
         .update(updates)
-        .eq("id", session.user.id);
-
+        .eq("id", profileData.id);
+        
       if (error) throw error;
-
-      setProfileData(prev => prev ? { ...prev, ...updates } : null);
+      
+      // Atualizar o estado local
+      setProfileData(prev => ({ ...prev, ...updates }));
+      
       toast.success("Perfil atualizado com sucesso");
       return true;
     } catch (err) {
       console.error("Erro ao atualizar perfil:", err);
-      toast.error("Erro ao atualizar perfil");
+      toast.error("Falha ao atualizar perfil");
       return false;
     }
   };
