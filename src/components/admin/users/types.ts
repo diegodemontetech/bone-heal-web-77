@@ -6,7 +6,7 @@ export interface UserData {
   email: string;
   full_name: string;
   role: UserRole;
-  is_admin: boolean; // Definindo como obrigatório
+  is_admin: boolean;
   created_at: string;
   permissions: string[];
   omie_code?: string;
@@ -25,7 +25,7 @@ export interface UsersContextType {
   users: UserData[];
   isLoading: boolean;
   error: Error | null;
-  createUser: (user: NewUser) => Promise<void>;
+  createUser: (user: any) => Promise<void>;
   updateUserPermissions: (userId: string, permissions: string[]) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   availablePermissions: { id: string, label: string }[];

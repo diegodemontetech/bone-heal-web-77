@@ -1,39 +1,23 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+import React, { useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserProfile, UserRole } from '@/types/auth';
-
-interface UsersContextType {
-  users: UserProfile[];
-  loading: boolean;
-  error: Error | null;
-  fetchUsers: () => Promise<void>;
-  updateUserRole: (userId: string, role: UserRole) => Promise<boolean>;
-  deleteUser: (userId: string) => Promise<boolean>;
-  createUser: (userData: Partial<UserProfile>) => Promise<UserProfile | null>;
-}
-
-const UsersContext = createContext<UsersContextType | undefined>(undefined);
-
-export const useUsers = () => {
-  const context = useContext(UsersContext);
-  if (!context) {
-    throw new Error('useUsers must be used within a UsersProvider');
-  }
-  return context;
-};
+import { UsersContext } from './UsersContext';
+import { UserData } from './types';
+import { availablePermissions } from './permissions';
 
 interface UsersProviderProps {
   children: ReactNode;
 }
 
 export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchUsers = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -41,120 +25,130 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data as UserProfile[]);
+      setUsers(data as UserData[]);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
-      toast.error('Failed to load users');
+      toast.error('Falha ao carregar usuários');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const updateUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
+  const updateUserPermissions = async (userId: string, permissions: string[]) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role })
-        .eq('id', userId);
+      // Primeiro remove todas as permissões existentes
+      const { error: deleteError } = await supabase
+        .from('user_permissions')
+        .delete()
+        .eq('user_id', userId);
 
-      if (error) throw error;
-      
-      // Update local state
+      if (deleteError) throw deleteError;
+
+      // Insere as novas permissões
+      if (permissions.length > 0) {
+        const permissionsToInsert = permissions.map(permission => ({
+          user_id: userId,
+          permission
+        }));
+
+        const { error: insertError } = await supabase
+          .from('user_permissions')
+          .insert(permissionsToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      // Atualiza o estado local
       setUsers(prev => 
         prev.map(user => 
-          user.id === userId ? { ...user, role } : user
+          user.id === userId ? { ...user, permissions } : user
         )
       );
       
-      toast.success('User role updated successfully');
-      return true;
+      toast.success('Permissões atualizadas com sucesso');
     } catch (err) {
-      console.error('Error updating user role:', err);
-      toast.error('Failed to update user role');
-      return false;
+      console.error('Error updating user permissions:', err);
+      toast.error('Falha ao atualizar permissões');
+      throw err;
     }
   };
 
-  const deleteUser = async (userId: string): Promise<boolean> => {
+  const deleteUser = async (userId: string) => {
     try {
-      // Check if user has admin permissions
+      // Verificação de segurança antes de excluir (apenas usuários não-admin)
       const userToDelete = users.find(user => user.id === userId);
       if (!userToDelete) {
-        toast.error('User not found');
-        return false;
+        toast.error('Usuário não encontrado');
+        return;
       }
 
-      // Check if trying to delete an admin user
-      const userRole = userToDelete.role;
-      if (userRole === UserRole.DENTIST || userRole === UserRole.ADMIN_MASTER) return true;
-      if (userRole === UserRole.ADMIN) return true;
-      return false;
+      if (userToDelete.role === 'admin_master') {
+        toast.error('Não é possível excluir um Administrador Master');
+        return;
+      }
 
-      // Delete user from auth
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      if (authError) throw authError;
+      // Exclui as permissões do usuário
+      const { error: permissionsError } = await supabase
+        .from('user_permissions')
+        .delete()
+        .eq('user_id', userId);
 
-      // Delete user profile
+      if (permissionsError) throw permissionsError;
+
+      // Exclui o perfil do usuário
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
         .eq('id', userId);
 
       if (profileError) throw profileError;
-      
-      // Update local state
+
+      // Atualiza o estado local
       setUsers(prev => prev.filter(user => user.id !== userId));
       
-      toast.success('User deleted successfully');
-      return true;
+      toast.success('Usuário excluído com sucesso');
     } catch (err) {
       console.error('Error deleting user:', err);
-      toast.error('Failed to delete user');
-      return false;
+      toast.error('Falha ao excluir usuário');
     }
   };
 
-  const createUser = async (userData: Partial<UserProfile>): Promise<UserProfile | null> => {
+  const createUser = async (userData: any) => {
     try {
-      // Create user in auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email!,
-        password: 'temporary-password',
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.full_name,
-          role: userData.role
+      // Criação do usuário na autenticação via API
+      const { error: signUpError, data: authData } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password || 'senha123',
+        options: {
+          data: {
+            full_name: userData.full_name,
+            role: userData.role
+          }
         }
       });
 
-      if (authError) throw authError;
-      
-      // Profile should be created by trigger
-      const userId = authData.user.id;
-      
-      // Update profile with additional data
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          ...userData,
-          id: userId
-        })
-        .eq('id', userId)
-        .select()
-        .single();
+      if (signUpError) throw signUpError;
 
-      if (profileError) throw profileError;
-      
-      // Update local state
-      setUsers(prev => [profileData as UserProfile, ...prev]);
-      
-      toast.success('User created successfully');
-      return profileData as UserProfile;
+      // Se o usuário tem permissões específicas, adicioná-las
+      if (userData.permissions && userData.permissions.length > 0) {
+        const permissionsToInsert = userData.permissions.map((permission: string) => ({
+          user_id: authData.user!.id,
+          permission
+        }));
+
+        const { error: permissionsError } = await supabase
+          .from('user_permissions')
+          .insert(permissionsToInsert);
+
+        if (permissionsError) throw permissionsError;
+      }
+
+      toast.success('Usuário criado com sucesso');
+      await fetchUsers(); // Atualiza a lista de usuários
     } catch (err) {
       console.error('Error creating user:', err);
-      toast.error('Failed to create user');
-      return null;
+      toast.error('Falha ao criar usuário: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -166,12 +160,12 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
     <UsersContext.Provider
       value={{
         users,
-        loading,
+        isLoading,
         error,
-        fetchUsers,
-        updateUserRole,
+        updateUserPermissions,
         deleteUser,
-        createUser
+        createUser,
+        availablePermissions
       }}
     >
       {children}

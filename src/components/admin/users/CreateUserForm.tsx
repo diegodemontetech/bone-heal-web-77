@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UserPlus, Plus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useUsers } from "./useUsers";
 import { availablePermissions } from "./permissions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -144,7 +144,6 @@ const CreateUserForm = () => {
               Cancelar
             </Button>
             <Button onClick={handleSubmit}>
-              <Plus className="w-4 h-4 mr-2" />
               Criar Usuário
             </Button>
           </div>
