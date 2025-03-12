@@ -23,6 +23,9 @@ interface QuotationSummaryProps {
   onCancel: () => void;
 }
 
+/**
+ * Componente que exibe o resumo e permite editar informações de um orçamento
+ */
 const QuotationSummary = ({
   selectedCustomer,
   selectedProducts,
@@ -36,12 +39,14 @@ const QuotationSummary = ({
   onCreateQuotation,
   onCancel,
 }: QuotationSummaryProps) => {
+  // Estados locais
   const [voucherCode, setVoucherCode] = useState("");
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
   const [zipCode, setZipCode] = useState("");
   const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   
+  // Hook de cálculos
   const { 
     calculateSubtotal, 
     calculateDiscountAmount, 
@@ -54,6 +59,7 @@ const QuotationSummary = ({
     selectedShipping?.rate || 0
   );
 
+  // Calcula o total de itens no orçamento
   const totalItems = selectedProducts.reduce((total, item) => total + item.quantity, 0);
 
   // Atualizar o zipCode quando o cliente mudar

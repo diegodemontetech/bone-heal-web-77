@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Plus, List } from "lucide-react";
 import QuotationsList from "@/components/admin/quotations/QuotationsList";
 import CreateQuotation from "@/components/admin/quotations/CreateQuotation";
+import { useToast } from "@/components/ui/use-toast";
 
-const Quotations = () => {
+/**
+ * Hook para gerenciar o estado da página de orçamentos
+ */
+const useQuotationsPage = () => {
   const [activeTab, setActiveTab] = useState<string>("list");
   const [isCreating, setIsCreating] = useState(false);
+  const { toast } = useToast();
 
   const handleNewQuotation = () => {
     setIsCreating(true);
@@ -19,7 +24,44 @@ const Quotations = () => {
   const handleCancelCreate = () => {
     setIsCreating(false);
     setActiveTab("list");
+    toast({
+      title: "Criação cancelada",
+      description: "A criação do orçamento foi cancelada.",
+      variant: "default",
+    });
   };
+
+  const handleSuccessfulCreate = () => {
+    setIsCreating(false);
+    setActiveTab("list");
+    toast({
+      title: "Orçamento criado",
+      description: "O orçamento foi criado com sucesso.",
+      variant: "success",
+    });
+  };
+
+  return {
+    activeTab,
+    setActiveTab,
+    isCreating,
+    handleNewQuotation,
+    handleCancelCreate,
+    handleSuccessfulCreate
+  };
+};
+
+/**
+ * Página principal de gerenciamento de orçamentos
+ */
+const Quotations = () => {
+  const {
+    activeTab,
+    setActiveTab,
+    isCreating,
+    handleNewQuotation,
+    handleCancelCreate
+  } = useQuotationsPage();
 
   return (
     <div className="container mx-auto py-6 space-y-6">
