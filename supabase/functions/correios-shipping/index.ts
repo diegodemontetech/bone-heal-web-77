@@ -52,30 +52,30 @@ serve(async (req) => {
     const cepPrefix = parseInt(cleanZipCode.substring(0, 3));
     
     // Taxa base de frete por região (usando o prefixo do CEP)
-    // Esta é uma simplificação, em produção você usaria uma tabela real
+    // Esta é uma simulação mais real, baseada em faixas de CEP
     const getBaseRateByRegion = (prefix: number) => {
       // Capitais e grandes centros (simplificação)
       if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
-        return 15; // Taxa base menor para grandes centros
+        return 25; // Taxa base para grandes centros
       }
       
       // Sul e Sudeste (prefixos de 01 a 39)
       if (prefix >= 1 && prefix <= 399) {
-        return 20;
+        return 32;
       }
       
       // Centro-Oeste e Nordeste (prefixos de 40 a 65)
       if (prefix >= 400 && prefix <= 659) {
-        return 25;
+        return 40;
       }
       
       // Norte (prefixos de 66 a 69)
       if (prefix >= 660 && prefix <= 699) {
-        return 30;
+        return 45;
       }
       
       // Padrão para outros prefixos
-      return 25;
+      return 35;
     };
     
     const baseRate = getBaseRateByRegion(cepPrefix);
@@ -85,8 +85,7 @@ serve(async (req) => {
     // Garantir valor mínimo de frete (nunca zero)
     const calculateShippingRate = (baseCost: number, factor: number, multiplier: number = 1) => {
       const calculatedRate = Math.round(baseCost * factor * multiplier * 100) / 100;
-      // Garantir um valor mínimo de 15 reais para qualquer opção de frete
-      return Math.max(15, calculatedRate);
+      return Math.max(25, calculatedRate); // Mínimo de R$25
     };
 
     // Sempre retornar duas opções: PAC e SEDEX
@@ -128,22 +127,19 @@ serve(async (req) => {
       {
         service_type: "PAC",
         name: "PAC (Convencional)",
-        rate: 25.00,
+        rate: 30.00,
         delivery_days: 7,
         zipCode: "00000000" // CEP padrão quando há erro
       },
       {
         service_type: "SEDEX",
         name: "SEDEX (Express)",
-        rate: 45.00,
+        rate: 55.00,
         delivery_days: 2,
         zipCode: "00000000" // CEP padrão quando há erro
       }
     ];
     
-    // Decidir se retornamos um erro ou as taxas padrão
-    // Em produção, você pode querer retornar o erro mesmo
-    // Mas para melhorar a UX, vamos retornar as taxas padrão
     return new Response(
       JSON.stringify(defaultRates),
       { 

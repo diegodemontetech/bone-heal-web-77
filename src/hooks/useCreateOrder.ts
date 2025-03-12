@@ -8,6 +8,9 @@ import { ShippingCalculationRate } from "@/types/shipping";
 export const useCreateOrder = () => {
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("pix");
+  const [voucherCode, setVoucherCode] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [shippingFee, setShippingFee] = useState(0);
   const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   const navigate = useNavigate();
@@ -34,6 +37,18 @@ export const useCreateOrder = () => {
 
   const calculateTotal = (selectedProducts: any[]) => {
     return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  };
+
+  const calculateDiscount = (subtotal: number) => {
+    if (!appliedVoucher) return 0;
+
+    if (appliedVoucher.discount_type === "percentage") {
+      return (subtotal * appliedVoucher.discount_amount) / 100;
+    } else if (appliedVoucher.discount_type === "fixed") {
+      return Math.min(subtotal, appliedVoucher.discount_amount);
+    }
+    
+    return 0;
   };
 
   const createOrder = async (
@@ -63,7 +78,8 @@ export const useCreateOrder = () => {
 
       const subtotal = calculateTotal(selectedProducts);
       const shippingFee = shippingOption?.rate || 0;
-      const total = subtotal + shippingFee;
+      const discount = calculateDiscount(subtotal);
+      const total = subtotal + shippingFee - discount;
 
       // Valores padrão para endereço, caso não exista
       const shippingAddress = {
@@ -81,20 +97,25 @@ export const useCreateOrder = () => {
         estimated_days: shippingOption.delivery_days
       } : null;
 
+      // Preparar dados do pedido
+      const orderData = {
+        user_id: selectedCustomer.id,
+        items: orderItems,
+        payment_method: paymentMethod,
+        shipping_fee: shippingFee,
+        total_amount: total,
+        subtotal: subtotal,
+        discount: discount,
+        status: 'pending',
+        omie_status: "novo",
+        shipping_address: shippingAddress,
+        voucher_id: appliedVoucher?.id || null
+      };
+
       console.log("Criando pedido na base de dados...");
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert({
-          user_id: selectedCustomer.id,
-          items: orderItems,
-          payment_method: paymentMethod,
-          shipping_fee: shippingFee,
-          total_amount: total,
-          subtotal: subtotal,
-          status: 'pending',
-          omie_status: "novo",
-          shipping_address: shippingAddress
-        })
+        .insert(orderData)
         .select()
         .single();
 
@@ -104,6 +125,15 @@ export const useCreateOrder = () => {
       }
 
       console.log("Pedido criado com sucesso, ID:", order.id);
+      
+      // Atualizar uso do cupom se aplicado
+      if (appliedVoucher) {
+        await supabase
+          .from("vouchers")
+          .update({ current_uses: appliedVoucher.current_uses + 1 })
+          .eq("id", appliedVoucher.id);
+      }
+      
       toast.success("Pedido criado com sucesso!");
       
       // Opcionalmente criar preferência no MercadoPago
@@ -115,6 +145,7 @@ export const useCreateOrder = () => {
               order_id: order.id,
               items: orderItems,
               shipping_cost: shippingFee,
+              discount: discount,
               payer: {
                 name: selectedCustomer.full_name || "Cliente",
                 email: selectedCustomer.email || "cliente@example.com",
@@ -161,6 +192,13 @@ export const useCreateOrder = () => {
     calculateTotal,
     paymentMethod,
     setPaymentMethod,
+    voucherCode,
+    setVoucherCode,
+    appliedVoucher,
+    setAppliedVoucher,
+    isApplyingVoucher,
+    setIsApplyingVoucher,
+    calculateDiscount,
     shippingFee,
     setShippingFee,
     selectedShipping,

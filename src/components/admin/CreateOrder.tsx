@@ -9,6 +9,7 @@ import { useOrderCustomers } from "@/hooks/useOrderCustomers";
 import { useOrderProducts } from "@/hooks/useOrderProducts";
 import { ShippingSection } from "./order/ShippingSection";
 import { PaymentMethodSection } from "./order/PaymentMethodSection";
+import VoucherSection from "./quotations/components/summary/VoucherSection";
 
 interface CreateOrderProps {
   onCancel: () => void;
@@ -21,8 +22,13 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     calculateTotal,
     paymentMethod,
     setPaymentMethod,
-    shippingFee,
-    setShippingFee,
+    voucherCode,
+    setVoucherCode,
+    appliedVoucher,
+    setAppliedVoucher,
+    isApplyingVoucher,
+    setIsApplyingVoucher,
+    calculateDiscount,
     selectedShipping,
     setSelectedShipping
   } = useCreateOrder();
@@ -53,6 +59,11 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const handleCreateOrder = () => {
     createOrder(selectedCustomer, selectedProducts, selectedShipping);
   };
+
+  const subtotal = calculateTotal(selectedProducts);
+  const discount = calculateDiscount(subtotal);
+  const shippingCost = selectedShipping?.rate || 0;
+  const total = subtotal + shippingCost - discount;
 
   return (
     <div className="container max-w-6xl mx-auto">
@@ -92,6 +103,21 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
                 setPaymentMethod={setPaymentMethod}
               />
             </div>
+            
+            {/* Cupom de Desconto - Novo */}
+            <div className="mt-6">
+              <VoucherSection
+                voucherCode={voucherCode}
+                setVoucherCode={setVoucherCode}
+                appliedVoucher={appliedVoucher}
+                setAppliedVoucher={setAppliedVoucher}
+                isApplyingVoucher={isApplyingVoucher}
+                setIsApplyingVoucher={setIsApplyingVoucher}
+                paymentMethod={paymentMethod}
+                subtotal={subtotal}
+                totalItems={selectedProducts.reduce((acc, p) => acc + p.quantity, 0)}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -112,14 +138,16 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
         {/* Resumo */}
         <Card className="lg:col-span-1">
           <OrderSummary
-            subtotal={calculateTotal(selectedProducts)}
-            shippingFee={selectedShipping?.rate || 0}
-            total={calculateTotal(selectedProducts) + (selectedShipping?.rate || 0)}
+            subtotal={subtotal}
+            discount={discount}
+            shippingFee={shippingCost}
+            total={total}
             loading={loading}
             onCreateOrder={handleCreateOrder}
             onCancel={onCancel}
             hasProducts={selectedProducts.length > 0}
             paymentMethod={paymentMethod}
+            appliedVoucher={appliedVoucher}
           />
         </Card>
       </div>

@@ -79,7 +79,7 @@ export const fetchShippingRatesFromSupabase = async (
       });
 
       applicableRates = Array.from(uniqueServices.values()).map(rate => ({
-        rate: Math.max(15, rate.flat_rate || 15), // Garantir valor mínimo de 15 reais
+        rate: rate.flat_rate || 25, // Usando a taxa do banco
         delivery_days: rate.estimated_days || 5,
         service_type: rate.service_type || 'PAC',
         name: rate.service_type || 'Padrão',
@@ -98,33 +98,38 @@ export const fetchShippingRatesFromAPI = async (
 ): Promise<ShippingCalculationRate[]> => {
   const cleanZipCode = zipCode.replace(/\D/g, '');
   
-  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/correios-shipping`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      zipCode: cleanZipCode,
-      items: [] // Enviar lista vazia, a API usará um peso padrão
-    }),
-  });
-  
-  if (!response.ok) {
-    throw new Error('Falha ao calcular o frete');
+  try {
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/correios-shipping`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        zipCode: cleanZipCode,
+        items: [] // Enviar lista vazia, a API usará um peso padrão
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Falha ao calcular o frete');
+    }
+    
+    // Processar a resposta da API
+    const apiRates = await response.json();
+    
+    // Mapear para nosso formato
+    return apiRates.map((rate: any, index: number) => ({
+      id: `api-${index}`,
+      rate: rate.rate || 25, // Usar o valor real retornado pela API
+      delivery_days: rate.delivery_days || 5,
+      service_type: rate.service_type || 'PAC',
+      name: rate.name || rate.service_type || 'Padrão',
+      zipCode: cleanZipCode
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar frete da API:", error);
+    throw error;
   }
-  
-  // Processar a resposta da API
-  const apiRates = await response.json();
-  
-  // Mapear para nosso formato
-  return apiRates.map((rate: any, index: number) => ({
-    id: `api-${index}`,
-    rate: Math.max(15, rate.rate || 15), // Garantir valor mínimo de 15 reais
-    delivery_days: rate.delivery_days || 5,
-    service_type: rate.service_type || 'PAC',
-    name: rate.name || rate.service_type || 'Padrão',
-    zipCode: cleanZipCode
-  }));
 };
 
 export const createDefaultShippingRates = (
@@ -170,7 +175,13 @@ export const fetchShippingRates = async ({
     }
     
     // Se não encontrou no banco, buscar da API
-    return await fetchShippingRatesFromAPI(zipCode);
+    try {
+      const apiRates = await fetchShippingRatesFromAPI(zipCode);
+      return apiRates;
+    } catch (apiError) {
+      console.error("Erro ao buscar da API:", apiError);
+      return createDefaultShippingRates(zipCode);
+    }
   } catch (error) {
     console.error('Erro ao buscar taxas de frete:', error);
     

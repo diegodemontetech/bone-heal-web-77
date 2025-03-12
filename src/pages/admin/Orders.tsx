@@ -77,14 +77,28 @@ const Orders = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <Card className="p-6">
+      <Card className="p-6 bg-white shadow-sm border border-gray-100">
         <OrdersHeader setIsCreating={setIsCreating} />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="kanban">Kanban</TabsTrigger>
-            <TabsTrigger value="list">Lista</TabsTrigger>
-            <TabsTrigger value="create" disabled={!isCreating}>
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100 rounded-lg p-1">
+            <TabsTrigger 
+              value="kanban" 
+              className="font-medium rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
+              Kanban
+            </TabsTrigger>
+            <TabsTrigger 
+              value="list"
+              className="font-medium rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm" 
+            >
+              Lista
+            </TabsTrigger>
+            <TabsTrigger 
+              value="create" 
+              disabled={!isCreating}
+              className="font-medium rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
               Novo Pedido
             </TabsTrigger>
           </TabsList>

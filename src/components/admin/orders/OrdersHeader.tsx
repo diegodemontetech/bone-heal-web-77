@@ -1,32 +1,39 @@
 
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Upload } from "lucide-react";
+import { PlusCircle, RefreshCcw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface OrdersHeaderProps {
-  setIsCreating: (value: boolean) => void;
+  setIsCreating: (isCreating: boolean) => void;
 }
 
 const OrdersHeader = ({ setIsCreating }: OrdersHeaderProps) => {
+  const { refetch, isFetching } = useQuery({ queryKey: ["admin-orders"] });
+
   return (
-    <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Pedidos</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Gerencie todos os pedidos da plataforma
+        <h1 className="text-2xl font-bold tracking-tight">Pedidos</h1>
+        <p className="text-muted-foreground mt-1">
+          Gerencie todos os pedidos da sua loja
         </p>
       </div>
-      
-      <div className="flex items-center space-x-3">
-        <Button variant="outline" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="h-9"
+        >
+          <RefreshCcw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          Atualizar
         </Button>
-        <Button variant="outline" size="sm">
-          <Upload className="h-4 w-4 mr-2" />
-          Importar
-        </Button>
-        <Button onClick={() => setIsCreating(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button 
+          onClick={() => setIsCreating(true)}
+          className="h-9 bg-primary"
+        >
+          <PlusCircle className="h-4 w-4 mr-2" />
           Novo Pedido
         </Button>
       </div>

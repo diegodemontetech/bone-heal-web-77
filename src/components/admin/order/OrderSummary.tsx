@@ -1,12 +1,13 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
 interface OrderSummaryProps {
   subtotal: number;
+  discount?: number;
   shippingFee: number;
   total: number;
   loading: boolean;
@@ -14,10 +15,12 @@ interface OrderSummaryProps {
   onCancel: () => void;
   hasProducts: boolean;
   paymentMethod: string;
+  appliedVoucher?: any;
 }
 
 export const OrderSummary = ({
   subtotal,
+  discount = 0,
   shippingFee,
   total,
   loading,
@@ -25,6 +28,7 @@ export const OrderSummary = ({
   onCancel,
   hasProducts,
   paymentMethod,
+  appliedVoucher,
 }: OrderSummaryProps) => {
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
@@ -46,6 +50,16 @@ export const OrderSummary = ({
               <span className="text-muted-foreground">Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
+            
+            {discount > 0 && (
+              <div className="flex justify-between items-center text-green-600">
+                <span className="flex items-center">
+                  <Tag className="h-4 w-4 mr-1" /> 
+                  Desconto {appliedVoucher?.code && `(${appliedVoucher.code})`}
+                </span>
+                <span>- {formatCurrency(discount)}</span>
+              </div>
+            )}
             
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Frete</span>
