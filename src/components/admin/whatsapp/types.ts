@@ -2,7 +2,7 @@
 export interface WhatsAppInstance {
   id: string;
   instance_name: string;
-  name: string; // mudado de opcional para obrigatório
+  name: string; // nome é obrigatório para compatibilidade
   status: string;
   qr_code: string; // qr_code é obrigatório para compatibilidade com automation.ts
   created_at: string;

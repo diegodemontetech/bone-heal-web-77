@@ -110,7 +110,7 @@ const AdminWhatsAppMessages = () => {
     }
   };
 
-  const handleSendMessage = async (message: string, media?: { url: string; type: string }) => {
+  const handleSendMessage = async (message: string, media?: { url: string; type: string }): Promise<boolean> => {
     if (!selectedLead || !message.trim()) return false;
     
     try {

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
@@ -9,7 +9,7 @@ import OrdersHeader from "@/components/orders/OrdersHeader";
 import OrdersList from "@/components/orders/OrdersList";
 import OrdersLoading from "@/components/orders/OrdersLoading";
 import OrdersEmpty from "@/components/orders/OrdersEmpty";
-import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 import { Order, ShippingAddress, OrderItem } from "@/types/order";
 
@@ -48,15 +48,17 @@ const Orders = () => {
         const formattedOrders = data.map(order => {
           // Parse JSON fields
           const parsedItems = parseJsonArray(order.items, []);
-          // Garantir que profileData sempre seja um objeto
           const profileData = order.profiles || {};
           
-          // Criar endereço de entrega com valores padrão
+          // Cria um objeto de endereço com valores padrão
           const shippingAddress: ShippingAddress = {
             zip_code: profileData.zip_code || '',
             city: profileData.city || '',
             state: profileData.state || '',
-            address: profileData.address || ''
+            address: profileData.address || '',
+            number: profileData.endereco_numero || '',
+            complement: profileData.complemento || '',
+            neighborhood: profileData.neighborhood || ''
           };
           
           return {
@@ -71,7 +73,7 @@ const Orders = () => {
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
               product_name: item.product_name,
-              name: item.product_name || item.name || '',
+              name: item.product_name || item.name || '',  // Propriedade name requerida
               quantity: item.quantity,
               price: item.price,
               total_price: item.total_price
@@ -80,7 +82,9 @@ const Orders = () => {
             created_at: order.created_at,
             updated_at: order.updated_at || order.created_at,
             discount: order.discount || 0,
-            profiles: profileData
+            profiles: profileData,
+            installments: order.installments || 1,
+            mp_preference_id: order.mp_preference_id || ''
           } as Order;
         });
         

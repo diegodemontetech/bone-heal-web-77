@@ -1,132 +1,67 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Smartphone, QrCode, Trash, RefreshCw } from 'lucide-react';
-import { WhatsAppInstance } from '@/types/automation';
-import QRCode from 'react-qr-code';
-import { toast } from 'sonner';
+import React from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { QrCode, RefreshCw, Trash } from "lucide-react";
+import { WhatsAppInstance } from "./types";
 
-interface WhatsAppInstanceCardProps {
+export interface WhatsAppInstanceCardProps {
   instance: WhatsAppInstance;
-  onRefreshQr: (instanceId: string) => Promise<string>;
-  onSelect: (instance: WhatsAppInstance) => void;
-  onDelete: (instanceId: string) => void;
+  onSelect: () => void;
+  onRefreshQr: () => Promise<any>;
+  onDelete: () => void;
+  key?: string;
 }
 
-const WhatsAppInstanceCard: React.FC<WhatsAppInstanceCardProps> = ({
-  instance,
+const WhatsAppInstanceCard = ({ 
+  instance, 
+  onSelect, 
   onRefreshQr,
-  onSelect,
-  onDelete
-}) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [qrCodeValue, setQrCodeValue] = useState(instance.qr_code || '');
-  const [showQrCode, setShowQrCode] = useState(false);
-
-  const handleRefreshQr = async () => {
-    if (instance.status === 'connected') {
-      toast.info('Esta instância já está conectada');
-      return;
-    }
-
-    setIsRefreshing(true);
-    try {
-      const qrCode = await onRefreshQr(instance.id);
-      setQrCodeValue(qrCode);
-      setShowQrCode(true);
-    } catch (error) {
-      toast.error('Erro ao atualizar QR Code');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (instance.status) {
-      case 'connected':
-        return 'bg-green-500';
-      case 'disconnected':
-        return 'bg-red-500';
-      case 'connecting':
-        return 'bg-yellow-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
+  onDelete 
+}: WhatsAppInstanceCardProps) => {
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center">
-            <Smartphone className="mr-2 h-5 w-5" />
-            {instance.name}
-          </CardTitle>
-          <Badge className={getStatusColor()}>
-            {instance.status === 'connected' ? 'Conectado' : 
-             instance.status === 'disconnected' ? 'Desconectado' : 'Conectando'}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {showQrCode && instance.status !== 'connected' && qrCodeValue ? (
-          <div className="flex flex-col items-center justify-center p-4">
-            <QRCode value={qrCodeValue} size={200} />
-            <p className="mt-2 text-sm text-gray-500">
-              Escaneie este QR Code no WhatsApp do seu celular
-            </p>
-          </div>
-        ) : (
-          <div className="py-6 text-center">
-            {instance.status === 'connected' ? (
-              <p>WhatsApp conectado e pronto para uso</p>
-            ) : (
-              <p>Clique em "Exibir QR Code" para conectar</p>
-            )}
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <div>
-          {!showQrCode && instance.status !== 'connected' && (
-            <Button 
-              variant="outline" 
-              onClick={handleRefreshQr} 
-              disabled={isRefreshing}
-            >
-              <QrCode className="mr-2 h-4 w-4" />
-              Exibir QR Code
-            </Button>
-          )}
-          {showQrCode && instance.status !== 'connected' && (
-            <Button 
-              variant="outline" 
-              onClick={handleRefreshQr} 
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Atualizar QR
-            </Button>
-          )}
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => onDelete(instance.id)}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
-          <Button 
-            onClick={() => onSelect(instance)}
-            disabled={instance.status !== 'connected'}
-          >
-            Usar
-          </Button>
-        </div>
-      </CardFooter>
+    <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+      <div className="flex justify-between mb-2">
+        <h3 className="font-medium">{instance.name || instance.instance_name}</h3>
+        <span className={`px-2 py-1 text-xs rounded-full ${
+          instance.status === 'connected' ? 'bg-green-100 text-green-800' : 
+          instance.status === 'disconnected' ? 'bg-red-100 text-red-800' : 
+          'bg-yellow-100 text-yellow-800'
+        }`}>
+          {instance.status}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-2 mt-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full"
+          onClick={onSelect}
+        >
+          Selecionar
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full flex items-center gap-1"
+          onClick={onRefreshQr}
+        >
+          <RefreshCw className="h-4 w-4" />
+          <span>Atualizar QR</span>
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full flex items-center gap-1 text-red-600 hover:text-red-700"
+          onClick={onDelete}
+        >
+          <Trash className="h-4 w-4" />
+          <span>Excluir</span>
+        </Button>
+      </div>
     </Card>
   );
 };
