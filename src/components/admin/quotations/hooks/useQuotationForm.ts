@@ -1,56 +1,13 @@
 
-import { useState } from "react";
 import { useSelectedProducts } from "./useSelectedProducts";
-import { useQuotationCalculations } from "./useQuotationCalculations";
-import { useCreateQuotation } from "./useCreateQuotation";
-import { ShippingCalculationRate } from "@/types/shipping";
+import { useQuotationFormState } from "./form/useQuotationFormState";
+import { useQuotationSubmit } from "./form/useQuotationSubmit";
 
 export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [paymentMethod, setPaymentMethod] = useState("pix");
-  const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState("percentage");
-  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
-  const [zipCode, setZipCode] = useState("");
-  const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
-  
-  const { 
-    selectedProducts, 
-    setSelectedProducts, 
-    handleProductQuantityChange 
-  } = useSelectedProducts();
-  
-  const { 
-    calculateSubtotal, 
-    calculateDiscountAmount, 
-    calculateTotal 
-  } = useQuotationCalculations(selectedProducts, discount, discountType, appliedVoucher, selectedShipping?.rate || 0);
-  
-  const { loading, createQuotation } = useCreateQuotation(onCancel);
-
-  const handleCreateQuotation = async () => {
-    const subtotal = calculateSubtotal();
-    const discountAmount = calculateDiscountAmount();
-    const total = calculateTotal();
-    
-    await createQuotation(
-      selectedCustomer,
-      selectedProducts,
-      paymentMethod,
-      appliedVoucher ? "voucher" : discountType,
-      subtotal,
-      discountAmount,
-      total,
-      appliedVoucher,
-      selectedShipping
-    );
-  };
-
-  return {
+  // Estados do formulário
+  const {
     selectedCustomer,
     setSelectedCustomer,
-    selectedProducts,
-    setSelectedProducts,
     paymentMethod,
     setPaymentMethod,
     discount,
@@ -63,8 +20,70 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     setZipCode,
     selectedShipping,
     setSelectedShipping,
+  } = useQuotationFormState();
+  
+  // Gerenciamento de produtos
+  const { 
+    selectedProducts, 
+    setSelectedProducts, 
+    handleProductQuantityChange 
+  } = useSelectedProducts();
+  
+  // Submissão e cálculos
+  const {
     loading,
+    handleCreateQuotation,
+    calculateSubtotal,
+    calculateDiscountAmount,
+    calculateTotal
+  } = useQuotationSubmit({
+    selectedCustomer,
+    selectedProducts,
+    paymentMethod,
+    discount,
+    discountType,
+    appliedVoucher,
+    selectedShipping,
+    onCancel
+  });
+
+  return {
+    // Cliente
+    selectedCustomer,
+    setSelectedCustomer,
+    
+    // Produtos
+    selectedProducts,
+    setSelectedProducts,
     handleProductQuantityChange,
+    
+    // Pagamento
+    paymentMethod,
+    setPaymentMethod,
+    
+    // Desconto
+    discount,
+    setDiscount,
+    discountType,
+    setDiscountType,
+    
+    // Cupom
+    appliedVoucher,
+    setAppliedVoucher,
+    
+    // Frete
+    zipCode,
+    setZipCode,
+    selectedShipping,
+    setSelectedShipping,
+    
+    // Cálculos
+    calculateSubtotal,
+    calculateDiscountAmount,
+    calculateTotal,
+    
+    // Submissão
+    loading,
     handleCreateQuotation,
   };
 };
