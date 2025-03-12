@@ -28,7 +28,8 @@ export const useWhatsAppMessages = (leadId: string | undefined) => {
           lead_id: msg.lead_id,
           message: msg.message,
           direction: msg.direction as 'inbound' | 'outbound',
-          sent_by: msg.sent_by,
+          // Handle sent_by if it exists
+          ...(msg.sent_by && { sent_by: msg.sent_by }),
           is_bot: msg.is_bot,
           created_at: msg.created_at,
           media_type: msg.media_type,
@@ -84,7 +85,7 @@ export const useWhatsAppMessages = (leadId: string | undefined) => {
     if (!leadId || !message.trim()) return false;
     
     try {
-      const newMessage: Partial<WhatsAppMessage> = {
+      const newMessage = {
         lead_id: leadId,
         message,
         direction: 'outbound',
@@ -96,7 +97,7 @@ export const useWhatsAppMessages = (leadId: string | undefined) => {
       
       const { error } = await supabase
         .from('whatsapp_messages')
-        .insert([newMessage]);
+        .insert(newMessage);
         
       if (error) throw error;
       

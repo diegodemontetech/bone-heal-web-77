@@ -30,13 +30,18 @@ export interface WhatsAppMessage {
   media_url?: string;
   instance_id?: string;
   sender_id?: string;
+  is_sent_by_me?: boolean;
+  body?: string;
+  timestamp?: string;
+  type?: string;
 }
 
 export interface CreateInstanceDialogProps {
   isOpen: boolean;
   isCreating: boolean;
-  onCreateInstance: (name: string) => Promise<boolean>;
   onClose: () => void;
+  onCreateInstance: (name: string) => Promise<boolean>;
+  onOpenChange: (open: boolean) => void;
 }
 
 export interface InstancesTabProps {
@@ -46,6 +51,8 @@ export interface InstancesTabProps {
   onRefreshQr: (instanceId: string) => Promise<any>;
   onDelete: (instanceId: string) => Promise<boolean>;
   onCreateDialogOpen: () => void;
+  onSelectInstance: (instanceId: string) => void;
+  onDeleteInstance: (instanceId: string) => Promise<boolean>;
 }
 
 export interface ChatTabProps {
@@ -55,3 +62,34 @@ export interface ChatTabProps {
   selectedInstanceId: string | null;
 }
 
+export interface ChatInputProps {
+  onSendMessage: (message: string) => Promise<boolean>;
+  disabled?: boolean;
+}
+
+export interface ChatMessageProps {
+  message: WhatsAppMessage;
+}
+
+export interface ChatMessagesProps {
+  messages: WhatsAppMessage[];
+  isLoading: boolean;
+}
+
+export interface DialogActionsProps {
+  onCancel: () => void;
+  onConfirm: () => void;
+  isLoading: boolean;
+}
+
+export interface InstanceNameInputProps {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export interface WhatsAppInstanceCardProps {
+  instance: WhatsAppInstance;
+  onSelect: () => void;
+  onRefreshQr: () => Promise<void>;
+  onDelete: () => void;
+}

@@ -4,7 +4,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, RefreshCw, Trash2, QrCode } from "lucide-react";
-import Image from "@/components/ui/image";
 import { WhatsAppInstanceCardProps } from "@/components/admin/whatsapp/types";
 
 export const InstanceCard: React.FC<WhatsAppInstanceCardProps> = ({
