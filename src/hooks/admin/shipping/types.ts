@@ -2,6 +2,7 @@
 import { ShippingCalculationRate } from "@/types/shipping";
 
 export interface ShippingRateFormData {
+  id?: string;
   region: string;
   state: string;
   zip_code_start: string;
@@ -19,14 +20,14 @@ export interface UseShippingRatesReturn {
   isDialogOpen: boolean;
   setIsDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isEditing: boolean;
-  formData: Partial<ShippingRateFormData>;
+  formData: Partial<ShippingRateFormData> & { id?: string };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange: (field: string, value: string) => void;
   resetForm: () => void;
   openEditDialog: (rate: any) => void;
-  handleCreateRate: (e: React.FormEvent) => Promise<void>;
-  handleDeleteRate: (id: string) => Promise<void>;
+  handleCreateRate: (e: React.FormEvent) => Promise<boolean>;
+  handleDeleteRate: (id: string) => Promise<boolean>;
   exportRates: () => void;
-  insertShippingRates: (rates: any[]) => Promise<void>;
+  insertShippingRates: (rates: any[]) => Promise<boolean>;
   shippingOptions: ShippingCalculationRate[];
 }

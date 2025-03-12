@@ -76,7 +76,7 @@ const ShippingRates = () => {
         formData={formData}
         handleInputChange={handleInputChange}
         handleSelectChange={handleSelectChange}
-        handleCreateRate={(e) => handleCreateRate(e)}
+        handleCreateRate={handleCreateRate}
         resetForm={resetForm}
       />
     </div>

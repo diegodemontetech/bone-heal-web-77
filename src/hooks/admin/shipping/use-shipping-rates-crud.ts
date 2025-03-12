@@ -95,7 +95,7 @@ export const useShippingRatesCrud = () => {
           .from("shipping_rates")
           .insert([{
             region: formData.region,
-            state: formData.state,
+            state: formData.state || formData.region,
             zip_code_start: formData.zip_code_start,
             zip_code_end: formData.zip_code_end,
             flat_rate: formData.flat_rate || 0,

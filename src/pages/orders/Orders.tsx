@@ -28,6 +28,14 @@ interface OrderAddress {
   address: string;
 }
 
+interface OrderProfile {
+  zip_code?: string;
+  city?: string;
+  state?: string;
+  address?: string;
+  [key: string]: any;
+}
+
 interface Order {
   id: string;
   user_id: string;
@@ -42,13 +50,7 @@ interface Order {
   created_at: string;
   updated_at: string;
   discount: number;
-  profiles?: {
-    zip_code?: string;
-    city?: string;
-    state?: string;
-    address?: string;
-    [key: string]: any;
-  };
+  profiles?: OrderProfile;
 }
 
 const Orders = () => {
@@ -86,7 +88,7 @@ const Orders = () => {
         const formattedOrders: Order[] = data.map(order => {
           // Parse JSON fields
           const parsedItems = parseJsonArray(order.items, []);
-          const profileData = order.profiles || {};
+          const profileData: OrderProfile = order.profiles || {};
           
           // Cria um objeto de endereço com valores padrão
           const shippingAddress: OrderAddress = {

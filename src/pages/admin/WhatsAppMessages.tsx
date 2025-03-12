@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth-context';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { WhatsAppMessage } from '@/components/admin/whatsapp/types';
+import { WhatsAppMessage, convertMessageFormat } from '@/components/admin/whatsapp/types';
 
 const AdminWhatsAppMessages = () => {
   const { profile, hasPermission } = useAuth();
@@ -74,29 +74,67 @@ const AdminWhatsAppMessages = () => {
   
   const handleSelectLead = (lead: any) => {
     setSelectedLead(lead);
+    if (lead) {
+      fetchMessages(lead.id);
+    } else {
+      setMessages([]);
+    }
+  };
+  
+  const fetchMessages = async (leadId: string) => {
+    setMessagesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('whatsapp_messages')
+        .select('*')
+        .eq('lead_id', leadId)
+        .order('created_at', { ascending: true });
+        
+      if (error) throw error;
+      
+      // Converter as mensagens para o formato compatível
+      const formattedMessages = data.map(msg => convertMessageFormat(msg)) || [];
+      setMessages(formattedMessages);
+    } catch (error) {
+      console.error('Erro ao buscar mensagens:', error);
+      toast.error('Erro ao carregar mensagens');
+    } finally {
+      setMessagesLoading(false);
+    }
   };
   
   const handleRefresh = () => {
     fetchNotifications();
+    if (selectedLead) {
+      fetchMessages(selectedLead.id);
+    }
   };
 
   const handleSendMessage = async (message: string, media?: { url: string; type: string }) => {
     if (!selectedLead || !message.trim()) return false;
     
     try {
+      const newMessage = {
+        lead_id: selectedLead.id,
+        message: message,
+        direction: 'outbound',
+        is_bot: false,
+        media_url: media?.url || null,
+        media_type: media?.type || null,
+        sender_id: profile?.id || null,
+        created_at: new Date().toISOString()
+      };
+      
       const { error } = await supabase
         .from('whatsapp_messages')
-        .insert([{
-          lead_id: selectedLead.id,
-          message,
-          direction: 'outbound',
-          is_bot: false,
-          media_url: media?.url,
-          media_type: media?.type
-        }]);
+        .insert([newMessage]);
         
       if (error) throw error;
       
+      // Adicionar a mensagem à lista localmente
+      setMessages(prev => [...prev, convertMessageFormat(newMessage)]);
+      
+      if (handleRefresh) handleRefresh();
       return true;
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);

@@ -5,23 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ShippingRateFormData } from "@/hooks/admin/shipping/types";
 
 interface ShippingRateFormProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   isEditing: boolean;
-  formData: {
-    region: string;
-    zip_code_start: string;
-    zip_code_end: string;
-    flat_rate: string;
-    additional_kg_rate: string;
-    estimated_days: string;
-    is_active: boolean;
-  };
+  formData: Partial<ShippingRateFormData> & { id?: string };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
-  handleCreateRate: () => Promise<void>;
+  handleCreateRate: (e: React.FormEvent) => Promise<boolean>;
   resetForm: () => void;
 }
 
@@ -35,17 +28,22 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
   handleCreateRate,
   resetForm
 }) => {
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleCreateRate(e);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Taxa de Envio" : "Criar Nova Taxa de Envio"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <form onSubmit={onSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="region">Região</Label>
             <Select
-              value={formData.region}
+              value={formData.region || ""}
               onValueChange={(value) => handleSelectChange("region", value)}
             >
               <SelectTrigger>
@@ -67,7 +65,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
               <Input
                 id="zip_code_start"
                 name="zip_code_start"
-                value={formData.zip_code_start}
+                value={formData.zip_code_start || ""}
                 onChange={handleInputChange}
                 placeholder="Ex: 01000000"
               />
@@ -78,7 +76,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
               <Input
                 id="zip_code_end"
                 name="zip_code_end"
-                value={formData.zip_code_end}
+                value={formData.zip_code_end || ""}
                 onChange={handleInputChange}
                 placeholder="Ex: 09999999"
               />
@@ -92,7 +90,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
                 id="flat_rate"
                 name="flat_rate"
                 type="number"
-                value={formData.flat_rate}
+                value={formData.flat_rate || 0}
                 onChange={handleInputChange}
                 placeholder="Ex: 15.90"
               />
@@ -104,7 +102,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
                 id="additional_kg_rate"
                 name="additional_kg_rate"
                 type="number"
-                value={formData.additional_kg_rate}
+                value={formData.additional_kg_rate || 0}
                 onChange={handleInputChange}
                 placeholder="Ex: 2.50"
               />
@@ -117,7 +115,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
               id="estimated_days"
               name="estimated_days"
               type="number"
-              value={formData.estimated_days}
+              value={formData.estimated_days || 3}
               onChange={handleInputChange}
               placeholder="Ex: 5"
             />
@@ -128,7 +126,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
               id="is_active"
               name="is_active"
               type="checkbox"
-              checked={formData.is_active}
+              checked={formData.is_active !== undefined ? formData.is_active : true}
               onChange={handleInputChange}
               className="h-4 w-4 rounded border-gray-300"
             />
@@ -138,6 +136,7 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
           <div className="flex justify-end space-x-2 pt-4">
             <Button 
               variant="outline" 
+              type="button"
               onClick={() => {
                 setIsOpen(false);
                 resetForm();
@@ -145,11 +144,11 @@ export const ShippingRateForm: React.FC<ShippingRateFormProps> = ({
             >
               Cancelar
             </Button>
-            <Button onClick={handleCreateRate}>
+            <Button type="submit">
               {isEditing ? "Atualizar" : "Criar"} Taxa
             </Button>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
