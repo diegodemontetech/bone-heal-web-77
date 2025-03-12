@@ -35,6 +35,7 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
       name: product.name,
       price: product.price || 0,
       image: product.main_image || "/placeholder.svg",
+      quantity: 1
     });
 
     setAdded(true);
