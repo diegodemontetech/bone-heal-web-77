@@ -32,8 +32,9 @@ export const useOrderCustomers = () => {
         }
         
         // Limitar resultados e adicionar ordem para consistência
+        // Usando apenas 'ascending' que é uma opção válida
         const { data, error } = await query
-          .order("full_name", { ascending: true, nullsLast: true })
+          .order("full_name", { ascending: true })
           .limit(50);
 
         if (error) {
