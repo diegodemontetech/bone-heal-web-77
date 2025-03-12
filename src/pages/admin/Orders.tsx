@@ -1,30 +1,38 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { OrderDetails } from "@/components/admin/order/OrderDetails";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Order } from "@/types/order";
+import OrdersHeader from "@/components/admin/orders/OrdersHeader";
 import OrdersKanban from "@/components/admin/orders/OrdersKanban";
 import { OrdersList } from "@/components/admin/orders/OrdersList";
-import OrdersHeader from "@/components/admin/orders/OrdersHeader";
 import OrdersLoading from "@/components/admin/orders/OrdersLoading";
 import EmptyOrdersMessage from "@/components/admin/orders/EmptyOrdersMessage";
 import OrdersErrorMessage from "@/components/admin/orders/OrdersErrorMessage";
 import CreateOrder from "@/components/admin/CreateOrder";
-import { Order } from "@/types/order";
+import { OrderDetails } from "@/components/admin/order/OrderDetails";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
+import { useAuth } from "@/hooks/use-auth-context";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const { isAdmin } = useAuth();
 
   const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: async () => {
       try {
+        if (!isAdmin) {
+          toast.error("Você não tem permissão para ver os pedidos");
+          return [];
+        }
+
         const { data, error } = await supabase
           .from("orders")
           .select(`

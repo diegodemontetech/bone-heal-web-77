@@ -10,12 +10,23 @@ import { ShippingSection } from "./order/ShippingSection";
 import { PaymentMethodSection } from "./order/PaymentMethodSection";
 import VoucherSection from "./quotations/components/summary/VoucherSection";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth-context";
+import { useEffect } from "react";
 
 interface CreateOrderProps {
   onCancel: () => void;
 }
 
 const CreateOrder = ({ onCancel }: CreateOrderProps) => {
+  const { isAdmin } = useAuth();
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast.error("Você não tem permissão para criar pedidos");
+      onCancel();
+    }
+  }, [isAdmin, onCancel]);
+
   // Hook para criar pedido
   const {
     loading,
@@ -57,6 +68,11 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const [zipCode, setZipCode] = useState("");
 
   const handleCreateOrder = () => {
+    if (!isAdmin) {
+      toast.error("Você não tem permissão para criar pedidos");
+      return;
+    }
+
     if (!selectedCustomer) {
       toast.error("Selecione um cliente para criar o pedido");
       return;
