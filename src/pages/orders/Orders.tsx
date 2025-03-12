@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,14 +46,29 @@ const Orders = () => {
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
           
+          // Criando um objeto shipping_address com valores padrão para evitar erros de tipo
           const shippingAddress: ShippingAddress = {
-            zip_code: order.shipping_address?.zip_code || profileData.zip_code || '',
-            city: order.shipping_address?.city || profileData.city || '',
-            state: order.shipping_address?.state || profileData.state || '',
-            address: order.shipping_address?.address || profileData.address || '',
-            number: order.shipping_address?.number || profileData.endereco_numero || '',
-            complement: order.shipping_address?.complement || profileData.complemento || '',
-            neighborhood: order.shipping_address?.neighborhood || profileData.neighborhood || ''
+            zip_code: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.zip_code || profileData.zip_code || '') : 
+              (profileData.zip_code || ''),
+            city: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.city || profileData.city || '') : 
+              (profileData.city || ''),
+            state: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.state || profileData.state || '') : 
+              (profileData.state || ''),
+            address: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.address || profileData.address || '') : 
+              (profileData.address || ''),
+            number: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.number || profileData.endereco_numero || '') : 
+              (profileData.endereco_numero || ''),
+            complement: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.complement || profileData.complemento || '') : 
+              (profileData.complemento || ''),
+            neighborhood: typeof order.shipping_address === 'object' && order.shipping_address ? 
+              (order.shipping_address.neighborhood || profileData.neighborhood || '') : 
+              (profileData.neighborhood || '')
           };
           
           return {
