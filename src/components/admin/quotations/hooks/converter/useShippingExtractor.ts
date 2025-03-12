@@ -13,14 +13,18 @@ interface ShippingInfo {
 
 export const useShippingExtractor = () => {
   const extractShippingInfo = (shippingInfoRaw: Json): ShippingInfo => {
-    const shippingInfo: ShippingInfo = {
-      cost: 0
-    };
+    // Valor padrão
+    const shippingInfo: ShippingInfo = { cost: 0 };
     
+    // Se temos informações de frete válidas
     if (shippingInfoRaw && typeof shippingInfoRaw === 'object' && !Array.isArray(shippingInfoRaw)) {
       const shippingObj = shippingInfoRaw as Record<string, Json>;
+      
+      // Extrair custo, convertendo para número se necessário
       shippingInfo.cost = typeof shippingObj.cost === 'number' ? shippingObj.cost : 
                           typeof shippingObj.cost === 'string' ? parseFloat(shippingObj.cost) : 0;
+      
+      // Extrair outras propriedades
       shippingInfo.method = shippingObj.method as string | undefined;
       shippingInfo.carrier = shippingObj.carrier as string | undefined;
       shippingInfo.estimated_days = shippingObj.estimated_days as number | undefined;

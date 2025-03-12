@@ -10,6 +10,8 @@ import { useOrderNotifications } from "./converter/useOrderNotifications";
 
 export const useOrderConverter = () => {
   const [isConvertingToOrder, setIsConvertingToOrder] = useState(false);
+  
+  // Importar hooks especializados
   const { prepareOrderItems } = useOrderItems();
   const { extractCustomerInfo, buildShippingAddress } = useCustomerExtractor();
   const { extractShippingInfo } = useShippingExtractor();
@@ -18,6 +20,7 @@ export const useOrderConverter = () => {
 
   const convertToOrder = async (quotationId: string) => {
     setIsConvertingToOrder(true);
+    
     try {
       // Buscar os dados do orçamento
       const { data: quotation, error } = await supabase

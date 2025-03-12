@@ -9,6 +9,7 @@ interface CustomerInfo {
 }
 
 export const useOrderNotifications = () => {
+  // Criar notificação para o cliente
   const createCustomerNotification = async (
     customerId: string,
     orderId: string
@@ -29,6 +30,7 @@ export const useOrderNotifications = () => {
     }
   };
 
+  // Disparar workflow para o pedido
   const triggerWorkflow = async (
     orderId: string,
     customer: CustomerInfo,
