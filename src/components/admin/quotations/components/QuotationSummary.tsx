@@ -21,6 +21,12 @@ interface QuotationSummaryProps {
   setDiscountType: (type: string) => void;
   onCreateQuotation: () => void;
   onCancel: () => void;
+  appliedVoucher?: any;
+  setAppliedVoucher?: (voucher: any) => void;
+  zipCode?: string;
+  setZipCode?: (zipCode: string) => void;
+  selectedShipping?: ShippingCalculationRate | null;
+  setSelectedShipping?: (shipping: ShippingCalculationRate | null) => void;
 }
 
 const QuotationSummary = ({
@@ -35,13 +41,16 @@ const QuotationSummary = ({
   setDiscountType,
   onCreateQuotation,
   onCancel,
+  appliedVoucher,
+  setAppliedVoucher,
+  zipCode = "",
+  setZipCode = () => {},
+  selectedShipping,
+  setSelectedShipping = () => {},
 }: QuotationSummaryProps) => {
   // Estados locais
   const [voucherCode, setVoucherCode] = useState("");
   const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
-  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
-  const [zipCode, setZipCode] = useState("");
-  const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   
   // Hook de cálculos
   const { 
@@ -61,10 +70,10 @@ const QuotationSummary = ({
 
   // Atualizar o zipCode quando o cliente mudar
   useEffect(() => {
-    if (selectedCustomer?.zip_code) {
+    if (selectedCustomer?.zip_code && setZipCode) {
       setZipCode(selectedCustomer.zip_code);
     }
-  }, [selectedCustomer]);
+  }, [selectedCustomer, setZipCode]);
 
   return (
     <Card>
@@ -83,7 +92,7 @@ const QuotationSummary = ({
             isApplyingVoucher={isApplyingVoucher}
             setIsApplyingVoucher={setIsApplyingVoucher}
             appliedVoucher={appliedVoucher}
-            setAppliedVoucher={setAppliedVoucher}
+            setAppliedVoucher={setAppliedVoucher || (() => {})}
             paymentMethod={paymentMethod}
             subtotal={calculateSubtotal()}
             totalItems={totalItems}

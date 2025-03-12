@@ -7,6 +7,7 @@ import { Plus, List } from "lucide-react";
 import QuotationsList from "@/components/admin/quotations/QuotationsList";
 import CreateQuotation from "@/components/admin/quotations/CreateQuotation";
 import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 /**
  * Hook para gerenciar o estado da página de orçamentos
@@ -14,7 +15,6 @@ import { useToast } from "@/components/ui/use-toast";
 const useQuotationsPage = () => {
   const [activeTab, setActiveTab] = useState<string>("list");
   const [isCreating, setIsCreating] = useState(false);
-  const { toast } = useToast();
 
   const handleNewQuotation = () => {
     setIsCreating(true);
@@ -24,21 +24,13 @@ const useQuotationsPage = () => {
   const handleCancelCreate = () => {
     setIsCreating(false);
     setActiveTab("list");
-    toast({
-      title: "Criação cancelada",
-      description: "A criação do orçamento foi cancelada.",
-      variant: "default",
-    });
+    toast.info("Criação de orçamento cancelada");
   };
 
   const handleSuccessfulCreate = () => {
     setIsCreating(false);
     setActiveTab("list");
-    toast({
-      title: "Orçamento criado",
-      description: "O orçamento foi criado com sucesso.",
-      variant: "default", // Alterado de "success" para "default"
-    });
+    toast.success("Orçamento criado com sucesso!");
   };
 
   return {
@@ -60,7 +52,8 @@ const Quotations = () => {
     setActiveTab,
     isCreating,
     handleNewQuotation,
-    handleCancelCreate
+    handleCancelCreate,
+    handleSuccessfulCreate
   } = useQuotationsPage();
 
   return (
@@ -112,7 +105,10 @@ const Quotations = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <CreateQuotation onCancel={handleCancelCreate} />
+              <CreateQuotation 
+                onCancel={handleCancelCreate} 
+                onSuccess={handleSuccessfulCreate}
+              />
             </CardContent>
           </Card>
         </TabsContent>

@@ -49,6 +49,7 @@ export const useQuotationsQuery = () => {
     queryKey: ["quotations"],
     queryFn: async () => {
       try {
+        console.log("Buscando orçamentos do banco de dados...");
         const { data, error } = await supabase
           .from("quotations")
           .select(`
@@ -69,6 +70,8 @@ export const useQuotationsQuery = () => {
           console.error("Erro ao buscar orçamentos:", error);
           throw new Error(`Não foi possível carregar os orçamentos: ${error.message}`);
         }
+        
+        console.log(`Encontrados ${data?.length || 0} orçamentos`);
         
         // Transformar a resposta com tipagem forte e tratamento de dados consistente
         return (data || []).map(quotation => {

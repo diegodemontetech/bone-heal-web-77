@@ -1,9 +1,11 @@
 
+import { useState } from "react";
 import { useSelectedProducts } from "./useSelectedProducts";
 import { useQuotationFormState } from "./form/useQuotationFormState";
 import { useQuotationSubmit } from "./form/useQuotationSubmit";
+import { ShippingCalculationRate } from "@/types/shipping";
 
-export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
+export const useQuotationForm = ({ onCancel, onSuccess }: { onCancel: () => void, onSuccess?: () => void }) => {
   // Estados do formulário
   const {
     selectedCustomer,
@@ -14,13 +16,12 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     setDiscount,
     discountType,
     setDiscountType,
-    appliedVoucher,
-    setAppliedVoucher,
-    zipCode,
-    setZipCode,
-    selectedShipping,
-    setSelectedShipping,
   } = useQuotationFormState();
+  
+  // Estados adicionais
+  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
+  const [zipCode, setZipCode] = useState("");
+  const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   
   // Gerenciamento de produtos
   const { 
@@ -32,7 +33,7 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
   // Submissão e cálculos
   const {
     loading,
-    handleCreateQuotation,
+    handleCreateQuotation: submitQuotation,
     calculateSubtotal,
     calculateDiscountAmount,
     calculateTotal
@@ -46,6 +47,14 @@ export const useQuotationForm = ({ onCancel }: { onCancel: () => void }) => {
     selectedShipping,
     onCancel
   });
+
+  // Função para criar orçamento e chamar callback de sucesso
+  const handleCreateQuotation = async () => {
+    await submitQuotation();
+    if (onSuccess) {
+      onSuccess();
+    }
+  };
 
   return {
     // Cliente

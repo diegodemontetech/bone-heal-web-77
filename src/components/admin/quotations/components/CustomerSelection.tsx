@@ -56,13 +56,7 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
   });
 
   // Filtrar clientes com base no termo de busca
-  const filteredCustomers = customers.filter(customer => {
-    const fullName = customer.full_name?.toLowerCase() || '';
-    const email = customer.email?.toLowerCase() || '';
-    const searchTermLower = searchTerm.toLowerCase();
-    
-    return fullName.includes(searchTermLower) || email.includes(searchTermLower);
-  });
+  const filteredCustomers = customers;
 
   // Quando um novo cliente é registrado com sucesso
   const handleRegistrationSuccess = (newCustomer: any) => {

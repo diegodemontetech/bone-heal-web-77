@@ -9,9 +9,10 @@ import { useProductsQuery } from "./hooks/useProductsQuery";
 
 interface CreateQuotationProps {
   onCancel: () => void;
+  onSuccess: () => void;
 }
 
-const CreateQuotation = ({ onCancel }: CreateQuotationProps) => {
+const CreateQuotation = ({ onCancel, onSuccess }: CreateQuotationProps) => {
   const {
     selectedCustomer,
     setSelectedCustomer,
@@ -25,7 +26,13 @@ const CreateQuotation = ({ onCancel }: CreateQuotationProps) => {
     loading,
     handleProductQuantityChange,
     handleCreateQuotation,
-  } = useQuotationForm({ onCancel });
+    appliedVoucher,
+    setAppliedVoucher,
+    zipCode,
+    setZipCode,
+    selectedShipping,
+    setSelectedShipping,
+  } = useQuotationForm({ onCancel, onSuccess });
 
   // Buscar produtos usando o hook personalizado
   const { data: products = [], isLoading: isLoadingProducts } = useProductsQuery();
@@ -52,6 +59,12 @@ const CreateQuotation = ({ onCancel }: CreateQuotationProps) => {
           setDiscountType={setDiscountType}
           onCreateQuotation={handleCreateQuotation}
           onCancel={onCancel}
+          appliedVoucher={appliedVoucher}
+          setAppliedVoucher={setAppliedVoucher}
+          zipCode={zipCode}
+          setZipCode={setZipCode}
+          selectedShipping={selectedShipping}
+          setSelectedShipping={setSelectedShipping}
         />
       </div>
       
