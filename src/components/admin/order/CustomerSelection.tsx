@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { useState } from "react";
 import { Customer } from "@/hooks/useCustomerState";
+import { toast } from "sonner";
 
 interface CustomerSelectionProps {
   customers: Customer[];
