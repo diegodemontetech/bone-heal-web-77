@@ -37,7 +37,7 @@ const useQuotationsPage = () => {
     toast({
       title: "Orçamento criado",
       description: "O orçamento foi criado com sucesso.",
-      variant: "success",
+      variant: "default", // Alterado de "success" para "default"
     });
   };
 
