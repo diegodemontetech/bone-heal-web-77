@@ -22,7 +22,7 @@ export const useVouchersData = () => {
       // Garantir que todos os vouchers tenham o campo is_active
       const formattedVouchers = data.map(voucher => ({
         ...voucher,
-        is_active: voucher.is_active === undefined ? true : voucher.is_active
+        is_active: typeof voucher.is_active === 'boolean' ? voucher.is_active : true
       })) as Voucher[];
       
       setVouchers(formattedVouchers);

@@ -55,7 +55,10 @@ const Orders = () => {
             zip_code: profileData.zip_code || '',
             city: profileData.city || '',
             state: profileData.state || '',
-            address: profileData.address || ''
+            address: profileData.address || '',
+            number: profileData.endereco_numero || '',
+            complement: profileData.complemento || '',
+            neighborhood: profileData.neighborhood || ''
           };
           
           return {
@@ -79,7 +82,9 @@ const Orders = () => {
             created_at: order.created_at,
             updated_at: order.updated_at || order.created_at,
             discount: order.discount || 0,
-            profiles: profileData
+            profiles: profileData,
+            installments: order.installments || 1,
+            mp_preference_id: order.mp_preference_id || ''
           } as Order;
         });
         

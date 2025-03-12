@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Loader2, ShoppingCart } from "lucide-react";
 
-// Corrigir importações para usar named exports
+// Importar componentes corretamente usando importações nomeadas
 import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";
 import { EmptyCart } from "@/components/cart/EmptyCart";
@@ -19,18 +19,23 @@ import { EmptyCart } from "@/components/cart/EmptyCart";
 const Cart = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const { cart, isLoading, removeItem, updateQuantity, clearCart, getTotalPrice } = useCart();
+  const { cart, removeItem, updateQuantity, clearCart, getTotalPrice } = useCart();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Extrair valores do hook de shipping
   const { 
     zipCode, 
     setZipCode, 
-    shippingCost, 
+    shippingFee: shippingCost, 
     calculateShipping, 
-    isCalculatingShipping, 
-    shippingError, 
-    shippingCalculated,
-    resetShipping 
+    loading: isCalculatingShipping, 
+    resetShipping
   } = useShipping();
   
+  // Estados adicionais necessários para o componente
+  const [shippingError, setShippingError] = useState<string | null>(null);
+  const [shippingCalculated, setShippingCalculated] = useState(false);
+
   // Função para lidar com o checkout
   const handleCheckout = () => {
     if (!profile) {
@@ -47,9 +52,23 @@ const Cart = () => {
     navigate("/checkout");
   };
 
+  // Wrapper para calculateShipping para lidar com os estados
+  const handleCalculateShipping = async (zip: string) => {
+    setShippingError(null);
+    try {
+      await calculateShipping(zip);
+      setShippingCalculated(true);
+    } catch (error) {
+      console.error("Erro ao calcular frete:", error);
+      setShippingError("Erro ao calcular o frete. Verifique o CEP e tente novamente.");
+      setShippingCalculated(false);
+    }
+  };
+
   // Reset shipping when cart changes
   useEffect(() => {
     resetShipping();
+    setShippingCalculated(false);
   }, [cart, resetShipping]);
 
   if (isLoading) {
@@ -82,8 +101,8 @@ const Cart = () => {
                 <CartItem
                   key={item.id}
                   item={item}
-                  onRemove={removeItem}
-                  onUpdateQuantity={updateQuantity}
+                  removeFromCart={() => removeItem(item.id)}
+                  updateQuantity={(quantity) => updateQuantity(item.id, quantity)}
                 />
               ))}
             </div>
@@ -91,10 +110,10 @@ const Cart = () => {
             <div className="lg:col-span-1">
               <CartSummary
                 cartTotal={getTotalPrice()}
-                shippingCost={shippingCost}
+                shippingCost={shippingCost || 0}
                 zipCode={zipCode}
                 setZipCode={setZipCode}
-                calculateShipping={(zip) => calculateShipping(zip)} // Corrigir a assinatura do método
+                calculateShipping={handleCalculateShipping}
                 isCalculatingShipping={isCalculatingShipping}
                 shippingError={shippingError}
                 shippingCalculated={shippingCalculated}

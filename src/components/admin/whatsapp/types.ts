@@ -4,7 +4,7 @@ export interface WhatsAppInstance {
   instance_name: string;
   name: string; // mudado de opcional para obrigatório
   status: string;
-  qr_code?: string;
+  qr_code: string; // qr_code é obrigatório para compatibilidade com automation.ts
   created_at: string;
   updated_at: string;
   user_id: string;
