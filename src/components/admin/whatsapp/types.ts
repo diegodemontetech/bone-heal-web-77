@@ -93,3 +93,24 @@ export interface WhatsAppInstanceCardProps {
   onRefreshQr: () => Promise<void>;
   onDelete: () => void;
 }
+
+// Helper para converter formatos de mensagem
+export function convertMessageFormat(message: any): WhatsAppMessage {
+  return {
+    id: message.id || '',
+    lead_id: message.lead_id || '',
+    message: message.message || message.body || '',
+    direction: message.direction || (message.is_sent_by_me ? 'outbound' : 'inbound'),
+    sent_by: message.sent_by || (message.is_sent_by_me ? 'us' : 'them'),
+    is_bot: message.is_bot || false,
+    created_at: message.created_at || message.timestamp || new Date().toISOString(),
+    media_type: message.media_type || null,
+    media_url: message.media_url || null,
+    instance_id: message.instance_id || null,
+    sender_id: message.sender_id || null,
+    is_sent_by_me: message.is_sent_by_me || message.direction === 'outbound',
+    body: message.body || message.message || '',
+    timestamp: message.timestamp || message.created_at || new Date().toISOString(),
+    type: message.type || null
+  };
+}

@@ -117,7 +117,7 @@ const AdminWhatsAppMessages = () => {
       const newMessage = {
         lead_id: selectedLead.id,
         message: message,
-        direction: 'outbound',
+        direction: 'outbound' as 'inbound' | 'outbound',
         is_bot: false,
         media_url: media?.url || null,
         media_type: media?.type || null,

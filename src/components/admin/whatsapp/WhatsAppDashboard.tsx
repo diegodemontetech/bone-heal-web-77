@@ -52,6 +52,7 @@ const WhatsAppDashboard = () => {
         <CreateInstanceDialog
           isOpen={isDialogOpen}
           isCreating={isCreating}
+          onClose={() => setIsDialogOpen(false)}
           onOpenChange={setIsDialogOpen}
           onCreateInstance={handleCreateInstance}
         />
@@ -69,10 +70,12 @@ const WhatsAppDashboard = () => {
           <InstancesTab
             instances={instances}
             isLoading={isLoading}
-            onSelectInstance={handleSelectInstance}
+            onSelect={handleSelectInstance}
             onRefreshQr={handleRefreshQr}
-            onDeleteInstance={handleDeleteInstance}
+            onDelete={handleDeleteInstance}
             onCreateDialogOpen={() => setIsDialogOpen(true)}
+            onSelectInstance={handleSelectInstance}
+            onDeleteInstance={handleDeleteInstance}
           />
         </TabsContent>
         

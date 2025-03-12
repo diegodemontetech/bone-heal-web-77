@@ -28,8 +28,7 @@ export interface WhatsAppInstance {
 export interface WhatsAppMessage {
   id: string;
   instance_id: string;
-  from: string;
-  to: string;
+  // Campos como from e to não são mais necessários
   body: string;
   type: string;
   timestamp: string;
@@ -51,8 +50,7 @@ export interface WhatsAppMessage {
 export function convertToComponentMessage(message: WhatsAppMessage): ComponentWhatsAppMessage {
   return {
     id: message.id,
-    from: message.from,
-    to: message.to,
+    lead_id: message.lead_id || '',
     body: message.body,
     message: message.body, // Mapeamento adicional
     type: message.type,
@@ -64,7 +62,6 @@ export function convertToComponentMessage(message: WhatsAppMessage): ComponentWh
     media_url: message.media_url,
     media_type: message.media_type,
     instance_id: message.instance_id,
-    lead_id: message.lead_id || '',
     is_bot: false
   };
 }
