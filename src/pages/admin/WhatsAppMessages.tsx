@@ -93,7 +93,7 @@ const AdminWhatsAppMessages = () => {
       if (error) throw error;
       
       // Converter as mensagens para o formato compatível
-      const formattedMessages = data.map(msg => convertMessageFormat(msg)) || [];
+      const formattedMessages = data?.map(msg => convertMessageFormat(msg)) || [];
       setMessages(formattedMessages);
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error);

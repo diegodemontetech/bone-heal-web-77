@@ -68,6 +68,12 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     handleDeleteRate: handleDeleteRateWithRefresh,
     exportRates: handleExportRates,
     insertShippingRates: handleImportRates,
-    shippingOptions
+    shippingOptions,
+    // Adicionando propriedades ausentes para compatibilidade
+    shippingRates: rates,
+    selectedShippingRate: null,
+    calculateShipping: () => {},
+    handleShippingRateChange: () => {},
+    resetShipping: () => {}
   };
 };

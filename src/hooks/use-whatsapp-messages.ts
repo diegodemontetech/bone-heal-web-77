@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { WhatsAppMessage } from '@/types/automation';
+import { convertMessageFormat, WhatsAppMessage } from '@/components/admin/whatsapp/types';
 
 export const useWhatsAppMessages = (instanceId: string, contactNumber: string) => {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
@@ -21,7 +21,9 @@ export const useWhatsAppMessages = (instanceId: string, contactNumber: string) =
         throw error;
       }
 
-      setMessages(data || []);
+      // Convertendo mensagens para o formato esperado usando a função de conversão
+      const formattedMessages = data?.map(msg => convertMessageFormat(msg)) || [];
+      setMessages(formattedMessages);
     } catch (error) {
       console.error('Erro ao buscar mensagens:', error);
     } finally {
@@ -31,24 +33,27 @@ export const useWhatsAppMessages = (instanceId: string, contactNumber: string) =
 
   const sendMessage = async (message: string, media?: { url: string, type: string }): Promise<boolean> => {
     try {
-      // First save to our database
-      const { data: msgData, error: msgError } = await supabase
+      // Preparar mensagem no formato esperado pelo banco de dados
+      const msgData = {
+        instance_id: instanceId,
+        lead_id: "", // Será preenchido pelo backend
+        message: message,
+        direction: 'outbound',
+        is_bot: false,
+        created_at: new Date().toISOString(),
+        media_url: media?.url || null,
+        media_type: media?.type || null,
+        sender_id: 'me', // placeholder
+      };
+
+      // Salvar no banco de dados
+      const { error: msgError } = await supabase
         .from('whatsapp_messages')
-        .insert([{
-          instance_id: instanceId,
-          from: 'me', // placeholder, will be updated by backend
-          to: contactNumber,
-          body: message,
-          type: media ? 'media' : 'text',
-          timestamp: new Date().toISOString(),
-          is_sent_by_me: true,
-          media_url: media?.url,
-          media_type: media?.type,
-        }]);
+        .insert([msgData]);
 
       if (msgError) throw msgError;
 
-      // Then send via API
+      // Enviar via API
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-whatsapp`, {
         method: 'POST',
         headers: {

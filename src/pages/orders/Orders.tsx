@@ -92,10 +92,10 @@ const Orders = () => {
           
           // Cria um objeto de endereço com valores padrão
           const shippingAddress: OrderAddress = {
-            zip_code: profileData.zip_code || '',
-            city: profileData.city || '',
-            state: profileData.state || '',
-            address: profileData.address || ''
+            zip_code: profileData?.zip_code || '',
+            city: profileData?.city || '',
+            state: profileData?.state || '',
+            address: profileData?.address || ''
           };
           
           return {
