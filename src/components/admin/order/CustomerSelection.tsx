@@ -49,6 +49,14 @@ export const CustomerSelection = ({
               value={customerSearchTerm}
               onChange={(e) => setCustomerSearchTerm(e.target.value)}
             />
+            {customerSearchTerm && (
+              <button 
+                onClick={() => setCustomerSearchTerm("")}
+                className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           
           <div className="max-h-60 overflow-y-auto border rounded-md">
