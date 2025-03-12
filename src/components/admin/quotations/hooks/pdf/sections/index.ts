@@ -7,3 +7,4 @@ export { addProductsTable } from './productsTable';
 export { addSummary } from './summary';
 export { addNotes } from './notes';
 export { addFooter } from './footer';
+export { addShippingInfo } from './shippingInfo';
