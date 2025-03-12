@@ -10,8 +10,7 @@ import { useAuth } from "@/hooks/use-auth-context";
 import ProductDetailContent from "@/components/product/ProductDetailContent";
 import ProductLoading from "@/components/product/ProductLoading";
 import ProductNotFound from "@/components/product/ProductNotFound";
-import { supabase } from "@/integrations/supabase/client";
-import { Product } from "@/types/product";
+import { fetchProductBySlug } from "@/api/product-api";
 import { toast } from "sonner";
 
 const ProductDetail = () => {
@@ -30,25 +29,15 @@ const ProductDetail = () => {
           throw new Error("Slug não fornecido");
         }
         
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .eq("slug", slug)
-          .eq("active", true)
-          .single();
-          
-        if (error) {
-          console.error("Erro ao buscar produto:", error);
-          throw error;
-        }
+        const product = await fetchProductBySlug(slug);
         
-        if (!data) {
+        if (!product) {
           console.log("Produto não encontrado");
           return null;
         }
         
-        console.log("Produto encontrado:", data);
-        return data as Product;
+        console.log("Produto encontrado:", product);
+        return product;
       } catch (error) {
         console.error("Falha ao buscar produto:", error);
         toast.error("Não foi possível carregar as informações do produto");

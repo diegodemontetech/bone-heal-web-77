@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
 import Home from "@/pages/Index";
 import About from "@/pages/About";
 import Products from "@/pages/Products";
+import ProductDetail from "@/pages/ProductDetail";
 import Studies from "@/pages/Studies";
 import News from "@/pages/News";
 import Contact from "@/pages/Contact";
@@ -24,6 +25,7 @@ export function Routes() {
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/products/:slug" element={<ProductDetail />} />
         <Route path="/studies" element={<Studies />} />
         <Route path="/news" element={<News />} />
         <Route path="/contact" element={<Contact />} />
