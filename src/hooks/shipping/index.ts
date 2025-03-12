@@ -1,42 +1,77 @@
 
-import { useShippingRates } from "@/hooks/admin/use-shipping-rates";
-import { useDeliveryDate } from "./use-delivery-date";
-import { useUserZipCode } from "./use-user-zip-code";
+import { useShippingRates } from '@/hooks/admin/use-shipping-rates';
+import { useDeliveryDate } from './use-delivery-date';
+import { useUserZipCode } from './use-user-zip-code';
+import { ShippingCalculationRate } from '@/types/shipping';
 
 export const useShipping = () => {
+  // Dados originais das taxas de envio
   const {
     rates,
     loading,
+    isDialogOpen,
+    setIsDialogOpen,
+    isEditing,
+    formData,
+    handleInputChange,
+    handleSelectChange,
+    resetForm,
+    openEditDialog,
+    handleCreateRate,
+    handleDeleteRate,
+    exportRates,
+    insertShippingRates,
     shippingOptions,
-    // Renomeando para evitar conflitos
-    shippingRates: _shippingRates,
-    selectedShippingRate: _selectedShippingRate,
-    calculateShipping: _calculateShipping,
-    handleShippingRateChange: _handleShippingRateChange,
-    resetShipping: _resetShipping,
-    ...restShippingRatesHook
+    shippingRates,
+    selectedShippingRate,
+    calculateShipping,
+    handleShippingRateChange,
+    resetShipping
   } = useShippingRates();
 
-  const { formatDeliveryDate } = useDeliveryDate();
-  const { userZipCode, setUserZipCode } = useUserZipCode();
+  // Utilidades para data de entrega
+  const { calculateDeliveryDate } = useDeliveryDate();
+  const formatDeliveryDate = (shippingRate: ShippingCalculationRate) => {
+    const date = calculateDeliveryDate(shippingRate);
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: 'numeric',
+      month: 'long'
+    }).format(date);
+  };
 
-  // Definindo as propriedades ausentes com funções vazias para compatibilidade
-  const shippingRates = rates || [];
-  const selectedShippingRate = null;
-  const calculateShipping = () => {};
-  const handleShippingRateChange = () => {};
-  const resetShipping = () => {};
+  // Gerenciamento do CEP do usuário
+  const { 
+    zipCode: userZipCode, 
+    setZipCode: setUserZipCode, 
+    zipCodeFetched, 
+    loadUserZipCode 
+  } = useUserZipCode();
 
   return {
+    // Propriedades de taxas de envio
     rates,
     loading,
-    shippingOptions,
+    isDialogOpen,
+    setIsDialogOpen,
+    isEditing,
+    formData,
+    handleInputChange,
+    handleSelectChange,
+    resetForm,
+    openEditDialog,
+    handleCreateRate,
+    handleDeleteRate,
+    exportRates,
+    insertShippingRates,
+    
+    // Propriedades específicas de envio
     formatDeliveryDate,
     userZipCode,
     setUserZipCode,
-    ...restShippingRatesHook,
-    // Adicionando as propriedades ausentes
+    zipCodeFetched,
+    loadUserZipCode,
     shippingRates,
+    shippingOptions,
     selectedShippingRate,
     calculateShipping,
     handleShippingRateChange,
