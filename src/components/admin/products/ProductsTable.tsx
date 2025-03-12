@@ -13,7 +13,7 @@ import {
 import { Product } from "@/types/product";
 
 interface ProductsTableProps {
-  products: Product[] | null;
+  products: Product[];
   isLoading: boolean;
   error: Error | null;
   onEdit: (product: Product) => void;

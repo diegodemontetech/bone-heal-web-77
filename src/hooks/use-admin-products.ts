@@ -11,7 +11,7 @@ export const useAdminProducts = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
-  const { data: products, refetch, isLoading, error } = useQuery({
+  const { data: products = [], refetch, isLoading, error } = useQuery({
     queryKey: ["admin-products"],
     queryFn: async () => {
       console.log("Fetching admin products...");
@@ -39,6 +39,8 @@ export const useAdminProducts = () => {
       }
     },
     retry: 1,
+    initialData: [], // Definir initialData como array vazio para evitar undefined
+    refetchOnWindowFocus: false,
   });
 
   const handleToggleActive = async (id: string, currentActive: boolean) => {

@@ -1,3 +1,4 @@
+
 import { useAdminProducts } from "@/hooks/use-admin-products";
 import ProductForm from "@/components/admin/ProductForm";
 import ProductsTable from "@/components/admin/products/ProductsTable";
@@ -20,7 +21,11 @@ const AdminProducts = () => {
     handleFormSuccess
   } = useAdminProducts();
 
-  const processedProducts = products.map(product => ({
+  // Garantindo que products seja sempre um array, mesmo quando é undefined
+  const safeProducts = products || [];
+  
+  // Processando produtos apenas se houver produtos para processar
+  const processedProducts = safeProducts.map(product => ({
     ...product,
     technical_details: parseJsonObject(product.technical_details, {})
   }));
