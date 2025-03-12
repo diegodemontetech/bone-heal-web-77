@@ -20,55 +20,59 @@ export const useCustomerState = () => {
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        console.log("Iniciando busca de clientes no Supabase...");
-        setIsLoadingCustomers(true);
-        
-        let query = supabase
-          .from('profiles')
-          .select('id, full_name, email, phone, address, city, state, zip_code')
-          .order('full_name');
+  const fetchCustomers = async () => {
+    try {
+      console.log("Iniciando busca de clientes no Supabase...");
+      setIsLoadingCustomers(true);
+      
+      let query = supabase
+        .from('profiles')
+        .select('id, full_name, email, phone, address, city, state, zip_code')
+        .order('full_name');
 
-        if (searchTerm) {
-          query = query.or(
-            `full_name.ilike.%${searchTerm}%,` +
-            `email.ilike.%${searchTerm}%,` +
-            `phone.ilike.%${searchTerm}%`
-          );
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error('Erro na consulta do Supabase:', error);
-          throw error;
-        }
-
-        const formattedCustomers = data ? data.map(customer => ({
-          id: customer.id,
-          full_name: customer.full_name || 'Sem nome',
-          email: customer.email,
-          phone: customer.phone,
-          address: customer.address,
-          city: customer.city,
-          state: customer.state,
-          zip_code: customer.zip_code
-        })) : [];
-
-        console.log(`Clientes encontrados no Supabase:`, formattedCustomers);
-        setCustomers(formattedCustomers);
-      } catch (error) {
-        console.error('Erro ao buscar clientes:', error);
-        toast.error('Erro ao carregar lista de clientes');
-      } finally {
-        setIsLoadingCustomers(false);
+      if (searchTerm) {
+        query = query.or(
+          `full_name.ilike.%${searchTerm}%,` +
+          `email.ilike.%${searchTerm}%,` +
+          `phone.ilike.%${searchTerm}%`
+        );
       }
-    };
 
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro na consulta do Supabase:', error);
+        throw error;
+      }
+
+      const formattedCustomers = data ? data.map(customer => ({
+        id: customer.id,
+        full_name: customer.full_name || 'Sem nome',
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        city: customer.city,
+        state: customer.state,
+        zip_code: customer.zip_code
+      })) : [];
+
+      console.log(`Clientes encontrados no Supabase:`, formattedCustomers);
+      setCustomers(formattedCustomers);
+    } catch (error) {
+      console.error('Erro ao buscar clientes:', error);
+      toast.error('Erro ao carregar lista de clientes');
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCustomers();
   }, [searchTerm]); // A busca é refeita quando o searchTerm muda
+
+  const refreshCustomers = () => {
+    fetchCustomers();
+  };
 
   return {
     customers,
@@ -76,6 +80,7 @@ export const useCustomerState = () => {
     setSelectedCustomer,
     isLoadingCustomers,
     searchTerm,
-    setSearchTerm
+    setSearchTerm,
+    refreshCustomers
   };
 };

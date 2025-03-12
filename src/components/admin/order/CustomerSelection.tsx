@@ -28,6 +28,18 @@ export const CustomerSelection = ({
 }: CustomerSelectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  const handleRegistrationSuccess = (newCustomer: any) => {
+    console.log("CustomerSelection: recebeu callback com cliente:", newCustomer);
+    if (newCustomer && newCustomer.id) {
+      setSelectedCustomer(newCustomer);
+      setIsDialogOpen(false);
+      toast.success("Cliente cadastrado com sucesso!");
+    } else {
+      console.error("Dados de cliente incompletos:", newCustomer);
+      toast.error("Erro ao selecionar cliente - dados incompletos");
+    }
+  };
+
   return (
     <div>
       {!selectedCustomer ? (
@@ -82,12 +94,7 @@ export const CustomerSelection = ({
               <RegistrationForm 
                 isDentist={true} 
                 isModal={true} 
-                onSuccess={(newCustomer) => {
-                  console.log("CustomerSelection: recebeu callback com cliente:", newCustomer);
-                  setSelectedCustomer(newCustomer);
-                  setIsDialogOpen(false);
-                  toast.success("Cliente cadastrado com sucesso!");
-                }}
+                onSuccess={handleRegistrationSuccess}
               />
             </DialogContent>
           </Dialog>

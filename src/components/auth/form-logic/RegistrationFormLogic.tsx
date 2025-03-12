@@ -61,19 +61,23 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
           
           // Buscar o profile criado pelo trigger depois do signUp
           // Adicionamos um pequeno delay para permitir que o trigger execute
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
-          const { data: newCustomer, error: profileError } = await supabase
+          let newCustomer = null;
+          
+          // Primeiro tenta buscar pelo email
+          const { data: profileByEmail, error: emailError } = await supabase
             .from("profiles")
             .select("*")
             .eq("email", data.email)
             .single();
             
-          if (profileError) {
-            console.error("Erro ao buscar perfil do cliente:", profileError);
-            // Tentar buscar por ID, caso o email não esteja disponível imediatamente
+          if (emailError || !profileByEmail) {
+            console.log("Não foi possível encontrar perfil por email, tentando por ID...");
+            
+            // Se não encontrar por email, tenta buscar por ID (se disponível)
             if (newUser?.user?.id) {
-              const { data: customerById, error: idError } = await supabase
+              const { data: profileById, error: idError } = await supabase
                 .from("profiles")
                 .select("*")
                 .eq("id", newUser.user.id)
@@ -81,37 +85,49 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
                 
               if (idError) {
                 console.error("Erro ao buscar perfil por ID:", idError);
-                throw profileError; // Se ambas as buscas falharem, lançamos o erro original
-              }
-              
-              console.log("Perfil de cliente obtido por ID:", customerById);
-              
-              // Continuar com o cliente encontrado por ID
-              if (customerById) {
-                // Tentar sincronizar com o Omie
-                await syncCustomerWithOmie(customerById);
-                
-                // Chamar o callback de sucesso, se fornecido
-                if (onSuccess) {
-                  console.log("Chamando callback onSuccess com cliente por ID:", customerById);
-                  onSuccess(customerById);
+                // Criar o perfil manualmente se não existir
+                const { data: manualProfile, error: insertError } = await supabase
+                  .from("profiles")
+                  .insert([{
+                    id: newUser.user.id,
+                    ...userData,
+                    email: data.email
+                  }])
+                  .select("*")
+                  .single();
+                  
+                if (insertError) {
+                  console.error("Erro ao criar perfil manualmente:", insertError);
+                  throw new Error("Não foi possível criar o perfil do usuário");
                 }
-                return;
+                
+                newCustomer = manualProfile;
+              } else {
+                newCustomer = profileById;
               }
+            } else {
+              throw new Error("Não foi possível obter ID do usuário");
             }
-            
-            throw profileError;
+          } else {
+            newCustomer = profileByEmail;
           }
           
-          console.log("Perfil de cliente obtido:", newCustomer);
-          
-          // Tentar sincronizar com o Omie
-          await syncCustomerWithOmie(newCustomer);
-          
-          // Chamar o callback de sucesso, se fornecido
-          if (onSuccess) {
-            console.log("Chamando callback onSuccess com:", newCustomer);
-            onSuccess(newCustomer);
+          if (newCustomer) {
+            console.log("Perfil de cliente obtido:", newCustomer);
+            
+            // Tentar sincronizar com o Omie
+            const syncedCustomer = await syncCustomerWithOmie(newCustomer);
+            
+            // Chamar o callback de sucesso, se fornecido
+            if (onSuccess) {
+              console.log("Chamando callback onSuccess com:", syncedCustomer);
+              onSuccess(syncedCustomer);
+            } else {
+              console.error("Callback onSuccess não fornecido");
+              toast.error("Erro na configuração do formulário");
+            }
+          } else {
+            throw new Error("Não foi possível obter dados do cliente");
           }
           
         } catch (dbError: any) {
@@ -181,6 +197,8 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
   // Função auxiliar para sincronizar cliente com Omie
   const syncCustomerWithOmie = async (customer: any) => {
     try {
+      console.log("Tentando sincronizar cliente com Omie:", customer);
+      
       const response = await fetch(`${window.location.origin}/api/omie-customer`, {
         method: 'POST',
         headers: {
@@ -189,7 +207,14 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
         body: JSON.stringify({ profile: customer }),
       });
       
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erro na resposta da API Omie:", errorText);
+        throw new Error(`Erro na API Omie: ${response.status} ${errorText}`);
+      }
+      
       const result = await response.json();
+      console.log("Resultado da sincronização com Omie:", result);
       
       if (result.success) {
         console.log("Sincronização com Omie realizada com sucesso");
@@ -203,8 +228,6 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
           .single();
           
         if (!updateError && updatedCustomer) {
-          customer.omie_code = result.omie_code;
-          customer.omie_sync = true;
           return updatedCustomer;
         }
       }
