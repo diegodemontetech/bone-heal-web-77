@@ -26,7 +26,7 @@ const ShippingOptions = ({
       className="mt-3"
     >
       {shippingOptions.map((option, index) => (
-        <div key={option.id || index} className="flex items-center space-x-2 border p-2 rounded">
+        <div key={option.id || index} className="flex items-center space-x-2 border p-2 rounded mb-2">
           <RadioGroupItem value={option.id || String(index)} id={`shipping-${index}`} />
           <Label htmlFor={`shipping-${index}`} className="flex-1 flex justify-between items-center cursor-pointer">
             <div>

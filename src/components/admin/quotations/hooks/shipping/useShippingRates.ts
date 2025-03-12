@@ -166,26 +166,32 @@ export const fetchShippingRates = async ({
   }
 
   try {
-    // Primeiro, tentar buscar do banco de dados
-    const supabaseRates = await fetchShippingRatesFromSupabase(zipCode);
-    
-    // Se encontrou taxas no banco de dados, retorná-las
-    if (supabaseRates.length > 0) {
-      return supabaseRates;
-    }
-    
-    // Se não encontrou no banco, buscar da API
+    // Primeiro, tentar buscar da API dos Correios
     try {
       const apiRates = await fetchShippingRatesFromAPI(zipCode);
-      return apiRates;
+      if (apiRates.length > 0) {
+        return apiRates;
+      }
     } catch (apiError) {
-      console.error("Erro ao buscar da API:", apiError);
-      return createDefaultShippingRates(zipCode);
+      console.error("Erro ao buscar da API dos Correios:", apiError);
+      // Se falhar, continuar para tentar o Supabase
     }
+    
+    // Se não conseguiu da API, tentar do banco de dados
+    try {
+      const supabaseRates = await fetchShippingRatesFromSupabase(zipCode);
+      if (supabaseRates.length > 0) {
+        return supabaseRates;
+      }
+    } catch (dbError) {
+      console.error("Erro ao buscar do banco:", dbError);
+      // Se falhar também, usar valores padrão
+    }
+    
+    // Se chegou aqui, nenhuma opção deu certo, usar os valores padrão
+    return createDefaultShippingRates(zipCode);
   } catch (error) {
     console.error('Erro ao buscar taxas de frete:', error);
-    
-    // Em caso de falha, retornar opções padrão
     return createDefaultShippingRates(zipCode);
   }
 };

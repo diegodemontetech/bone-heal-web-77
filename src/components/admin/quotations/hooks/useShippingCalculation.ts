@@ -21,7 +21,7 @@ export const useShippingCalculation = (initialZipCode: string = "", customerZipC
     if (customerZipCode) {
       setZipCode(customerZipCode);
     }
-  }, [customerZipCode]);
+  }, [customerZipCode, setZipCode]);
 
   const calculateShipping = async () => {
     if (!isZipCodeValid()) {

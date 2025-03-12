@@ -23,9 +23,6 @@ interface QuotationSummaryProps {
   onCancel: () => void;
 }
 
-/**
- * Componente que exibe o resumo e permite editar informações de um orçamento
- */
 const QuotationSummary = ({
   selectedCustomer,
   selectedProducts,

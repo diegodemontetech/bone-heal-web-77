@@ -1,129 +1,68 @@
 
-interface DiscountInfo {
-  discount: number;
-  discountType: string;
-  appliedVoucher: any | null;
-  paymentMethod?: string;
-}
+import { useMemo } from "react";
 
-interface ShippingInfo {
-  shippingCost: number;
-  isFreeShipping?: boolean;
-}
-
-/**
- * Hook que fornece funções para cálculos relacionados a orçamentos
- */
 export const useQuotationCalculations = (
   selectedProducts: any[],
   discount: number,
   discountType: string,
-  appliedVoucher: any = null,
+  appliedVoucher: any,
   shippingCost: number = 0,
   paymentMethod: string = "pix"
 ) => {
-  /**
-   * Calcula o subtotal dos produtos selecionados
-   */
+  // Calcula o subtotal baseado nos produtos selecionados
   const calculateSubtotal = () => {
-    return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+    return selectedProducts.reduce(
+      (total, product) => total + product.price * product.quantity,
+      0
+    );
   };
 
-  /**
-   * Calcula o valor do desconto baseado no cupom ou no desconto manual
-   */
+  // Calcula o valor do desconto aplicado
   const calculateDiscountAmount = () => {
     const subtotal = calculateSubtotal();
     
-    // Se tiver um cupom aplicado, usa o desconto dele
+    // Se houver um voucher aplicado, ele tem precedência
     if (appliedVoucher) {
-      return calculateVoucherDiscount(subtotal, appliedVoucher);
+      if (appliedVoucher.discount_type === "percentage") {
+        return (subtotal * appliedVoucher.discount_amount) / 100;
+      } else if (appliedVoucher.discount_type === "fixed") {
+        return Math.min(subtotal, appliedVoucher.discount_amount);
+      } else if (appliedVoucher.discount_type === "shipping") {
+        return 0; // O desconto é no frete, não no valor dos produtos
+      }
     }
     
-    // Se não tiver cupom, usa o desconto manual e condições comerciais
-    return calculateManualDiscount(subtotal, { 
-      discount, 
-      discountType, 
-      appliedVoucher: null,
-      paymentMethod 
-    });
-  };
-
-  /**
-   * Calcula o valor do desconto manual, considerando condições comerciais
-   */
-  const calculateManualDiscount = (subtotal: number, discountInfo: DiscountInfo) => {
-    const { discount, discountType, paymentMethod } = discountInfo;
-    
-    // Desconto básico (manual)
-    let discountAmount = 0;
+    // Se não houver voucher, usar o desconto manual
     if (discountType === "percentage") {
-      discountAmount = subtotal * (discount / 100);
+      return (subtotal * discount) / 100;
     } else {
-      discountAmount = discount;
+      return Math.min(subtotal, discount);
+    }
+  };
+
+  // Calcula o valor do frete a ser cobrado
+  const calculateShippingCost = () => {
+    // Se o voucher for de frete grátis, retorna 0
+    if (appliedVoucher?.discount_type === "shipping") {
+      return 0;
     }
     
-    // Adicionar descontos de condição comercial (como desconto de PIX)
-    // Aqui poderia consultar a tabela de condições comerciais, mas
-    // por simplicidade, aplicamos diretamente
-    if (paymentMethod === "pix") {
-      // Desconto adicional para PIX (5%)
-      discountAmount += subtotal * 0.05;
-    }
-    
-    return discountAmount;
+    return shippingCost;
   };
 
-  /**
-   * Calcula o valor do desconto de cupom
-   */
-  const calculateVoucherDiscount = (subtotal: number, voucher: any) => {
-    if (voucher.discount_type === "percentage") {
-      return subtotal * (voucher.discount_amount / 100);
-    } else if (voucher.discount_type === "fixed") {
-      return voucher.discount_amount;
-    } 
-    // Se for frete grátis, não afeta o valor do produto diretamente
-    return 0;
-  };
-
-  /**
-   * Verifica se o frete é grátis baseado no cupom aplicado
-   */
-  const isFreeShipping = () => {
-    return appliedVoucher && appliedVoucher.discount_type === "shipping";
-  };
-
-  /**
-   * Calcula o valor total do orçamento
-   */
+  // Calcula o valor total do orçamento
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
+    const finalShippingCost = calculateShippingCost();
     
-    // Adiciona o frete, a menos que haja um cupom de frete grátis
-    const shippingAmount = isFreeShipping() ? 0 : shippingCost;
-    
-    return subtotal - discountAmount + shippingAmount;
-  };
-
-  /**
-   * Retorna informações de frete para uso em componentes
-   */
-  const getShippingInfo = (): ShippingInfo => {
-    return {
-      shippingCost,
-      isFreeShipping: isFreeShipping()
-    };
+    return subtotal - discountAmount + finalShippingCost;
   };
 
   return {
     calculateSubtotal,
     calculateDiscountAmount,
-    calculateTotal,
-    calculateManualDiscount,
-    calculateVoucherDiscount,
-    isFreeShipping,
-    getShippingInfo
+    calculateShippingCost,
+    calculateTotal
   };
 };

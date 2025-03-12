@@ -10,6 +10,7 @@ export interface ShippingRate {
   additional_kg_rate: number;
   estimated_days: number;
   is_active: boolean;
+  service_type: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -21,4 +22,5 @@ export interface ShippingCalculationRate {
   rate: number;
   delivery_days: number;
   zipCode: string;
+  region?: string;
 }

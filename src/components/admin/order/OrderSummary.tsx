@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Tag } from "lucide-react";
+import { Loader2, Tag, Truck } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
@@ -62,7 +62,10 @@ export const OrderSummary = ({
             )}
             
             <div className="flex justify-between items-center">
-              <span className="text-muted-foreground">Frete</span>
+              <span className="flex items-center text-muted-foreground">
+                <Truck className="h-4 w-4 mr-1" />
+                Frete
+              </span>
               <span>{formatCurrency(shippingFee)}</span>
             </div>
             

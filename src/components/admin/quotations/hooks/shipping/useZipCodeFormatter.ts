@@ -2,29 +2,31 @@
 import { useState } from "react";
 
 export const useZipCodeFormatter = (initialZipCode: string = "") => {
-  const [zipCode, setZipCode] = useState(initialZipCode);
+  const [zipCode, setZipCode] = useState(
+    initialZipCode ? formatZipCode(initialZipCode) : ""
+  );
 
+  // Formatar CEP com máscara #####-###
   const formatZipCode = (value: string) => {
-    // Remover caracteres não numéricos
-    const cleanValue = value.replace(/\D/g, '');
+    const digits = value.replace(/\D/g, "");
     
-    // Aplicar máscara de CEP (00000-000)
-    let maskedValue = cleanValue;
-    if (cleanValue.length > 5) {
-      maskedValue = cleanValue.substring(0, 5) + '-' + cleanValue.substring(5);
+    if (digits.length <= 5) {
+      return digits;
     }
     
-    return maskedValue.substring(0, 9);
+    return `${digits.substring(0, 5)}-${digits.substring(5, 8)}`;
   };
 
+  // Handler para entrada de CEP
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formattedValue = formatZipCode(e.target.value);
-    setZipCode(formattedValue);
+    const value = e.target.value;
+    setZipCode(formatZipCode(value));
   };
 
-  const isZipCodeValid = (code: string = zipCode) => {
-    const cleanCode = code.replace(/\D/g, '');
-    return cleanCode.length >= 8;
+  // Verificar se o CEP é válido (8 dígitos)
+  const isZipCodeValid = () => {
+    const digits = zipCode.replace(/\D/g, "");
+    return digits.length === 8;
   };
 
   return {
