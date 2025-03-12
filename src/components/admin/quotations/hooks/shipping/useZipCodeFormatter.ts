@@ -29,11 +29,17 @@ export const useZipCodeFormatter = (initialZipCode: string = "") => {
     return digits.length === 8;
   };
 
+  // Obter apenas os dígitos do CEP
+  const getCleanZipCode = () => {
+    return zipCode.replace(/\D/g, "");
+  };
+
   return {
     zipCode,
     setZipCode,
     handleZipCodeChange,
     isZipCodeValid,
-    formatZipCode
+    formatZipCode,
+    getCleanZipCode
   };
 };

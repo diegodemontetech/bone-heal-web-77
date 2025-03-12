@@ -10,7 +10,8 @@ export const useShippingCalculation = (initialZipCode: string = "", customerZipC
     zipCode, 
     setZipCode, 
     handleZipCodeChange, 
-    isZipCodeValid 
+    isZipCodeValid,
+    getCleanZipCode
   } = useZipCodeFormatter(initialZipCode);
   
   const [shippingOptions, setShippingOptions] = useState<ShippingCalculationRate[]>([]);
@@ -29,11 +30,16 @@ export const useShippingCalculation = (initialZipCode: string = "", customerZipC
       return;
     }
 
+    const cleanZipCode = getCleanZipCode();
     setIsCalculatingShipping(true);
     
     try {
+      console.log(`Calculando frete para CEP: ${cleanZipCode}`);
+      
       // Buscar taxas de frete 
-      const rates = await fetchShippingRates({ zipCode });
+      const rates = await fetchShippingRates({ zipCode: cleanZipCode });
+      
+      console.log("Taxas recuperadas:", rates);
       
       // Ordenar por preço
       rates.sort((a, b) => a.rate - b.rate);
@@ -48,7 +54,7 @@ export const useShippingCalculation = (initialZipCode: string = "", customerZipC
       console.error('Erro ao calcular frete:', error);
       
       // Criar opções padrão em caso de erro
-      const defaultOptions = createDefaultShippingRates(zipCode);
+      const defaultOptions = createDefaultShippingRates(cleanZipCode);
       setShippingOptions(defaultOptions);
       
       // Selecionar a opção mais barata por padrão se não houver nenhuma selecionada
@@ -61,6 +67,14 @@ export const useShippingCalculation = (initialZipCode: string = "", customerZipC
       setIsCalculatingShipping(false);
     }
   };
+
+  // Calcular frete automaticamente quando o CEP tiver 8 dígitos
+  useEffect(() => {
+    const cleanZipCode = getCleanZipCode();
+    if (cleanZipCode.length === 8) {
+      calculateShipping();
+    }
+  }, [zipCode]);
 
   return {
     zipCode,
