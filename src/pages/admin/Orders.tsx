@@ -23,6 +23,14 @@ const Orders = () => {
   const [activeTab, setActiveTab] = useState("kanban");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAdmin) {
+      toast.error("Você não tem permissão para acessar esta página");
+      navigate("/admin/dashboard");
+    }
+  }, [isAdmin, navigate]);
 
   const { data: orders, isLoading, error, refetch } = useQuery({
     queryKey: ["admin-orders"],
@@ -60,6 +68,7 @@ const Orders = () => {
         throw err;
       }
     },
+    enabled: isAdmin, // Só executa a query se o usuário for admin
   });
 
   useEffect(() => {
@@ -78,6 +87,10 @@ const Orders = () => {
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
   };
+
+  if (!isAdmin) {
+    return null;
+  }
 
   if (isLoading) {
     return <OrdersLoading />;

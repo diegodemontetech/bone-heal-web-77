@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomerSelection } from "./order/CustomerSelection";
 import { ProductSelection } from "./order/ProductSelection";
@@ -11,7 +12,6 @@ import { PaymentMethodSection } from "./order/PaymentMethodSection";
 import VoucherSection from "./quotations/components/summary/VoucherSection";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth-context";
-import { useEffect } from "react";
 
 interface CreateOrderProps {
   onCancel: () => void;
@@ -85,6 +85,10 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
   const discount = calculateDiscount(subtotal);
   const shippingCost = selectedShipping?.rate || 0;
   const total = subtotal + shippingCost - discount;
+
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="container max-w-6xl mx-auto">
