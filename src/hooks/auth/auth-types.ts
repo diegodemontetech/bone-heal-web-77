@@ -21,4 +21,5 @@ export interface AuthContextType {
   isAdmin: boolean;
   isAdminMaster: boolean;
   hasPermission: (permission: UserPermission) => boolean;
+  isAuthenticated: boolean;
 }

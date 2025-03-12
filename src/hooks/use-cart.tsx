@@ -1,8 +1,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { CartItem } from '@/types/cart';
+import type { CartItem } from '@/types/cart';
 
-export { CartItem };
+export type { CartItem };
 
 export interface CartStore {
   cart: CartItem[];
@@ -35,14 +35,20 @@ const useCartStore = (): CartStore => {
   }, [cart]);
 
   const addItem = useCallback((item: CartItem) => {
+    // Garantir que item tenha uma quantidade definida
+    const newItem = {
+      ...item,
+      quantity: item.quantity || 1
+    };
+    
     setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+      const existingItem = prevCart.find(cartItem => cartItem.id === newItem.id);
       if (existingItem) {
         return prevCart.map(cartItem =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + item.quantity } : cartItem
+          cartItem.id === newItem.id ? { ...cartItem, quantity: cartItem.quantity + newItem.quantity } : cartItem
         );
       } else {
-        return [...prevCart, item];
+        return [...prevCart, newItem];
       }
     });
   }, []);

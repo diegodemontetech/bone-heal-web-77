@@ -122,6 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isDentist = profile?.role === UserRole.DENTIST;
   const isAdmin = profile?.role === UserRole.ADMIN || profile?.role === UserRole.ADMIN_MASTER;
   const isAdminMaster = profile?.role === UserRole.ADMIN_MASTER;
+  const isAuthenticated = !!authState.session;
 
   const checkPermission = (permission: UserPermission) => {
     return hasPermission(permissions, permission, isAdminMaster);
@@ -139,7 +140,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isDentist,
       isAdmin,
       isAdminMaster,
-      hasPermission: checkPermission
+      hasPermission: checkPermission,
+      isAuthenticated
     }}>
       {children}
     </AuthContext.Provider>

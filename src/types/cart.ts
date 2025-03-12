@@ -7,6 +7,7 @@ export interface CartItem {
   image: string;
   product_id?: string;
   total_price?: number;
+  weight?: number;
 }
 
 export interface CartSummaryProps {
