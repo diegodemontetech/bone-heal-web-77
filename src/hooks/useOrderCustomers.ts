@@ -9,7 +9,7 @@ export const useOrderCustomers = () => {
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
-  // Buscar clientes
+  // Buscar clientes diretamente do Supabase
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["customers", customerSearchTerm],
     queryFn: async () => {

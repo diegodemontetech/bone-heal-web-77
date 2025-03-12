@@ -1,12 +1,8 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { Loader2, Search, UserPlus, X } from "lucide-react";
 import {
   Dialog,
@@ -17,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { CustomerDisplay } from "../../order/CustomerDisplay";
 import RegistrationForm from "@/components/auth/RegistrationForm";
+import { useOrderCustomers } from "@/hooks/useOrderCustomers";
 
 interface CustomerSelectionProps {
   selectedCustomer: any;
@@ -24,46 +21,15 @@ interface CustomerSelectionProps {
 }
 
 const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSelectionProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
-
-  // Buscar clientes
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
-    queryKey: ["customers", searchTerm],
-    queryFn: async () => {
-      console.log("Buscando clientes com filtro:", searchTerm);
-      let query = supabase
-        .from("profiles")
-        .select("*");
-      
-      if (searchTerm) {
-        query = query.or(`full_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
-      }
-      
-      query = query.order("full_name");
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Erro ao buscar clientes:", error);
-        toast.error("Erro ao buscar clientes");
-        return [];
-      }
-      
-      console.log(`Encontrados ${data?.length || 0} clientes`);
-      return data || [];
-    },
-  });
-
-  // Filtrar clientes com base no termo de busca
-  const filteredCustomers = customers;
-
-  // Quando um novo cliente é registrado com sucesso
-  const handleRegistrationSuccess = (newCustomer: any) => {
-    setSelectedCustomer(newCustomer);
-    setCustomerDialogOpen(false);
-    toast.success("Cliente cadastrado com sucesso!");
-  };
+  const {
+    customers,
+    isLoadingCustomers,
+    customerSearchTerm,
+    setCustomerSearchTerm,
+    customerDialogOpen,
+    setCustomerDialogOpen,
+    handleRegistrationSuccess
+  } = useOrderCustomers();
 
   return (
     <Card>
@@ -78,8 +44,8 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
                 type="search"
                 placeholder="Buscar cliente por nome ou e-mail..."
                 className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={customerSearchTerm}
+                onChange={(e) => setCustomerSearchTerm(e.target.value)}
               />
             </div>
             
@@ -88,15 +54,15 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
                 <div className="flex justify-center p-4">
                   <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              ) : filteredCustomers.length > 0 ? (
-                filteredCustomers.map(customer => (
+              ) : customers.length > 0 ? (
+                customers.map(customer => (
                   <div
                     key={customer.id}
                     className="p-3 border-b last:border-0 hover:bg-gray-50 cursor-pointer"
                     onClick={() => setSelectedCustomer(customer)}
                   >
-                    <p className="font-medium">{customer.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{customer.email}</p>
+                    <p className="font-medium">{customer.full_name || "Sem nome"}</p>
+                    <p className="text-sm text-muted-foreground">{customer.email || "Sem email"}</p>
                   </div>
                 ))
               ) : (
