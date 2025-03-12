@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { CustomerSelection } from "./order/CustomerSelection";
@@ -12,6 +11,7 @@ import { PaymentMethodSection } from "./order/PaymentMethodSection";
 import VoucherSection from "./quotations/components/summary/VoucherSection";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth-context";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CreateOrderProps {
   onCancel: () => void;
