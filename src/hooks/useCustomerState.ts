@@ -23,13 +23,27 @@ export const useCustomerState = () => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        console.log("Buscando clientes...");
-        const { data, error } = await supabase
+        console.log("Iniciando busca de clientes no Supabase...");
+        
+        let query = supabase
           .from('profiles')
           .select('id, full_name, email, phone, address, city, state, zip_code')
           .order('full_name');
 
-        if (error) throw error;
+        if (searchTerm) {
+          query = query.or(
+            `full_name.ilike.%${searchTerm}%,` +
+            `email.ilike.%${searchTerm}%,` +
+            `phone.ilike.%${searchTerm}%`
+          );
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+          console.error('Erro na consulta do Supabase:', error);
+          throw error;
+        }
 
         const formattedCustomers = data.map(customer => ({
           id: customer.id,
@@ -42,7 +56,7 @@ export const useCustomerState = () => {
           zip_code: customer.zip_code
         }));
 
-        console.log(`Encontrados ${formattedCustomers.length} clientes`);
+        console.log(`Clientes encontrados no Supabase:`, formattedCustomers);
         setCustomers(formattedCustomers);
       } catch (error) {
         console.error('Erro ao buscar clientes:', error);
@@ -53,20 +67,11 @@ export const useCustomerState = () => {
     };
 
     fetchCustomers();
-  }, []);
+  }, [searchTerm]); // Agora a busca é refeita quando o searchTerm muda
 
-  // Filtrar clientes baseado no termo de busca
-  const filteredCustomers = customers.filter(customer => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      customer.full_name?.toLowerCase().includes(searchLower) ||
-      customer.email?.toLowerCase().includes(searchLower) ||
-      customer.phone?.includes(searchTerm)
-    );
-  });
-
+  // Removemos o filtro local já que agora filtramos direto no Supabase
   return {
-    customers: filteredCustomers,
+    customers,
     selectedCustomer,
     setSelectedCustomer,
     isLoadingCustomers,

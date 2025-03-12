@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { useState } from "react";
 import { Customer } from "@/hooks/useCustomerState";
-import { toast } from "sonner";
 
 interface CustomerSelectionProps {
   customers: Customer[];
@@ -28,12 +27,6 @@ export const CustomerSelection = ({
 }: CustomerSelectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const handleRegistrationSuccess = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsDialogOpen(false);
-    toast.success("Cliente cadastrado com sucesso!");
-  };
-
   return (
     <div>
       {!selectedCustomer ? (
@@ -42,7 +35,7 @@ export const CustomerSelection = ({
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar cliente por nome, e-mail ou telefone..."
+              placeholder="Digite nome, e-mail ou telefone do cliente..."
               className="pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -88,7 +81,11 @@ export const CustomerSelection = ({
               <RegistrationForm 
                 isDentist={true} 
                 isModal={true} 
-                onSuccess={handleRegistrationSuccess}
+                onSuccess={(newCustomer) => {
+                  setSelectedCustomer(newCustomer);
+                  setIsDialogOpen(false);
+                  toast.success("Cliente cadastrado com sucesso!");
+                }}
               />
             </DialogContent>
           </Dialog>
