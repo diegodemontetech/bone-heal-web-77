@@ -1,5 +1,5 @@
 
-export const brazilianStates = [
+export const states = [
   { value: "AC", label: "Acre" },
   { value: "AL", label: "Alagoas" },
   { value: "AP", label: "Amapá" },
@@ -28,3 +28,6 @@ export const brazilianStates = [
   { value: "SE", label: "Sergipe" },
   { value: "TO", label: "Tocantins" }
 ];
+
+// Exportamos também como "estados" para manter retrocompatibilidade
+export const estados = states;

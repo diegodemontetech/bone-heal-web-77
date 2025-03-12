@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { fetchAddressFromCep } from "@/utils/address";
 import { Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface AddressSectionProps {
   formData: {

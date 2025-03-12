@@ -1,223 +1,202 @@
 
-import React, { useState, useEffect } from "react";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UseFormReturn } from "react-hook-form";
+import { FormData } from "../RegistrationForm";
+import { states } from "@/utils/states";
 import { fetchAddressFromCep } from "@/utils/address";
-import { Loader2, MapPin } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 
-interface AddressSectionProps {
-  formData: {
-    zip_code: string;
-    address: string;
-    endereco_numero: string;
-    complemento: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-  };
-  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSelectChange: (field: string, value: string) => void;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+interface AddressFormSectionProps {
+  form: UseFormReturn<FormData>;
 }
 
-export const AddressSection: React.FC<AddressSectionProps> = ({
-  formData,
-  handleChange,
-  handleSelectChange,
-  setFormData,
-}) => {
-  const [addressLoading, setAddressLoading] = useState(false);
-  const [states, setStates] = useState<any[]>([]);
-  const [cities, setCities] = useState<any[]>([]);
-  const [loadingStates, setLoadingStates] = useState(false);
-  const [loadingCities, setLoadingCities] = useState(false);
+const AddressFormSection: React.FC<AddressFormSectionProps> = ({ form }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [cities, setCities] = useState<string[]>([]);
 
-  useEffect(() => {
-    // Carregar estados
-    const fetchStates = async () => {
-      setLoadingStates(true);
-      try {
-        // Usando a tabela omie_cities que deve ter os estados
-        const { data, error } = await supabase
-          .from('states')
-          .select('*')
-          .order('name', { ascending: true });
-          
-        if (error) {
-          console.error('Erro ao buscar estados:', error);
-          return;
-        }
-        
-        setStates(data || []);
-      } catch (error) {
-        console.error('Erro ao buscar estados:', error);
-      } finally {
-        setLoadingStates(false);
-      }
-    };
+  const handleCepSearch = async () => {
+    const cep = form.getValues('zipCode').replace(/\D/g, '');
     
-    fetchStates();
-  }, []);
-
-  useEffect(() => {
-    // Carregar cidades quando o estado for selecionado
-    const fetchCities = async () => {
-      if (!formData.state) return;
+    if (cep.length !== 8) {
+      toast.error("CEP inválido. Informe um CEP com 8 dígitos.");
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const addressData = await fetchAddressFromCep(cep);
       
-      setLoadingCities(true);
-      try {
-        const { data, error } = await supabase
-          .from('cities')
-          .select('*')
-          .eq('state_id', formData.state)
-          .order('name', { ascending: true });
-          
-        if (error) {
-          console.error('Erro ao buscar cidades:', error);
-          return;
-        }
+      if (addressData) {
+        form.setValue('address', addressData.logradouro || '');
+        form.setValue('neighborhood', addressData.bairro || '');
+        form.setValue('city', addressData.localidade || '');
+        form.setValue('state', addressData.uf || '');
         
-        setCities(data || []);
-      } catch (error) {
-        console.error('Erro ao buscar cidades:', error);
-      } finally {
-        setLoadingCities(false);
+        toast.success("Endereço encontrado com sucesso!");
+      } else {
+        toast.error("CEP não encontrado");
       }
-    };
-    
-    fetchCities();
-  }, [formData.state]);
-
-  const handleCepBlur = async (cep: string) => {
-    if (cep.length === 8) {
-      setAddressLoading(true);
-      try {
-        const addressData = await fetchAddressFromCep(cep);
-        if (addressData) {
-          setFormData(prev => ({
-            ...prev,
-            address: addressData.logradouro || prev.address,
-            neighborhood: addressData.bairro || prev.neighborhood,
-            city: addressData.localidade || prev.city,
-            state: addressData.uf || prev.state,
-          }));
-          toast.success("Endereço encontrado com sucesso!");
-        }
-      } catch (error) {
-        console.error('Erro ao buscar endereço:', error);
-        toast.error("Não foi possível encontrar o endereço para este CEP");
-      } finally {
-        setAddressLoading(false);
-      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const handleStateChange = async (value: string) => {
+    form.setValue('state', value);
+    form.setValue('city', '');
+    
+    // Em um cenário real, buscaríamos as cidades do estado selecionado
+    // Aqui podemos implementar posteriormente, por enquanto deixar como campo aberto
+    setCities([]);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="zip_code">CEP</Label>
-        <div className="relative">
-          <Input
-            id="zip_code"
-            name="zip_code"
-            value={formData.zip_code}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '');
-              setFormData(prev => ({ ...prev, zip_code: value }));
-            }}
-            maxLength={8}
-            onBlur={(e) => handleCepBlur(e.target.value)}
-            placeholder="Digite apenas números"
-          />
-          {addressLoading && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="zipCode"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CEP</FormLabel>
+              <div className="flex gap-2">
+                <FormControl>
+                  <Input 
+                    placeholder="00000000" 
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      field.onChange(value);
+                    }}
+                    maxLength={8}
+                  />
+                </FormControl>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={handleCepSearch}
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
+                </Button>
+              </div>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
+        />
       </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="address">Endereço</Label>
-        <div className="relative">
-          <Input
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
-            readOnly
-            className="bg-gray-100"
-          />
-          <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="endereco_numero">Número</Label>
-          <Input
-            id="endereco_numero"
-            name="endereco_numero"
-            value={formData.endereco_numero}
-            onChange={handleChange}
-            placeholder="Número"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="complemento">Complemento</Label>
-          <Input
-            id="complemento"
-            name="complemento"
-            value={formData.complemento}
-            onChange={handleChange}
-            placeholder="Apartamento, bloco, etc."
-          />
-        </div>
-      </div>
+      
+      <FormField
+        control={form.control}
+        name="address"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Logradouro</FormLabel>
+            <FormControl>
+              <Input placeholder="Rua, Avenida..." {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="neighborhood">Bairro</Label>
-          <Input
-            id="neighborhood"
-            name="neighborhood"
-            value={formData.neighborhood}
-            onChange={handleChange}
-            readOnly
-            className="bg-gray-100"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="city">Cidade</Label>
-          <Input
-            id="city"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            readOnly
-            className="bg-gray-100"
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="endereco_numero"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Número</FormLabel>
+              <FormControl>
+                <Input placeholder="Número" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="complemento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Complemento</FormLabel>
+              <FormControl>
+                <Input placeholder="Complemento (opcional)" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="state">Estado</Label>
-        <div className="relative">
-          <Input
-            id="state"
-            name="state"
-            value={formData.state}
-            onChange={handleChange}
-            readOnly
-            className="bg-gray-100"
-          />
-        </div>
+      <FormField
+        control={form.control}
+        name="neighborhood"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Bairro</FormLabel>
+            <FormControl>
+              <Input placeholder="Seu bairro" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="state"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Estado</FormLabel>
+              <Select 
+                onValueChange={handleStateChange}
+                value={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o estado" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {states.map((state) => (
+                    <SelectItem key={state.value} value={state.value}>
+                      {state.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="city"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cidade</FormLabel>
+              <FormControl>
+                <Input placeholder="Sua cidade" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
-    </div>
+    </>
   );
 };
 
-export default AddressSection;
+export default AddressFormSection;
