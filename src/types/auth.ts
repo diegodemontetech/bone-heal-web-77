@@ -1,4 +1,3 @@
-
 export enum UserRole {
   DENTIST = 'dentist',
   ADMIN = 'admin',
@@ -41,4 +40,19 @@ export interface UserProfile {
   complemento?: string;
   avatar_url?: string;
   is_admin?: boolean; // Adicionando a propriedade is_admin que estava faltando
+}
+
+export interface AuthContextType {
+  profile: UserProfile | null;
+  session: Session | null;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<any>;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  isDentist: boolean;
+  isAdmin: boolean;
+  isAdminMaster: boolean;
+  hasPermission: (permission: UserPermission) => boolean;
+  isAuthenticated: boolean; // Adicionando propriedade necessária
 }

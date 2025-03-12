@@ -1,96 +1,124 @@
+import React from 'react';
 
-import { Separator } from "@/components/ui/separator";
-import { CartItem } from "@/hooks/use-cart";
-import { Card, CardContent } from "@/components/ui/card";
-import { useRef, useEffect } from "react";
-import ShippingCalculator from "./shipping/ShippingCalculator";
-import OrderSummaryValues from "./OrderSummaryValues";
-import CheckoutButton from "./CheckoutButton";
-
-interface CartSummaryProps {
-  cartItems: CartItem[];
+export interface CartSummaryProps {
+  subtotal: number;
+  shippingCost: number;
+  total: number;
   zipCode: string;
-  setZipCode: (zipCode: string) => void;
-  isCalculatingShipping: boolean;
-  shippingCost: number | null;
-  shippingError: string | null;
-  calculateShipping: () => void;
-  handleCheckout: (cartItems: CartItem[], subtotal: number, total: number) => void;
-  session: any;
-  isAuthenticated?: boolean;
-  shippingCalculated?: boolean;
-  resetShipping?: () => void;
+  onZipCodeChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onCalculateShipping: () => void;
+  isLoading: boolean;
+  error: string | null;
+  shippingCalculated: boolean;
+  onResetShipping: () => void;
+  onCheckout: () => void;
+  shippingOptions: any[];
+  selectedShippingOption: any;
+  onShippingOptionChange: (rate: any) => void;
 }
 
-export const CartSummary = ({
-  cartItems,
-  zipCode,
-  setZipCode,
-  isCalculatingShipping,
+export const CartSummary: React.FC<CartSummaryProps> = ({
+  subtotal,
   shippingCost,
-  shippingError,
-  calculateShipping,
-  handleCheckout,
-  session,
-  isAuthenticated = false,
-  shippingCalculated = false,
-  resetShipping
-}: CartSummaryProps) => {
-  const calculationRequested = useRef(false);
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const total = subtotal + (shippingCost || 0);
-
-  const handleZipCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && zipCode.length === 8 && !isCalculatingShipping) {
-      calculateShipping();
-      calculationRequested.current = true;
-    }
-  };
-
-  // Calcular frete automaticamente quando o CEP tiver 8 dígitos
-  useEffect(() => {
-    if (zipCode.length === 8 && !shippingCalculated && !isCalculatingShipping && 
-        !calculationRequested.current && cartItems.length > 0) {
-      calculateShipping();
-      calculationRequested.current = true;
-    }
-  }, [zipCode, cartItems.length, shippingCalculated, isCalculatingShipping, calculateShipping]);
-
+  total,
+  zipCode,
+  onZipCodeChange,
+  onCalculateShipping,
+  isLoading,
+  error,
+  shippingCalculated,
+  onResetShipping,
+  onCheckout,
+  shippingOptions,
+  selectedShippingOption,
+  onShippingOptionChange
+}) => {
   return (
-    <Card className="bg-white shadow-md border rounded-lg">
-      <CardContent className="p-6 space-y-6">
-        <h2 className="text-xl font-bold text-primary border-b pb-2">Resumo do Pedido</h2>
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-lg font-medium mb-4">Resumo</h2>
 
-        <div className="space-y-4">
-          <ShippingCalculator 
-            zipCode={zipCode}
-            setZipCode={setZipCode}
-            isCalculatingShipping={isCalculatingShipping}
-            shippingCost={shippingCost}
-            shippingError={shippingError}
-            calculateShipping={calculateShipping}
-            shippingCalculated={shippingCalculated}
-            resetShipping={resetShipping}
-            onZipCodeKeyDown={handleZipCodeKeyDown}
+      <div className="mb-4">
+        <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">
+          CEP
+        </label>
+        <div className="mt-1 flex rounded-md shadow-sm">
+          <input
+            type="text"
+            id="zipCode"
+            className="flex-1 focus:ring-primary focus:border-primary block w-full min-w-0 rounded-md sm:text-sm border-gray-300"
+            placeholder="Digite seu CEP"
+            value={zipCode}
+            onChange={onZipCodeChange}
           />
-
-          <Separator />
-
-          <OrderSummaryValues 
-            cartItems={cartItems}
-            shippingCost={shippingCost}
-          />
-
-          <CheckoutButton 
-            cartItems={cartItems}
-            subtotal={subtotal}
-            total={total}
-            isAuthenticated={isAuthenticated || false}
-            shippingCost={shippingCost}
-            handleCheckout={handleCheckout}
-          />
+          <button
+            type="button"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            onClick={onCalculateShipping}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Calculando...' : 'Calcular Frete'}
+          </button>
         </div>
-      </CardContent>
-    </Card>
+        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+      </div>
+
+      {shippingCalculated && (
+        <div className="mb-4">
+          <label htmlFor="shippingOption" className="block text-sm font-medium text-gray-700">
+            Opção de Frete
+          </label>
+          <select
+            id="shippingOption"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+            value={selectedShippingOption?.id || ''}
+            onChange={(e) => {
+              const selectedRate = shippingOptions.find(rate => rate.id === e.target.value);
+              onShippingOptionChange(selectedRate);
+            }}
+          >
+            <option value="">Selecione uma opção</option>
+            {shippingOptions.map((rate) => (
+              <option key={rate.id} value={rate.id}>
+                {rate.label} - R$ {rate.value}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="py-2 border-t border-b">
+        <div className="flex justify-between text-gray-500">
+          <span>Subtotal</span>
+          <span>R$ {subtotal.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-gray-500">
+          <span>Frete</span>
+          <span>R$ {shippingCost.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="py-4 flex justify-between text-lg font-bold">
+        <span>Total</span>
+        <span>R$ {total.toFixed(2)}</span>
+      </div>
+
+      {shippingCalculated && (
+        <button
+          className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          onClick={onResetShipping}
+        >
+          Limpar Frete
+        </button>
+      )}
+
+      <button
+        className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded focus:outline-none focus:shadow-outline"
+        type="button"
+        onClick={onCheckout}
+        disabled={!shippingCalculated}
+      >
+        Finalizar Compra
+      </button>
+    </div>
   );
 };

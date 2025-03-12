@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +20,6 @@ const Orders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        // Verificar a sessão do usuário
         const { data: sessionData } = await supabase.auth.getSession();
         
         if (!sessionData?.session?.user?.id) {
@@ -30,7 +28,6 @@ const Orders = () => {
           return;
         }
         
-        // Buscar pedidos do usuário
         const { data, error } = await supabase
           .from('orders')
           .select('*, profiles:user_id(*)')
@@ -44,13 +41,10 @@ const Orders = () => {
           return;
         }
 
-        // Converter os dados para o formato esperado
         const formattedOrders = data.map(order => {
-          // Parse JSON fields
           const parsedItems = parseJsonArray(order.items, []);
           const profileData = order.profiles || {};
           
-          // Cria um objeto de endereço com valores padrão
           const shippingAddress: ShippingAddress = {
             zip_code: profileData.zip_code || '',
             city: profileData.city || '',
@@ -62,29 +56,17 @@ const Orders = () => {
           };
           
           return {
-            id: order.id,
-            user_id: order.user_id,
-            status: order.status || 'pending',
-            total_amount: order.total_amount,
-            subtotal: order.subtotal || 0,
-            shipping_fee: order.shipping_fee || 0,
-            payment_method: order.payment_method,
+            ...order,
             payment_status: order.payment_status || 'pending',
+            shipping_address: shippingAddress,
             items: parsedItems.map((item) => ({
               product_id: item.product_id,
-              product_name: item.product_name,
-              name: item.product_name || item.name || '',  // Adicionando a propriedade name requerida
               quantity: item.quantity,
               price: item.price,
+              product_name: item.product_name,
+              name: item.product_name || item.name || '',
               total_price: item.total_price
-            })) as OrderItem[],
-            shipping_address: shippingAddress,
-            created_at: order.created_at,
-            updated_at: order.updated_at || order.created_at,
-            discount: order.discount || 0,
-            profiles: profileData,
-            installments: order.installments || 1,
-            mp_preference_id: order.mp_preference_id || ''
+            })) as OrderItem[]
           } as Order;
         });
         

@@ -1,4 +1,3 @@
-
 export interface WhatsAppInstance {
   id: string;
   instance_name: string;
@@ -37,6 +36,13 @@ export interface WhatsAppMessage {
   type?: string;
   timestamp?: string;
   is_sent_by_me?: boolean;
+}
+
+export interface WhatsAppInstanceCardProps {
+  instance: WhatsAppInstance;
+  onSelect: () => void;
+  onRefreshQr: () => Promise<any>;
+  onDelete: () => void; // Adicionando prop obrigatória
 }
 
 // Função de utilitário para converter entre os formatos de mensagem

@@ -1,88 +1,82 @@
+import { useState, useEffect, useCallback } from 'react';
+import { CartItem } from '@/types/cart';
 
-import { create } from "zustand";
-import { Json } from "@/integrations/supabase/types";
-
-export interface CartItem {
-  id: string;
-  name: string;
-  quantity: number;
-  price: number;
-  image: string;
-  weight?: number; // Adicionando a propriedade weight como opcional
-}
-
-interface CartStore {
-  cartItems: CartItem[];
-  total: number;
-  addItem: (product: Pick<CartItem, 'id' | 'name' | 'price' | 'image'>) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  removeItem: (productId: string) => void;
-  clear: () => void;
-  // Adicionando os métodos ausentes
+export interface CartStore {
+  cart: CartItem[];
+  addItem: (item: CartItem) => void;
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
-  cart?: CartItem[]; // Para compatibilidade com componentes existentes
+  isLoading: boolean;
 }
 
-export const useCart = create<CartStore>((set, get) => ({
-  cartItems: [],
-  total: 0,
-  addItem: (product) => set((state) => {
-    const existingItem = state.cartItems.find(item => item.id === product.id);
-    let newItems;
-    
-    if (existingItem) {
-      newItems = state.cartItems.map(item =>
-        item.id === product.id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      );
-    } else {
-      newItems = [...state.cartItems, { ...product, quantity: 1 }];
-    }
+const useCartStore = (): CartStore => {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    const total = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
-    return {
-      cartItems: newItems,
-      total,
-      cart: newItems // Adicionando para compatibilidade
-    };
-  }),
-  updateQuantity: (productId, quantity) => set((state) => {
-    if (quantity < 1) return state;
-    
-    const newItems = state.cartItems.map(item =>
-      item.id === productId
-        ? { ...item, quantity }
-        : item
-    );
-    
-    return {
-      cartItems: newItems,
-      total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
-      cart: newItems // Adicionando para compatibilidade
-    };
-  }),
-  removeItem: (productId) => set((state) => {
-    const newItems = state.cartItems.filter(item => item.id !== productId);
-    return {
-      cartItems: newItems,
-      total: newItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
-      cart: newItems // Adicionando para compatibilidade
-    };
-  }),
-  clear: () => set({ cartItems: [], total: 0, cart: [] }),
-  
-  // Implementando os métodos adicionais
-  clearCart: () => set({ cartItems: [], total: 0, cart: [] }),
-  
-  getTotalPrice: () => {
-    return get().total;
-  },
-  
-  getTotalItems: () => {
-    return get().cartItems.reduce((sum, item) => sum + item.quantity, 0);
-  }
-}));
+  useEffect(() => {
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart) {
+      setCart(JSON.parse(storedCart));
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const addItem = useCallback((item: CartItem) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+      if (existingItem) {
+        return prevCart.map(cartItem =>
+          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + item.quantity } : cartItem
+        );
+      } else {
+        return [...prevCart, item];
+      }
+    });
+  }, []);
+
+  const removeItem = useCallback((id: string) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== id));
+  }, []);
+
+  const updateQuantity = useCallback((id: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(id);
+    } else {
+      setCart(prevCart =>
+        prevCart.map(item => (item.id === id ? { ...item, quantity } : item))
+      );
+    }
+  }, [removeItem]);
+
+  const clearCart = useCallback(() => {
+    setCart([]);
+  }, []);
+
+  const getTotalPrice = useCallback(() => {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  }, [cart]);
+
+  const getTotalItems = useCallback(() => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  }, [cart]);
+
+  return {
+    cart,
+    addItem,
+    removeItem,
+    updateQuantity,
+    clearCart,
+    getTotalPrice,
+    getTotalItems,
+    isLoading
+  };
+};
+
+export const useCart = useCartStore;
