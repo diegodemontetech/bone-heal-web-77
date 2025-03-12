@@ -31,7 +31,7 @@ serve(async (req) => {
       }
 
       return {
-        title: String(item.title || '').substring(0, 256),
+        title: String(item.title || item.name || '').substring(0, 256),
         unit_price: price,
         quantity: quantity,
         currency_id: "BRL"
@@ -69,16 +69,20 @@ serve(async (req) => {
     const config = {
       items: preferenceItems,
       payer: {
-        email: buyer.email,
-        name: buyer.name || 'Cliente'
+        email: buyer.email || "cliente@example.com",
+        name: buyer.name || 'Cliente',
+        identification: buyer.identification || {
+          type: "CPF",
+          number: "00000000000"
+        }
       },
       external_reference: orderId,
       statement_descriptor: "BONEHEAL",
       notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       back_urls: {
-        success: `${app_url}/checkout/success`,
-        failure: `${app_url}/checkout/failure`,
-        pending: `${app_url}/checkout/pending`
+        success: `${app_url}/checkout/success?order_id=${orderId}`,
+        failure: `${app_url}/checkout/failure?order_id=${orderId}`,
+        pending: `${app_url}/checkout/pending?order_id=${orderId}`
       },
       auto_return: "approved",
       expires: false

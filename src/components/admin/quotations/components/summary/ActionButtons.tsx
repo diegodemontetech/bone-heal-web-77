@@ -27,7 +27,7 @@ const ActionButtons = ({
       <Button
         className="w-full"
         onClick={onCreateQuotation}
-        disabled={loading || disabled}
+        disabled={loading || disabled || !selectedCustomer || selectedProducts.length === 0}
       >
         {loading ? (
           <>

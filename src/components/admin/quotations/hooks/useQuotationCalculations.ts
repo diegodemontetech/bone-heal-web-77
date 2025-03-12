@@ -3,6 +3,7 @@ interface DiscountInfo {
   discount: number;
   discountType: string;
   appliedVoucher: any | null;
+  paymentMethod?: string;
 }
 
 interface ShippingInfo {
@@ -18,7 +19,8 @@ export const useQuotationCalculations = (
   discount: number,
   discountType: string,
   appliedVoucher: any = null,
-  shippingCost: number = 0
+  shippingCost: number = 0,
+  paymentMethod: string = "pix"
 ) => {
   /**
    * Calcula o subtotal dos produtos selecionados
@@ -38,21 +40,38 @@ export const useQuotationCalculations = (
       return calculateVoucherDiscount(subtotal, appliedVoucher);
     }
     
-    // Se não tiver cupom, usa o desconto manual
-    return calculateManualDiscount(subtotal, { discount, discountType, appliedVoucher: null });
+    // Se não tiver cupom, usa o desconto manual e condições comerciais
+    return calculateManualDiscount(subtotal, { 
+      discount, 
+      discountType, 
+      appliedVoucher: null,
+      paymentMethod 
+    });
   };
 
   /**
-   * Calcula o valor do desconto manual
+   * Calcula o valor do desconto manual, considerando condições comerciais
    */
   const calculateManualDiscount = (subtotal: number, discountInfo: DiscountInfo) => {
-    const { discount, discountType } = discountInfo;
+    const { discount, discountType, paymentMethod } = discountInfo;
     
+    // Desconto básico (manual)
+    let discountAmount = 0;
     if (discountType === "percentage") {
-      return subtotal * (discount / 100);
+      discountAmount = subtotal * (discount / 100);
     } else {
-      return discount;
+      discountAmount = discount;
     }
+    
+    // Adicionar descontos de condição comercial (como desconto de PIX)
+    // Aqui poderia consultar a tabela de condições comerciais, mas
+    // por simplicidade, aplicamos diretamente
+    if (paymentMethod === "pix") {
+      // Desconto adicional para PIX (5%)
+      discountAmount += subtotal * 0.05;
+    }
+    
+    return discountAmount;
   };
 
   /**

@@ -34,7 +34,8 @@ export const useQuotationSubmit = ({
     discount, 
     discountType, 
     appliedVoucher, 
-    selectedShipping?.rate || 0
+    selectedShipping?.rate || 0,
+    paymentMethod
   );
 
   const handleCreateQuotation = async () => {
