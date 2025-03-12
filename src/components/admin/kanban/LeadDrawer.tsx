@@ -9,14 +9,15 @@ import { OrdersHistory } from "./lead-drawer/OrdersHistory";
 import { LeadInfo } from "./lead-drawer/LeadInfo";
 import { ActionButtons } from "./lead-drawer/ActionButtons";
 
-interface LeadDrawerProps {
+export interface LeadDrawerProps {
   open: boolean;
   onClose: () => void;
   lead: any | null;
-  onLeadUpdate: () => void;
+  onLeadUpdated: () => void;
+  onStatusChange: (leadId: string, newStatus: string) => Promise<void>;
 }
 
-export const LeadDrawer = ({ open, onClose, lead, onLeadUpdate }: LeadDrawerProps) => {
+export const LeadDrawer = ({ open, onClose, lead, onLeadUpdated, onStatusChange }: LeadDrawerProps) => {
   const [formData, setFormData] = useState<any>({});
   const { users } = useUsersQuery();
   const { updateLead, deleteLead } = useLeadActions();
@@ -38,15 +39,19 @@ export const LeadDrawer = ({ open, onClose, lead, onLeadUpdate }: LeadDrawerProp
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleStatusChange = async (newStatus: string) => {
+    await onStatusChange(lead.id, newStatus);
+  };
+
   const handleSave = async () => {
     await updateLead(lead.id, formData);
-    onLeadUpdate();
+    onLeadUpdated();
   };
 
   const handleDelete = async () => {
     await deleteLead(lead.id);
     onClose();
-    onLeadUpdate();
+    onLeadUpdated();
   };
 
   return (
@@ -69,6 +74,8 @@ export const LeadDrawer = ({ open, onClose, lead, onLeadUpdate }: LeadDrawerProp
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={onClose}
+          onStatusChange={handleStatusChange}
+          currentStatus={lead.status}
         />
       </SheetContent>
     </Sheet>

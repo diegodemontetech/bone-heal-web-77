@@ -1,7 +1,6 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import { 
   Select,
   SelectContent,
@@ -29,6 +28,21 @@ const LeadsKanban = () => {
 
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     await updateLeadStatus(leadId, newStatus);
+    refetch();
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    const { draggableId, destination, source } = result;
+
+    // Se não houver destino ou o item for solto na mesma coluna e posição
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+
+    // Atualizar o status do lead com base na coluna de destino
+    await updateLeadStatus(draggableId, destination.droppableId);
     refetch();
   };
 
@@ -71,36 +85,38 @@ const LeadsKanban = () => {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <KanbanColumn 
-          title="Novos" 
-          status="new" 
-          leads={newLeads} 
-          onLeadClick={handleLeadClick}
-          onStatusChange={handleStatusChange}
-        />
-        <KanbanColumn 
-          title="Contatados" 
-          status="contacted" 
-          leads={contactedLeads} 
-          onLeadClick={handleLeadClick}
-          onStatusChange={handleStatusChange}
-        />
-        <KanbanColumn 
-          title="Fechados" 
-          status="closed" 
-          leads={closedLeads} 
-          onLeadClick={handleLeadClick}
-          onStatusChange={handleStatusChange}
-        />
-      </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <KanbanColumn 
+            id="new"
+            title="Novos" 
+            leads={newLeads} 
+            onLeadClick={handleLeadClick}
+            onStatusChange={handleStatusChange}
+          />
+          <KanbanColumn 
+            id="contacted"
+            title="Contatados" 
+            leads={contactedLeads} 
+            onLeadClick={handleLeadClick}
+            onStatusChange={handleStatusChange}
+          />
+          <KanbanColumn 
+            id="closed"
+            title="Fechados" 
+            leads={closedLeads} 
+            onLeadClick={handleLeadClick}
+            onStatusChange={handleStatusChange}
+          />
+        </div>
+      </DragDropContext>
 
       <LeadDrawer 
         lead={selectedLead} 
         open={drawerOpen} 
         onClose={() => setDrawerOpen(false)}
         onStatusChange={handleStatusChange}
-        onLeadUpdated={() => refetch()}
+        onLeadUpdated={refetch}
       />
     </div>
   );
