@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout from "@/components/admin/Layout";
 import {
   Table,
   TableBody,
@@ -74,90 +73,86 @@ const LeadsPage = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
-        <div className="p-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded"></div>
-              ))}
-            </div>
+      <div className="p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
           </div>
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Leads</h1>
-          <Select
-            value={selectedStatus || "all"}
-            onValueChange={(value) => setSelectedStatus(value)}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filtrar por status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="new">Novo</SelectItem>
-              <SelectItem value="contacted">Contatado</SelectItem>
-              <SelectItem value="closed">Fechado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="bg-white rounded-lg shadow">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Motivo</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leads?.map((lead) => (
-                <TableRow key={lead.id}>
-                  <TableCell>
-                    {format(new Date(lead.created_at), "dd/MM/yyyy HH:mm", {
-                      locale: ptBR,
-                    })}
-                  </TableCell>
-                  <TableCell>{lead.name}</TableCell>
-                  <TableCell>{lead.phone}</TableCell>
-                  <TableCell>
-                    {lead.source === "whatsapp_widget" ? "WhatsApp" : "Formulário"}
-                  </TableCell>
-                  <TableCell>{lead.reason}</TableCell>
-                  <TableCell>
-                    <Select
-                      value={lead.status}
-                      onValueChange={(value) => updateLeadStatus(lead.id, value)}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">Novo</SelectItem>
-                        <SelectItem value="contacted">Contatado</SelectItem>
-                        <SelectItem value="closed">Fechado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Leads</h1>
+        <Select
+          value={selectedStatus || "all"}
+          onValueChange={(value) => setSelectedStatus(value)}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="new">Novo</SelectItem>
+            <SelectItem value="contacted">Contatado</SelectItem>
+            <SelectItem value="closed">Fechado</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-    </AdminLayout>
+
+      <div className="bg-white rounded-lg shadow">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>Origem</TableHead>
+              <TableHead>Motivo</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {leads?.map((lead) => (
+              <TableRow key={lead.id}>
+                <TableCell>
+                  {format(new Date(lead.created_at), "dd/MM/yyyy HH:mm", {
+                    locale: ptBR,
+                  })}
+                </TableCell>
+                <TableCell>{lead.name}</TableCell>
+                <TableCell>{lead.phone}</TableCell>
+                <TableCell>
+                  {lead.source === "whatsapp_widget" ? "WhatsApp" : "Formulário"}
+                </TableCell>
+                <TableCell>{lead.reason}</TableCell>
+                <TableCell>
+                  <Select
+                    value={lead.status}
+                    onValueChange={(value) => updateLeadStatus(lead.id, value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">Novo</SelectItem>
+                      <SelectItem value="contacted">Contatado</SelectItem>
+                      <SelectItem value="closed">Fechado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 };
 
