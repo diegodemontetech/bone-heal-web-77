@@ -45,7 +45,7 @@ export const fetchShippingRatesFromSupabase = async (
           return rate.region === region || rate.region === '*';
         });
         
-        console.log(`Usando taxas regionais para ${region}: ${stateOptions.length} encontradas`);
+        console.log(`Usando taxas regionais: ${stateOptions.length} encontradas`);
       }
       
       if (stateOptions.length > 0) {
