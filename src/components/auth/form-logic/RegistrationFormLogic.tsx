@@ -69,41 +69,44 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
             .eq("email", data.email)
             .single();
             
-          if (profileError) throw profileError;
+          if (profileError) {
+            console.error("Erro ao buscar perfil do cliente:", profileError);
+            // Tentar buscar por ID, caso o email não esteja disponível imediatamente
+            if (newUser?.user?.id) {
+              const { data: customerById, error: idError } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", newUser.user.id)
+                .single();
+                
+              if (idError) {
+                console.error("Erro ao buscar perfil por ID:", idError);
+                throw profileError; // Se ambas as buscas falharem, lançamos o erro original
+              }
+              
+              console.log("Perfil de cliente obtido por ID:", customerById);
+              
+              // Continuar com o cliente encontrado por ID
+              if (customerById) {
+                // Tentar sincronizar com o Omie
+                await syncCustomerWithOmie(customerById);
+                
+                // Chamar o callback de sucesso, se fornecido
+                if (onSuccess) {
+                  console.log("Chamando callback onSuccess com cliente por ID:", customerById);
+                  onSuccess(customerById);
+                }
+                return;
+              }
+            }
+            
+            throw profileError;
+          }
           
           console.log("Perfil de cliente obtido:", newCustomer);
           
           // Tentar sincronizar com o Omie
-          try {
-            const response = await fetch(`${window.location.origin}/api/omie-customer`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ profile: newCustomer }),
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-              console.log("Sincronização com Omie realizada com sucesso");
-              
-              // Atualizar o cliente com o código Omie
-              const { data: updatedCustomer, error: updateError } = await supabase
-                .from("profiles")
-                .update({ omie_code: result.omie_code, omie_sync: true })
-                .eq("id", newCustomer.id)
-                .select()
-                .single();
-                
-              if (!updateError && updatedCustomer) {
-                newCustomer.omie_code = result.omie_code;
-                newCustomer.omie_sync = true;
-              }
-            }
-          } catch (omieError) {
-            console.error("Erro ao sincronizar com Omie:", omieError);
-          }
+          await syncCustomerWithOmie(newCustomer);
           
           // Chamar o callback de sucesso, se fornecido
           if (onSuccess) {
@@ -172,6 +175,43 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Função auxiliar para sincronizar cliente com Omie
+  const syncCustomerWithOmie = async (customer: any) => {
+    try {
+      const response = await fetch(`${window.location.origin}/api/omie-customer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ profile: customer }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log("Sincronização com Omie realizada com sucesso");
+        
+        // Atualizar o cliente com o código Omie
+        const { data: updatedCustomer, error: updateError } = await supabase
+          .from("profiles")
+          .update({ omie_code: result.omie_code, omie_sync: true })
+          .eq("id", customer.id)
+          .select()
+          .single();
+          
+        if (!updateError && updatedCustomer) {
+          customer.omie_code = result.omie_code;
+          customer.omie_sync = true;
+          return updatedCustomer;
+        }
+      }
+      return customer;
+    } catch (omieError) {
+      console.error("Erro ao sincronizar com Omie:", omieError);
+      return customer; // Retorna o cliente original mesmo se a sincronização falhar
     }
   };
 

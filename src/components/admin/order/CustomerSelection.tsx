@@ -83,6 +83,7 @@ export const CustomerSelection = ({
                 isDentist={true} 
                 isModal={true} 
                 onSuccess={(newCustomer) => {
+                  console.log("CustomerSelection: recebeu callback com cliente:", newCustomer);
                   setSelectedCustomer(newCustomer);
                   setIsDialogOpen(false);
                   toast.success("Cliente cadastrado com sucesso!");

@@ -24,6 +24,7 @@ export const useCustomerState = () => {
     const fetchCustomers = async () => {
       try {
         console.log("Iniciando busca de clientes no Supabase...");
+        setIsLoadingCustomers(true);
         
         let query = supabase
           .from('profiles')
@@ -45,7 +46,7 @@ export const useCustomerState = () => {
           throw error;
         }
 
-        const formattedCustomers = data.map(customer => ({
+        const formattedCustomers = data ? data.map(customer => ({
           id: customer.id,
           full_name: customer.full_name || 'Sem nome',
           email: customer.email,
@@ -54,7 +55,7 @@ export const useCustomerState = () => {
           city: customer.city,
           state: customer.state,
           zip_code: customer.zip_code
-        }));
+        })) : [];
 
         console.log(`Clientes encontrados no Supabase:`, formattedCustomers);
         setCustomers(formattedCustomers);
@@ -67,7 +68,7 @@ export const useCustomerState = () => {
     };
 
     fetchCustomers();
-  }, [searchTerm]); // Agora a busca é refeita quando o searchTerm muda
+  }, [searchTerm]); // A busca é refeita quando o searchTerm muda
 
   return {
     customers,
