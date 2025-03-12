@@ -19,14 +19,11 @@ export const useVouchersData = () => {
 
       if (error) throw error;
       
-      const formattedVouchers = data.map(voucher => {
-        // Garantir que todos os vouchers tenham a propriedade is_active com valor padrão true
-        return {
-          ...voucher,
-          discount_type: (voucher.discount_type || 'percentage') as 'percentage' | 'fixed' | 'shipping',
-          is_active: voucher.is_active !== undefined ? Boolean(voucher.is_active) : true
-        } as Voucher;
-      });
+      const formattedVouchers = data.map(voucher => ({
+        ...voucher,
+        discount_type: (voucher.discount_type || 'percentage') as 'percentage' | 'fixed' | 'shipping',
+        is_active: true
+      })) as Voucher[];
       
       setVouchers(formattedVouchers);
     } catch (err) {
