@@ -39,7 +39,7 @@ const Orders = () => {
           payment_status: order.payment_status || 'pending',
           shipping_address: order.shipping_address || {},
           profiles: order.profiles || {}
-        })) || [];
+        })) as Order[];
       } catch (err) {
         console.error("Erro na consulta de pedidos:", err);
         throw err;

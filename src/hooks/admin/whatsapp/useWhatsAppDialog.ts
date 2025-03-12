@@ -1,18 +1,12 @@
 
 import { useState } from 'react';
+import { WhatsAppDialogState } from './WhatsAppTypes';
 
-export const useWhatsAppDialog = () => {
+export const useWhatsAppDialog = (): WhatsAppDialogState => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  const openDialog = () => setIsDialogOpen(true);
-  const closeDialog = () => setIsDialogOpen(false);
-  const toggleDialog = () => setIsDialogOpen(prev => !prev);
-  
   return {
-    isDialogOpen,
-    setIsDialogOpen,
-    openDialog,
-    closeDialog,
-    toggleDialog
+    isOpen: isDialogOpen,
+    setIsOpen: setIsDialogOpen
   };
 };

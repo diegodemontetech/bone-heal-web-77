@@ -1,4 +1,3 @@
-
 export interface OrderItem {
   product_id: string;
   quantity: number;
@@ -23,12 +22,12 @@ export interface Order {
   user_id: string;
   items: OrderItem[];
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
+  payment_status: string;
   subtotal: number;
   discount: number;
   shipping_fee: number;
   total_amount: number;
   payment_method?: string;
-  payment_status?: string;
   installments?: number;
   mp_preference_id?: string;
   shipping_address?: ShippingAddress;
@@ -43,11 +42,10 @@ export interface Order {
     city?: string;
     state?: string;
     address?: string;
-    endereco_numero?: string;
+    endereco_numero?: string; 
     complemento?: string;
     neighborhood?: string;
   };
-  omie_status?: string;
 }
 
 export interface CreateOrderDTO {

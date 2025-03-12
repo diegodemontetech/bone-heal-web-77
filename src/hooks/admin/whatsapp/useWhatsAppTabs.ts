@@ -1,26 +1,15 @@
 
 import { useState } from 'react';
+import { WhatsAppTabsState } from './WhatsAppTypes';
 
-export const useWhatsAppTabs = () => {
+export const useWhatsAppTabs = (): WhatsAppTabsState => {
   const [activeTab, setActiveTab] = useState("instances");
   const [selectedInstanceId, setSelectedInstanceId] = useState<string | null>(null);
-  
-  const selectInstance = (instanceId: string) => {
-    setSelectedInstanceId(instanceId);
-    setActiveTab("chat");
-  };
-  
-  const resetSelection = () => {
-    setSelectedInstanceId(null);
-    setActiveTab("instances");
-  };
-  
+
   return {
     activeTab,
     setActiveTab,
     selectedInstanceId,
-    setSelectedInstanceId,
-    selectInstance,
-    resetSelection
+    setSelectedInstanceId
   };
 };
