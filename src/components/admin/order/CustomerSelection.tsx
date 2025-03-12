@@ -5,6 +5,7 @@ import { CustomerDisplay } from "./CustomerDisplay";
 import { Search, UserPlus, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import RegistrationForm from "@/components/auth/RegistrationForm";
+import { useEffect } from "react";
 
 interface CustomerSelectionProps {
   customers: any[];
@@ -29,8 +30,11 @@ export const CustomerSelection = ({
   setCustomerDialogOpen,
   handleRegistrationSuccess
 }: CustomerSelectionProps) => {
-  console.log("CustomerSelection renderizando com", customers?.length || 0, "clientes");
-  console.log("Cliente selecionado:", selectedCustomer);
+  // Log para debug
+  useEffect(() => {
+    console.log("CustomerSelection renderizando com", customers?.length || 0, "clientes");
+    console.log("Cliente selecionado:", selectedCustomer);
+  }, [customers, selectedCustomer]);
 
   return (
     <div>

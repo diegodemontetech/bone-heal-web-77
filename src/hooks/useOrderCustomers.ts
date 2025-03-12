@@ -9,7 +9,7 @@ export const useOrderCustomers = () => {
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
 
-  console.log("useOrderCustomers iniciado, termo:", customerSearchTerm);
+  console.log("useOrderCustomers hook inicializado com termo:", customerSearchTerm);
 
   // Buscar clientes diretamente do Supabase
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
@@ -26,9 +26,7 @@ export const useOrderCustomers = () => {
           query = query.or(`full_name.ilike.%${customerSearchTerm}%,email.ilike.%${customerSearchTerm}%,phone.ilike.%${customerSearchTerm}%`);
         }
         
-        const { data, error } = await query
-          .order("full_name")
-          .limit(50);
+        const { data, error } = await query.limit(50);
 
         if (error) {
           console.error("Erro ao buscar clientes do Supabase:", error);
@@ -44,6 +42,7 @@ export const useOrderCustomers = () => {
         return [];
       }
     },
+    staleTime: 30000, // 30 segundos
     refetchOnWindowFocus: false
   });
 
