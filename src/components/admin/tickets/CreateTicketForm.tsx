@@ -53,7 +53,7 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
       const { error } = await supabase
         .from("support_tickets")
         .insert([{
-          title: formData.title,
+          subject: formData.title, // Mapear title para subject
           description: formData.description,
           status: "open",
           priority: formData.priority,

@@ -25,7 +25,8 @@ export const useOrderConverter = () => {
       }
 
       // Buscar informações completas dos produtos
-      const enhancedItems = await Promise.all((quotation.items || []).map(async (item: any) => {
+      const quotationItems = Array.isArray(quotation.items) ? quotation.items : [];
+      const enhancedItems = await Promise.all(quotationItems.map(async (item: any) => {
         if (item.product_id) {
           const { data: product } = await supabase
             .from("products")
@@ -39,7 +40,6 @@ export const useOrderConverter = () => {
             quantity: item.quantity,
             price: item.unit_price || product?.price,
             omie_code: product?.omie_code || null,
-            omie_product_id: product?.omie_product_id || null,
             product_image: product?.main_image || product?.default_image_url
           };
         }

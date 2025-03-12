@@ -43,19 +43,30 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
       if (isModal) {
         // No modo modal, inserimos diretamente no banco de dados sem autenticação
         try {
-          const { data: newCustomer, error } = await supabase
-            .from("profiles")
-            .insert({
-              ...userData,
-              email: data.email,
-              role: UserRole.DENTIST
-            })
-            .select()
-            .single();
+          // Modificamos para usar .from('users') para criar o usuário
+          const { data: newUserId, error: authError } = await supabase.auth.signUp({
+            email: data.email,
+            password: data.password || "123456", // Senha padrão se não fornecida
+            options: {
+              data: {
+                ...userData,
+                email: data.email
+              }
+            }
+          });
 
-          if (error) throw error;
+          if (authError) throw authError;
           
-          console.log("Cliente cadastrado com sucesso:", newCustomer);
+          console.log("Usuário criado com sucesso:", newUserId);
+          
+          // Buscar o profile criado pelo trigger depois do signUp
+          const { data: newCustomer, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("email", data.email)
+            .single();
+            
+          if (profileError) throw profileError;
           
           // Tentar sincronizar com o Omie
           try {

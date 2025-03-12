@@ -77,7 +77,33 @@ export const useQuotationsQuery = () => {
             : quotation.customer;
           
           // Garantir que items seja um array
-          const items = Array.isArray(quotation.items) ? quotation.items : [];
+          let items: QuotationItem[] = [];
+          if (quotation.items) {
+            if (Array.isArray(quotation.items)) {
+              items = quotation.items.map(item => ({
+                product_id: String(item.product_id || ''),
+                product_name: String(item.product_name || ''),
+                quantity: Number(item.quantity || 0),
+                unit_price: Number(item.unit_price || 0),
+                total_price: Number(item.total_price || 0)
+              }));
+            } else if (typeof quotation.items === 'string') {
+              try {
+                const parsedItems = JSON.parse(quotation.items);
+                if (Array.isArray(parsedItems)) {
+                  items = parsedItems.map(item => ({
+                    product_id: String(item.product_id || ''),
+                    product_name: String(item.product_name || ''),
+                    quantity: Number(item.quantity || 0),
+                    unit_price: Number(item.unit_price || 0),
+                    total_price: Number(item.total_price || 0)
+                  }));
+                }
+              } catch (e) {
+                console.error("Erro ao parsear items:", e);
+              }
+            }
+          }
           
           // Converter valores numéricos corretamente
           const total_amount = typeof quotation.total_amount === 'number' 
@@ -92,15 +118,20 @@ export const useQuotationsQuery = () => {
             ? quotation.subtotal_amount 
             : parseFloat(quotation.subtotal_amount || '0');
             
-          return {
-            ...quotation,
+          const result: Quotation = {
+            id: quotation.id,
+            created_at: quotation.created_at,
             customer: customerData,
-            items: items,
+            items,
             total_amount,
             discount_amount,
             subtotal_amount,
+            payment_method: quotation.payment_method || '',
+            sent_by_email: Boolean(quotation.sent_by_email),
             status: (quotation.status || QuotationStatus.DRAFT) as QuotationStatus
-          } as Quotation;
+          };
+          
+          return result;
         });
       } catch (error) {
         console.error("Erro ao processar dados de orçamentos:", error);
