@@ -11,18 +11,21 @@ import { crmRoutes } from "./admin/crmRoutes";
 import { supportRoutes } from "./admin/supportRoutes";
 import { whatsappRoutes } from "./admin/whatsappRoutes";
 
+// Garantir que todas as rotas tenham um array válido para evitar o erro de map em undefined
+const allRoutes = [
+  ...dashboardRoutes,
+  ...productRoutes,
+  ...orderRoutes,
+  ...userRoutes,
+  ...contentRoutes,
+  ...configRoutes,
+  ...crmRoutes,
+  ...supportRoutes,
+  ...whatsappRoutes
+].filter(Boolean); // Filtrar qualquer valor undefined ou null
+
 export const adminRoutes: RouteObject = {
   path: "/admin",
   element: <AdminLayout />,
-  children: [
-    ...dashboardRoutes,
-    ...productRoutes,
-    ...orderRoutes,
-    ...userRoutes,
-    ...contentRoutes,
-    ...configRoutes,
-    ...crmRoutes,
-    ...supportRoutes,
-    ...whatsappRoutes
-  ]
+  children: allRoutes
 };

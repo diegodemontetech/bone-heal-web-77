@@ -17,6 +17,7 @@ import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
 import { AdminRoute } from "@/routes/admin/adminLoader"; 
 import Layout from "@/components/admin/Layout";
+import AdminDashboard from "@/pages/admin/Dashboard";
 
 export function Routes() {
   return (
@@ -39,7 +40,8 @@ export function Routes() {
 
         {/* Rotas de Admin */}
         <Route path="/admin" element={<AdminRoute><Layout /></AdminRoute>}>
-          {adminRoutes.children?.map((route, index) => (
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          {adminRoutes.children && adminRoutes.children.map((route, index) => (
             <Route key={index} path={route.path} element={route.element} />
           ))}
         </Route>
