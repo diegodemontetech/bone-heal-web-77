@@ -35,7 +35,12 @@ export const useShareWhatsApp = () => {
       const encodedMessage = encodeURIComponent(message);
       
       // Buscar número de telefone do cliente ou usar um padrão
-      const phone = customerInfo.phone?.replace(/\D/g, '') || "";
+      const phone = customerInfo.phone ? customerInfo.phone.replace(/\D/g, '') : "";
+      
+      if (!phone) {
+        toast.error("Não foi possível compartilhar: telefone do cliente não encontrado");
+        return;
+      }
       
       // Criar URL do WhatsApp
       const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;

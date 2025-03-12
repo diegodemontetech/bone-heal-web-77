@@ -5,9 +5,12 @@ import { toast } from 'sonner';
 
 export interface WhatsAppInstance {
   id: string;
-  name: string;
+  instance_name: string;
   status: string;
   created_at: string;
+  updated_at: string;
+  user_id: string;
+  qr_code?: string;
 }
 
 export const useWhatsAppInstances = () => {
@@ -21,7 +24,7 @@ export const useWhatsAppInstances = () => {
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .select('*')
-        .order('name');
+        .order('instance_name');
 
       if (error) throw error;
       setInstances(data || []);

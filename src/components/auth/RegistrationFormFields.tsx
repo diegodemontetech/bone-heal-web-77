@@ -1,44 +1,33 @@
-
-import React from 'react';
-import { type UseFormReturn } from "react-hook-form";
-import { PersonalSection } from "./form-sections/PersonalSection";
-import { AddressSection } from "./form-sections/AddressSection";
-import { ContactSection } from "./form-sections/ContactSection";
-import { AccountSection } from "./form-sections/AccountSection";
-import { FormData } from './RegistrationForm';
-
-// Match the expected type from PersonalSection
-interface DentalSpecialty {
-  id: string;
-  name: string;
-  created_at: string;
-}
-
-interface City {
-  id: number;
-  omie_code: string;
-  name: string;
-  state: string;
-}
+import React from "react";
+import { UseFormReturn } from "react-hook-form";
+import { FormData } from "./RegistrationForm";
+import AccountFormSection from "./form-sections/AccountFormSection";
+import ProfessionalFormSection from "./form-sections/ProfessionalFormSection";
+import AddressFormSection from "./form-sections/AddressFormSection";
+import DocumentsFormSection from "./form-sections/DocumentsFormSection";
+import NewsletterFormSection from "./form-sections/NewsletterFormSection";
 
 interface RegistrationFormFieldsProps {
-  specialties: DentalSpecialty[];
   form: UseFormReturn<FormData>;
-  cities: City[];
+  showPassword?: boolean;
 }
 
 const RegistrationFormFields: React.FC<RegistrationFormFieldsProps> = ({ 
-  specialties, 
-  form,
-  cities 
+  form, 
+  showPassword = true 
 }) => {
   return (
-    <>
-      <PersonalSection form={form} specialties={specialties} />
-      <AddressSection form={form} cities={cities} />
-      <ContactSection form={form} />
-      <AccountSection form={form} />
-    </>
+    <div className="space-y-6">
+      <AccountFormSection form={form} showPassword={showPassword} />
+      
+      <ProfessionalFormSection form={form} />
+      
+      <AddressFormSection form={form} />
+      
+      <DocumentsFormSection form={form} />
+      
+      <NewsletterFormSection form={form} />
+    </div>
   );
 };
 

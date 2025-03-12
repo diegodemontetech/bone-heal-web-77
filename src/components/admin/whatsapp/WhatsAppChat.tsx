@@ -14,10 +14,9 @@ const WhatsAppChat = ({ selectedLead, onMessageSent }: WhatsAppChatProps) => {
   const { messages, loading, sendMessage } = useWhatsAppMessages(selectedLead?.id);
 
   const handleSendMessage = async (message: string) => {
-    if (await sendMessage(message)) {
-      if (onMessageSent) {
-        onMessageSent();
-      }
+    const success = await sendMessage(message);
+    if (success && onMessageSent) {
+      onMessageSent();
     }
   };
 

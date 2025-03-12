@@ -1,129 +1,57 @@
-import { useState } from "react";
-import { useCart } from "@/hooks/use-cart";
-import { useAuth } from "@/hooks/use-auth-context";
-import { formatCurrency } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
-import { useRouter } from 'next/navigation';
-import { stringifyForSupabase } from "@/utils/supabaseJsonUtils";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from 'react';
+import { useCart } from '@/hooks/use-cart';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/utils';
+import { useNavigate } from "react-router-dom";
 
 interface PaymentProcessorProps {
-  shippingCost: number;
-  voucherDiscount: number;
-  voucherId: string | null;
+  orderId: string;
 }
 
-const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ shippingCost, voucherDiscount, voucherId }) => {
-  const [installments, setInstallments] = useState<number>(1);
-  const [processing, setProcessing] = useState<boolean>(false);
-  const { cart, getTotalPrice, clearCart } = useCart();
-  const { profile } = useAuth();
-  const { toast } = useToast();
-  const router = useRouter();
+const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ orderId }) => {
+  const { getTotalPrice, clearCart } = useCart();
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const totalPrice = getTotalPrice();
-  const totalWithShipping = totalPrice + shippingCost - voucherDiscount;
+  useEffect(() => {
+    const processPayment = async () => {
+      setLoading(true);
+      try {
+        // Simulação de processamento de pagamento
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-  const handlePayment = async () => {
-    if (!profile) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para finalizar a compra.",
-        variant: "destructive",
-      });
-      return;
-    }
+        // Lógica para marcar o pedido como pago no banco de dados
+        // Aqui você faria uma chamada à sua API ou Supabase para atualizar o status do pedido
+        // Exemplo: await updateOrderPaymentStatus(orderId, 'paid');
 
-    setProcessing(true);
-
-    try {
-      // Criar pedido no Supabase
-      const { data, error } = await supabase.from('orders').insert({
-        customer_id: profile.id,
-        total_amount: totalWithShipping,
-        shipping_cost: shippingCost,
-        discount: voucherDiscount,
-        installments: installments,
-        items: stringifyForSupabase(cart.items),
-        voucher_id: voucherId,
-      }).select().single();
-
-      if (error) {
-        console.error("Erro ao criar pedido:", error);
-        toast({
-          title: "Erro",
-          description: "Ocorreu um erro ao criar o pedido. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-        return;
+        // Limpar o carrinho e redirecionar para a página de sucesso
+        clearCart();
+        toast.success("Pagamento processado com sucesso!");
+        navigate('/success');
+      } catch (error) {
+        console.error("Erro ao processar pagamento:", error);
+        toast.error("Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      toast({
-        title: "Sucesso",
-        description: "Pedido criado com sucesso!",
-      });
-
-      clearCart();
-      router.push('/orders');
-    } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao processar o pagamento. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setProcessing(false);
-    }
-  };
+    processPayment();
+  }, [orderId, getTotalPrice, clearCart, navigate]);
 
   return (
-    <Card className="w-full">
-      <CardContent className="grid gap-4">
-        <h2 className="text-lg font-semibold">Resumo do Pedido</h2>
-        <div className="flex justify-between">
-          <span>Subtotal:</span>
-          <span>{formatCurrency(totalPrice)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Frete:</span>
-          <span>{formatCurrency(shippingCost)}</span>
-        </div>
-        {voucherDiscount > 0 && (
-          <div className="flex justify-between">
-            <span>Desconto:</span>
-            <span>-{formatCurrency(voucherDiscount)}</span>
-          </div>
-        )}
-        <div className="flex justify-between font-semibold">
-          <span>Total:</span>
-          <span>{formatCurrency(totalWithShipping)}</span>
-        </div>
-
-        <div>
-          <Label htmlFor="installments">Parcelas</Label>
-          <Select value={installments.toString()} onValueChange={(value) => setInstallments(parseInt(value))}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">1x à vista</SelectItem>
-              <SelectItem value="2">2x sem juros</SelectItem>
-              <SelectItem value="3">3x sem juros</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button onClick={handlePayment} disabled={processing}>
-          {processing ? "Processando..." : "Finalizar Pedido"}
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="text-center">
+      {loading ? (
+        <>
+          <p>Processando pagamento...</p>
+          <div className="loader"></div>
+        </>
+      ) : (
+        <p>
+          O total de {formatCurrency(getTotalPrice())} será processado.
+        </p>
+      )}
+    </div>
   );
 };
 

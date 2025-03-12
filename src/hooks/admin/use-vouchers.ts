@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface Voucher {
   id: string;
-  created_at: string;
-  updated_at: string;
   code: string;
   discount_type: string;
   discount_amount: number;
-  min_amount: number;
-  min_items: number;
-  max_uses: number;
-  current_uses: number;
+  min_amount?: number;
+  min_items?: number;
+  payment_method?: string;
   valid_from: string;
-  valid_until: string;
-  payment_method: string;
+  valid_until?: string;
+  max_uses?: number;
+  current_uses: number;
   is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useVouchers = () => {
@@ -25,105 +25,100 @@ export const useVouchers = () => {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const fetchVouchers = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('vouchers')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Erro ao buscar vouchers:', error);
-          setError(error);
-          toast.error('Erro ao buscar vouchers.');
-        }
-
-        if (data) {
-          setVouchers(data.map(voucher => ({
-            ...voucher,
-            is_active: true, // valor padrão para o campo ausente
-          })));
-        }
-      } catch (err: any) {
-        console.error('Erro inesperado ao buscar vouchers:', err);
-        setError(err);
-        toast.error('Erro inesperado ao buscar vouchers.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchVouchers();
   }, []);
 
-  const createVoucher = async (voucher: Omit<Voucher, 'id' | 'created_at' | 'updated_at' | 'current_uses' | 'is_active'>) => {
+  const fetchVouchers = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('vouchers')
-        .insert([
-          {
-            ...voucher,
-            current_uses: 0,
-          },
-        ]);
+      const { data, error } = await supabase
+        .from("vouchers")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error('Erro ao criar voucher:', error);
-        toast.error('Erro ao criar voucher.');
-      } else {
-        toast.success('Voucher criado com sucesso!');
-      }
-    } catch (err: any) {
-      console.error('Erro ao criar voucher:', err);
-      toast.error(`Erro ao criar voucher: ${err.message}`);
+      if (error) throw error;
+      
+      setVouchers(data.map(voucher => ({
+        ...voucher,
+        is_active: voucher.is_active ?? true // Garantir que todos os vouchers tenham is_active
+      })));
+    } catch (err) {
+      console.error("Erro ao buscar vouchers:", err);
+      setError(err instanceof Error ? err : new Error(String(err)));
+      toast.error("Erro ao carregar vouchers");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createVoucher = async (voucher: Omit<Voucher, "id" | "created_at" | "updated_at" | "current_uses" | "is_active">) => {
+    try {
+      const newVoucher = {
+        ...voucher,
+        current_uses: 0,
+        is_active: true
+      };
+
+      const { data, error } = await supabase
+        .from("vouchers")
+        .insert([newVoucher])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setVouchers(prev => [data, ...prev]);
+      toast.success("Voucher criado com sucesso!");
+      return data;
+    } catch (err) {
+      console.error("Erro ao criar voucher:", err);
+      toast.error("Erro ao criar voucher");
+      throw err;
     }
   };
 
   const updateVoucher = async (id: string, updates: Partial<Voucher>) => {
-    setLoading(true);
     try {
-      const { error } = await supabase
-        .from('vouchers')
+      const { data, error } = await supabase
+        .from("vouchers")
         .update(updates)
-        .eq('id', id);
+        .eq("id", id)
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Erro ao atualizar voucher:', error);
-        toast.error('Erro ao atualizar voucher.');
-      } else {
-        toast.success('Voucher atualizado com sucesso!');
-      }
-    } catch (err: any) {
-      console.error('Erro ao atualizar voucher:', err);
-      toast.error(`Erro ao atualizar voucher: ${err.message}`);
-    } finally {
-      setLoading(false);
+      if (error) throw error;
+
+      setVouchers(prev => 
+        prev.map(voucher => 
+          voucher.id === id ? { ...voucher, ...data } : voucher
+        )
+      );
+
+      toast.success("Voucher atualizado com sucesso!");
+      return data;
+    } catch (err) {
+      console.error("Erro ao atualizar voucher:", err);
+      toast.error("Erro ao atualizar voucher");
+      throw err;
     }
   };
 
   const deleteVoucher = async (id: string) => {
-    setLoading(true);
     try {
       const { error } = await supabase
-        .from('vouchers')
+        .from("vouchers")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
-      if (error) {
-        console.error('Erro ao excluir voucher:', error);
-        toast.error('Erro ao excluir voucher.');
-      } else {
-        toast.success('Voucher excluído com sucesso!');
-      }
-    } catch (err: any) {
-      console.error('Erro ao excluir voucher:', err);
-      toast.error(`Erro ao excluir voucher: ${err.message}`);
-    } finally {
-      setLoading(false);
+      if (error) throw error;
+
+      setVouchers(prev => prev.filter(voucher => voucher.id !== id));
+      toast.success("Voucher excluído com sucesso!");
+      return true;
+    } catch (err) {
+      console.error("Erro ao excluir voucher:", err);
+      toast.error("Erro ao excluir voucher");
+      return false;
     }
   };
 
@@ -133,6 +128,6 @@ export const useVouchers = () => {
     error,
     createVoucher,
     updateVoucher,
-    deleteVoucher,
+    deleteVoucher
   };
 };

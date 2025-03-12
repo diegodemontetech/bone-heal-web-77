@@ -1,132 +1,32 @@
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
-import { OrderDetails } from "@/components/admin/order/OrderDetails";
-import OrdersHeader from "@/components/admin/orders/OrdersHeader";
-import OrdersTabs from "@/components/admin/orders/OrdersTabs";
-import OrdersLoading from "@/components/admin/orders/OrdersLoading";
-import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
-import { Order, OrderItem } from "@/types/order";
+// Importar parseJsonObject e parseJsonArray
+import { parseJsonObject, parseJsonArray } from "@/utils/supabaseJsonUtils";
 
-const Orders = () => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState("kanban");
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
-
-  // Buscar pedidos
-  const { data: ordersData, isLoading, error, refetch } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("orders")
-          .select(`
-            *,
-            profiles:user_id (
-              full_name,
-              phone,
-              zip_code,
-              omie_code
-            )
-          `)
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error("Erro ao buscar pedidos:", error);
-          throw error;
-        }
-        
-        console.log("Pedidos carregados:", data);
-        return data || [];
-      } catch (err) {
-        console.error("Erro na consulta de pedidos:", err);
-        throw err;
-      }
+// Na parte onde os pedidos são mapeados, devemos usar as funções parseJson
+const mappedOrders = orders.map(order => {
+  const orderItems = parseJsonArray(order.items, []);
+  const shippingAddress = parseJsonObject(order.shipping_address, {});
+  
+  return {
+    id: order.id,
+    user_id: order.user_id,
+    status: order.status,
+    total: order.total_amount,
+    subtotal: order.subtotal || 0,
+    shipping_cost: order.shipping_fee,
+    payment_method: order.payment_method || 'Não informado',
+    payment_status: order.status === 'completed' ? 'Pago' : 'Pendente',
+    items: orderItems,
+    shipping_address: {
+      zip_code: shippingAddress.zip_code,
+      city: shippingAddress.city,
+      state: shippingAddress.state,
+      address: shippingAddress.address
     },
-  });
-
-  // Processar dados de pedidos
-  const orders: Order[] = (ordersData || []).map(order => {
-    // Processar os itens do pedido
-    const items = parseJsonArray<OrderItem>(order.items, []);
-    
-    // Processar informações de endereço
-    const profileData = parseJsonObject(order.profiles);
-    
-    return {
-      id: order.id,
-      user_id: order.user_id,
-      status: order.status,
-      total: order.total_price || 0,
-      subtotal: order.subtotal || 0,
-      shipping_cost: order.shipping_cost || 0,
-      payment_method: order.payment_method || '',
-      payment_status: order.payment_status || '',
-      items: items,
-      shipping_address: {
-        zip_code: profileData.zip_code || '',
-        city: profileData.city || '',
-        state: profileData.state || '',
-        address: profileData.address || ''
-      },
-      created_at: order.created_at
-    };
-  });
-
-  // Exibir erros com toast
-  useEffect(() => {
-    if (error) {
-      toast.error("Erro ao carregar pedidos. Por favor, tente novamente.");
-      console.error("Erro detalhado:", error);
-    }
-  }, [error]);
-
-  // Mudar para a tab de criação quando clicar no botão
-  useEffect(() => {
-    if (isCreating) {
-      setActiveTab("create");
-    }
-  }, [isCreating]);
-
-  const handleViewOrder = (order: any) => {
-    setSelectedOrder(order);
+    created_at: order.created_at,
+    discount: order.discount,
+    shipping_fee: order.shipping_fee,
+    total_amount: order.total_amount,
+    updated_at: order.updated_at
   };
-
-  if (isLoading) {
-    return <OrdersLoading />;
-  }
-
-  return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="p-6">
-          <OrdersHeader setIsCreating={setIsCreating} />
-          
-          <OrdersTabs
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            isCreating={isCreating}
-            setIsCreating={setIsCreating}
-            orders={orders}
-            error={error}
-            refetch={refetch}
-            onViewOrder={handleViewOrder}
-          />
-        </CardContent>
-      </Card>
-
-      {selectedOrder && (
-        <OrderDetails
-          order={selectedOrder}
-          isOpen={!!selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-        />
-      )}
-    </div>
-  );
-};
-
-export default Orders;
+});

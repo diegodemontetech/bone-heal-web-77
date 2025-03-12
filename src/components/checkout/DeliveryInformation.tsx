@@ -1,12 +1,22 @@
+import { useProfileData } from "@/hooks/use-profile-data";
 
-// O erro indica que está tentando acessar zip_code em um objeto de erro.
-// Adicione verificação de tipo antes de acessar a propriedade:
+const DeliveryInformation = () => {
+  // Remover referências a userData e substitui-las por dados do próprio componente
+  // Por exemplo, em vez de
+  // const { zip_code, address, city, state } = userData;
+  // Usar informações do perfil ou formulário atual
+  const profile = useProfileData();
+  const { zip_code, address, city, state } = profile || {};
 
-if (userData && 'zip_code' in userData) {
-  const zipCode = userData.zip_code || '';
-  // use zipCode aqui
-} else {
-  // Use um valor padrão ou mostre mensagem de erro
-  console.error("Erro ao obter endereço do usuário:", userData);
-  // Talvez tenha que redirecionar ou mostrar uma mensagem
-}
+  return (
+    <div>
+      <h2>Informações de Entrega</h2>
+      <p>CEP: {zip_code}</p>
+      <p>Endereço: {address}</p>
+      <p>Cidade: {city}</p>
+      <p>Estado: {state}</p>
+    </div>
+  );
+};
+
+export default DeliveryInformation;
