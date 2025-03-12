@@ -16,6 +16,7 @@ interface CreateOrderProps {
 }
 
 const CreateOrder = ({ onCancel }: CreateOrderProps) => {
+  // Hook para criar pedido
   const {
     loading,
     createOrder,
@@ -33,6 +34,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     setSelectedShipping
   } = useCreateOrder();
 
+  // Hook para gerenciar clientes
   const {
     customers,
     isLoadingCustomers,
@@ -45,6 +47,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     handleRegistrationSuccess
   } = useOrderCustomers();
 
+  // Hook para gerenciar produtos
   const {
     products,
     isLoadingProducts,
@@ -60,10 +63,14 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
     createOrder(selectedCustomer, selectedProducts, selectedShipping);
   };
 
+  // Cálculos de valores
   const subtotal = calculateTotal(selectedProducts);
   const discount = calculateDiscount(subtotal);
   const shippingCost = selectedShipping?.rate || 0;
   const total = subtotal + shippingCost - discount;
+
+  console.log("Clientes carregados:", customers);
+  console.log("Cliente selecionado:", selectedCustomer);
 
   return (
     <div className="container max-w-6xl mx-auto">
@@ -84,7 +91,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               handleRegistrationSuccess={handleRegistrationSuccess}
             />
 
-            {/* Frete - Adicionado */}
+            {/* Frete - Mostrado apenas quando um cliente estiver selecionado */}
             {selectedCustomer && (
               <div className="mt-6">
                 <ShippingSection 
@@ -96,7 +103,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               </div>
             )}
 
-            {/* Forma de Pagamento - Adicionado */}
+            {/* Forma de Pagamento */}
             <div className="mt-6">
               <PaymentMethodSection 
                 paymentMethod={paymentMethod}
@@ -104,7 +111,7 @@ const CreateOrder = ({ onCancel }: CreateOrderProps) => {
               />
             </div>
             
-            {/* Cupom de Desconto - Novo */}
+            {/* Cupom de Desconto */}
             <div className="mt-6">
               <VoucherSection
                 voucherCode={voucherCode}

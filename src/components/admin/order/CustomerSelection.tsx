@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomerDisplay } from "./CustomerDisplay";
-import { Search, UserPlus, Loader2 } from "lucide-react";
+import { Search, UserPlus, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import RegistrationForm from "@/components/auth/RegistrationForm";
 
@@ -29,6 +29,9 @@ export const CustomerSelection = ({
   setCustomerDialogOpen,
   handleRegistrationSuccess
 }: CustomerSelectionProps) => {
+  console.log("CustomerSelection - clientes disponíveis:", customers);
+  console.log("CustomerSelection - cliente selecionado:", selectedCustomer);
+
   return (
     <div>
       {!selectedCustomer ? (
@@ -37,7 +40,7 @@ export const CustomerSelection = ({
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar cliente por nome ou e-mail..."
+              placeholder="Buscar cliente por nome, e-mail ou telefone..."
               className="pl-8"
               value={customerSearchTerm}
               onChange={(e) => setCustomerSearchTerm(e.target.value)}
@@ -49,7 +52,7 @@ export const CustomerSelection = ({
               <div className="flex justify-center p-4">
                 <Loader2 className="animate-spin h-6 w-6 text-primary" />
               </div>
-            ) : customers.length > 0 ? (
+            ) : customers && customers.length > 0 ? (
               customers.map(customer => (
                 <div
                   key={customer.id}
@@ -57,7 +60,10 @@ export const CustomerSelection = ({
                   onClick={() => setSelectedCustomer(customer)}
                 >
                   <p className="font-medium">{customer.full_name || "Sem nome"}</p>
-                  <p className="text-sm text-muted-foreground">{customer.email || "Sem email"}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {customer.email || "Sem email"}
+                    {customer.phone && ` • ${customer.phone}`}
+                  </p>
                 </div>
               ))
             ) : (
@@ -96,6 +102,7 @@ export const CustomerSelection = ({
             className="w-full"
             onClick={() => setSelectedCustomer(null)}
           >
+            <X className="mr-2 h-4 w-4" />
             Alterar Cliente
           </Button>
         </div>

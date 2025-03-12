@@ -14,26 +14,32 @@ export const useOrderCustomers = () => {
     queryKey: ["customers", customerSearchTerm],
     queryFn: async () => {
       console.log("Buscando clientes com filtro:", customerSearchTerm);
-      let query = supabase
-        .from("profiles")
-        .select("*");
-      
-      if (customerSearchTerm) {
-        query = query.or(`full_name.ilike.%${customerSearchTerm}%,email.ilike.%${customerSearchTerm}%`);
-      }
-      
-      query = query.order("full_name");
+      try {
+        let query = supabase
+          .from("profiles")
+          .select("*");
+        
+        if (customerSearchTerm) {
+          query = query.or(`full_name.ilike.%${customerSearchTerm}%,email.ilike.%${customerSearchTerm}%,phone.ilike.%${customerSearchTerm}%`);
+        }
+        
+        query = query.limit(50).order("full_name");
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
-        console.error("Erro ao buscar clientes:", error);
-        toast.error("Erro ao buscar clientes");
+        if (error) {
+          console.error("Erro ao buscar clientes:", error);
+          toast.error("Erro ao buscar clientes");
+          return [];
+        }
+        
+        console.log(`Encontrados ${data?.length || 0} clientes:`, data);
+        return data || [];
+      } catch (error) {
+        console.error("Erro na consulta de clientes:", error);
+        toast.error("Erro ao consultar clientes");
         return [];
       }
-      
-      console.log(`Encontrados ${data?.length || 0} clientes`);
-      return data || [];
     },
   });
 
