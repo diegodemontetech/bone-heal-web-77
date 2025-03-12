@@ -26,6 +26,7 @@ export const useOrderCustomers = () => {
           query = query.or(`full_name.ilike.%${customerSearchTerm}%,email.ilike.%${customerSearchTerm}%,phone.ilike.%${customerSearchTerm}%`);
         }
         
+        // Não ordenar para evitar possíveis problemas com campo null
         const { data, error } = await query.limit(50);
 
         if (error) {
@@ -35,7 +36,20 @@ export const useOrderCustomers = () => {
         }
         
         console.log(`Encontrados ${data?.length || 0} clientes no Supabase:`, data);
-        return data || [];
+        
+        // Garantir que todos os clientes tenham os campos necessários
+        const formattedCustomers = data?.map(customer => ({
+          id: customer.id,
+          full_name: customer.full_name || "Nome não informado",
+          email: customer.email || "",
+          phone: customer.phone || "",
+          address: customer.address || "",
+          city: customer.city || "",
+          state: customer.state || "",
+          zip_code: customer.zip_code || ""
+        })) || [];
+        
+        return formattedCustomers;
       } catch (error) {
         console.error("Exceção na consulta de clientes:", error);
         toast.error("Erro ao consultar clientes");
