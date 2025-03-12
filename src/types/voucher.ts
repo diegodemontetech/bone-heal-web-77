@@ -2,7 +2,7 @@
 export interface Voucher {
   id: string;
   code: string;
-  discount_type: 'percentage' | 'fixed';
+  discount_type: 'percentage' | 'fixed' | 'shipping';
   discount_amount: number;
   valid_from: string;
   valid_until: string;
@@ -18,7 +18,7 @@ export interface Voucher {
 
 export interface VoucherFormData {
   code: string;
-  discount_type: 'percentage' | 'fixed';
+  discount_type: 'percentage' | 'fixed' | 'shipping';
   discount_amount: number;
   valid_from: string | Date;
   valid_until: string | Date;

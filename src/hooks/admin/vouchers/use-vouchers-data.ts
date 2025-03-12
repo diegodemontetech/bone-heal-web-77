@@ -23,6 +23,7 @@ export const useVouchersData = () => {
         // Garantir que todos os vouchers tenham a propriedade is_active com valor padrão true
         return {
           ...voucher,
+          discount_type: voucher.discount_type as 'percentage' | 'fixed' | 'shipping',
           is_active: voucher.is_active !== undefined ? Boolean(voucher.is_active) : true
         } as Voucher;
       });
