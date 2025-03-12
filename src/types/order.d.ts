@@ -1,20 +1,19 @@
 
-import { Json } from "@/integrations/supabase/types";
-
 export interface OrderItem {
   product_id: string;
+  product_name: string;
   quantity: number;
   price: number;
-  name: string;
+  total_price: number;
 }
 
 export interface Order {
   id: string;
   user_id: string;
   status: string;
-  total: number;
+  total_amount: number;
   subtotal: number;
-  shipping_cost: number;
+  shipping_fee: number;
   payment_method: string;
   payment_status: string;
   items: OrderItem[];
@@ -25,4 +24,6 @@ export interface Order {
     address: string;
   };
   created_at: string;
+  updated_at: string;
+  discount: number;
 }

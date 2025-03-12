@@ -1,56 +1,38 @@
 
+import { Edge, Node } from 'reactflow';
+import { Json } from '@/integrations/supabase/types';
+
 export interface AutomationFlow {
   id: string;
   name: string;
   description: string;
-  nodes: FlowNode[];
-  edges: FlowEdge[];
   is_active: boolean;
+  nodes: Node[];
+  edges: Edge[];
   created_at: string;
   updated_at: string;
 }
 
-export interface FlowNode {
+export interface WhatsAppInstance {
   id: string;
-  type: string;
-  position: {
-    x: number;
-    y: number;
-  };
-  data: {
-    label: string;
-    service: string;
-    action: string;
-    icon?: string;
-    [key: string]: any;
-  };
-}
-
-export interface FlowEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-  targetHandle?: string | null;
-  animated?: boolean;
-}
-
-export interface WorkflowExecution {
-  id: string;
-  flow_id: string;
-  status: "queued" | "running" | "completed" | "failed";
-  trigger_data: any;
-  result: any;
+  name: string;
+  instance_name: string;
+  status: string;
+  qr_code: string;
+  user_id: string;
   created_at: string;
-  started_at: string | null;
-  completed_at: string | null;
+  updated_at: string;
 }
 
-export interface ExecutionLog {
+export interface WhatsAppMessage {
   id: string;
-  execution_id: string;
-  node_id: string;
-  status: "processing" | "completed" | "error";
-  data: any;
+  instance_id: string;
+  from: string;
+  to: string;
+  body: string;
+  type: string;
   timestamp: string;
+  is_sent_by_me: boolean;
+  media_url?: string;
+  media_type?: string;
 }

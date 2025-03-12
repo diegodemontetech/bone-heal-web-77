@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Voucher } from "@/types/voucher";
+import { format } from "date-fns";
 
-export interface Voucher {
-  id: string;
+interface VoucherFormData {
   code: string;
   discount_type: string;
   discount_amount: number;
@@ -13,16 +15,28 @@ export interface Voucher {
   valid_from: string;
   valid_until?: string;
   max_uses?: number;
-  current_uses: number;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 export const useVouchers = () => {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentVoucher, setCurrentVoucher] = useState<Voucher | null>(null);
+  const [formData, setFormData] = useState<VoucherFormData>({
+    code: "",
+    discount_type: "percentage",
+    discount_amount: 0,
+    min_amount: undefined,
+    min_items: undefined,
+    payment_method: undefined,
+    valid_from: new Date().toISOString().split('T')[0],
+    valid_until: undefined,
+    max_uses: undefined,
+    is_active: true
+  });
 
   useEffect(() => {
     fetchVouchers();
@@ -38,10 +52,13 @@ export const useVouchers = () => {
 
       if (error) throw error;
       
-      setVouchers(data.map(voucher => ({
+      // Garantir que todos os vouchers tenham o campo is_active
+      const formattedVouchers = data.map(voucher => ({
         ...voucher,
-        is_active: voucher.is_active ?? true // Garantir que todos os vouchers tenham is_active
-      })));
+        is_active: voucher.is_active ?? true
+      }));
+      
+      setVouchers(formattedVouchers as Voucher[]);
     } catch (err) {
       console.error("Erro ao buscar vouchers:", err);
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -49,6 +66,40 @@ export const useVouchers = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else if (type === "number") {
+      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSelectChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      code: "",
+      discount_type: "percentage",
+      discount_amount: 0,
+      min_amount: undefined,
+      min_items: undefined,
+      payment_method: undefined,
+      valid_from: new Date().toISOString().split('T')[0],
+      valid_until: undefined,
+      max_uses: undefined,
+      is_active: true
+    });
+    setCurrentVoucher(null);
+    setIsEditing(false);
   };
 
   const createVoucher = async (voucher: Omit<Voucher, "id" | "created_at" | "updated_at" | "current_uses" | "is_active">) => {
@@ -67,7 +118,7 @@ export const useVouchers = () => {
 
       if (error) throw error;
 
-      setVouchers(prev => [data, ...prev]);
+      setVouchers(prev => [data as Voucher, ...prev]);
       toast.success("Voucher criado com sucesso!");
       return data;
     } catch (err) {
@@ -90,7 +141,7 @@ export const useVouchers = () => {
 
       setVouchers(prev => 
         prev.map(voucher => 
-          voucher.id === id ? { ...voucher, ...data } : voucher
+          voucher.id === id ? { ...voucher, ...data } as Voucher : voucher
         )
       );
 
@@ -122,10 +173,71 @@ export const useVouchers = () => {
     }
   };
 
+  const openEditDialog = (voucher: Voucher) => {
+    setCurrentVoucher(voucher);
+    setFormData({
+      code: voucher.code,
+      discount_type: voucher.discount_type,
+      discount_amount: voucher.discount_amount,
+      min_amount: voucher.min_amount,
+      min_items: voucher.min_items,
+      payment_method: voucher.payment_method || undefined,
+      valid_from: new Date(voucher.valid_from).toISOString().split('T')[0],
+      valid_until: voucher.valid_until ? new Date(voucher.valid_until).toISOString().split('T')[0] : undefined,
+      max_uses: voucher.max_uses,
+      is_active: voucher.is_active
+    });
+    setIsEditing(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleCreateVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      if (isEditing && currentVoucher) {
+        await updateVoucher(currentVoucher.id, formData);
+      } else {
+        await createVoucher(formData);
+      }
+      
+      setIsDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error("Erro ao salvar voucher:", error);
+    }
+  };
+
+  const handleDeleteVoucher = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este voucher?")) {
+      await deleteVoucher(id);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd/MM/yyyy");
+    } catch (error) {
+      return "Data inválida";
+    }
+  };
+
   return {
     vouchers,
     loading,
     error,
+    isDialogOpen,
+    setIsDialogOpen,
+    isEditing,
+    currentVoucher,
+    formData,
+    handleInputChange,
+    handleSelectChange,
+    resetForm,
+    openEditDialog,
+    handleCreateVoucher,
+    handleDeleteVoucher,
+    formatDate,
     createVoucher,
     updateVoucher,
     deleteVoucher

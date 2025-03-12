@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,9 +11,39 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
+
+interface OrderItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+  total_price: number;
+}
+
+interface Order {
+  id: string;
+  user_id: string;
+  status: string;
+  total_amount: number;
+  subtotal: number;
+  shipping_fee: number;
+  payment_method: string;
+  payment_status: string;
+  items: OrderItem[];
+  shipping_address: {
+    zip_code: string;
+    city: string;
+    state: string;
+    address: string;
+  };
+  created_at: string;
+  updated_at: string;
+  discount: number;
+}
 
 const Orders = () => {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -31,12 +62,52 @@ const Orders = () => {
         // Buscar pedidos do usuário
         const { data, error } = await supabase
           .from('orders')
-          .select('*')
+          .select('*, profiles:user_id(*)')
+          .eq('user_id', sessionData.session.user.id)
           .order('created_at', { ascending: false });
           
         if (error) throw error;
         
-        setOrders(data || []);
+        if (!data) {
+          setOrders([]);
+          return;
+        }
+
+        // Converter os dados para o formato esperado
+        const formattedOrders: Order[] = data.map(order => {
+          // Parse JSON fields
+          const parsedItems = parseJsonArray(order.items, []);
+          const profileData = order.profiles || {};
+          
+          return {
+            id: order.id,
+            user_id: order.user_id,
+            status: order.status,
+            total_amount: order.total_amount,
+            subtotal: order.subtotal || 0,
+            shipping_fee: order.shipping_fee || 0,
+            payment_method: order.payment_method,
+            payment_status: order.payment_status || 'pending',
+            items: parsedItems.map((item: any) => ({
+              product_id: item.product_id,
+              product_name: item.product_name,
+              quantity: item.quantity,
+              price: item.price,
+              total_price: item.total_price
+            })),
+            shipping_address: {
+              zip_code: profileData.zip_code || '',
+              city: profileData.city || '',
+              state: profileData.state || '',
+              address: profileData.address || ''
+            },
+            created_at: order.created_at,
+            updated_at: order.updated_at || order.created_at,
+            discount: order.discount || 0
+          };
+        });
+        
+        setOrders(formattedOrders);
       } catch (error) {
         console.error("Erro ao buscar pedidos:", error);
       } finally {
@@ -123,7 +194,7 @@ const Orders = () => {
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">
-                        {order.items?.length || 0} item(s) • R$ {parseFloat(order.total_amount).toFixed(2)}
+                        {order.items?.length || 0} item(s) • R$ {parseFloat(order.total_amount.toString()).toFixed(2)}
                       </p>
                       <p className="text-sm text-gray-600">
                         Pagamento: {order.payment_method === 'pix' ? 'PIX' : 
