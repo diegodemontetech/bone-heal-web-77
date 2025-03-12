@@ -3,8 +3,9 @@ import { Loader2 } from "lucide-react";
 
 const OrdersLoading = () => {
   return (
-    <div className="p-6 flex justify-center items-center h-[calc(100vh-100px)]">
-      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    <div className="min-h-[400px] flex flex-col items-center justify-center p-6">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <p className="mt-4 text-sm text-gray-500">Carregando pedidos...</p>
     </div>
   );
 };

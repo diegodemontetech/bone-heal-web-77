@@ -1,15 +1,20 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { OrderDetails } from "@/components/admin/order/OrderDetails";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import OrdersKanban from "@/components/admin/orders/OrdersKanban";
+import { OrdersList } from "@/components/admin/orders/OrdersList";
 import OrdersHeader from "@/components/admin/orders/OrdersHeader";
-import OrdersTabs from "@/components/admin/orders/OrdersTabs";
 import OrdersLoading from "@/components/admin/orders/OrdersLoading";
-import { Order, OrderItem, ShippingAddress } from "@/types/order";
+import EmptyOrdersMessage from "@/components/admin/orders/EmptyOrdersMessage";
+import OrdersErrorMessage from "@/components/admin/orders/OrdersErrorMessage";
+import CreateOrder from "@/components/admin/CreateOrder";
+import { Order } from "@/types/order";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
-import { OrderWithJson } from "@/hooks/admin/whatsapp/WhatsAppTypes";
 
 const Orders = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -35,27 +40,12 @@ const Orders = () => {
 
         if (error) throw error;
         
-        return (data as OrderWithJson[])?.map(order => {
-          const parsedItems = parseJsonArray(order.items, []) as OrderItem[];
-          const profileData = order.profiles || {};
-          
-          const shippingAddress: ShippingAddress = {
-            zip_code: order.shipping_address?.zip_code || profileData.zip_code || '',
-            city: order.shipping_address?.city || profileData.city || '',
-            state: order.shipping_address?.state || profileData.state || '',
-            address: order.shipping_address?.address || profileData.address || '',
-            number: order.shipping_address?.number || profileData.endereco_numero || '',
-            complement: order.shipping_address?.complement || profileData.complemento || '',
-            neighborhood: order.shipping_address?.neighborhood || profileData.neighborhood || ''
-          };
-          
-          return {
-            ...order,
-            payment_status: order.payment_status || 'pending',
-            shipping_address: shippingAddress,
-            items: parsedItems
-          } as unknown as Order;
-        }) as Order[];
+        return data?.map(order => ({
+          ...order,
+          payment_status: order.payment_status || 'pending',
+          items: parseJsonArray(order.items, []),
+          shipping_address: order.shipping_address || {}
+        })) as Order[];
       } catch (err) {
         console.error("Erro na consulta de pedidos:", err);
         throw err;
@@ -76,7 +66,7 @@ const Orders = () => {
     }
   }, [isCreating]);
 
-  const handleViewOrder = (order: any) => {
+  const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
   };
 
@@ -85,22 +75,52 @@ const Orders = () => {
   }
 
   return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="p-6">
-          <OrdersHeader setIsCreating={setIsCreating} />
-          
-          <OrdersTabs
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            isCreating={isCreating}
-            setIsCreating={setIsCreating}
-            orders={orders}
-            error={error}
-            refetch={refetch}
-            onViewOrder={handleViewOrder}
-          />
-        </CardContent>
+    <div className="p-6 space-y-6">
+      <Card className="p-6">
+        <OrdersHeader setIsCreating={setIsCreating} />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            <TabsTrigger value="list">Lista</TabsTrigger>
+            <TabsTrigger value="create" disabled={!isCreating}>
+              Novo Pedido
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="kanban" className="mt-6">
+            {error ? (
+              <OrdersErrorMessage refetch={refetch} />
+            ) : orders && orders.length > 0 ? (
+              <OrdersKanban 
+                orders={orders} 
+                refetchOrders={refetch}
+                onViewOrder={handleViewOrder}
+              />
+            ) : (
+              <EmptyOrdersMessage setIsCreating={setIsCreating} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="list" className="mt-6">
+            {orders && orders.length > 0 ? (
+              <OrdersList orders={orders} onViewOrder={handleViewOrder} />
+            ) : (
+              <EmptyOrdersMessage setIsCreating={setIsCreating} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="create" className="mt-6">
+            {isCreating && (
+              <CreateOrder
+                onCancel={() => {
+                  setIsCreating(false);
+                  setActiveTab("kanban");
+                }}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </Card>
 
       {selectedOrder && (
