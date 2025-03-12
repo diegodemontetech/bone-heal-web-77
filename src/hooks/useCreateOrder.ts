@@ -4,52 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { ShippingCalculationRate } from "@/types/shipping";
+import { useOrderValidation } from "./orders/useOrderValidation";
+import { useOrderCalculations } from "./orders/useOrderCalculations";
+import { useOrderPaymentState } from "./orders/useOrderPaymentState";
 
 export const useCreateOrder = () => {
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("pix");
-  const [voucherCode, setVoucherCode] = useState("");
-  const [appliedVoucher, setAppliedVoucher] = useState<any>(null);
-  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
-  const [shippingFee, setShippingFee] = useState(0);
-  const [selectedShipping, setSelectedShipping] = useState<ShippingCalculationRate | null>(null);
   const navigate = useNavigate();
-
-  const validateOrderData = (selectedCustomer: any, selectedProducts: any[]) => {
-    console.log("Validando dados do pedido...");
-
-    if (!selectedCustomer?.id) {
-      throw new Error("Cliente não selecionado");
-    }
-
-    if (selectedProducts.length === 0) {
-      throw new Error("Adicione pelo menos um produto");
-    }
-
-    // Verificação mais básica para permitir pedidos mesmo sem códigos Omie
-    const invalidProducts = selectedProducts.filter(p => !p.price || p.price <= 0);
-    if (invalidProducts.length > 0) {
-      throw new Error(`Os seguintes produtos têm preços inválidos: ${invalidProducts.map(p => p.name).join(", ")}`);
-    }
-
-    return true;
-  };
-
-  const calculateTotal = (selectedProducts: any[]) => {
-    return selectedProducts.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  };
-
-  const calculateDiscount = (subtotal: number) => {
-    if (!appliedVoucher) return 0;
-
-    if (appliedVoucher.discount_type === "percentage") {
-      return (subtotal * appliedVoucher.discount_amount) / 100;
-    } else if (appliedVoucher.discount_type === "fixed") {
-      return Math.min(subtotal, appliedVoucher.discount_amount);
-    }
-    
-    return 0;
-  };
+  const { validateOrderData } = useOrderValidation();
+  const { calculateTotal, calculateDiscount } = useOrderCalculations();
+  const {
+    paymentMethod, setPaymentMethod,
+    voucherCode, setVoucherCode,
+    appliedVoucher, setAppliedVoucher,
+    isApplyingVoucher, setIsApplyingVoucher,
+    shippingFee, setShippingFee,
+    selectedShipping, setSelectedShipping
+  } = useOrderPaymentState();
 
   const createOrder = async (
     selectedCustomer: any, 
@@ -78,7 +49,7 @@ export const useCreateOrder = () => {
 
       const subtotal = calculateTotal(selectedProducts);
       const shippingFee = shippingOption?.rate || 0;
-      const discount = calculateDiscount(subtotal);
+      const discount = calculateDiscount(subtotal, appliedVoucher);
       const total = subtotal + shippingFee - discount;
 
       // Valores padrão para endereço, caso não exista
@@ -136,42 +107,8 @@ export const useCreateOrder = () => {
       
       toast.success("Pedido criado com sucesso!");
       
-      // Opcionalmente criar preferência no MercadoPago
-      try {
-        const { data: prefData, error: prefError } = await supabase.functions.invoke(
-          'mercadopago-checkout',
-          {
-            body: {
-              order_id: order.id,
-              items: orderItems,
-              shipping_cost: shippingFee,
-              discount: discount,
-              payer: {
-                name: selectedCustomer.full_name || "Cliente",
-                email: selectedCustomer.email || "cliente@example.com",
-                identification: {
-                  type: "CPF",
-                  number: selectedCustomer.cpf || "00000000000"
-                }
-              }
-            }
-          }
-        );
-
-        if (prefError) {
-          console.warn("Erro ao criar preferência MP, pedido criado sem opção de pagamento:", prefError);
-        } else if (prefData?.preferenceId) {
-          await supabase
-            .from("orders")
-            .update({
-              mp_preference_id: prefData.preferenceId
-            })
-            .eq("id", order.id);
-          console.log("Preferência MP criada:", prefData.preferenceId);
-        }
-      } catch (mpError) {
-        console.warn("Erro ao processar pagamento, pedido criado sem opção de pagamento:", mpError);
-      }
+      // Tentar criar preferência no MercadoPago
+      await handleMercadoPagoPreference(order.id, orderItems, shippingFee, discount, selectedCustomer);
       
       // Redirecionar para página do pedido
       navigate(`/admin/vendas`);
@@ -183,6 +120,51 @@ export const useCreateOrder = () => {
       return null;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Função auxiliar para criar preferência no MercadoPago
+  const handleMercadoPagoPreference = async (
+    orderId: string, 
+    orderItems: any[], 
+    shippingFee: number, 
+    discount: number, 
+    customer: any
+  ) => {
+    try {
+      const { data: prefData, error: prefError } = await supabase.functions.invoke(
+        'mercadopago-checkout',
+        {
+          body: {
+            order_id: orderId,
+            items: orderItems,
+            shipping_cost: shippingFee,
+            discount: discount,
+            payer: {
+              name: customer.full_name || "Cliente",
+              email: customer.email || "cliente@example.com",
+              identification: {
+                type: "CPF",
+                number: customer.cpf || "00000000000"
+              }
+            }
+          }
+        }
+      );
+
+      if (prefError) {
+        console.warn("Erro ao criar preferência MP, pedido criado sem opção de pagamento:", prefError);
+      } else if (prefData?.preferenceId) {
+        await supabase
+          .from("orders")
+          .update({
+            mp_preference_id: prefData.preferenceId
+          })
+          .eq("id", orderId);
+        console.log("Preferência MP criada:", prefData.preferenceId);
+      }
+    } catch (mpError) {
+      console.warn("Erro ao processar pagamento, pedido criado sem opção de pagamento:", mpError);
     }
   };
 
@@ -198,7 +180,7 @@ export const useCreateOrder = () => {
     setAppliedVoucher,
     isApplyingVoucher,
     setIsApplyingVoucher,
-    calculateDiscount,
+    calculateDiscount: (subtotal: number) => calculateDiscount(subtotal, appliedVoucher),
     shippingFee,
     setShippingFee,
     selectedShipping,
