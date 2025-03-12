@@ -12,7 +12,7 @@ import {
   addSummary,
   addNotes,
   addFooter
-} from "./pdf/pdfSections";
+} from "./pdf/sections";
 import type { QuotationData, EnhancedItem } from "./pdf/types";
 
 export const usePdfGenerator = () => {

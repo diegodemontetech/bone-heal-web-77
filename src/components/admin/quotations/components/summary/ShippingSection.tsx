@@ -130,7 +130,7 @@ const ShippingSection = ({
             name: rate.service_type || 'Padrão',
             id: rate.id,
             region: rate.region,
-            cost: Math.max(15, rate.flat_rate || 15) // Garantir valor mínimo de 15 reais
+            zipCode: cleanZipCode
           }));
         }
       }
@@ -139,7 +139,7 @@ const ShippingSection = ({
       // vamos buscar da API de cálculo de frete
       if (applicableRates.length === 0) {
         // Fazer requisição para a API de cálculo de frete
-        const response = await fetch(`${supabase.functions.url}/correios-shipping`, {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/correios-shipping`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -164,8 +164,7 @@ const ShippingSection = ({
           delivery_days: rate.delivery_days || 5,
           service_type: rate.service_type || 'PAC',
           name: rate.name || rate.service_type || 'Padrão',
-          zipCode: cleanZipCode,
-          cost: Math.max(15, rate.rate || 15) // Garantir valor mínimo de 15 reais
+          zipCode: cleanZipCode
         }));
       }
       
@@ -182,8 +181,7 @@ const ShippingSection = ({
             delivery_days: 7,
             service_type: 'PAC',
             name: 'PAC (Convencional)',
-            zipCode: cleanZipCode,
-            cost: 25.00
+            zipCode: cleanZipCode
           },
           {
             id: 'default-sedex',
@@ -191,8 +189,7 @@ const ShippingSection = ({
             delivery_days: 2,
             service_type: 'SEDEX',
             name: 'SEDEX (Express)',
-            zipCode: cleanZipCode,
-            cost: 45.00
+            zipCode: cleanZipCode
           }
         ];
       }
@@ -214,8 +211,7 @@ const ShippingSection = ({
           delivery_days: 7,
           service_type: 'PAC',
           name: 'PAC (Convencional)',
-          zipCode: zipCode.replace(/\D/g, ''),
-          cost: 25.00
+          zipCode: zipCode.replace(/\D/g, '')
         },
         {
           id: 'default-sedex',
@@ -223,8 +219,7 @@ const ShippingSection = ({
           delivery_days: 2,
           service_type: 'SEDEX',
           name: 'SEDEX (Express)',
-          zipCode: zipCode.replace(/\D/g, ''),
-          cost: 45.00
+          zipCode: zipCode.replace(/\D/g, '')
         }
       ];
       
