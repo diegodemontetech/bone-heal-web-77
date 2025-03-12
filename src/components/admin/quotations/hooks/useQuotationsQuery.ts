@@ -76,18 +76,12 @@ export const useQuotationsQuery = () => {
             ? (quotation.customer.length > 0 ? quotation.customer[0] : null)
             : quotation.customer;
           
-          // Garantir que items seja um array
+          // Garantir que items seja um array e processar cada item corretamente
           let items: QuotationItem[] = [];
+          
+          // Processar o campo items que pode ser um JSON string ou um array
           if (quotation.items) {
-            if (Array.isArray(quotation.items)) {
-              items = quotation.items.map(item => ({
-                product_id: String(item.product_id || ''),
-                product_name: String(item.product_name || ''),
-                quantity: Number(item.quantity || 0),
-                unit_price: Number(item.unit_price || 0),
-                total_price: Number(item.total_price || 0)
-              }));
-            } else if (typeof quotation.items === 'string') {
+            if (typeof quotation.items === 'string') {
               try {
                 const parsedItems = JSON.parse(quotation.items);
                 if (Array.isArray(parsedItems)) {
@@ -102,6 +96,48 @@ export const useQuotationsQuery = () => {
               } catch (e) {
                 console.error("Erro ao parsear items:", e);
               }
+            } else if (Array.isArray(quotation.items)) {
+              items = quotation.items.map(item => {
+                if (typeof item === 'string') {
+                  try {
+                    const parsedItem = JSON.parse(item);
+                    return {
+                      product_id: String(parsedItem.product_id || ''),
+                      product_name: String(parsedItem.product_name || ''),
+                      quantity: Number(parsedItem.quantity || 0),
+                      unit_price: Number(parsedItem.unit_price || 0),
+                      total_price: Number(parsedItem.total_price || 0)
+                    };
+                  } catch (e) {
+                    console.error("Erro ao parsear item individual:", e);
+                    return {
+                      product_id: '',
+                      product_name: '',
+                      quantity: 0,
+                      unit_price: 0,
+                      total_price: 0
+                    };
+                  }
+                } else {
+                  return {
+                    product_id: String(item.product_id || ''),
+                    product_name: String(item.product_name || ''),
+                    quantity: Number(item.quantity || 0),
+                    unit_price: Number(item.unit_price || 0),
+                    total_price: Number(item.total_price || 0)
+                  };
+                }
+              });
+            } else if (typeof quotation.items === 'object') {
+              // Se for um objeto, converter para array com um único item
+              const item = quotation.items;
+              items = [{
+                product_id: String(item.product_id || ''),
+                product_name: String(item.product_name || ''),
+                quantity: Number(item.quantity || 0),
+                unit_price: Number(item.unit_price || 0),
+                total_price: Number(item.total_price || 0)
+              }];
             }
           }
           

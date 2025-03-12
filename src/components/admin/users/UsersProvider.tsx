@@ -1,158 +1,216 @@
-
-import { createContext, useState, useEffect, ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UsersContext } from "./UsersContext";
+import { UserData, NewUser, UsersContextType } from "./types";
 import { UserRole } from "@/types/auth";
-import { UserData, NewUser } from "./types";
-import { availablePermissions } from "./permissions";
+import { useProfile } from "@/hooks/use-profile";
 
-type UsersProviderProps = {
-  children: ReactNode;
-};
+interface UsersProviderProps {
+  children: React.ReactNode;
+}
 
-export const UsersProvider = ({ children }: UsersProviderProps) => {
-  const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
-  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
-  const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
-  const [isAdminMaster, setIsAdminMaster] = useState(false);
+const UsersContext = createContext<UsersContextType | undefined>(undefined);
 
-  // Verificar se o usuário atual é um administrador master
-  useEffect(() => {
-    const checkAdminMaster = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { profile } = useProfile();
 
-      const { data: profile } = await supabase
+  const fetchUsers = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
         .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      setIsAdminMaster(profile?.role === UserRole.ADMIN_MASTER);
-    };
+      if (error) {
+        console.error("Erro ao buscar usuários:", error);
+        setError(error);
+        toast.error("Erro ao buscar usuários. Consulte o console para mais detalhes.");
+      }
 
-    checkAdminMaster();
+      if (data) {
+        const usersData = data.map(user => {
+          const fullName = user.full_name || "Usuário sem nome";
+          return {
+            id: user.id,
+            email: user.email || "Email não disponível",
+            full_name: fullName,
+            role: (user.role || "user") as UserRole,
+            is_admin: user.is_admin || false,
+            created_at: user.created_at,
+            permissions: [],
+            omie_code: user.omie_code,
+            omie_sync: user.omie_sync
+          };
+        });
+        setUsers(usersData);
+      }
+    } catch (err: any) {
+      console.error("Erro inesperado ao buscar usuários:", err);
+      setError(err);
+      toast.error("Erro inesperado ao buscar usuários. Consulte o console para mais detalhes.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const { data: users, isLoading, error, refetch } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
-      console.log("Buscando usuários na UsersProvider...");
-      
-      try {
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("*")
-          .order("created_at", { ascending: false });
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-        if (profilesError) {
-          console.error("Erro ao buscar perfis:", profilesError);
-          throw profilesError;
-        }
-
-        const profilesWithPermissions = await Promise.all(
-          profiles.map(async (profile) => {
-            const { data: permissions, error: permissionsError } = await supabase
-              .from("user_permissions")
-              .select("permission")
-              .eq("user_id", profile.id);
-
-            if (permissionsError) {
-              console.error(`Erro ao buscar permissões para usuário ${profile.id}:`, permissionsError);
-            }
-
-            return {
-              ...profile,
-              full_name: profile.full_name || (profile.nome_cliente || "Usuário sem nome"),
-              email: profile.email || "email@indisponivel.com",
-              role: profile.role || "dentist",
-              is_admin: profile.role === UserRole.ADMIN || profile.role === UserRole.ADMIN_MASTER, // Garantindo que is_admin seja sempre definido
-              permissions: permissions?.map(p => p.permission) || [],
-              created_at: profile.created_at || new Date().toISOString()
-            };
-          })
-        );
-
-        console.log(`UsersProvider carregou ${profilesWithPermissions.length} usuários`);
-        return profilesWithPermissions as UserData[];
-      } catch (error) {
-        console.error("Erro ao carregar usuários:", error);
-        toast.error("Falha ao carregar usuários");
-        throw error;
-      }
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutos
-  });
-
-  const syncOmieUsers = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-omie-users');
-      
-      if (error) {
-        throw error;
-      }
-      
-      await refetch();
-      
-      toast.success(data.message || "Usuários Omie sincronizados com sucesso!");
-      return data;
-    } catch (error: any) {
-      console.error("Erro ao sincronizar usuários Omie:", error);
-      toast.error("Erro ao sincronizar usuários: " + (error.message || "Erro desconhecido"));
-      throw error;
-    }
-  };
-
-  // Implementação dos métodos necessários para UsersContextType
   const createUser = async (user: NewUser) => {
+    setIsLoading(true);
     try {
-      // Implementação para criar usuário
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: user.email,
+        password: user.password,
+        options: {
+          data: {
+            full_name: user.full_name,
+            role: user.role,
+            is_admin: user.role === 'admin' || user.role === 'manager',
+          },
+        },
+      });
+
+      if (authError) {
+        console.error("Erro ao criar usuário:", authError);
+        toast.error(`Erro ao criar usuário: ${authError.message}`);
+        return;
+      }
+
+      if (authData.user?.id) {
+        // Atualizar as permissões do usuário
+        await updateUserPermissions(authData.user.id, user.permissions);
+      }
+
       toast.success("Usuário criado com sucesso!");
-    } catch (error: any) {
-      console.error("Erro ao criar usuário:", error);
-      toast.error("Erro ao criar usuário: " + (error.message || "Erro desconhecido"));
-      throw error;
+      fetchUsers(); // Recarrega a lista de usuários
+    } catch (err: any) {
+      console.error("Erro ao criar usuário:", err);
+      toast.error(`Erro ao criar usuário: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const updateUserPermissions = async (userId: string, permissions: string[]) => {
+    setIsLoading(true);
     try {
-      // Implementação para atualizar permissões
-      toast.success("Permissões atualizadas com sucesso!");
-    } catch (error: any) {
-      console.error("Erro ao atualizar permissões:", error);
-      toast.error("Erro ao atualizar permissões: " + (error.message || "Erro desconhecido"));
-      throw error;
+      // Remover todas as permissões existentes do usuário
+      const { error: deleteError } = await supabase
+        .from("user_permissions")
+        .delete()
+        .eq("user_id", userId);
+
+      if (deleteError) {
+        console.error("Erro ao remover permissões antigas:", deleteError);
+        toast.error("Erro ao remover permissões antigas.");
+        return;
+      }
+
+      // Adicionar as novas permissões
+      const newPermissions = permissions.map(permission => ({
+        user_id: userId,
+        permission: permission,
+      }));
+
+      const { error: insertError } = await supabase
+        .from("user_permissions")
+        .insert(newPermissions);
+
+      if (insertError) {
+        console.error("Erro ao adicionar novas permissões:", insertError);
+        toast.error("Erro ao adicionar novas permissões.");
+        return;
+      }
+
+      toast.success("Permissões do usuário atualizadas com sucesso!");
+      fetchUsers(); // Recarrega a lista de usuários
+    } catch (err: any) {
+      console.error("Erro ao atualizar permissões do usuário:", err);
+      toast.error(`Erro ao atualizar permissões do usuário: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const deleteUser = async (userId: string) => {
+    setIsLoading(true);
     try {
-      // Implementação para excluir usuário
+      // Excluir o usuário da autenticação (se necessário)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+
+      if (authError) {
+        console.error("Erro ao excluir usuário da autenticação:", authError);
+        toast.error("Erro ao excluir usuário da autenticação.");
+        return;
+      }
+
+      // Excluir o perfil do usuário
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", userId);
+
+      if (profileError) {
+        console.error("Erro ao excluir perfil do usuário:", profileError);
+        toast.error("Erro ao excluir perfil do usuário.");
+        return;
+      }
+
       toast.success("Usuário excluído com sucesso!");
-      await refetch();
-    } catch (error: any) {
-      console.error("Erro ao excluir usuário:", error);
-      toast.error("Erro ao excluir usuário: " + (error.message || "Erro desconhecido"));
-      throw error;
+      fetchUsers(); // Recarrega a lista de usuários
+    } catch (err: any) {
+      console.error("Erro ao excluir usuário:", err);
+      toast.error(`Erro ao excluir usuário: ${err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const availablePermissions = [
+    { id: "read:products", label: "Ler Produtos" },
+    { id: "create:products", label: "Criar Produtos" },
+    { id: "update:products", label: "Atualizar Produtos" },
+    { id: "delete:products", label: "Excluir Produtos" },
+    { id: "read:users", label: "Ler Usuários" },
+    { id: "create:users", label: "Criar Usuários" },
+    { id: "update:users", label: "Atualizar Usuários" },
+    { id: "delete:users", label: "Excluir Usuários" },
+    // Adicione mais permissões conforme necessário
+  ];
+
+  const value: UsersContextType = {
+    users,
+    isLoading,
+    error,
+    createUser,
+    updateUserPermissions,
+    deleteUser,
+    availablePermissions,
+  };
+
   return (
-    <UsersContext.Provider
-      value={{
-        users: users || [],
-        isLoading,
-        error: error as Error | null,
-        createUser,
-        updateUserPermissions,
-        deleteUser,
-        availablePermissions
-      }}
-    >
+    <UsersContext.Provider value={value}>
       {children}
     </UsersContext.Provider>
   );
+};
+
+export const useUsers = () => {
+  const context = useContext(UsersContext);
+  if (context === undefined) {
+    throw new Error("useUsers deve ser usado dentro de um UsersProvider");
+  }
+  return context;
 };

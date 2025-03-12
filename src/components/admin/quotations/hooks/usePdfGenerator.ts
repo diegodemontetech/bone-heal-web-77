@@ -50,12 +50,42 @@ export const usePdfGenerator = () => {
     if (error) throw error;
     if (!quotation) throw new Error("Orçamento não encontrado");
 
+    // Processar o campo items, garantindo que seja um array
+    let processedItems = [];
+    if (quotation.items) {
+      if (typeof quotation.items === 'string') {
+        try {
+          processedItems = JSON.parse(quotation.items);
+        } catch (e) {
+          console.error("Erro ao parsear items no PDF:", e);
+          processedItems = [];
+        }
+      } else if (Array.isArray(quotation.items)) {
+        processedItems = quotation.items;
+      }
+    }
+
+    // Processar shipping_info, garantindo que seja um objeto
+    let shippingInfo = { cost: 0 };
+    if (quotation.shipping_info) {
+      if (typeof quotation.shipping_info === 'string') {
+        try {
+          shippingInfo = JSON.parse(quotation.shipping_info);
+        } catch (e) {
+          console.error("Erro ao parsear shipping_info:", e);
+        }
+      } else {
+        shippingInfo = quotation.shipping_info;
+      }
+    }
+
     return {
       ...quotation,
+      items: processedItems,
       subtotal_amount: Number(quotation.subtotal_amount) || 0,
       discount_amount: Number(quotation.discount_amount) || 0,
       shipping_info: {
-        cost: quotation.shipping_info?.cost ? Number(quotation.shipping_info.cost) : 0
+        cost: Number(shippingInfo.cost || 0)
       },
       total_amount: Number(quotation.total_amount) || 0
     };

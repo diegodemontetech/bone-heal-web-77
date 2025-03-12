@@ -25,7 +25,7 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    title: "",
+    subject: "",
     description: "",
     priority: "normal",
     customer_id: null as string | null
@@ -50,17 +50,22 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
     setLoading(true);
 
     try {
+      // Garantir que os campos obrigatórios estejam preenchidos
+      if (!formData.subject || !formData.description || !formData.customer_id) {
+        throw new Error("Preencha todos os campos obrigatórios");
+      }
+
       const { error } = await supabase
         .from("support_tickets")
-        .insert([{
-          subject: formData.title, // Mapear title para subject
+        .insert({
+          subject: formData.subject,
           description: formData.description,
           status: "open",
           priority: formData.priority,
           customer_id: formData.customer_id,
           created_by: profile?.id,
           assigned_to: profile?.id
-        }]);
+        });
 
       if (error) throw error;
 
@@ -77,12 +82,12 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="title">Título</Label>
+        <Label htmlFor="subject">Título</Label>
         <Input
-          id="title"
+          id="subject"
           required
-          value={formData.title}
-          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          value={formData.subject}
+          onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
         />
       </div>
 

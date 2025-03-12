@@ -25,18 +25,29 @@ export const useShareWhatsApp = () => {
       const quotationViewUrl = `${window.location.origin}/quotations/view/${quotationId}`;
       
       // Criar uma mensagem para o WhatsApp
-      const customerInfo = quotation.customer_info ? 
-        (typeof quotation.customer_info === 'string' ? 
-          JSON.parse(quotation.customer_info) : quotation.customer_info) : {};
+      let customerInfo = {};
       
-      const customerName = customerInfo.name || "Cliente";
+      if (quotation.customer_info) {
+        if (typeof quotation.customer_info === 'string') {
+          try {
+            customerInfo = JSON.parse(quotation.customer_info);
+          } catch (e) {
+            console.error("Erro ao fazer parse do customer_info:", e);
+            customerInfo = {};
+          }
+        } else {
+          customerInfo = quotation.customer_info;
+        }
+      }
+      
+      const customerName = (customerInfo as any).name || "Cliente";
       const message = `Olá ${customerName}, segue o orçamento solicitado no valor de ${formatCurrency(quotation.total_amount)}. Você pode visualizá-lo pelo link: ${quotationViewUrl}`;
       
       // Codificar a mensagem para URL
       const encodedMessage = encodeURIComponent(message);
       
       // Buscar número de telefone do cliente ou usar um padrão
-      const phone = customerInfo.phone?.replace(/\D/g, '') || "";
+      const phone = (customerInfo as any).phone?.replace(/\D/g, '') || "";
       
       // Criar URL do WhatsApp
       const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;

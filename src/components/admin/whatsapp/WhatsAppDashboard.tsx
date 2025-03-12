@@ -1,556 +1,378 @@
-
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useWhatsAppInstances } from "./hooks/useWhatsAppInstances";
+import { useWhatsAppMessages } from "./hooks/useWhatsAppMessages";
+import { useLeadsQuery } from "../kanban/hooks/useLeadsQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, Send, Plus, QrCode, RefreshCw, Phone } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth-context";
-import { 
-  MessageCircle, 
-  Users, 
-  MoreVertical, 
-  Send,
-  Phone,
-  UserPlus,
-  RefreshCw,
-  ShoppingCart
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-import CreateOrder from "../CreateOrder";
-
+// Interface para mensagens formatadas para exibição
 interface WhatsAppMessage {
   id: string;
-  lead_id: string;
   message: string;
-  direction: 'inbound' | 'outbound';
-  sent_by: 'cliente' | 'bot' | 'agente';
   created_at: string;
-  agent_id?: string;
-  order_id?: string;
-}
-
-interface Lead {
-  id: string;
-  name: string;
-  phone: string;
-  status: string;
-  last_contact: string;
-  intention?: string;
-  needs_human?: boolean;
-  email?: string;
+  sent_by: 'user' | 'contact';
+  is_bot: boolean;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 const WhatsAppDashboard = () => {
   const { profile } = useAuth();
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [message, setMessage] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [createOrderMode, setCreateOrderMode] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("chats");
+  const [qrVisible, setQrVisible] = useState(false);
 
-  // Buscar leads
-  const { data: leads = [], isLoading: isLoadingLeads, refetch: refetchLeads } = useQuery({
-    queryKey: ["whatsapp-leads", refreshKey, statusFilter],
-    queryFn: async () => {
-      let query = supabase
-        .from("leads")
-        .select("*")
-        .order("last_contact", { ascending: false });
-      
-      // Aplicar filtro de status
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter);
-      }
+  const { leads, isLoading: leadsLoading } = useLeadsQuery();
+  const { 
+    instances, 
+    loading: instancesLoading, 
+    createInstance, 
+    refreshQrCode,
+    isCreating
+  } = useWhatsAppInstances();
+  
+  const { 
+    messages, 
+    loading: messagesLoading, 
+    sendMessage,
+    refreshMessages
+  } = useWhatsAppMessages(selectedLeadId || undefined);
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error("Erro ao buscar leads:", error);
-        return [];
-      }
-      
-      return data as Lead[];
-    },
-  });
-
-  // Filtrar leads por termo de busca
-  const filteredLeads = leads.filter(lead => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (lead.name && lead.name.toLowerCase().includes(searchLower)) ||
-      (lead.phone && lead.phone.includes(searchLower)) ||
-      (lead.email && lead.email.toLowerCase().includes(searchLower))
-    );
-  });
-
-  // Buscar mensagens do lead selecionado
-  const { data: messages = [], isLoading: isLoadingMessages, refetch: refetchMessages } = useQuery({
-    queryKey: ["whatsapp-messages", selectedLead?.id, refreshKey],
-    queryFn: async () => {
-      if (!selectedLead) return [];
-
-      const { data, error } = await supabase
-        .from("whatsapp_messages")
-        .select("*")
-        .eq("lead_id", selectedLead.id)
-        .order("created_at");
-
-      if (error) {
-        console.error("Erro ao buscar mensagens:", error);
-        return [];
-      }
-      
-      return data as WhatsAppMessage[];
-    },
-    enabled: !!selectedLead,
-  });
-
-  // Configurar atualizações em tempo real
+  // Selecionar o primeiro lead automaticamente se nenhum estiver selecionado
   useEffect(() => {
-    const leadsChannel = supabase
-      .channel('public:leads')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'leads'
-      }, () => {
-        refetchLeads();
-      })
-      .subscribe();
+    if (!selectedLeadId && leads && leads.length > 0) {
+      setSelectedLeadId(leads[0].id);
+    }
+  }, [leads, selectedLeadId]);
 
-    const messagesChannel = supabase
-      .channel('public:whatsapp_messages')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'whatsapp_messages'
-      }, (payload) => {
-        if (selectedLead && payload.new.lead_id === selectedLead.id) {
-          refetchMessages();
-        } else {
-          // Se for uma nova mensagem de outro lead, atualizar lista de leads
-          refetchLeads();
-        }
-      })
-      .subscribe();
+  // Rolar para a última mensagem quando novas mensagens chegarem
+  useEffect(() => {
+    const chatContainer = document.getElementById("chat-messages");
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  }, [messages]);
 
-    return () => {
-      supabase.removeChannel(leadsChannel);
-      supabase.removeChannel(messagesChannel);
-    };
-  }, [selectedLead, refetchLeads, refetchMessages]);
-
-  // Função para enviar mensagem
   const handleSendMessage = async () => {
-    if (!selectedLead || !message.trim()) return;
-
-    try {
-      // Primeiro registrar mensagem no banco de dados
-      const { data: messageData, error: messageError } = await supabase
-        .from("whatsapp_messages")
-        .insert({
-          lead_id: selectedLead.id,
-          message: message.trim(),
-          direction: 'outbound',
-          sent_by: 'agente',
-          agent_id: profile?.id
-        })
-        .select()
-        .single();
-
-      if (messageError) throw messageError;
-
-      // Atualizar status do lead
-      await supabase
-        .from("leads")
-        .update({
-          status: 'atendido_humano',
-          last_contact: new Date().toISOString()
-        })
-        .eq("id", selectedLead.id);
-
-      // Enviar mensagem via API
-      const { error: sendError } = await supabase
-        .functions
-        .invoke("send-whatsapp", {
-          body: {
-            phone: selectedLead.phone,
-            message: message.trim(),
-            name: selectedLead.name,
-            isAgent: true,
-            agentId: profile?.id
-          }
-        });
-
-      if (sendError) throw sendError;
-
-      setMessage("");
-      refetchMessages();
-    } catch (error: any) {
-      console.error("Erro ao enviar mensagem:", error);
-      toast.error(`Erro ao enviar mensagem: ${error.message}`);
+    if (!newMessage.trim() || !selectedLeadId) return;
+    
+    const success = await sendMessage(newMessage);
+    if (success) {
+      setNewMessage("");
+    } else {
+      toast.error("Erro ao enviar mensagem");
     }
   };
 
-  // Função para mudar status do lead
-  const updateLeadStatus = async (id: string, status: string) => {
-    try {
-      await supabase
-        .from("leads")
-        .update({ status })
-        .eq("id", id);
+  const handleCreateInstance = async () => {
+    if (!profile) return;
+    
+    const instanceName = `${profile.full_name || 'User'}-${new Date().toISOString().slice(0, 10)}`;
+    await createInstance(instanceName);
+    setQrVisible(true);
+    setActiveTab("instances");
+  };
 
-      toast.success(`Status atualizado para: ${status}`);
-      refetchLeads();
-    } catch (error: any) {
-      console.error("Erro ao atualizar status:", error);
-      toast.error(`Erro ao atualizar status: ${error.message}`);
+  const handleRefreshQrCode = async (instanceId: string) => {
+    await refreshQrCode(instanceId);
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd MMM, HH:mm", { locale: ptBR });
+    } catch (e) {
+      return dateString;
     }
   };
 
-  // Função para finalizar o pedido
-  const handleOrderComplete = () => {
-    setCreateOrderMode(false);
-    setRefreshKey(prev => prev + 1);
-    toast.success("Pedido criado com sucesso para o cliente!");
-  };
+  // Formatar mensagens para exibição
+  const formattedMessages: WhatsAppMessage[] = messages.map(message => ({
+    ...message,
+    sent_by: message.direction === 'outgoing' ? 'user' : 'contact'
+  })) as WhatsAppMessage[];
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">Atendimento WhatsApp</h1>
-
-      {createOrderMode && selectedLead ? (
-        <div className="mb-4">
-          <Button 
-            variant="outline" 
-            onClick={() => setCreateOrderMode(false)}
-            className="mb-4"
-          >
-            &larr; Voltar para atendimento
-          </Button>
-          <Card>
-            <CardHeader>
-              <CardTitle>Criar Pedido para {selectedLead.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CreateOrder onCancel={() => setCreateOrderMode(false)} />
-            </CardContent>
-          </Card>
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      {/* Sidebar com lista de leads */}
+      <div className="w-64 border-r bg-background">
+        <div className="p-4 border-b">
+          <h2 className="font-semibold">Conversas</h2>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Lista de Leads */}
-          <Card className="md:col-span-1">
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl flex items-center">
-                  <Users className="w-5 h-5 mr-2" />
-                  Contatos
-                </CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={() => setRefreshKey(prev => prev + 1)}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pb-2">
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Buscar por nome ou telefone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Filtrar por status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="novo">Novos</SelectItem>
-                      <SelectItem value="aguardando">Aguardando</SelectItem>
-                      <SelectItem value="aguardando_atendente">Aguardando Atendente</SelectItem>
-                      <SelectItem value="atendido_bot">Atendido Bot</SelectItem>
-                      <SelectItem value="atendido_humano">Atendido Humano</SelectItem>
-                      <SelectItem value="finalizado">Finalizado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-            <div className="max-h-[calc(100vh-250px)] overflow-y-auto px-6">
-              {isLoadingLeads ? (
-                <div className="flex justify-center p-4">
-                  <p>Carregando contatos...</p>
-                </div>
-              ) : filteredLeads.length > 0 ? (
-                filteredLeads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    className={`p-3 border-b cursor-pointer hover:bg-gray-50 rounded flex justify-between items-center
-                      ${selectedLead?.id === lead.id ? "bg-gray-100" : ""}
-                      ${lead.needs_human ? "border-l-4 border-l-orange-500" : ""}
-                    `}
-                    onClick={() => setSelectedLead(lead)}
-                  >
-                    <div>
-                      <div className="font-medium">{lead.name || "Sem nome"}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Phone className="w-3 h-3" /> {lead.phone}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {lead.intention ? 
-                          <span className="bg-blue-100 text-blue-800 px-1 rounded text-xs">
-                            {lead.intention}
-                          </span> : null
-                        }
-                        {" "}
-                        <span className={`px-1 rounded text-xs ${
-                          lead.status === 'novo' ? 'bg-green-100 text-green-800' :
-                          lead.status === 'aguardando_atendente' ? 'bg-orange-100 text-orange-800' :
-                          lead.status === 'atendido_humano' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {lead.status}
-                        </span>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setSelectedLead(lead)}>
-                          <MessageCircle className="w-4 h-4 mr-2" /> 
-                          Conversar
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel>Alterar Status</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => updateLeadStatus(lead.id, 'novo')}>
-                          Novo
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateLeadStatus(lead.id, 'aguardando')}>
-                          Aguardando
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateLeadStatus(lead.id, 'atendido_humano')}>
-                          Atendido Humano
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateLeadStatus(lead.id, 'finalizado')}>
-                          Finalizado
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  Nenhum contato encontrado
-                </div>
-              )}
+        
+        <ScrollArea className="h-[calc(100vh-8rem)]">
+          {leadsLoading ? (
+            <div className="flex justify-center p-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          </Card>
-
-          {/* Chat com Lead selecionado */}
-          <Card className="md:col-span-2">
-            {selectedLead ? (
-              <>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-xl">
-                      {selectedLead.name || "Contato"}
-                      <div className="text-sm font-normal text-muted-foreground">
-                        {selectedLead.phone}
-                        {selectedLead.email && ` • ${selectedLead.email}`}
-                      </div>
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Dados
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Dados do Cliente</DialogTitle>
-                            <DialogDescription>
-                              Visualize e edite informações do cliente
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <label className="text-right">Nome</label>
-                              <Input 
-                                value={selectedLead.name || ''} 
-                                className="col-span-3"
-                                readOnly
-                              />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <label className="text-right">Telefone</label>
-                              <Input 
-                                value={selectedLead.phone || ''} 
-                                className="col-span-3"
-                                readOnly
-                              />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <label className="text-right">Email</label>
-                              <Input 
-                                value={selectedLead.email || ''} 
-                                className="col-span-3"
-                                readOnly
-                              />
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <label className="text-right">Status</label>
-                              <Select 
-                                value={selectedLead.status} 
-                                onValueChange={(value) => updateLeadStatus(selectedLead.id, value)}
-                              >
-                                <SelectTrigger className="col-span-3">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="novo">Novo</SelectItem>
-                                  <SelectItem value="aguardando">Aguardando</SelectItem>
-                                  <SelectItem value="aguardando_atendente">Aguardando Atendente</SelectItem>
-                                  <SelectItem value="atendido_bot">Atendido Bot</SelectItem>
-                                  <SelectItem value="atendido_humano">Atendido Humano</SelectItem>
-                                  <SelectItem value="finalizado">Finalizado</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-
-                      <Button 
-                        variant="default"
-                        onClick={() => setCreateOrderMode(true)}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Criar Pedido
-                      </Button>
+          ) : leads && leads.length > 0 ? (
+            <div className="space-y-1 p-2">
+              {leads.map((lead) => (
+                <Button
+                  key={lead.id}
+                  variant={selectedLeadId === lead.id ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setSelectedLeadId(lead.id)}
+                >
+                  <div className="flex items-center">
+                    <Avatar className="h-8 w-8 mr-2">
+                      <AvatarFallback>
+                        {(lead.name || "").substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-left">
+                      <p className="text-sm font-medium truncate w-36">
+                        {lead.name || lead.phone}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(lead.last_contact || lead.created_at)}
+                      </p>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="h-[calc(100vh-300px)] flex flex-col">
-                  <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-                    {isLoadingMessages ? (
-                      <div className="flex justify-center p-4">
-                        <p>Carregando mensagens...</p>
-                      </div>
-                    ) : messages.length > 0 ? (
-                      messages.map((msg) => (
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-muted-foreground">
+              Nenhum lead encontrado
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+
+      {/* Área principal */}
+      <div className="flex-1 flex flex-col">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <div className="border-b px-4 py-2">
+            <TabsList>
+              <TabsTrigger value="chats" className="flex items-center">
+                <Phone className="h-4 w-4 mr-2" />
+                Conversas
+              </TabsTrigger>
+              <TabsTrigger value="instances" className="flex items-center">
+                <QrCode className="h-4 w-4 mr-2" />
+                Instâncias
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="chats" className="flex-1 flex flex-col p-0 m-0">
+            {selectedLeadId ? (
+              <>
+                {/* Cabeçalho do chat */}
+                <div className="p-4 border-b flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Avatar className="h-10 w-10 mr-2">
+                      <AvatarFallback>
+                        {leads?.find(l => l.id === selectedLeadId)?.name?.substring(0, 2).toUpperCase() || "CL"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold">
+                        {leads?.find(l => l.id === selectedLeadId)?.name || "Cliente"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {leads?.find(l => l.id === selectedLeadId)?.phone || ""}
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => refreshMessages()}
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Área de mensagens */}
+                <ScrollArea 
+                  id="chat-messages" 
+                  className="flex-1 p-4"
+                >
+                  {messagesLoading ? (
+                    <div className="flex justify-center p-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : formattedMessages.length > 0 ? (
+                    <div className="space-y-4">
+                      {formattedMessages.map((msg) => (
                         <div
                           key={msg.id}
                           className={`flex ${
-                            msg.direction === "inbound" ? "justify-start" : "justify-end"
+                            msg.sent_by === "user" ? "justify-end" : "justify-start"
                           }`}
                         >
                           <div
-                            className={`max-w-[75%] rounded-lg p-3 ${
-                              msg.direction === "inbound"
-                                ? "bg-gray-100"
-                                : msg.sent_by === 'bot' 
-                                  ? "bg-blue-100" 
-                                  : "bg-green-100"
+                            className={`max-w-[70%] rounded-lg p-3 ${
+                              msg.sent_by === "user"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
                             }`}
                           >
-                            <div className="whitespace-pre-wrap">{msg.message}</div>
-                            <div className="text-xs text-gray-500 mt-1 flex justify-between">
-                              <span>
-                                {new Date(msg.created_at).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </span>
-                              {msg.direction === "outbound" && (
-                                <span className="ml-2">
-                                  {msg.sent_by === 'bot' ? 'Bot' : 'Atendente'}
-                                </span>
-                              )}
-                            </div>
+                            {msg.media_url && (
+                              <div className="mb-2">
+                                {msg.media_type?.startsWith("image/") ? (
+                                  <img
+                                    src={msg.media_url}
+                                    alt="Imagem"
+                                    className="rounded max-h-48 max-w-full"
+                                  />
+                                ) : (
+                                  <a
+                                    href={msg.media_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 underline"
+                                  >
+                                    Ver anexo
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                            <p>{msg.message}</p>
+                            <p
+                              className={`text-xs mt-1 ${
+                                msg.sent_by === "user"
+                                  ? "text-primary-foreground/70"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {formatDate(msg.created_at)}
+                              {msg.is_bot && " • Bot"}
+                            </p>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        Nenhuma mensagem encontrada para este contato.
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-auto">
-                    <div className="flex items-center space-x-2">
-                      <Textarea
-                        placeholder="Digite sua mensagem..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                      <Button onClick={handleSendMessage} size="icon">
-                        <Send className="h-4 w-4" />
-                      </Button>
+                      ))}
                     </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground p-4">
+                      Nenhuma mensagem encontrada. Inicie uma conversa!
+                    </div>
+                  )}
+                </ScrollArea>
+
+                {/* Área de input */}
+                <div className="p-4 border-t">
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Digite sua mensagem..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                      <Send className="h-4 w-4" />
+                    </Button>
                   </div>
-                </CardContent>
+                </div>
               </>
             ) : (
-              <CardContent className="h-[calc(100vh-200px)] flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p>Selecione um contato para iniciar a conversa</p>
-                </div>
-              </CardContent>
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                Selecione um lead para iniciar uma conversa
+              </div>
             )}
-          </Card>
-        </div>
-      )}
+          </TabsContent>
+
+          <TabsContent value="instances" className="flex-1 p-4 m-0">
+            <div className="mb-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Instâncias do WhatsApp</h2>
+              <Button onClick={handleCreateInstance} disabled={isCreating}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Instância
+              </Button>
+            </div>
+
+            {instancesLoading ? (
+              <div className="flex justify-center p-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : instances.length > 0 ? (
+              <div className="grid gap-4 md:grid-cols-2">
+                {instances.map((instance) => (
+                  <Card key={instance.id}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{instance.instance_name}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm font-medium">Status:</p>
+                          <p className="text-sm">
+                            <span
+                              className={`inline-block w-2 h-2 rounded-full mr-2 ${
+                                instance.status === "connected"
+                                  ? "bg-green-500"
+                                  : instance.status === "connecting"
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
+                              }`}
+                            ></span>
+                            {instance.status === "connected"
+                              ? "Conectado"
+                              : instance.status === "connecting"
+                              ? "Conectando"
+                              : "Desconectado"}
+                          </p>
+                        </div>
+
+                        {instance.qr_code && (
+                          <div>
+                            <p className="text-sm font-medium mb-2">QR Code:</p>
+                            <img
+                              src={`data:image/png;base64,${instance.qr_code}`}
+                              alt="QR Code"
+                              className="w-full max-w-[200px] mx-auto"
+                            />
+                          </div>
+                        )}
+
+                        <div className="pt-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleRefreshQrCode(instance.id)}
+                            className="w-full"
+                          >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Atualizar QR Code
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-8 border rounded-lg">
+                <QrCode className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">Nenhuma instância encontrada</h3>
+                <p className="text-muted-foreground mb-4">
+                  Crie uma nova instância para começar a usar o WhatsApp.
+                </p>
+                <Button onClick={handleCreateInstance} disabled={isCreating}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Instância
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };

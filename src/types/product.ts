@@ -11,7 +11,7 @@ export interface Product {
   gallery?: string[];
   price?: number;
   video_url?: string;
-  technical_details?: Record<string, any>;
+  technical_details?: Record<string, any> | null;
   documents?: Record<string, string>;
   created_at?: string;
   updated_at?: string;
@@ -20,5 +20,8 @@ export interface Product {
   omie_last_update?: string;
   active?: boolean;
   weight?: number;
+  height?: number;
+  width?: number;
+  length?: number;
   categories?: string[]; // Mantemos no tipo, mas não enviamos para o banco
 }
