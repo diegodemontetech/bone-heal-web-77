@@ -30,6 +30,26 @@ export const usePipelineActions = (
     }
   };
 
+  // Define tipos explícitos para evitar recursão infinita
+  interface StageInsert {
+    name: string;
+    color: string;
+    pipeline_id: string;
+    order: number;
+  }
+
+  interface FieldInsert {
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    display_in_kanban: boolean;
+    options?: string[] | null;
+    mask?: string | null;
+    default_value?: string | null;
+    pipeline_id: string;
+  }
+
   const duplicatePipeline = async (id: string) => {
     setIsLoading(true);
     try {
@@ -63,14 +83,6 @@ export const usePipelineActions = (
       if (stagesError) throw stagesError;
 
       if (stages && stages.length > 0) {
-        // Definir tipo explicitamente
-        interface StageInsert {
-          name: string;
-          color: string;
-          pipeline_id: string;
-          order: number;
-        }
-
         const newStages: StageInsert[] = stages.map((stage: any) => ({
           name: stage.name,
           color: stage.color,
@@ -90,19 +102,6 @@ export const usePipelineActions = (
       if (fieldsError) throw fieldsError;
 
       if (fields && fields.length > 0) {
-        // Definir tipo explicitamente
-        interface FieldInsert {
-          name: string;
-          label: string;
-          type: string;
-          required: boolean;
-          display_in_kanban: boolean;
-          options?: string[] | null;
-          mask?: string | null;
-          default_value?: string | null;
-          pipeline_id: string;
-        }
-
         const newFields: FieldInsert[] = fields.map((field: any) => ({
           name: field.name,
           label: field.label,

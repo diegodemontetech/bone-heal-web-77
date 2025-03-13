@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Dialog,
@@ -69,7 +70,10 @@ export function CategoryForm({ open, onClose, onSuccess, department, category }:
         // Create new category
         const { error } = await supabase
           .from("product_categories")
-          .insert({ name: values.name, department_id: department.id });
+          .insert({ 
+            name: values.name, 
+            department_id: department.id 
+          });
 
         if (error) {
           throw error;

@@ -81,4 +81,5 @@ export interface Lead {
   notes?: string;
   tags?: string[];
   assigned_to?: string;
+  orders?: any[];
 }
