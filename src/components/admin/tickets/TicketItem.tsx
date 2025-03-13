@@ -1,8 +1,9 @@
 
-import { Button } from "@/components/ui/button";
-import { Calendar, MessageSquare, CheckCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { User } from "lucide-react";
 import TicketStatusBadge from "./TicketStatusBadge";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 
@@ -11,79 +12,69 @@ interface TicketItemProps {
   categoryLabels: {
     status: Record<string, string>;
     priority: Record<string, string>;
+    category: Record<string, string>;
   };
 }
 
 const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
+  const navigate = useNavigate();
+
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const getCategoryLabel = (category: string) => {
+    return categoryLabels.category[category] || "Geral";
+  };
+
+  const handleTicketClick = () => {
+    navigate(`/admin/tickets/${ticket.id}`);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center">
-            <h3 className="text-lg font-medium">{ticket.subject}</h3>
-            <span className="ml-2 text-xs text-gray-500">
-              #{ticket.number}
-            </span>
-          </div>
+    <Card 
+      className="hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      onClick={handleTicketClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <Avatar className="h-10 w-10 bg-primary/10 hidden sm:flex">
+            <AvatarFallback className="text-primary">
+              {ticket.customer ? getInitials(ticket.customer.full_name) : "U"}
+            </AvatarFallback>
+          </Avatar>
           
-          <p className="text-gray-600 mt-1 line-clamp-1">{ticket.description}</p>
-          
-          <div className="flex items-center text-sm text-gray-500 mt-2">
-            <span className="inline-flex items-center mr-4">
-              <Calendar className="w-4 h-4 mr-1" />
-              {formatDistanceToNow(new Date(ticket.created_at), { 
-                addSuffix: true, 
-                locale: ptBR 
-              })}
-            </span>
-            <span className="inline-flex items-center mr-4">
-              <MessageSquare className="w-4 h-4 mr-1" />
-              {ticket.ticket_messages ? ticket.ticket_messages.length : 0} mensagens
-            </span>
-            {ticket.category && (
-              <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
-                {categoryLabels.status[ticket.category] || ticket.category}
+          <div className="flex-1 space-y-1">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <h3 className="font-medium text-sm sm:text-base">{ticket.subject}</h3>
+              <div className="flex flex-wrap gap-2">
+                <TicketStatusBadge status={ticket.status} label={categoryLabels.status[ticket.status]} />
+                <TicketPriorityBadge priority={ticket.priority} label={categoryLabels.priority[ticket.priority]} />
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row justify-between text-sm text-gray-500">
+              <div className="space-x-2">
+                <span>
+                  {ticket.customer ? ticket.customer.full_name : "Cliente não identificado"}
+                </span>
+                <span className="hidden sm:inline">•</span>
+                <span className="hidden sm:inline">{getCategoryLabel(ticket.category)}</span>
+              </div>
+              <span className="text-xs mt-1 sm:mt-0">
+                {format(new Date(ticket.created_at), "dd/MM/yyyy HH:mm")}
               </span>
-            )}
+            </div>
           </div>
         </div>
-        
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex space-x-2">
-            <TicketStatusBadge status={ticket.status} />
-            <TicketPriorityBadge priority={ticket.priority} />
-          </div>
-          
-          <div className="text-sm text-gray-600">
-            {ticket.customer?.full_name}
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex justify-end mt-4">
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="mr-2"
-          onClick={() => window.open(`/support/tickets/${ticket.id}`, '_blank')}
-        >
-          Ver detalhes
-        </Button>
-        
-        {ticket.status === 'open' && (
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-            Assumir ticket
-          </Button>
-        )}
-        
-        {ticket.status === 'in_progress' && (
-          <Button size="sm" className="bg-green-600 hover:bg-green-700">
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Marcar como resolvido
-          </Button>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { getPriorityBadge, getStatusBadge } from "@/components/support/tickets/T
 
 const SupportTickets = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { profile } = useAuth();
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,8 +26,19 @@ const SupportTickets = () => {
     subject: "",
     description: "",
     priority: "medium",
-    category: ""
+    category: "support"
   });
+
+  // Verificar se há parâmetros de categoria na URL para pré-preencher o modal
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const categoryParam = searchParams.get('category');
+    
+    if (categoryParam) {
+      setTicketData(prev => ({ ...prev, category: categoryParam }));
+      setIsDialogOpen(true);
+    }
+  }, [location]);
 
   useEffect(() => {
     if (profile?.id) {
@@ -108,7 +120,7 @@ const SupportTickets = () => {
         subject: "",
         description: "",
         priority: "medium",
-        category: ""
+        category: "support"
       });
       
       // Atualizar a lista de tickets

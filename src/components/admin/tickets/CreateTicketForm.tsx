@@ -28,7 +28,7 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
     subject: "",
     description: "",
     priority: "normal",
-    category: "",
+    category: "support",
     customer_id: null as string | null
   });
 

@@ -1,25 +1,12 @@
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TicketsList from "./TicketsList";
-import TicketFilters from "./TicketFilters";
-
-const statusOptions = {
-  open: "Aberto",
-  in_progress: "Em Andamento",
-  resolved: "Resolvido",
-  closed: "Fechado"
-};
-
-const priorityOptions = {
-  low: "Baixa",
-  normal: "Normal",
-  high: "Alta",
-  urgent: "Urgente"
-};
+import TicketStatusBadge from "./TicketStatusBadge";
+import TicketPriorityBadge from "./TicketPriorityBadge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, Filter } from "lucide-react";
 
 interface TicketsContentProps {
   tickets: any[] | null;
@@ -28,117 +15,88 @@ interface TicketsContentProps {
 }
 
 const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => {
-  const [status, setStatus] = useState<string | null>(null);
-  const [priority, setPriority] = useState<string | null>(null);
-  const [assignedTo, setAssignedTo] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
 
-  const handleResetFilters = () => {
-    setStatus(null);
-    setPriority(null);
-    setAssignedTo(null);
+  const categoryLabels = {
+    status: {
+      open: 'Aberto',
+      in_progress: 'Em andamento',
+      resolved: 'Resolvido',
+      closed: 'Fechado'
+    },
+    priority: {
+      low: 'Baixa',
+      normal: 'Normal',
+      high: 'Alta',
+      urgent: 'Urgente'
+    },
+    category: {
+      support: 'Suporte Técnico',
+      sales: 'Vendas',
+      logistics: 'Entregas (Logística)',
+      financial: 'Financeiro'
+    }
   };
 
-  // Aplicar filtros na interface (já que os dados vêm filtrados do componente pai)
+  // Filtrar tickets com base na aba ativa e no termo de pesquisa
   const filteredTickets = tickets?.filter(ticket => {
-    let isMatched = true;
-    
-    if (status && ticket.status !== status) {
-      isMatched = false;
+    // Filtrar por status
+    if (activeTab !== 'all' && ticket.status !== activeTab) {
+      return false;
     }
-    
-    if (priority && ticket.priority !== priority) {
-      isMatched = false;
+
+    // Filtrar por termo de pesquisa
+    if (searchTerm.trim() !== '') {
+      const searchLower = searchTerm.toLowerCase();
+      const subjectMatch = ticket.subject?.toLowerCase().includes(searchLower);
+      const customerMatch = ticket.customer?.full_name?.toLowerCase().includes(searchLower);
+      const numberMatch = ticket.number?.toString().includes(searchLower);
+      
+      return subjectMatch || customerMatch || numberMatch;
     }
-    
-    if (assignedTo) {
-      if (assignedTo === "unassigned" && ticket.assigned_to !== null) {
-        isMatched = false;
-      } else if (assignedTo !== "unassigned" && ticket.assigned_to !== assignedTo) {
-        isMatched = false;
-      }
-    }
-    
-    return isMatched;
+
+    return true;
   });
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle>Gerenciamento de Tickets</CardTitle>
-        <CardDescription>
-          Gerencie e acompanhe os chamados de suporte dos clientes.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="all" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <TabsList>
-              <TabsTrigger value="all">Todos</TabsTrigger>
-              <TabsTrigger value="open">Abertos</TabsTrigger>
-              <TabsTrigger value="in_progress">Em Andamento</TabsTrigger>
-              <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TicketFilters
-            statusOptions={statusOptions}
-            priorityOptions={priorityOptions}
-            agents={agents || []}
-            selectedStatus={status}
-            selectedPriority={priority}
-            selectedAgent={assignedTo}
-            onStatusChange={setStatus}
-            onPriorityChange={setPriority}
-            onAgentChange={setAssignedTo}
-            onReset={handleResetFilters}
+    <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
+        <div className="relative flex-1">
+          <Input
+            placeholder="Pesquisar tickets..."
+            className="pl-10 pr-4 py-2"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-2" />
+            Filtros
+          </Button>
+        </div>
+      </div>
 
-          <TabsContent value="all">
-            <TicketsList 
-              tickets={filteredTickets} 
-              isLoading={isLoading}
-              categoryLabels={{
-                status: statusOptions,
-                priority: priorityOptions
-              }}
-            />
-          </TabsContent>
-          
-          <TabsContent value="open">
-            <TicketsList 
-              tickets={filteredTickets?.filter(t => t.status === 'open')} 
-              isLoading={isLoading}
-              categoryLabels={{
-                status: statusOptions,
-                priority: priorityOptions
-              }}
-            />
-          </TabsContent>
-          
-          <TabsContent value="in_progress">
-            <TicketsList 
-              tickets={filteredTickets?.filter(t => t.status === 'in_progress')} 
-              isLoading={isLoading}
-              categoryLabels={{
-                status: statusOptions,
-                priority: priorityOptions
-              }}
-            />
-          </TabsContent>
-          
-          <TabsContent value="resolved">
-            <TicketsList 
-              tickets={filteredTickets?.filter(t => t.status === 'resolved' || t.status === 'closed')} 
-              isLoading={isLoading}
-              categoryLabels={{
-                status: statusOptions,
-                priority: priorityOptions
-              }}
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="all">Todos</TabsTrigger>
+          <TabsTrigger value="open">Abertos</TabsTrigger>
+          <TabsTrigger value="in_progress">Em Andamento</TabsTrigger>
+          <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
+          <TabsTrigger value="closed">Fechados</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab}>
+          <TicketsList 
+            tickets={filteredTickets || []} 
+            isLoading={isLoading} 
+            categoryLabels={categoryLabels}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
