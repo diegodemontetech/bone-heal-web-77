@@ -30,7 +30,7 @@ const ProfileOrders = () => {
       if (error) throw error;
       
       // Converter os dados e garantir que todos os pedidos tenham a propriedade payment_status e items processados
-      return (data || []).map((order) => {
+      return (data || []).map((order: any) => {
         // Processar os items para garantir que são do tipo OrderItem[]
         const processedItems = parseJsonArray(order.items, []).map((item: any) => ({
           product_id: item.product_id || "",
