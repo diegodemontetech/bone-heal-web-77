@@ -116,12 +116,12 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
-// Componente de diálogo com fundo transparente
+// Componente de diálogo com fundo transparente e scroll
 const DialogWithBlur = ({ children, ...props }: DialogPrimitive.DialogProps) => {
   return (
     <Dialog {...props}>
       <DialogOverlay className="bg-black/40 backdrop-blur-sm" />
-      <DialogContent className="bg-white/95 backdrop-blur-sm">
+      <DialogContent className="bg-white/95 backdrop-blur-sm max-h-[90vh] overflow-y-auto">
         {children}
       </DialogContent>
     </Dialog>
