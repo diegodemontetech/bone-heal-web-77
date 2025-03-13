@@ -45,3 +45,9 @@ export interface ApiResponse {
   message: string;
   result?: any;
 }
+
+export interface GeminiAnalysisResult {
+  resposta: string;
+  intencao: string;
+  transferir: boolean;
+}
