@@ -55,9 +55,9 @@ const ProfileTicketDetails = () => {
           return null;
         }
         
-        // Buscar mensagens relacionadas manualmente
+        // Buscar mensagens relacionadas - correção da tabela para ticket_messages
         const { data: messagesData, error: messagesError } = await supabase
-          .from('support_messages')
+          .from('ticket_messages')
           .select('*')
           .eq('ticket_id', id)
           .order('created_at', { ascending: true });
@@ -66,6 +66,7 @@ const ProfileTicketDetails = () => {
           console.error('Erro ao buscar mensagens do ticket:', messagesError);
           return {
             ...ticketData,
+            number: parseInt(ticketData.id.substring(0, 8), 16) % 10000, // Adicionando número
             messages: []
           } as FormattedTicket;
         }
