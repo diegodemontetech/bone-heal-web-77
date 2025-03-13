@@ -22,9 +22,11 @@ interface OrdersKanbanProps {
   orders: Order[];
   onStatusChange?: (orderId: string, newStatus: string) => Promise<void>;
   onOrderAction?: (action: string, orderId: string) => void;
+  refetchOrders?: () => void;
+  onViewOrder?: (order: Order) => void;
 }
 
-const OrdersKanban = ({ orders, onStatusChange, onOrderAction = () => {} }: OrdersKanbanProps) => {
+const OrdersKanban = ({ orders, onStatusChange, onOrderAction = () => {}, refetchOrders, onViewOrder }: OrdersKanbanProps) => {
   const [groupedOrders, setGroupedOrders] = useState<Record<string, Order[]>>({
     new: [],
     paid: [],
@@ -182,6 +184,7 @@ const OrdersKanban = ({ orders, onStatusChange, onOrderAction = () => {} }: Orde
                 index={index}
                 order={order}
                 onOrderAction={onOrderAction}
+                onViewOrder={onViewOrder ? () => onViewOrder(order) : undefined}
               />
             ))}
           </OrderKanbanColumn>

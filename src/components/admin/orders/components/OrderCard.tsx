@@ -19,27 +19,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { formatCurrency } from "@/utils/formatters";
+import { formatCurrency, formatDate, formatShortId } from "@/utils/formatters";
 
 interface OrderCardProps {
   id: string;
   index: number;
   order: any;
   onOrderAction: (action: string, orderId: string) => void;
+  onViewOrder?: () => void;
 }
 
-const OrderCard = ({ id, index, order, onOrderAction }: OrderCardProps) => {
+const OrderCard = ({ id, index, order, onOrderAction, onViewOrder }: OrderCardProps) => {
   const navigate = useNavigate();
-  
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "Data não disponível";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
-  };
-
-  const formatShortId = (id: string) => {
-    return id.substring(0, 8);
-  };
   
   const getPaymentStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -61,6 +52,14 @@ const OrderCard = ({ id, index, order, onOrderAction }: OrderCardProps) => {
     toast.success("Número do pedido copiado!");
   };
 
+  const handleCardClick = () => {
+    if (onViewOrder) {
+      onViewOrder();
+    } else {
+      navigate(`/admin/orders/${order.id}`);
+    }
+  };
+
   return (
     <Draggable draggableId={id} index={index}>
       {(provided) => (
@@ -77,7 +76,7 @@ const OrderCard = ({ id, index, order, onOrderAction }: OrderCardProps) => {
                 <FileText className="h-4 w-4 text-slate-500" />
                 <span 
                   className="font-medium text-slate-800 cursor-pointer hover:text-primary" 
-                  onClick={() => navigate(`/admin/orders/${order.id}`)}
+                  onClick={handleCardClick}
                 >
                   #{formatShortId(order.id)}
                 </span>
@@ -90,7 +89,7 @@ const OrderCard = ({ id, index, order, onOrderAction }: OrderCardProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate(`/admin/orders/${order.id}`)}>
+                  <DropdownMenuItem onClick={handleCardClick}>
                     Ver detalhes
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onOrderAction('sync', order.id)}>
@@ -113,7 +112,7 @@ const OrderCard = ({ id, index, order, onOrderAction }: OrderCardProps) => {
             <div className="flex items-center gap-2 text-sm font-medium text-slate-800 mb-2">
               <User className="h-3.5 w-3.5 text-slate-500" />
               <span className="truncate max-w-[200px]">
-                {order.customer?.full_name || order.shipping?.recipient_name || "Cliente não especificado"}
+                {order.customer?.full_name || order.shipping?.recipient_name || order.profiles?.full_name || "Cliente não especificado"}
               </span>
             </div>
             
