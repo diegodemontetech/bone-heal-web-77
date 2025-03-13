@@ -45,7 +45,7 @@ export const useTickets = () => {
       console.log("Buscando tickets para admin, isAdmin:", isAdminMaster || profile?.is_admin);
       
       try {
-        // Corrigindo a consulta para não tentar criar relações automáticas
+        // Consulta simples sem joins automáticos
         const { data, error } = await supabase
           .from("support_tickets")
           .select("*")
@@ -56,28 +56,38 @@ export const useTickets = () => {
           throw error;
         }
         
-        // Agora vamos buscar os dados relacionados manualmente
+        // Agora vamos buscar os dados relacionados manualmente para cada ticket
         const ticketsWithRelations = await Promise.all(data.map(async (ticket) => {
           // Buscar dados do cliente
           let customer = null;
           if (ticket.customer_id) {
-            const { data: customerData } = await supabase
+            const { data: customerData, error: customerError } = await supabase
               .from("profiles")
               .select("id, full_name, email, phone")
               .eq("id", ticket.customer_id)
               .single();
-            customer = customerData;
+              
+            if (!customerError) {
+              customer = customerData;
+            } else {
+              console.error(`Erro ao buscar cliente para ticket ${ticket.id}:`, customerError);
+            }
           }
           
           // Buscar dados do agente
           let assigned = null;
           if (ticket.assigned_to) {
-            const { data: assignedData } = await supabase
+            const { data: assignedData, error: assignedError } = await supabase
               .from("profiles")
               .select("id, full_name")
               .eq("id", ticket.assigned_to)
               .single();
-            assigned = assignedData;
+              
+            if (!assignedError) {
+              assigned = assignedData;
+            } else {
+              console.error(`Erro ao buscar agente para ticket ${ticket.id}:`, assignedError);
+            }
           }
           
           return {

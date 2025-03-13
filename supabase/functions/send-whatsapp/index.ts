@@ -15,8 +15,17 @@ serve(async (req) => {
 
   try {
     // Obter dados da solicitação
-    const body = await req.json();
-    const { getConfig, phone, message, instanceName = 'default' } = body;
+    const requestData = await req.json().catch(() => null);
+    
+    // Verificar se os dados são válidos
+    if (!requestData) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Dados de requisição inválidos' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+    
+    const { getConfig, phone, message, instanceName = 'default' } = requestData;
 
     // Se estiver apenas verificando configurações
     if (getConfig) {
@@ -61,101 +70,156 @@ serve(async (req) => {
       };
       
       // Verificar status da instância antes de enviar
-      const statusResp = await fetch(`${baseUrl}/${instanceName}/fetchConnectionState`, {
-        method: 'GET',
-        headers
-      });
-      
-      const statusResult = await statusResp.json();
-      console.log("Status da instância:", JSON.stringify(statusResult));
+      try {
+        const statusResp = await fetch(`${baseUrl}/${instanceName}/fetchConnectionState`, {
+          method: 'GET',
+          headers
+        });
+        
+        if (!statusResp.ok) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `Erro ao verificar status da instância: ${statusResp.status} ${statusResp.statusText}` 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+        
+        const statusResult = await statusResp.json();
+        console.log("Status da instância:", JSON.stringify(statusResult));
 
-      if (statusResult.status !== 'connected') {
+        if (statusResult.status !== 'connected') {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: 'Instância não está conectada. Gere o QR Code e escaneie com seu WhatsApp.' 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+      } catch (error) {
+        console.error("Erro ao verificar status da instância:", error);
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'Instância não está conectada. Gere o QR Code e escaneie com seu WhatsApp.' 
+            message: `Erro ao verificar status da instância: ${error.message}` 
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         );
       }
       
       // Enviar mensagem
-      const sendResp = await fetch(`${baseUrl}/${instanceName}/sendText`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ 
-          number: phone, 
-          textMessage: message 
-        })
-      });
-      
-      const sendResult = await sendResp.json();
-      console.log("Resposta do envio:", JSON.stringify(sendResult));
-      
-      // Registrar a mensagem no banco de dados
       try {
-        const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
-        // Verificar se o lead existe ou criar um novo
-        const { data: leadData, error: leadError } = await supabase
-          .from('leads')
-          .select('id')
-          .eq('phone', phone)
-          .single();
-
-        let leadId;
+        const sendResp = await fetch(`${baseUrl}/${instanceName}/sendText`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ 
+            number: phone.replace(/\D/g, ''), // Remover caracteres não numéricos
+            textMessage: message 
+          })
+        });
         
-        if (leadError || !leadData) {
-          // Criar novo lead
-          const { data: newLead, error: newLeadError } = await supabase
-            .from('leads')
-            .insert({
-              phone,
-              name: 'Cliente WhatsApp',
-              status: 'novo',
-              source: 'whatsapp'
-            })
-            .select('id')
-            .single();
-            
-          if (newLeadError) {
-            console.error("Erro ao criar lead:", newLeadError.message);
-          } else {
-            leadId = newLead.id;
-          }
-        } else {
-          leadId = leadData.id;
+        if (!sendResp.ok) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `Erro ao enviar mensagem: ${sendResp.status} ${sendResp.statusText}` 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
         }
+        
+        const sendResult = await sendResp.json();
+        console.log("Resposta do envio:", JSON.stringify(sendResult));
+        
+        // Registrar a mensagem no banco de dados
+        try {
+          const supabaseUrl = Deno.env.get('SUPABASE_URL');
+          const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+          
+          if (!supabaseUrl || !supabaseKey) {
+            console.error("Credenciais do Supabase não definidas");
+            return new Response(
+              JSON.stringify({ 
+                success: sendResult.success, 
+                message: 'Mensagem enviada, mas não foi possível registrá-la no banco de dados',
+                result: sendResult
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          const supabase = createClient(supabaseUrl, supabaseKey);
 
-        if (leadId) {
-          // Registrar mensagem
-          const { error: msgError } = await supabase
-            .from('whatsapp_messages')
-            .insert({
-              lead_id: leadId,
-              message,
-              direction: 'outgoing',
-              is_bot: true
-            });
-            
-          if (msgError) {
-            console.error("Erro ao registrar mensagem:", msgError.message);
+          // Verificar se o lead existe ou criar um novo
+          const { data: leadData, error: leadError } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('phone', phone)
+            .single();
+
+          let leadId;
+          
+          if (leadError || !leadData) {
+            // Criar novo lead
+            const { data: newLead, error: newLeadError } = await supabase
+              .from('leads')
+              .insert({
+                phone,
+                name: 'Cliente WhatsApp',
+                status: 'novo',
+                source: 'whatsapp'
+              })
+              .select('id')
+              .single();
+              
+            if (newLeadError) {
+              console.error("Erro ao criar lead:", newLeadError.message);
+            } else {
+              leadId = newLead.id;
+            }
+          } else {
+            leadId = leadData.id;
           }
+
+          if (leadId) {
+            // Registrar mensagem
+            const { error: msgError } = await supabase
+              .from('whatsapp_messages')
+              .insert({
+                lead_id: leadId,
+                message,
+                direction: 'outgoing',
+                is_bot: true
+              });
+              
+            if (msgError) {
+              console.error("Erro ao registrar mensagem:", msgError.message);
+            }
+          }
+        } catch (dbError) {
+          console.error("Erro ao interagir com banco de dados:", dbError.message);
         }
-      } catch (dbError) {
-        console.error("Erro ao interagir com banco de dados:", dbError.message);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: sendResult.success, 
+            message: sendResult.message || 'Mensagem enviada com sucesso',
+            result: sendResult
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (sendError) {
+        console.error("Erro ao enviar mensagem:", sendError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Erro ao enviar mensagem: ${sendError.message}` 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
       }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: sendResult.success, 
-          message: sendResult.message || 'Mensagem enviada com sucesso',
-          result: sendResult
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     // Verificar se Z-API está configurada como alternativa
@@ -171,28 +235,49 @@ serve(async (req) => {
       }
 
       // Enviar mensagem via Z-API
-      const zApiUrl = `https://api.z-api.io/instances/${zApiInstanceId}/token/${zApiToken}/send-text`;
-      
-      const zApiResp = await fetch(zApiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          phone, 
-          message 
-        })
-      });
-      
-      const zApiResult = await zApiResp.json();
-      console.log("Resposta Z-API:", JSON.stringify(zApiResult));
-      
-      return new Response(
-        JSON.stringify({ 
-          success: zApiResult.status === 'success', 
-          message: 'Mensagem enviada via Z-API',
-          result: zApiResult
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      try {
+        const zApiUrl = `https://api.z-api.io/instances/${zApiInstanceId}/token/${zApiToken}/send-text`;
+        
+        const zApiResp = await fetch(zApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            phone: phone.replace(/\D/g, ''), 
+            message 
+          })
+        });
+        
+        if (!zApiResp.ok) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: `Erro na resposta Z-API: ${zApiResp.status} ${zApiResp.statusText}` 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          );
+        }
+        
+        const zApiResult = await zApiResp.json();
+        console.log("Resposta Z-API:", JSON.stringify(zApiResult));
+        
+        return new Response(
+          JSON.stringify({ 
+            success: zApiResult.status === 'success', 
+            message: 'Mensagem enviada via Z-API',
+            result: zApiResult
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (zApiError) {
+        console.error("Erro ao enviar mensagem via Z-API:", zApiError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            message: `Erro ao enviar mensagem via Z-API: ${zApiError.message}` 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
     }
 
     // Nenhuma API configurada

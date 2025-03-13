@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/hooks/auth/auth-context';
@@ -22,35 +22,49 @@ interface TicketMessage {
 const ProfileTicketDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { profile } = useAuthContext();
+  const navigate = useNavigate();
 
   const { data: ticket, isLoading } = useQuery({
     queryKey: ['ticket', id],
     queryFn: async () => {
       if (!id || !profile?.id) return null;
       
-      const { data, error } = await supabase
-        .from('support_tickets')
-        .select(`
-          *,
-          support_messages(*)
-        `)
-        .eq('id', id)
-        .eq('customer_id', profile.id)
-        .single();
+      try {
+        // Buscar o ticket básico
+        const { data: ticketData, error: ticketError } = await supabase
+          .from('support_tickets')
+          .select('*')
+          .eq('id', id)
+          .eq('customer_id', profile.id)
+          .single();
+          
+        if (ticketError) {
+          console.error('Erro ao buscar ticket:', ticketError);
+          return null;
+        }
         
-      if (error) {
-        console.error('Erro ao buscar ticket:', error);
-        return null;
-      }
-      
-      // Adaptar a estrutura do ticket para o formato esperado pelo componente
-      if (data) {
+        // Buscar mensagens relacionadas
+        const { data: messagesData, error: messagesError } = await supabase
+          .from('support_messages')
+          .select('*')
+          .eq('ticket_id', id)
+          .order('created_at', { ascending: true });
+          
+        if (messagesError) {
+          console.error('Erro ao buscar mensagens do ticket:', messagesError);
+          return {
+            ...ticketData,
+            messages: []
+          };
+        }
+        
+        // Adaptar a estrutura do ticket para o formato esperado pelo componente
         // Criar um número sequencial para o ticket se não existir
-        const ticketNumber = parseInt(data.id.substring(0, 8), 16) % 10000;
+        const ticketNumber = ticketData.number || parseInt(ticketData.id.substring(0, 8), 16) % 10000;
         
         // Formatar as mensagens para atender à interface esperada
-        const messages: TicketMessage[] = Array.isArray(data.support_messages) 
-          ? data.support_messages.map((msg: any) => ({
+        const messages: TicketMessage[] = Array.isArray(messagesData) 
+          ? messagesData.map((msg: any) => ({
               id: msg.id,
               message: msg.message,
               created_at: msg.created_at,
@@ -62,18 +76,19 @@ const ProfileTicketDetails = () => {
           : [];
         
         return {
-          id: data.id,
+          id: ticketData.id,
           number: ticketNumber,
-          subject: data.subject,
-          description: data.description,
-          status: data.status,
-          priority: data.priority,
-          created_at: data.created_at,
+          subject: ticketData.subject,
+          description: ticketData.description,
+          status: ticketData.status,
+          priority: ticketData.priority,
+          created_at: ticketData.created_at,
           messages
         };
+      } catch (error) {
+        console.error('Erro ao processar dados do ticket:', error);
+        return null;
       }
-      
-      return null;
     },
     enabled: !!id && !!profile?.id
   });
