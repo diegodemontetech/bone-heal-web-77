@@ -1,4 +1,3 @@
-
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +23,7 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
           .from("product_departments")
           .select("*")
           .order("name");
+        
         setDepartments(deptData || []);
         
         // Carregar categorias
@@ -31,6 +31,7 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
           .from("product_categories")
           .select("*")
           .order("name");
+        
         setCategories(catData || []);
         
         // Carregar subcategorias
@@ -38,6 +39,7 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
           .from("product_subcategories")
           .select("*")
           .order("name");
+        
         setSubcategories(subData || []);
       } catch (error) {
         console.error("Erro ao carregar dados de categorias:", error);
@@ -70,6 +72,8 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
   }, [selectedCategory, subcategories]);
 
   return (
+    
+
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Informações Básicas</h3>
       
