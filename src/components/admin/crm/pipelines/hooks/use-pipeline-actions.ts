@@ -53,7 +53,7 @@ export const usePipelineActions = (
 
       if (error) throw error;
 
-      // Duplicar estágios do pipeline
+      // Duplicar estágios do pipeline - Simplificando tipos para evitar recursão infinita
       const { data: stages, error: stagesError } = await supabase
         .from("crm_stages")
         .select("*")
@@ -62,7 +62,7 @@ export const usePipelineActions = (
       if (stagesError) throw stagesError;
 
       if (stages && stages.length > 0) {
-        const newStages = stages.map(stage => ({
+        const newStages = stages.map((stage: any) => ({
           name: stage.name,
           color: stage.color,
           pipeline_id: newPipeline.id,
@@ -72,7 +72,7 @@ export const usePipelineActions = (
         await supabase.from("crm_stages").insert(newStages);
       }
 
-      // Duplicar campos do pipeline
+      // Duplicar campos do pipeline - Simplificando tipos para evitar recursão infinita
       const { data: fields, error: fieldsError } = await supabase
         .from("crm_fields")
         .select("*")
@@ -81,7 +81,7 @@ export const usePipelineActions = (
       if (fieldsError) throw fieldsError;
 
       if (fields && fields.length > 0) {
-        const newFields = fields.map(field => ({
+        const newFields = fields.map((field: any) => ({
           name: field.name,
           label: field.label,
           type: field.type,
@@ -96,7 +96,8 @@ export const usePipelineActions = (
         await supabase.from("crm_fields").insert(newFields);
       }
 
-      setPipelines(prevPipelines => [newPipeline, ...prevPipelines]);
+      // Atualizar a lista de pipelines com o novo pipeline
+      setPipelines(prevPipelines => [...prevPipelines, newPipeline]);
       toast.success("Pipeline duplicado com sucesso");
     } catch (err) {
       console.error("Erro ao duplicar pipeline:", err);

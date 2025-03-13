@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { ProductCategory } from "@/types/product";
+import { parseJsonObject, stringifyForSupabase } from "@/utils/supabaseJsonUtils";
 
 interface SubcategoryFormProps {
   subcategory?: any;
@@ -38,7 +38,7 @@ export function SubcategoryForm({ subcategory, open, onClose, onSuccess, cloneFr
       name: subcategory?.name || "",
       category_id: subcategory?.category_id || "",
       description: subcategory?.description || "",
-      default_fields: subcategory?.default_fields || {},
+      default_fields: subcategory?.default_fields ? parseJsonObject(subcategory.default_fields, {}) : {},
     }
   });
 
@@ -75,7 +75,7 @@ export function SubcategoryForm({ subcategory, open, onClose, onSuccess, cloneFr
           if (data) {
             form.setValue("category_id", data.category_id);
             form.setValue("description", data.description || "");
-            form.setValue("default_fields", data.default_fields || {});
+            form.setValue("default_fields", parseJsonObject(data.default_fields, {}));
           }
         } catch (error) {
           console.error("Erro ao carregar dados para clonar:", error);
@@ -90,11 +90,19 @@ export function SubcategoryForm({ subcategory, open, onClose, onSuccess, cloneFr
     try {
       setIsLoading(true);
       
+      // Converter default_fields de Record<string, any> para Json
+      const formattedValues = {
+        name: values.name,
+        category_id: values.category_id,
+        description: values.description,
+        default_fields: stringifyForSupabase(values.default_fields)
+      };
+      
       if (subcategory) {
         // Atualizar subcategoria existente
         const { error } = await supabase
           .from("product_subcategories")
-          .update(values)
+          .update(formattedValues)
           .eq("id", subcategory.id);
           
         if (error) throw error;
@@ -103,7 +111,7 @@ export function SubcategoryForm({ subcategory, open, onClose, onSuccess, cloneFr
         // Criar nova subcategoria
         const { error } = await supabase
           .from("product_subcategories")
-          .insert(values);
+          .insert(formattedValues);
           
         if (error) throw error;
         toast.success("Subcategoria criada com sucesso");

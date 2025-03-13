@@ -1,4 +1,6 @@
 
+import { Json } from "@/integrations/supabase/types";
+
 export interface Product {
   id: string;
   name: string;
@@ -50,7 +52,7 @@ export interface ProductSubcategory {
   category_id: string;
   name: string;
   description?: string;
-  default_fields?: Record<string, any>;
+  default_fields?: Record<string, any> | Json;
   created_at?: string;
   updated_at?: string;
 }

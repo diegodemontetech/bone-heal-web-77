@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,7 +65,11 @@ export function CategoryForm({ category, open, onClose, onSuccess }: CategoryFor
         // Atualizar categoria existente
         const { error } = await supabase
           .from("product_categories")
-          .update(values)
+          .update({
+            name: values.name, // Garantir que name não seja opcional
+            department_id: values.department_id,
+            description: values.description
+          })
           .eq("id", category.id);
           
         if (error) throw error;
@@ -75,7 +78,11 @@ export function CategoryForm({ category, open, onClose, onSuccess }: CategoryFor
         // Criar nova categoria
         const { error } = await supabase
           .from("product_categories")
-          .insert(values);
+          .insert({
+            name: values.name, // Garantir que name não seja opcional
+            department_id: values.department_id,
+            description: values.description
+          });
           
         if (error) throw error;
         toast.success("Categoria criada com sucesso");

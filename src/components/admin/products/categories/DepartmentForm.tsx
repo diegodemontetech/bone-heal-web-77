@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,7 +43,10 @@ export function DepartmentForm({ department, open, onClose, onSuccess }: Departm
         // Atualizar departamento existente
         const { error } = await supabase
           .from("product_departments")
-          .update(values)
+          .update({
+            name: values.name, // Garantir que name não seja opcional
+            description: values.description
+          })
           .eq("id", department.id);
           
         if (error) throw error;
@@ -53,7 +55,10 @@ export function DepartmentForm({ department, open, onClose, onSuccess }: Departm
         // Criar novo departamento
         const { error } = await supabase
           .from("product_departments")
-          .insert(values);
+          .insert({
+            name: values.name, // Garantir que name não seja opcional
+            description: values.description
+          });
           
         if (error) throw error;
         toast.success("Departamento criado com sucesso");

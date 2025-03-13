@@ -10,6 +10,7 @@ import { CategoryForm } from "./CategoryForm";
 import { SubcategoryForm } from "./SubcategoryForm";
 import { ProductDepartment, ProductCategory, ProductSubcategory } from "@/types/product";
 import { Skeleton } from "@/components/ui/skeleton";
+import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,7 +73,14 @@ export default function DepartmentsPage() {
         .order("name");
         
       if (subError) throw subError;
-      setSubcategories(subData || []);
+      
+      // Processar os default_fields para converter de Json para Record<string, any>
+      const processedSubcategories = subData?.map(sub => ({
+        ...sub,
+        default_fields: parseJsonObject(sub.default_fields, {})
+      })) || [];
+      
+      setSubcategories(processedSubcategories);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados");

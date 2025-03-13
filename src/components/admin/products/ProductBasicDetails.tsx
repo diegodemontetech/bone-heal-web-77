@@ -1,9 +1,11 @@
+
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductDepartment, ProductCategory, ProductSubcategory } from "@/types/product";
+import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 const ProductBasicDetails = ({ form }: { form: any }) => {
   const [departments, setDepartments] = useState<ProductDepartment[]>([]);
@@ -40,7 +42,13 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
           .select("*")
           .order("name");
         
-        setSubcategories(subData || []);
+        // Converter default_fields de Json para Record<string, any>
+        const processedSubcategories = subData?.map(sub => ({
+          ...sub,
+          default_fields: parseJsonObject(sub.default_fields, {})
+        })) || [];
+        
+        setSubcategories(processedSubcategories);
       } catch (error) {
         console.error("Erro ao carregar dados de categorias:", error);
       }
