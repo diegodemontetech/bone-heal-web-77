@@ -49,15 +49,17 @@ const ProfileTicketDetails = () => {
         const ticketNumber = parseInt(data.id.substring(0, 8), 16) % 10000;
         
         // Formatar as mensagens para atender à interface esperada
-        const messages = (data.support_messages || []).map((msg: any) => ({
-          id: msg.id,
-          message: msg.message,
-          created_at: msg.created_at,
-          user: {
-            full_name: msg.is_from_customer ? profile.full_name : 'Atendente',
-            is_admin: !msg.is_from_customer
-          }
-        })) as TicketMessage[];
+        const messages: TicketMessage[] = Array.isArray(data.support_messages) 
+          ? data.support_messages.map((msg: any) => ({
+              id: msg.id,
+              message: msg.message,
+              created_at: msg.created_at,
+              user: {
+                full_name: msg.is_from_customer ? profile.full_name : 'Atendente',
+                is_admin: !msg.is_from_customer
+              }
+            }))
+          : [];
         
         return {
           id: data.id,

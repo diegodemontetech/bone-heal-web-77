@@ -9,8 +9,8 @@ import OrdersLoading from '@/components/orders/OrdersLoading';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Order, OrderItem } from '@/types/order';
-import { parseJsonArray } from '@/utils/supabaseJsonUtils';
+import { Order, OrderItem, ShippingAddress } from '@/types/order';
+import { parseJsonArray, parseJsonObject } from '@/utils/supabaseJsonUtils';
 
 const ProfileOrders = () => {
   const { profile, isLoading: isAuthLoading } = useAuthContext();
@@ -30,7 +30,7 @@ const ProfileOrders = () => {
       if (error) throw error;
       
       // Converter os dados e garantir que todos os pedidos tenham a propriedade payment_status e items processados
-      return (data || []).map(order => {
+      return (data || []).map((order) => {
         // Processar os items para garantir que são do tipo OrderItem[]
         const processedItems = parseJsonArray(order.items, []).map((item: any) => ({
           product_id: item.product_id || "",
@@ -41,10 +41,19 @@ const ProfileOrders = () => {
           total_price: item.total_price || (item.price * item.quantity) || 0
         } as OrderItem));
         
+        // Processar shipping_address para garantir que é do tipo ShippingAddress
+        const shippingAddress: ShippingAddress = parseJsonObject(order.shipping_address, {
+          zip_code: "",
+          city: "",
+          state: "",
+          address: ""
+        });
+        
         return {
           ...order,
           payment_status: order.payment_status || 'pending',
-          items: processedItems
+          items: processedItems,
+          shipping_address: shippingAddress
         } as Order;
       });
     },
