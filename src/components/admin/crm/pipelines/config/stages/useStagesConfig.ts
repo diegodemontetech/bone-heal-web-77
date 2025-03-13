@@ -23,12 +23,12 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Garantir que todos os estágios tenham pipeline_id
-      const stagesWithPipeline: StageWithPipeline[] = data.map(stage => ({
+      // Garantir que todos os estágios tenham pipeline_id e name como string
+      const stagesWithPipeline: StageWithPipeline[] = (data || []).map(stage => ({
         ...stage,
         pipeline_id: pipelineId,
         name: stage.name || ''  // Garantir que name é uma string não nula
-      })) as StageWithPipeline[];
+      }));
       
       setStages(stagesWithPipeline);
     } catch (error) {

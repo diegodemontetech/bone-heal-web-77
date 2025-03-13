@@ -21,9 +21,18 @@ export function useSubcategoryForm({
   onSuccess, 
   onClose 
 }: UseSubcategoryFormProps) {
+  // Converter default_fields para Record<string, any> com segurança
+  const convertToRecord = (fields: any): Record<string, any> => {
+    if (typeof fields === 'object' && fields !== null && !Array.isArray(fields)) {
+      return fields as Record<string, any>;
+    }
+    return {};
+  };
+
   const [customFields, setCustomFields] = useState<Record<string, any>>(
-    subcategory?.default_fields as Record<string, any> || {}
+    convertToRecord(subcategory?.default_fields) || {}
   );
+  
   const [loading, setLoading] = useState(false);
 
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -53,7 +62,7 @@ export function useSubcategoryForm({
     defaultValues: {
       name: subcategory?.name || "",
       description: subcategory?.description || "",
-      default_fields: subcategory?.default_fields as Record<string, any> || {}
+      default_fields: convertToRecord(subcategory?.default_fields)
     }
   });
 

@@ -212,7 +212,7 @@ export const useFieldsConfig = (pipelineId: string) => {
     }
   };
 
-  const getDefaultMask = (type: string) => {
+  const getDefaultMask = (type: string): string => {
     switch (type) {
       case "phone":
         return "(99) 99999-9999";
