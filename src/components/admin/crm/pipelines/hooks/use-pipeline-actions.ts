@@ -4,6 +4,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Pipeline } from "@/types/crm";
 
+// Define interfaces para evitar recursão infinita
+interface StageInsert {
+  name: string;
+  color: string;
+  pipeline_id: string;
+  order: number;
+}
+
+interface FieldInsert {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  display_in_kanban: boolean;
+  options?: string[] | null;
+  mask?: string | null;
+  default_value?: string | null;
+  pipeline_id: string;
+}
+
 export const usePipelineActions = (
   pipelines: Pipeline[],
   setPipelines: React.Dispatch<React.SetStateAction<Pipeline[]>>
@@ -29,26 +49,6 @@ export const usePipelineActions = (
       setIsLoading(false);
     }
   };
-
-  // Define tipos explícitos para evitar recursão infinita
-  interface StageInsert {
-    name: string;
-    color: string;
-    pipeline_id: string;
-    order: number;
-  }
-
-  interface FieldInsert {
-    name: string;
-    label: string;
-    type: string;
-    required: boolean;
-    display_in_kanban: boolean;
-    options?: string[] | null;
-    mask?: string | null;
-    default_value?: string | null;
-    pipeline_id: string;
-  }
 
   const duplicatePipeline = async (id: string) => {
     setIsLoading(true);

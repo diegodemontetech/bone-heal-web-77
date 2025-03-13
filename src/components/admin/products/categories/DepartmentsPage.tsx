@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,21 +119,20 @@ export default function DepartmentsPage() {
 
   const handleDeleteItem = async (type: string, id: string) => {
     try {
-      // Determinar a tabela baseada no tipo
-      let tableName = "";
+      let table = "";
       
       if (type === "department") {
-        tableName = "product_departments";
+        table = "product_departments";
       } else if (type === "category") {
-        tableName = "product_categories";
+        table = "product_categories";
       } else if (type === "subcategory") {
-        tableName = "product_subcategories";
+        table = "product_subcategories";
       } else {
         throw new Error("Tipo inválido");
       }
       
       const { error } = await supabase
-        .from(tableName)
+        .from(table)
         .delete()
         .eq("id", id);
 
@@ -141,7 +141,10 @@ export default function DepartmentsPage() {
       if (type === "department") {
         setDepartments(departments.filter(item => item.id !== id));
         setCategories(categories.filter(cat => cat.department_id !== id));
-        setSubcategories(subcategories.filter(sub => sub.category_id !== id));
+        setSubcategories(subcategories.filter(sub => {
+          const category = categories.find(c => c.id === sub.category_id);
+          return category ? category.department_id !== id : true;
+        }));
       } else if (type === "category") {
         setCategories(categories.filter(item => item.id !== id));
         setSubcategories(subcategories.filter(sub => sub.category_id !== id));
