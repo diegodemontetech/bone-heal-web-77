@@ -37,7 +37,7 @@ export function parseJsonArray(jsonData: Json, defaultValue: any[] = []): any[] 
       return Array.isArray(parsed) ? parsed : defaultValue;
     }
     
-    // Outros tipos não podem ser convertidos em array
+    // Se for número, boolean, null, ou objeto não-array, retorna o valor padrão
     return defaultValue;
   } catch (error) {
     console.error("Erro ao converter JSON para array:", error, jsonData);
@@ -66,7 +66,7 @@ export function parseJsonObject(jsonData: Json, defaultValue: object = {}): obje
         : defaultValue;
     }
     
-    // Outros tipos não podem ser convertidos em objeto
+    // Se for número, boolean, null, ou array, retorna o valor padrão
     return defaultValue;
   } catch (error) {
     console.error("Erro ao converter JSON para objeto:", error, jsonData);

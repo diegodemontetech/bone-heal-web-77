@@ -1,70 +1,88 @@
 
-import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback } from "react";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
 import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 export const useShareWhatsApp = () => {
-  const [isSharing, setIsSharing] = useState(false);
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
-  const shareViaWhatsApp = async (quotationId: string) => {
-    setIsSharing(true);
+  const shareViaWhatsApp = useCallback((quotation) => {
+    if (!quotation) {
+      toast.error('Cotação inválida para compartilhamento');
+      return;
+    }
+
     try {
-      // Primeiro buscamos o orçamento
-      const { data: quotation, error } = await supabase
-        .from("quotations")
-        .select("*")
-        .eq("id", quotationId)
-        .single();
-        
-      if (error) throw error;
+      // Extrair dados
+      const customerData = quotation.customer_data || {};
+      const products = quotation.products || [];
       
-      if (!quotation) throw new Error("Falha ao obter dados do orçamento");
+      let shipping = {};
+      if (quotation.shipping_method) {
+        if (typeof quotation.shipping_method === 'string') {
+          shipping = parseJsonObject(quotation.shipping_method, {});
+        } else if (typeof quotation.shipping_method === 'object') {
+          shipping = quotation.shipping_method;
+        }
+      }
+
+      // Calcular totais
+      const subtotal = quotation.subtotal || 0;
+      const discount = quotation.discount || 0;
+      const shippingCost = quotation.shipping_cost || 0;
+      const total = quotation.total || subtotal - discount + shippingCost;
+
+      // Criar mensagem
+      let message = `*Cotação Boneheal #${quotation.id.substring(0, 8)}*\n\n`;
       
-      // Criar o link para visualização do orçamento no próprio site
-      const quotationViewUrl = `${window.location.origin}/quotations/view/${quotationId}`;
+      // Dados do cliente
+      message += `*Cliente:* ${customerData.name || 'N/A'}\n`;
       
-      // Criar uma mensagem para o WhatsApp
-      const customerInfo = parseJsonObject(quotation.customer_info, {});
+      // Produtos
+      message += `\n*Produtos:*\n`;
+      products.forEach((product, index) => {
+        message += `${index + 1}. ${product.name} (${product.quantity}x) - ${formatCurrency(product.price)}\n`;
+      });
       
-      // Acesse as propriedades com segurança e forneça valores padrão
-      const customerName = customerInfo && typeof customerInfo === 'object' && 'name' in customerInfo 
-        ? String(customerInfo.name || 'Cliente') 
-        : "Cliente";
-        
-      const message = `Olá ${customerName}, segue o orçamento solicitado no valor de ${formatCurrency(quotation.total_amount)}. Você pode visualizá-lo pelo link: ${quotationViewUrl}`;
+      // Resumo
+      message += `\n*Resumo:*\n`;
+      message += `Subtotal: ${formatCurrency(subtotal)}\n`;
       
-      // Codificar a mensagem para URL
-      const encodedMessage = encodeURIComponent(message);
-      
-      // Buscar número de telefone do cliente ou usar um padrão
-      const phone = customerInfo && typeof customerInfo === 'object' && 'phone' in customerInfo
-        ? String(customerInfo.phone || '').replace(/\D/g, '')
-        : "";
-      
-      if (!phone) {
-        toast.error("Não foi possível compartilhar: telefone do cliente não encontrado");
-        return;
+      if (discount > 0) {
+        message += `Desconto: ${formatCurrency(discount)}\n`;
       }
       
-      // Criar URL do WhatsApp
-      const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+      if (shippingCost > 0) {
+        const shippingName = shipping && (shipping as any).name ? (shipping as any).name : 'Frete';
+        message += `${shippingName}: ${formatCurrency(shippingCost)}\n`;
+      }
       
-      // Abrir em uma nova janela/aba
+      message += `\n*Total: ${formatCurrency(total)}*\n`;
+      
+      // Observações
+      if (quotation.notes) {
+        message += `\n*Observações:*\n${quotation.notes}\n`;
+      }
+      
+      // Adicionar data
+      const date = new Date(quotation.created_at).toLocaleDateString('pt-BR');
+      message += `\n_Cotação gerada em ${date}_`;
+      
+      // Preparar URL
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+      
+      // Abrir URL
       window.open(whatsappUrl, '_blank');
-      
-      toast.success("Link do WhatsApp aberto para compartilhamento");
     } catch (error) {
       console.error("Erro ao compartilhar via WhatsApp:", error);
-      toast.error("Erro ao compartilhar via WhatsApp");
-    } finally {
-      setIsSharing(false);
+      toast.error("Erro ao preparar mensagem para WhatsApp");
     }
-  };
+  }, []);
 
-  return {
-    isSharing,
-    shareViaWhatsApp
-  };
+  return { shareViaWhatsApp };
 };
