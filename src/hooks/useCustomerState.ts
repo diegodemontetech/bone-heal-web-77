@@ -24,7 +24,7 @@ export const useCustomerState = () => {
 
   const fetchCustomers = async () => {
     try {
-      console.log("Iniciando busca de clientes no Supabase...");
+      console.log("Iniciando busca de clientes na tabela profiles...");
       setIsLoadingCustomers(true);
       
       let query = supabase
@@ -60,7 +60,7 @@ export const useCustomerState = () => {
         omie_sync: customer.omie_sync
       })) : [];
 
-      console.log(`Clientes encontrados no Supabase:`, formattedCustomers);
+      console.log(`Encontrados ${formattedCustomers.length} clientes na tabela profiles`);
       setCustomers(formattedCustomers);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);

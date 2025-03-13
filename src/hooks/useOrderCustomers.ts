@@ -12,11 +12,11 @@ export const useOrderCustomers = () => {
 
   console.log("useOrderCustomers hook inicializado com termo:", customerSearchTerm);
 
-  // Buscar clientes diretamente do Supabase - corrigido para buscar clientes reais
+  // Buscar clientes diretamente da tabela profiles
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["customers", customerSearchTerm],
     queryFn: async () => {
-      console.log("Iniciando busca de clientes no Supabase com termo:", customerSearchTerm);
+      console.log("Iniciando busca de clientes na tabela profiles com termo:", customerSearchTerm);
       try {
         let query = supabase
           .from("profiles")
@@ -43,7 +43,7 @@ export const useOrderCustomers = () => {
           return [];
         }
         
-        console.log(`Encontrados ${data?.length || 0} clientes no Supabase:`, data);
+        console.log(`Encontrados ${data?.length || 0} clientes na tabela profiles:`, data);
         
         // Garantir que todos os clientes tenham os campos necessários
         return data?.map(customer => ({
