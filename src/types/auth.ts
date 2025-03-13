@@ -1,3 +1,4 @@
+
 export interface Session {
   access_token: string;
   token_type: string;
@@ -71,6 +72,13 @@ export enum UserPermission {
   MANAGE_LEADS = 'manage_leads'
 }
 
+export enum UserRole {
+  ADMIN = 'admin',
+  MANAGER = 'manager',
+  STAFF = 'staff',
+  CUSTOMER = 'customer'
+}
+
 export interface UserProfile {
   id: string;
   full_name: string | null;
@@ -78,4 +86,8 @@ export interface UserProfile {
   email: string | null;
   phone: string | null;
   address: string | null;
+  role?: UserRole;
+  is_admin?: boolean;
+  specialty?: string;
+  omie_code?: string;
 }

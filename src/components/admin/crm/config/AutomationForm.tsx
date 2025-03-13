@@ -1,42 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CRMStage } from "@/types/crm";
-
-const automationSchema = z.object({
-  stage: z.string().min(1, "Estágio obrigatório"),
-  next_stage: z.string().optional(),
-  hours_trigger: z.coerce.number().int().nonnegative().optional(),
-  action_type: z.string().min(1, "Tipo de ação obrigatório"),
-  action_data: z.string().min(2, "Dados da ação obrigatórios"),
-});
-
-type AutomationFormValues = z.infer<typeof automationSchema>;
 
 interface AutomationFormProps {
   onSuccess?: () => void;
@@ -45,76 +20,96 @@ interface AutomationFormProps {
 export function AutomationForm({ onSuccess }: AutomationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [stages, setStages] = useState<CRMStage[]>([]);
-
-  const form = useForm<AutomationFormValues>({
-    resolver: zodResolver(automationSchema),
-    defaultValues: {
-      stage: "",
-      next_stage: "",
-      hours_trigger: 24,
-      action_type: "email",
-      action_data: "",
+  const [formData, setFormData] = useState({
+    stage: "",
+    next_stage: "",
+    hours_trigger: 24,
+    action_type: "email",
+    action_data: {
+      subject: "",
+      content: "",
+      to_field: "email"
     },
+    is_active: true
   });
-
-  const watchActionType = form.watch("action_type");
+  const [activeTab, setActiveTab] = useState("email");
 
   useEffect(() => {
-    const fetchStages = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("crm_stages")
-          .select("id, name")
-          .order("name");
-
-        if (error) throw error;
-        setStages(data || []);
-      } catch (error: any) {
-        console.error("Erro ao buscar estágios:", error);
-        toast.error("Erro ao carregar estágios");
-      }
-    };
-
     fetchStages();
   }, []);
 
-  const onSubmit = async (data: AutomationFormValues) => {
+  const fetchStages = async () => {
     try {
-      setIsLoading(true);
-      
-      // Processar dados da ação
-      let actionData: any = {};
-      
-      if (data.action_type === "email") {
-        actionData = {
-          subject: "Assunto padrão",
-          body: data.action_data,
-        };
-      } else if (data.action_type === "webhook") {
-        actionData = {
-          url: data.action_data,
-          method: "POST",
-        };
-      } else if (data.action_type === "n8n") {
-        actionData = {
-          workflow_id: data.action_data,
-        };
+      const { data, error } = await supabase
+        .from("crm_stages")
+        .select("*")
+        .order("order", { ascending: true });
+
+      if (error) {
+        throw error;
       }
-      
+
+      setStages(data || []);
+    } catch (error: any) {
+      console.error("Erro ao buscar estágios:", error);
+      toast.error("Não foi possível carregar os estágios");
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleActionDataChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      action_data: { ...prev.action_data, [name]: value }
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSwitchChange = (checked: boolean) => {
+    setFormData(prev => ({ ...prev, is_active: checked }));
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setFormData(prev => ({ ...prev, action_type: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
       const { error } = await supabase
-        .from("crm_stage_automations")
-        .insert([{ 
-          stage: data.stage,
-          next_stage: data.next_stage || null,
-          hours_trigger: data.hours_trigger || null,
-          action_type: data.action_type,
-          action_data: actionData,
-        }]);
+        .from("crm_automations")
+        .insert([formData]);
 
       if (error) throw error;
-      
+
       toast.success("Automação criada com sucesso!");
-      form.reset();
+      
+      // Reset form
+      setFormData({
+        stage: "",
+        next_stage: "",
+        hours_trigger: 24,
+        action_type: "email",
+        action_data: {
+          subject: "",
+          content: "",
+          to_field: "email"
+        },
+        is_active: true
+      });
+      
+      setActiveTab("email");
       
       if (onSuccess) {
         onSuccess();
@@ -127,181 +122,154 @@ export function AutomationForm({ onSuccess }: AutomationFormProps) {
     }
   };
 
-  const actionTypes = [
-    { value: "email", label: "Enviar E-mail" },
-    { value: "webhook", label: "Webhook" },
-    { value: "n8n", label: "Workflow N8N" },
-  ];
-
   return (
     <Card>
       <CardContent className="p-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="stage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estágio</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o estágio" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {stages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Estágio que ativa a automação
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="stage">Estágio de Trigger</Label>
+                <Select
+                  value={formData.stage}
+                  onValueChange={(value) => handleSelectChange("stage", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um estágio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stages.map((stage) => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="next_stage">Próximo Estágio (opcional)</Label>
+                <Select
+                  value={formData.next_stage}
+                  onValueChange={(value) => handleSelectChange("next_stage", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um estágio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Não mover</SelectItem>
+                    {stages.map((stage) => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             
-            <FormField
-              control={form.control}
-              name="next_stage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Próximo Estágio (opcional)</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o próximo estágio" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">Nenhum (não mover)</SelectItem>
-                      {stages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Estágio para onde o lead será movido após a automação
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <div className="space-y-2">
+              <Label htmlFor="hours_trigger">Gatilho de Tempo (horas)</Label>
+              <Input
+                id="hours_trigger"
+                name="hours_trigger"
+                type="number"
+                value={formData.hours_trigger}
+                onChange={handleChange}
+                min={1}
+              />
+              <p className="text-sm text-muted-foreground">
+                Tempo em horas que o lead deve permanecer no estágio antes da automação ser disparada
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <Label>Tipo de Ação</Label>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList className="grid grid-cols-3 w-full">
+                <TabsTrigger value="email">Email</TabsTrigger>
+                <TabsTrigger value="sms">SMS</TabsTrigger>
+                <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="email" className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Assunto</Label>
+                  <Input
+                    id="subject"
+                    name="subject"
+                    value={formData.action_data.subject}
+                    onChange={handleActionDataChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="content">Conteúdo</Label>
+                  <Textarea
+                    id="content"
+                    name="content"
+                    rows={6}
+                    value={formData.action_data.content}
+                    onChange={handleActionDataChange}
+                  />
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="sms" className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="content">Mensagem SMS</Label>
+                  <Textarea
+                    id="content"
+                    name="content"
+                    rows={3}
+                    value={formData.action_data.content}
+                    onChange={handleActionDataChange}
+                    maxLength={160}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Máximo de 160 caracteres
+                  </p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="whatsapp" className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="content">Mensagem WhatsApp</Label>
+                  <Textarea
+                    id="content"
+                    name="content"
+                    rows={6}
+                    value={formData.action_data.content}
+                    onChange={handleActionDataChange}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="is_active"
+              checked={formData.is_active}
+              onCheckedChange={handleSwitchChange}
             />
-            
-            <FormField
-              control={form.control}
-              name="hours_trigger"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horas para Acionamento</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min="0"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Quantas horas depois de entrar no estágio a automação será acionada (0 = imediato)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="action_type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de Ação</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo de ação" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {actionTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="action_data"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {watchActionType === "email" ? "Corpo do E-mail" : 
-                     watchActionType === "webhook" ? "URL do Webhook" : 
-                     "ID do Workflow N8N"}
-                  </FormLabel>
-                  <FormControl>
-                    {watchActionType === "email" ? (
-                      <Textarea 
-                        placeholder="Conteúdo do e-mail a ser enviado" 
-                        className="min-h-32"
-                        {...field} 
-                      />
-                    ) : (
-                      <Input 
-                        placeholder={
-                          watchActionType === "webhook" ? "https://exemplo.com/webhook" : 
-                          "ID do workflow no N8N"
-                        } 
-                        {...field} 
-                      />
-                    )}
-                  </FormControl>
-                  <FormDescription>
-                    {watchActionType === "email" ? "Você pode usar variáveis como {{nome}} e {{email}}" : 
-                     watchActionType === "webhook" ? "Endpoint que receberá os dados do lead" : 
-                     "Identificador do workflow que será executado no N8N"}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Adicionar Automação
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
+            <Label htmlFor="is_active">Automação Ativa</Label>
+          </div>
+          
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Adicionar Automação
+              </>
+            )}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
