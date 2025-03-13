@@ -1,26 +1,34 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ProductCategory, ProductDepartment, ProductSubcategory } from "@/types/product";
 import { DepartmentForm } from "./DepartmentForm";
 import { CategoryForm } from "./CategoryForm";
 import { SubcategoryForm } from "./SubcategoryForm";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { ProductDepartment, ProductCategory, ProductSubcategory } from "@/types/product";
-import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 
-export default function DepartmentsPage() {
-  const [departmentFormOpen, setDepartmentFormOpen] = useState(false);
-  const [categoryFormOpen, setCategoryFormOpen] = useState(false);
-  const [subcategoryFormOpen, setSubcategoryFormOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState<ProductDepartment | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
+const DepartmentsPage = () => {
   const [departments, setDepartments] = useState<ProductDepartment[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [subcategories, setSubcategories] = useState<ProductSubcategory[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [openDepartmentForm, setOpenDepartmentForm] = useState(false);
+  const [openCategoryForm, setOpenCategoryForm] = useState(false);
+  const [openSubcategoryForm, setOpenSubcategoryForm] = useState(false);
+  
+  const [editDepartment, setEditDepartment] = useState<ProductDepartment | null>(null);
+  const [editCategory, setEditCategory] = useState<ProductCategory | null>(null);
+  const [editSubcategory, setEditSubcategory] = useState<ProductSubcategory | null>(null);
+  
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -29,40 +37,30 @@ export default function DepartmentsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch departments
       const { data: departmentsData, error: departmentsError } = await supabase
         .from("product_departments")
         .select("*")
         .order("name");
 
       if (departmentsError) throw departmentsError;
-      setDepartments(departmentsData as ProductDepartment[]);
+      setDepartments(departmentsData || []);
 
-      // Fetch categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from("product_categories")
         .select("*")
         .order("name");
 
       if (categoriesError) throw categoriesError;
-      setCategories(categoriesData as ProductCategory[]);
+      setCategories(categoriesData || []);
 
-      // Fetch subcategories
       const { data: subcategoriesData, error: subcategoriesError } = await supabase
         .from("product_subcategories")
         .select("*")
         .order("name");
 
       if (subcategoriesError) throw subcategoriesError;
-
-      // Processar os dados para garantir que default_fields seja do tipo correto
-      const processedSubcategories = subcategoriesData.map(subcat => ({
-        ...subcat,
-        default_fields: parseJsonObject(subcat.default_fields)
-      })) as ProductSubcategory[];
-
-      setSubcategories(processedSubcategories);
-    } catch (error: any) {
+      setSubcategories(subcategoriesData || []);
+    } catch (error) {
       console.error("Erro ao buscar dados:", error);
       toast.error("Erro ao carregar dados");
     } finally {
@@ -71,73 +69,60 @@ export default function DepartmentsPage() {
   };
 
   const handleOpenDepartmentForm = () => {
-    setSelectedDepartment(null);
-    setDepartmentFormOpen(true);
+    setEditDepartment(null);
+    setOpenDepartmentForm(true);
   };
 
-  const handleOpenCategoryForm = (department: ProductDepartment) => {
-    setSelectedDepartment(department);
-    setSelectedCategory(null);
-    setCategoryFormOpen(true);
+  const handleOpenCategoryForm = (departmentId: string | null = null) => {
+    setEditCategory(null);
+    setSelectedDepartmentId(departmentId);
+    setOpenCategoryForm(true);
   };
 
-  const handleOpenSubcategoryForm = (category: ProductCategory) => {
-    setSelectedCategory(category);
-    setSubcategoryFormOpen(true);
+  const handleOpenSubcategoryForm = (categoryId: string | null = null) => {
+    setEditSubcategory(null);
+    setSelectedCategoryId(categoryId);
+    setOpenSubcategoryForm(true);
   };
 
-  const handleCloseDepartmentForm = () => {
-    setDepartmentFormOpen(false);
-    fetchData();
-  };
-
-  const handleCloseCategoryForm = () => {
-    setCategoryFormOpen(false);
-    fetchData();
-  };
-
-  const handleCloseSubcategoryForm = () => {
-    setSubcategoryFormOpen(false);
-    fetchData();
-  };
-
-  const handleEditDepartment = (department: ProductDepartment) => {
-    setSelectedDepartment(department);
-    setDepartmentFormOpen(true);
-  };
-
-  const handleEditCategory = (category: ProductCategory) => {
-    setSelectedCategory(category);
-    setSelectedDepartment(departments.find(d => d.id === category.department_id) || null);
-    setCategoryFormOpen(true);
-  };
-
-  const handleEditSubcategory = (subcategory: ProductSubcategory) => {
-    setSelectedCategory(categories.find(c => c.id === subcategory.category_id) || null);
-    setSubcategoryFormOpen(true);
+  const handleEditItem = (type: string, item: any) => {
+    if (type === "department") {
+      setEditDepartment(item);
+      setOpenDepartmentForm(true);
+    } else if (type === "category") {
+      setEditCategory(item);
+      setOpenCategoryForm(true);
+      setSelectedDepartmentId(item.department_id);
+    } else if (type === "subcategory") {
+      setEditSubcategory(item);
+      setOpenSubcategoryForm(true);
+      const category = categories.find(c => c.id === item.category_id);
+      setSelectedCategoryId(item.category_id);
+      setSelectedDepartmentId(category?.department_id || null);
+    }
   };
 
   const handleDeleteItem = async (type: string, id: string) => {
     try {
-      let table = "";
+      let tableName: "product_departments" | "product_categories" | "product_subcategories";
       
       if (type === "department") {
-        table = "product_departments";
+        tableName = "product_departments";
       } else if (type === "category") {
-        table = "product_categories";
+        tableName = "product_categories";
       } else if (type === "subcategory") {
-        table = "product_subcategories";
+        tableName = "product_subcategories";
       } else {
         throw new Error("Tipo inválido");
       }
       
       const { error } = await supabase
-        .from(table)
+        .from(tableName)
         .delete()
         .eq("id", id);
 
       if (error) throw error;
-
+      
       if (type === "department") {
         setDepartments(departments.filter(item => item.id !== id));
         setCategories(categories.filter(cat => cat.department_id !== id));
@@ -148,141 +133,170 @@ export default function DepartmentsPage() {
       } else if (type === "category") {
         setCategories(categories.filter(item => item.id !== id));
         setSubcategories(subcategories.filter(sub => sub.category_id !== id));
-      } else if (type === "subcategory") {
+      } else {
         setSubcategories(subcategories.filter(item => item.id !== id));
       }
       
-      toast.success(`${type === "department" ? "Departamento" : type === "category" ? "Categoria" : "Subcategoria"} excluído com sucesso`);
-    } catch (error: any) {
-      console.error(`Erro ao excluir ${type}:`, error);
-      toast.error(`Erro ao excluir: ${error.message}`);
+      toast.success(`Item excluído com sucesso`);
+    } catch (err) {
+      console.error("Erro ao excluir item:", err);
+      toast.error("Erro ao excluir item");
     }
   };
 
-  return (
-    <div className="container mx-auto py-8">
-      <DepartmentForm
-        open={departmentFormOpen}
-        onClose={() => setDepartmentFormOpen(false)}
-        onSuccess={fetchData}
-        department={selectedDepartment}
-      />
-      
-      {selectedDepartment && (
-        <CategoryForm
-          open={categoryFormOpen}
-          onClose={() => setCategoryFormOpen(false)}
-          onSuccess={fetchData}
-          department={selectedDepartment}
-          category={selectedCategory}
-        />
-      )}
-      
-      {selectedCategory && (
-        <SubcategoryForm
-          open={subcategoryFormOpen}
-          onClose={() => setSubcategoryFormOpen(false)}
-          onSuccess={fetchData}
-          category={selectedCategory}
-          subcategory={subcategories.find(sub => sub.category_id === selectedCategory.id)}
-        />
-      )}
+  const DepartmentItem = ({ department }: { department: ProductDepartment }) => (
+    <AccordionItem value={department.id}>
+      <AccordionTrigger className="flex items-center justify-between py-2">
+        <div className="flex items-center space-x-2">
+          <ChevronRight className="h-4 w-4 shrink-0 transition-transform duration-200 peer-data-[state=expanded]:rotate-90" />
+          <span>{department.name}</span>
+          {department.description && (
+            <Badge variant="secondary">{department.description}</Badge>
+          )}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="pl-8">
+        <div className="flex justify-end space-x-2 mb-2">
+          <Button variant="outline" size="sm" onClick={() => handleEditItem("department", department)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => handleDeleteItem("department", department.id)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </Button>
+        </div>
+        <CategoryList departmentId={department.id} />
+      </AccordionContent>
+    </AccordionItem>
+  );
 
-      <div className="mb-8 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Departamentos, Categorias e Subcategorias</h1>
+  const CategoryList = ({ departmentId }: { departmentId: string }) => {
+    const filteredCategories = categories.filter(cat => cat.department_id === departmentId);
+
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-medium">Categorias</p>
+          <Button variant="outline" size="sm" onClick={() => handleOpenCategoryForm(departmentId)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Categoria
+          </Button>
+        </div>
+        {filteredCategories.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Nenhuma categoria cadastrada.</p>
+        ) : (
+          filteredCategories.map(category => (
+            <div key={category.id} className="border rounded-md p-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{category.name}</p>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={() => handleEditItem("category", category)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => handleDeleteItem("category", category.id)}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir
+                  </Button>
+                </div>
+              </div>
+              <SubcategoryList categoryId={category.id} />
+            </div>
+          ))
+        )}
+      </div>
+    );
+  };
+
+  const SubcategoryList = ({ categoryId }: { categoryId: string }) => {
+    const filteredSubcategories = subcategories.filter(sub => sub.category_id === categoryId);
+
+    return (
+      <div className="space-y-2 ml-4 mt-2">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-medium">Subcategorias</p>
+          <Button variant="outline" size="sm" onClick={() => handleOpenSubcategoryForm(categoryId)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Subcategoria
+          </Button>
+        </div>
+        {filteredSubcategories.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Nenhuma subcategoria cadastrada.</p>
+        ) : (
+          filteredSubcategories.map(subcategory => (
+            <div key={subcategory.id} className="flex items-center justify-between border rounded-md p-2">
+              <p className="text-sm">{subcategory.name}</p>
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" onClick={() => handleEditItem("subcategory", subcategory)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => handleDeleteItem("subcategory", subcategory.id)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <CardHeader>
+          <CardTitle>Categorias de Produtos</CardTitle>
+        </CardHeader>
         <Button onClick={handleOpenDepartmentForm}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Departamento
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Departamento
         </Button>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center">
-          Carregando...
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Departments */}
+      <Tabs defaultValue="departments" className="w-full">
+        <TabsList>
+          <TabsTrigger value="departments">Departamentos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="departments">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Departamentos</CardTitle>
-            </CardHeader>
             <CardContent>
-              <ul className="list-none space-y-2">
-                {departments.map(department => (
-                  <li key={department.id} className="border rounded-md p-2 flex items-center justify-between">
-                    <span>{department.name}</span>
-                    <div>
-                      <Button variant="ghost" size="icon" onClick={() => handleEditDepartment(department)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteItem("department", department.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleOpenCategoryForm(department)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Categoria
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <ScrollArea className="h-[400px] w-full rounded-md border">
+                <Accordion type="single" collapsible>
+                  {departments.map(department => (
+                    <DepartmentItem key={department.id} department={department} />
+                  ))}
+                </Accordion>
+              </ScrollArea>
             </CardContent>
           </Card>
+        </TabsContent>
+      </Tabs>
 
-          {/* Categories */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Categorias</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-none space-y-2">
-                {categories.map(category => (
-                  <li key={category.id} className="border rounded-md p-2 flex items-center justify-between">
-                    <span>{category.name} ({departments.find(d => d.id === category.department_id)?.name})</span>
-                    <div>
-                      <Button variant="ghost" size="icon" onClick={() => handleEditCategory(category)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteItem("category", category.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleOpenSubcategoryForm(category)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Subcategoria
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* Subcategories */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Subcategorias</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-none space-y-2">
-                {subcategories.map(subcategory => (
-                  <li key={subcategory.id} className="border rounded-md p-2 flex items-center justify-between">
-                    <span>{subcategory.name} ({categories.find(c => c.id === subcategory.category_id)?.name})</span>
-                    <div>
-                      <Button variant="ghost" size="icon" onClick={() => handleEditSubcategory(subcategory)}>
-                        <Pencil className="h-4 w-4 mr-2" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100" onClick={() => handleDeleteItem("subcategory", subcategory.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      <DepartmentForm
+        open={openDepartmentForm}
+        onClose={() => setOpenDepartmentForm(false)}
+        onSuccess={fetchData}
+        department={editDepartment}
+      />
+      <CategoryForm
+        open={openCategoryForm}
+        onClose={() => setOpenCategoryForm(false)}
+        onSuccess={fetchData}
+        departmentId={selectedDepartmentId}
+        category={editCategory}
+      />
+      <SubcategoryForm
+        open={openSubcategoryForm}
+        onClose={() => setOpenSubcategoryForm(false)}
+        onSuccess={fetchData}
+        category={categories.find(cat => cat.id === selectedCategoryId) || {} as ProductCategory}
+        subcategory={editSubcategory}
+      />
     </div>
   );
-}
+};
+
+export default DepartmentsPage;

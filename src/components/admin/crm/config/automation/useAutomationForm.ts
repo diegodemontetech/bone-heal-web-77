@@ -55,9 +55,10 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
 
       // Garantir que o tipo retornado está conforme esperado
       if (data) {
+        // Garantir que pipeline_id sempre existe, mesmo se vier null do banco
         const stagesWithPipelineId = data.map(stage => ({
           ...stage,
-          pipeline_id: stage.pipeline_id || ""  // Garantir que pipeline_id sempre existe
+          pipeline_id: stage.pipeline_id || ""
         })) as CRMStage[];
         
         setStages(stagesWithPipelineId);
