@@ -1,10 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TicketsList from "./TicketsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, BellRing, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface TicketsContentProps {
   tickets: any[] | null;
@@ -15,6 +16,47 @@ interface TicketsContentProps {
 const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const { toast } = useToast();
+
+  // Configurar um intervalo para atualizar os tickets a cada 3 minutos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Este código simularia uma chamada para refresh
+      checkSLAViolations();
+    }, 180000); // 3 minutos em milissegundos
+    
+    setRefreshInterval(interval as unknown as number);
+    
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
+  }, []);
+  
+  // Verificar violações de SLA
+  const checkSLAViolations = () => {
+    if (!tickets) return;
+    
+    const currentTime = new Date().getTime();
+    const ticketsWithSLAViolation = tickets.filter(ticket => {
+      if (ticket.status === 'resolved' || ticket.status === 'closed') return false;
+      
+      const lastUpdateTime = new Date(ticket.updated_at || ticket.created_at).getTime();
+      const hoursSinceLastUpdate = (currentTime - lastUpdateTime) / (1000 * 60 * 60);
+      
+      return hoursSinceLastUpdate > 24;
+    });
+    
+    if (ticketsWithSLAViolation.length > 0) {
+      toast({
+        title: `${ticketsWithSLAViolation.length} tickets com SLA comprometido`,
+        description: "Existem tickets que precisam de atenção urgente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const categoryLabels = {
     status: {
@@ -71,6 +113,15 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={checkSLAViolations}
+            className="flex items-center"
+          >
+            <BellRing className="h-4 w-4 mr-2" />
+            Verificar SLA
+          </Button>
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-2" />
             Filtros

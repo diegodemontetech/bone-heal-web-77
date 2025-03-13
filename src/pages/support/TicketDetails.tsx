@@ -19,6 +19,7 @@ const TicketDetails = () => {
   const [ticket, setTicket] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messageLoading, setMessageLoading] = useState(true);
 
   useEffect(() => {
     if (profile?.id && id) {
@@ -55,6 +56,7 @@ const TicketDetails = () => {
 
   const fetchMessages = async () => {
     try {
+      setMessageLoading(true);
       const { data, error } = await supabase
         .from("ticket_messages")
         .select(`
@@ -69,6 +71,8 @@ const TicketDetails = () => {
     } catch (error) {
       console.error("Erro ao buscar mensagens:", error);
       toast.error("Erro ao carregar mensagens do chamado");
+    } finally {
+      setMessageLoading(false);
     }
   };
 
@@ -144,7 +148,8 @@ const TicketDetails = () => {
       <MessagesSection 
         messages={messages} 
         ticketStatus={ticket.status} 
-        onSendMessage={sendMessage} 
+        onSendMessage={sendMessage}
+        isLoading={messageLoading}
       />
     </div>
   );
