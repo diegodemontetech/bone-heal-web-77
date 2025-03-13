@@ -19,7 +19,7 @@ interface NotificationSetting {
   user_id?: string;
 }
 
-const NotificationSettings = () => {
+const ProfileNotificationSettings = () => {
   const { profile } = useAuth();
   const [settings, setSettings] = useState<NotificationSetting>({
     new_tickets: true,
@@ -114,27 +114,16 @@ const NotificationSettings = () => {
 
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Configurações de Notificação</h1>
+      <h1 className="text-2xl font-bold mb-6">Configurações de Notificação</h1>
       
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Notificações do Sistema</CardTitle>
+          <CardTitle>Notificações</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor="new_tickets" className="flex-1">
-              Novos chamados (tickets)
-            </Label>
-            <Switch 
-              id="new_tickets" 
-              checked={settings.new_tickets}
-              onCheckedChange={() => handleToggle('new_tickets')}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
             <Label htmlFor="ticket_updates" className="flex-1">
-              Atualizações em chamados
+              Atualizações em meus chamados
             </Label>
             <Switch 
               id="ticket_updates" 
@@ -145,23 +134,12 @@ const NotificationSettings = () => {
           
           <div className="flex items-center justify-between">
             <Label htmlFor="system_updates" className="flex-1">
-              Atualizações do sistema
+              Novidades e promoções
             </Label>
             <Switch 
               id="system_updates" 
               checked={settings.system_updates}
               onCheckedChange={() => handleToggle('system_updates')}
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <Label htmlFor="sla_alerts" className="flex-1">
-              Alertas de SLA
-            </Label>
-            <Switch 
-              id="sla_alerts" 
-              checked={settings.sla_alerts}
-              onCheckedChange={() => handleToggle('sla_alerts')}
             />
           </div>
         </CardContent>
@@ -205,4 +183,4 @@ const NotificationSettings = () => {
   );
 };
 
-export default NotificationSettings;
+export default ProfileNotificationSettings;
