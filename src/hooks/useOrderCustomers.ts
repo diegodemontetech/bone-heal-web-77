@@ -12,13 +12,13 @@ export const useOrderCustomers = () => {
 
   console.log("useOrderCustomers hook inicializado com termo:", customerSearchTerm);
 
-  // Buscar clientes da tabela profiles e também da tabela clientes_omie para garantir dados completos
+  // Buscar clientes apenas da tabela profiles
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["customers", customerSearchTerm],
     queryFn: async () => {
       console.log("Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
-        // Buscar primeiro na tabela profiles (tabela principal)
+        // Buscar na tabela profiles
         let query = supabase
           .from("profiles")
           .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync");
@@ -39,7 +39,7 @@ export const useOrderCustomers = () => {
           }
         }
         
-        // Limitar resultados e adicionar ordem para consistência
+        // Adicionar ordem e limitar resultados
         const { data: profilesData, error: profilesError } = await query
           .order("full_name", { ascending: true })
           .limit(50);
@@ -49,51 +49,10 @@ export const useOrderCustomers = () => {
           throw profilesError;
         }
         
-        // Buscar na tabela clientes_omie para complementar (caso haja clientes que estão no Omie mas não em profiles)
-        const { data: omieData, error: omieError } = await supabase
-          .from("clientes_omie")
-          .select("codigo_cliente_omie, nome_cliente, email, telefone, endereco, cidade, estado, cep")
-          .or(customerSearchTerm ? 
-            `nome_cliente.ilike.%${customerSearchTerm}%,` +
-            `email.ilike.%${customerSearchTerm}%,` +
-            `codigo_cliente_omie.ilike.%${customerSearchTerm}%` : 
-            "nome_cliente.neq.''")
-          .limit(50);
-          
-        if (omieError) {
-          console.error("Erro ao buscar clientes do Omie:", omieError);
-          // Não interrompe o fluxo, apenas continua com os dados de profiles
-        }
-        
-        // Consolidar dados de ambas as tabelas, priorizando profiles
-        const consolidatedCustomers = [...(profilesData || [])];
-        
-        // Adicionar dados da tabela clientes_omie que não existem em profiles
-        if (omieData && omieData.length > 0) {
-          const existingOmieCodes = new Set(profilesData?.map(p => p.omie_code) || []);
-          
-          omieData.forEach(omieCustomer => {
-            if (!existingOmieCodes.has(omieCustomer.codigo_cliente_omie)) {
-              consolidatedCustomers.push({
-                id: null, // Será identificado como cliente apenas do Omie
-                full_name: omieCustomer.nome_cliente || "Nome não informado",
-                email: omieCustomer.email || "",
-                phone: omieCustomer.telefone || "",
-                address: omieCustomer.endereco || "",
-                city: omieCustomer.cidade || "",
-                state: omieCustomer.estado || "",
-                zip_code: omieCustomer.cep || "",
-                omie_code: omieCustomer.codigo_cliente_omie || "",
-                omie_sync: true // É do Omie, então consideramos sincronizado
-              });
-            }
-          });
-        }
-        
-        console.log(`Encontrados ${consolidatedCustomers.length} clientes na busca consolidada`);
+        console.log(`Encontrados ${profilesData.length} clientes na busca`);
         
         // Garantir que todos os clientes tenham os campos necessários
-        return consolidatedCustomers.map(customer => ({
+        return profilesData.map(customer => ({
           id: customer.id,
           full_name: customer.full_name || "Nome não informado",
           email: customer.email || "",

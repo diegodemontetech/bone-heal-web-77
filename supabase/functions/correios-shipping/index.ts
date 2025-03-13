@@ -49,13 +49,13 @@ serve(async (req) => {
     console.log(`Peso total calculado: ${totalWeight}kg`);
     
     // Obter o prefixo do CEP para determinar a região
-    const cepPrefix = parseInt(cleanZipCode.substring(0, 2));
+    const cepPrefix = parseInt(cleanZipCode.substring(0, 3));
     
     // Taxa base de frete por região (usando o prefixo do CEP)
     // Esta é uma simulação mais real, baseada em faixas de CEP
     const getBaseRateByRegion = (prefix: number) => {
       // Capitais e grandes centros (simplificação)
-      if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
+      if ([010, 011, 012, 013, 020, 021, 022, 030, 040, 050, 060, 070, 080, 090].includes(prefix)) {
         return 20; // Taxa base para grandes centros
       }
       
@@ -92,7 +92,7 @@ serve(async (req) => {
     // Determinar prazo de entrega baseado na região
     const getDeliveryDaysByRegion = (prefix: number, isExpress: boolean) => {
       // Capitais e grandes centros
-      if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
+      if ([010, 011, 012, 013, 020, 021, 022, 030, 040, 050, 060, 070, 080, 090].includes(prefix)) {
         return isExpress ? 1 : 4;
       }
       
