@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { CRMStage, Department, Lead } from "@/types/crm";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import KanbanColumn from "./KanbanColumn";
+import LeadCard from "./LeadCard";
+import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+import { toast } from "sonner";
 
 const LeadsKanban = () => {
   const [loading, setLoading] = useState(true);
@@ -15,6 +17,7 @@ const LeadsKanban = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [groupedLeads, setGroupedLeads] = useState<Record<string, Lead[]>>({});
 
   // Carregar departamentos
   useEffect(() => {
@@ -118,8 +121,99 @@ const LeadsKanban = () => {
     setLeads(mockLeads);
   }, []);
 
+  // Agrupar leads por estágio
+  useEffect(() => {
+    if (stages.length === 0) return;
+
+    const grouped: Record<string, Lead[]> = {};
+    
+    // Inicializar todos os estágios com arrays vazios
+    stages.forEach(stage => {
+      grouped[stage.id] = [];
+    });
+
+    // Distribuir leads nos estágios apropriados
+    leads.forEach(lead => {
+      // Encontrar o estágio pelo nome (em uma implementação real, usaríamos o ID)
+      const stage = stages.find(s => s.name === lead.stage);
+      if (stage) {
+        grouped[stage.id] = [...(grouped[stage.id] || []), lead];
+      }
+    });
+
+    setGroupedLeads(grouped);
+  }, [leads, stages]);
+
   const handleChangeDepartment = (value: string) => {
     setSelectedDepartment(value);
+  };
+  
+  const handleDragEnd = (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    // Se não houver destino ou se o destino for o mesmo que a origem, não fazer nada
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+
+    // Se o destino for diferente da origem, mover o lead para o novo estágio
+    if (destination.droppableId !== source.droppableId) {
+      try {
+        // Encontrar o lead que está sendo movido
+        const leadToMove = leads.find(lead => lead.id === draggableId);
+        if (!leadToMove) return;
+
+        // Encontrar o nome do estágio de destino
+        const destinationStage = stages.find(stage => stage.id === destination.droppableId);
+        if (!destinationStage) return;
+
+        // Atualizar o estado local primeiro (otimismo UI)
+        const newGroupedLeads = { ...groupedLeads };
+        
+        // Remover do estágio de origem
+        newGroupedLeads[source.droppableId] = newGroupedLeads[source.droppableId].filter(
+          lead => lead.id !== draggableId
+        );
+        
+        // Adicionar ao estágio de destino
+        const updatedLead = { ...leadToMove, stage: destinationStage.name };
+        newGroupedLeads[destination.droppableId] = [
+          ...newGroupedLeads[destination.droppableId],
+          updatedLead
+        ];
+        
+        setGroupedLeads(newGroupedLeads);
+        
+        // Atualizar a lista completa de leads
+        setLeads(prev => 
+          prev.map(lead => 
+            lead.id === draggableId 
+              ? { ...lead, stage: destinationStage.name } 
+              : lead
+          )
+        );
+
+        // Em uma implementação real, aqui você enviaria a atualização para o backend
+        // Exemplo:
+        // await updateLeadStage(draggableId, destinationStage.id);
+        toast.success(`Lead movido para ${destinationStage.name}`);
+      } catch (error) {
+        console.error("Erro ao mover lead:", error);
+        toast.error("Erro ao mover lead. Tente novamente.");
+      }
+    } else {
+      // Reordenar dentro do mesmo estágio
+      const stageLeads = [...groupedLeads[source.droppableId]];
+      const [removed] = stageLeads.splice(source.index, 1);
+      stageLeads.splice(destination.index, 0, removed);
+      
+      setGroupedLeads({
+        ...groupedLeads,
+        [source.droppableId]: stageLeads
+      });
+    }
   };
   
   if (loading) {
@@ -195,34 +289,23 @@ const LeadsKanban = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {stages.map((stage) => (
-            <KanbanColumn 
-              key={stage.id}
-              title={stage.name}
-              count={leads.filter(lead => lead.stage === stage.name).length}
-              color={stage.color}
-            >
-              {leads
-                .filter(lead => lead.stage === stage.name)
-                .map(lead => (
-                  <Card key={lead.id} className="mb-2 cursor-pointer hover:shadow-md transition-shadow">
-                    <CardContent className="p-3">
-                      <h3 className="font-medium">{lead.name}</h3>
-                      <p className="text-sm text-muted-foreground">{lead.email}</p>
-                      <p className="text-sm">{lead.phone}</p>
-                      <div className="flex mt-2 text-xs">
-                        <span className="bg-primary/10 text-primary rounded-full px-2 py-1">
-                          {lead.source}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              }
-            </KanbanColumn>
-          ))}
-        </div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            {stages.map((stage) => (
+              <KanbanColumn 
+                key={stage.id}
+                id={stage.id}
+                title={stage.name}
+                count={groupedLeads[stage.id]?.length || 0}
+                color={stage.color}
+              >
+                {groupedLeads[stage.id]?.map((lead, index) => (
+                  <LeadCard key={lead.id} lead={lead} index={index} />
+                ))}
+              </KanbanColumn>
+            ))}
+          </div>
+        </DragDropContext>
       )}
     </div>
   );

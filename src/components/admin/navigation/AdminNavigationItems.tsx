@@ -73,11 +73,6 @@ export const NavigationItems = [
         title: "Kanban de Leads",
         href: "/admin/leads/kanban",
         permissions: []
-      },
-      {
-        title: "Configurações",
-        href: "/admin/crm/configuracoes",
-        permissions: []
       }
     ]
   },
@@ -172,6 +167,11 @@ export const NavigationItems = [
       {
         title: "Templates de Email",
         href: "/admin/email-templates",
+        permissions: []
+      },
+      {
+        title: "CRM",
+        href: "/admin/crm/configuracoes",
         permissions: []
       },
       {

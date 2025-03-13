@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DepartmentForm } from "./DepartmentForm";
 import { FieldsForm } from "./FieldsForm";
-import { KanbanStagesForm } from "./KanbanStagesForm";
+import KanbanConfig from "./KanbanConfig";
 import { AutomationForm } from "./AutomationForm";
 
 export function CRMConfigTabs() {
@@ -44,7 +44,7 @@ export function CRMConfigTabs() {
         <p className="text-muted-foreground mb-6">
           Configure os estágios do Kanban para cada departamento. Defina cores e a ordem dos estágios para melhor visualização.
         </p>
-        <KanbanStagesForm onSuccess={() => {}} />
+        <KanbanConfig />
       </TabsContent>
       
       <TabsContent value="automations" className="space-y-4">

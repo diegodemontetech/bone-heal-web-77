@@ -3,15 +3,17 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Droppable } from "@hello-pangea/dnd";
 
 interface KanbanColumnProps {
+  id: string;
   title: string;
   count: number;
   color?: string;
   children: ReactNode;
 }
 
-const KanbanColumn = ({ title, count, color = "#3b82f6", children }: KanbanColumnProps) => {
+const KanbanColumn = ({ id, title, count, color = "#3b82f6", children }: KanbanColumnProps) => {
   return (
     <Card className="h-[calc(100vh-250px)] flex flex-col">
       <CardHeader className="p-3 pb-0 flex flex-row justify-between items-center">
@@ -26,9 +28,18 @@ const KanbanColumn = ({ title, count, color = "#3b82f6", children }: KanbanColum
           </span>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow overflow-auto p-2">
-        {children}
-      </CardContent>
+      <Droppable droppableId={id}>
+        {(provided) => (
+          <CardContent 
+            className="flex-grow overflow-auto p-2"
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+          >
+            {children}
+            {provided.placeholder}
+          </CardContent>
+        )}
+      </Droppable>
       <CardFooter className="p-2 border-t">
         <Button variant="ghost" size="sm" className="w-full justify-start">
           <Plus className="h-4 w-4 mr-1" />
