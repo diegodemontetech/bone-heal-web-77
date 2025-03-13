@@ -5,7 +5,6 @@ import { OrdersList } from "./OrdersList";
 import EmptyOrdersMessage from "./EmptyOrdersMessage";
 import OrdersErrorMessage from "./OrdersErrorMessage";
 import CreateOrder from "@/components/admin/CreateOrder";
-import { RefetchOptions, QueryObserverResult } from "@tanstack/react-query";
 
 interface OrdersTabsProps {
   activeTab: string;

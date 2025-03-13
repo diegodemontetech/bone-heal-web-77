@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate, formatShortId } from "@/utils/formatters";
 import { Order } from "@/types/order";
+import { toast } from "sonner";
 
 interface OrdersListProps {
   orders: Order[];
@@ -206,7 +207,7 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
                     #{formatShortId(order.id)}
                   </TableCell>
                   <TableCell>
-                    {order.profiles?.full_name || order.shipping?.recipient_name || "Cliente não especificado"}
+                    {order.profiles?.full_name || order.shipping_address?.recipient_name || "Cliente não especificado"}
                   </TableCell>
                   <TableCell>
                     {formatDate(order.created_at)}
