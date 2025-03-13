@@ -6,7 +6,7 @@ import { FieldFormData } from "../types";
 /**
  * Busca todos os campos de um pipeline
  */
-export const fetchFieldsFromPipeline = async (pipelineId: string) => {
+export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMField[]> => {
   const { data, error } = await supabase
     .from('crm_fields')
     .select('*')
@@ -15,14 +15,13 @@ export const fetchFieldsFromPipeline = async (pipelineId: string) => {
 
   if (error) throw error;
   
-  // Tipagem explícita para evitar erros de inferência profunda
   return (data || []) as CRMField[];
 };
 
 /**
  * Cria um novo campo
  */
-export const createField = async (pipelineId: string, data: FieldFormData) => {
+export const createField = async (pipelineId: string, data: FieldFormData): Promise<CRMField> => {
   // Processar opções se for um campo tipo select, radio ou checkbox
   const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
     ? data.options.split(',').map(opt => opt.trim())
@@ -84,7 +83,7 @@ export const updateField = async (fieldId: string, data: FieldFormData) => {
 /**
  * Exclui um campo
  */
-export const deleteField = async (fieldId: string) => {
+export const deleteField = async (fieldId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('crm_fields')
     .delete()

@@ -1,125 +1,91 @@
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { FormFields } from "../types";
-import { ProductCategory, ProductSubcategory } from "@/types/product";
-import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
-interface UseSubcategoryFormProps {
-  category: ProductCategory;
-  subcategory?: ProductSubcategory | null;
-  onSuccess: () => void;
-  onClose: () => void;
-}
+// Definindo o schema do formulário
+export const subcategorySchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  description: z.string().optional(),
+  default_fields: z.record(z.any()).optional(),
+});
 
-export function useSubcategoryForm({ 
-  category, 
-  subcategory, 
-  onSuccess, 
-  onClose 
-}: UseSubcategoryFormProps) {
-  // Converter default_fields para Record<string, any> com segurança
-  const convertToRecord = (fields: any): Record<string, any> => {
-    if (typeof fields === 'object' && fields !== null && !Array.isArray(fields)) {
-      return fields as Record<string, any>;
-    }
-    return {};
-  };
+// Tipo derivado do schema
+export type FormFields = z.infer<typeof subcategorySchema>;
 
-  const initialCustomFields = convertToRecord(subcategory?.default_fields);
-  const [customFields, setCustomFields] = useState<Record<string, any>>(initialCustomFields);
-  const [loading, setLoading] = useState(false);
+// Função para converter objeto aninhado em um formato plano
+export const convertToRecord = (obj: any): Record<string, any> => {
+  if (!obj) return {};
+  if (typeof obj !== 'object') return {};
+  return obj;
+};
 
-  const handleFieldChange = (fieldName: string, value: any) => {
-    setCustomFields(prev => ({
-      ...prev,
-      [fieldName]: value
-    }));
-  };
+export const useSubcategoryForm = (
+  categoryId: string,
+  subcategoryId?: string,
+  onSuccess?: () => void
+) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddField = () => {
-    setCustomFields(prev => ({
-      ...prev,
-      [`campo_${Object.keys(prev).length + 1}`]: ""
-    }));
-  };
-
-  // Schema para validação do formulário
-  const formSchema = z.object({
-    name: z.string().min(1, "O nome é obrigatório"),
-    description: z.string().optional(),
-    default_fields: z.record(z.any()).optional()
-  });
-
-  // Tipagem explícita para o schema
-  type FormSchema = z.infer<typeof formSchema>;
-
-  // Criando o formulário
-  const form = useForm<FormSchema>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<FormFields>({
+    resolver: zodResolver(subcategorySchema),
     defaultValues: {
-      name: subcategory?.name || "",
-      description: subcategory?.description || "",
-      default_fields: initialCustomFields
-    }
+      name: "",
+      description: "",
+      default_fields: {},
+    },
   });
 
-  const onSubmit = async (data: FormSchema) => {
+  const handleFormSubmit = async (data: FormFields) => {
+    setIsSubmitting(true);
     try {
-      setLoading(true);
-      // Incluindo os campos personalizados no envio
-      data.default_fields = customFields;
-      
-      if (subcategory) {
+      if (subcategoryId) {
         // Atualizar subcategoria existente
         const { error } = await supabase
           .from("product_subcategories")
           .update({
             name: data.name,
             description: data.description,
-            default_fields: data.default_fields
+            default_fields: data.default_fields || {},
           })
-          .eq("id", subcategory.id);
-          
+          .eq("id", subcategoryId);
+
         if (error) throw error;
         toast.success("Subcategoria atualizada com sucesso!");
       } else {
         // Criar nova subcategoria
         const { error } = await supabase
           .from("product_subcategories")
-          .insert({
-            name: data.name,
-            description: data.description,
-            default_fields: data.default_fields,
-            category_id: category.id
-          });
-          
+          .insert([
+            {
+              name: data.name,
+              description: data.description,
+              category_id: categoryId,
+              default_fields: data.default_fields || {},
+            },
+          ]);
+
         if (error) throw error;
         toast.success("Subcategoria criada com sucesso!");
+        form.reset();
       }
-      
-      onSuccess();
-      onClose();
+
+      if (onSuccess) onSuccess();
     } catch (error: any) {
       console.error("Erro ao salvar subcategoria:", error);
-      toast.error(`Erro: ${error.message}`);
+      toast.error(`Erro ao salvar: ${error.message}`);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  // Função para converter onSubmit em um handler para events do formulário
-  const handleFormSubmit = form.handleSubmit(onSubmit);
-
   return {
     form,
-    customFields,
-    loading,
-    handleFieldChange,
-    handleAddField,
-    onSubmit: handleFormSubmit
+    isSubmitting,
+    handleFormSubmit,
+    convertToRecord,
   };
-}
+};
