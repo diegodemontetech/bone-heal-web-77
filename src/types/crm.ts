@@ -84,7 +84,7 @@ export interface Lead {
   orders?: any[];
 }
 
-// Corrigindo a interface StageFormValues para garantir que os campos correspondam com o uso
+// Interface para o formulário de estágios
 export interface StageFormValues {
   name: string;
   color: string;
@@ -106,10 +106,9 @@ export interface AutomationFormValues {
   email_template_id?: string;
   webhook_url?: string;
   action_data?: any;
-  action_webhook_url?: string;
 }
 
-// Interface para o formulário StageWithPipeline
+// Interface para o estágio com pipeline_id garantido
 export interface StageWithPipeline extends CRMStage {
   pipeline_id: string;
 }

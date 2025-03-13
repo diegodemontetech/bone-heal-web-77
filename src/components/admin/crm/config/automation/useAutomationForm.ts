@@ -115,9 +115,10 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
+    const actionType = tab as "notification" | "stage_change" | "assign_user" | "webhook";
     setFormData(prev => ({ 
       ...prev, 
-      action_type: tab as "notification" | "stage_change" | "assign_user" | "webhook"
+      action_type: actionType
     }));
   };
 
@@ -148,8 +149,8 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
       
       // Prepare data for insertion
       const dataToInsert = {
-        stage: formData.stage_id,  // Renomeando para corresponder à coluna do banco
-        next_stage: formData.next_stage_id,  // Renomeando para corresponder à coluna do banco
+        stage: formData.stage_id,  // Mapeando para o campo 'stage' da tabela
+        next_stage: formData.next_stage_id,  // Mapeando para o campo 'next_stage' da tabela
         hours_trigger: formData.hours_trigger,
         action_type: formData.action_type,
         action_data: formData.action_data,

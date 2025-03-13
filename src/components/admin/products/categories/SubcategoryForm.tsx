@@ -73,6 +73,7 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
 
   const handleAddField = (fieldName: string, value: any) => {
     setFields(prev => {
+      // Tratamento específico para garantir que o valor seja sempre um objeto se não for um tipo primitivo
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         return { ...prev, [fieldName]: value };
       } else if (value && typeof value === 'object') {
