@@ -1,299 +1,244 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { ProductCategory, ProductDepartment, ProductSubcategory } from "@/types/product";
-import { DepartmentForm } from "./DepartmentForm";
-import { CategoryForm } from "./CategoryForm";
 import { SubcategoryForm } from "./SubcategoryForm";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+
+interface Category {
+  id: string;
+  name: string;
+  description: string;
+}
 
 const DepartmentsPage = () => {
-  const [departments, setDepartments] = useState<ProductDepartment[]>([]);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [subcategories, setSubcategories] = useState<ProductSubcategory[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryDescription, setNewCategoryDescription] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isSubcategoryModalOpen, setIsOpenSubcategoryModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  const [openDepartmentForm, setOpenDepartmentForm] = useState(false);
-  const [openCategoryForm, setOpenCategoryForm] = useState(false);
-  const [openSubcategoryForm, setOpenSubcategoryForm] = useState(false);
-  
-  const [editDepartment, setEditDepartment] = useState<ProductDepartment | null>(null);
-  const [editCategory, setEditCategory] = useState<ProductCategory | null>(null);
-  const [editSubcategory, setEditSubcategory] = useState<ProductSubcategory | null>(null);
-  
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
+    fetchCategories();
   }, []);
 
-  const fetchData = async () => {
+  const fetchCategories = async () => {
     setLoading(true);
     try {
-      const { data: departmentsData, error: departmentsError } = await supabase
-        .from("product_departments")
-        .select("*")
-        .order("name");
-
-      if (departmentsError) throw departmentsError;
-      setDepartments(departmentsData || []);
-
-      const { data: categoriesData, error: categoriesError } = await supabase
+      const { data, error } = await supabase
         .from("product_categories")
         .select("*")
-        .order("name");
+        .order("created_at", { ascending: false });
 
-      if (categoriesError) throw categoriesError;
-      setCategories(categoriesData || []);
-
-      const { data: subcategoriesData, error: subcategoriesError } = await supabase
-        .from("product_subcategories")
-        .select("*")
-        .order("name");
-
-      if (subcategoriesError) throw subcategoriesError;
-      setSubcategories(subcategoriesData || []);
-    } catch (error) {
-      console.error("Erro ao buscar dados:", error);
-      toast.error("Erro ao carregar dados");
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenDepartmentForm = () => {
-    setEditDepartment(null);
-    setOpenDepartmentForm(true);
-  };
-
-  const handleOpenCategoryForm = (departmentId: string | null = null) => {
-    setEditCategory(null);
-    setSelectedDepartmentId(departmentId);
-    setOpenCategoryForm(true);
-  };
-
-  const handleOpenSubcategoryForm = (categoryId: string | null = null) => {
-    setEditSubcategory(null);
-    setSelectedCategoryId(categoryId);
-    setOpenSubcategoryForm(true);
-  };
-
-  const handleEditItem = (type: string, item: any) => {
-    if (type === "department") {
-      setEditDepartment(item);
-      setOpenDepartmentForm(true);
-    } else if (type === "category") {
-      setEditCategory(item);
-      setOpenCategoryForm(true);
-      setSelectedDepartmentId(item.department_id);
-    } else if (type === "subcategory") {
-      setEditSubcategory(item);
-      setOpenSubcategoryForm(true);
-      const category = categories.find(c => c.id === item.category_id);
-      setSelectedCategoryId(item.category_id);
-      setSelectedDepartmentId(category?.department_id || null);
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast.error("O nome da categoria é obrigatório");
+      return;
     }
-  };
 
-  const handleDeleteItem = async (type: string, id: string) => {
     try {
-      let tableName: "product_departments" | "product_categories" | "product_subcategories";
-      
-      if (type === "department") {
-        tableName = "product_departments";
-      } else if (type === "category") {
-        tableName = "product_categories";
-      } else if (type === "subcategory") {
-        tableName = "product_subcategories";
-      } else {
-        throw new Error("Tipo inválido");
-      }
-      
       const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq("id", id);
+        .from("product_categories")
+        .insert([{ name: newCategoryName, description: newCategoryDescription }]);
 
       if (error) throw error;
-      
-      if (type === "department") {
-        setDepartments(departments.filter(item => item.id !== id));
-        setCategories(categories.filter(cat => cat.department_id !== id));
-        setSubcategories(subcategories.filter(sub => {
-          const category = categories.find(c => c.id === sub.category_id);
-          return category ? category.department_id !== id : true;
-        }));
-      } else if (type === "category") {
-        setCategories(categories.filter(item => item.id !== id));
-        setSubcategories(subcategories.filter(sub => sub.category_id !== id));
-      } else {
-        setSubcategories(subcategories.filter(item => item.id !== id));
-      }
-      
-      toast.success(`Item excluído com sucesso`);
-    } catch (err) {
-      console.error("Erro ao excluir item:", err);
-      toast.error("Erro ao excluir item");
+      toast.success("Categoria criada com sucesso!");
+      setNewCategoryName("");
+      setNewCategoryDescription("");
+      setIsCategoryDialogOpen(false);
+      fetchCategories();
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
-  const DepartmentItem = ({ department }: { department: ProductDepartment }) => (
-    <AccordionItem value={department.id}>
-      <AccordionTrigger className="flex items-center justify-between py-2">
-        <div className="flex items-center space-x-2">
-          <ChevronRight className="h-4 w-4 shrink-0 transition-transform duration-200 peer-data-[state=expanded]:rotate-90" />
-          <span>{department.name}</span>
-          {department.description && (
-            <Badge variant="secondary">{department.description}</Badge>
-          )}
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="pl-8">
-        <div className="flex justify-end space-x-2 mb-2">
-          <Button variant="outline" size="sm" onClick={() => handleEditItem("department", department)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          <Button variant="destructive" size="sm" onClick={() => handleDeleteItem("department", department.id)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Excluir
-          </Button>
-        </div>
-        <CategoryList departmentId={department.id} />
-      </AccordionContent>
-    </AccordionItem>
-  );
+  const handleEditCategory = async () => {
+    if (!editingCategory) return;
+    try {
+      const { error } = await supabase
+        .from("product_categories")
+        .update({ name: editingCategory.name, description: editingCategory.description })
+        .eq("id", editingCategory.id);
 
-  const CategoryList = ({ departmentId }: { departmentId: string }) => {
-    const filteredCategories = categories.filter(cat => cat.department_id === departmentId);
-
-    return (
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <p className="text-sm font-medium">Categorias</p>
-          <Button variant="outline" size="sm" onClick={() => handleOpenCategoryForm(departmentId)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Categoria
-          </Button>
-        </div>
-        {filteredCategories.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nenhuma categoria cadastrada.</p>
-        ) : (
-          filteredCategories.map(category => (
-            <div key={category.id} className="border rounded-md p-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{category.name}</p>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEditItem("category", category)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDeleteItem("category", category.id)}>
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Excluir
-                  </Button>
-                </div>
-              </div>
-              <SubcategoryList categoryId={category.id} />
-            </div>
-          ))
-        )}
-      </div>
-    );
+      if (error) throw error;
+      toast.success("Categoria atualizada com sucesso!");
+      setEditingCategory(null);
+      setIsCategoryDialogOpen(false);
+      fetchCategories();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
   };
 
-  const SubcategoryList = ({ categoryId }: { categoryId: string }) => {
-    const filteredSubcategories = subcategories.filter(sub => sub.category_id === categoryId);
+  const handleDeleteCategory = async (id: string) => {
+    if (window.confirm("Tem certeza que deseja excluir esta categoria?")) {
+      try {
+        const { error } = await supabase
+          .from("product_categories")
+          .delete()
+          .eq("id", id);
 
-    return (
-      <div className="space-y-2 ml-4 mt-2">
-        <div className="flex justify-between items-center">
-          <p className="text-sm font-medium">Subcategorias</p>
-          <Button variant="outline" size="sm" onClick={() => handleOpenSubcategoryForm(categoryId)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Subcategoria
-          </Button>
-        </div>
-        {filteredSubcategories.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nenhuma subcategoria cadastrada.</p>
-        ) : (
-          filteredSubcategories.map(subcategory => (
-            <div key={subcategory.id} className="flex items-center justify-between border rounded-md p-2">
-              <p className="text-sm">{subcategory.name}</p>
-              <div className="flex space-x-2">
-                <Button variant="outline" size="sm" onClick={() => handleEditItem("subcategory", subcategory)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDeleteItem("subcategory", subcategory.id)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
-                </Button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
+        if (error) throw error;
+        toast.success("Categoria excluída com sucesso!");
+        fetchCategories();
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    }
+  };
+
+  const openCategoryDialog = (category?: Category) => {
+    if (category) {
+      setEditingCategory({ ...category });
+    } else {
+      setEditingCategory(null);
+    }
+    setIsCategoryDialogOpen(true);
+  };
+
+  const handleOpenSubcategoryModal = (category: Category) => {
+    setSelectedCategory(category);
+    setIsOpenSubcategoryModal(true);
+    setSelectedSubcategory(null);
+  };
+
+  const handleOpenEditSubcategoryModal = (category: Category, subcategory: any) => {
+    setSelectedCategory(category);
+    setIsOpenSubcategoryModal(true);
+    setSelectedSubcategory(subcategory);
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <CardHeader>
-          <CardTitle>Categorias de Produtos</CardTitle>
-        </CardHeader>
-        <Button onClick={handleOpenDepartmentForm}>
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Departamento
+    <div className="container mx-auto py-10">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Categorias de Produtos</h1>
+        <Button onClick={() => openCategoryDialog()}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Categoria
         </Button>
       </div>
 
-      <Tabs defaultValue="departments" className="w-full">
-        <TabsList>
-          <TabsTrigger value="departments">Departamentos</TabsTrigger>
-        </TabsList>
-        <TabsContent value="departments">
-          <Card>
-            <CardContent>
-              <ScrollArea className="h-[400px] w-full rounded-md border">
-                <Accordion type="single" collapsible>
-                  {departments.map(department => (
-                    <DepartmentItem key={department.id} department={department} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Categorias</CardTitle>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories.map((category) => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">{category.name}</TableCell>
+                      <TableCell>{category.description}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenSubcategoryModal(category)}>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Subcategoria
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditSubcategoryModal(category, null)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteCategory(category.id)}>
+                          <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+                          Excluir
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </Accordion>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </CardHeader>
+      </Card>
 
-      <DepartmentForm
-        open={openDepartmentForm}
-        onClose={() => setOpenDepartmentForm(false)}
-        onSuccess={fetchData}
-        department={editDepartment}
-      />
-      <CategoryForm
-        open={openCategoryForm}
-        onClose={() => setOpenCategoryForm(false)}
-        onSuccess={fetchData}
-        department={selectedDepartmentId}
-        category={editCategory}
-      />
+      <Dialog open={isCategoryDialogOpen} onOpenChange={(open) => !open && setIsCategoryDialogOpen(false)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">
+              {editingCategory ? "Editar Categoria" : "Nova Categoria"}
+            </h2>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Nome
+                </Label>
+                <Input
+                  id="name"
+                  value={editingCategory?.name || newCategoryName}
+                  onChange={(e) =>
+                    editingCategory
+                      ? setEditingCategory({ ...editingCategory, name: e.target.value })
+                      : setNewCategoryName(e.target.value)
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Descrição
+                </Label>
+                <Textarea
+                  id="description"
+                  value={editingCategory?.description || newCategoryDescription}
+                  onChange={(e) =>
+                    editingCategory
+                      ? setEditingCategory({ ...editingCategory, description: e.target.value })
+                      : setNewCategoryDescription(e.target.value)
+                  }
+                  className="col-span-3"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="secondary" onClick={() => setIsCategoryDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={editingCategory ? handleEditCategory : handleCreateCategory}>
+                {editingCategory ? "Atualizar" : "Criar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <SubcategoryForm
-        open={openSubcategoryForm}
-        onClose={() => setOpenSubcategoryForm(false)}
-        onSuccess={fetchData}
-        category={categories.find(cat => cat.id === selectedCategoryId) || {} as ProductCategory}
-        subcategory={editSubcategory}
+        isOpen={isSubcategoryModalOpen}
+        onClose={() => setIsOpenSubcategoryModal(false)}
+        onSuccess={fetchCategories}
+        category={selectedCategory}
+        subcategory={selectedSubcategory}
       />
     </div>
   );

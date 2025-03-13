@@ -1,83 +1,101 @@
 
-import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
 import { useSubcategoryForm } from "./subcategory/useSubcategoryForm";
 import { SubcategoryFormHeader } from "./subcategory/SubcategoryFormHeader";
-import { SubcategoryFormFields } from "./subcategory/SubcategoryFormFields";
 import { CustomFieldsList } from "./subcategory/CustomFieldsList";
-import { FormFields } from "./subcategory/useSubcategoryForm";
 
-interface SubcategoryFormProps {
-  categoryId: string;
-  subcategoryId?: string;
-  onSuccess?: () => void;
+export interface SubcategoryFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => Promise<void>;
+  category: any;
+  subcategory?: any;
 }
 
-export function SubcategoryForm({ categoryId, subcategoryId, onSuccess }: SubcategoryFormProps) {
-  const { form, isSubmitting, handleFormSubmit } = useSubcategoryForm(
-    categoryId,
-    subcategoryId,
-    onSuccess
-  );
+export const SubcategoryForm = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  category,
+  subcategory
+}: SubcategoryFormProps) => {
+  const isEdit = !!subcategory;
+  const categoryId = category?.id;
   
-  // Carregar dados da subcategoria existente
-  useEffect(() => {
-    if (subcategoryId) {
-      const loadSubcategory = async () => {
-        const { data, error } = await supabase
-          .from("product_subcategories")
-          .select("*")
-          .eq("id", subcategoryId)
-          .single();
-
-        if (error) {
-          console.error("Erro ao carregar subcategoria:", error);
-          return;
-        }
-
-        if (data) {
-          form.reset({
-            name: data.name,
-            description: data.description || "",
-            default_fields: data.default_fields || {},
-          });
-        }
-      };
-
-      loadSubcategory();
-    }
-  }, [subcategoryId, form]);
+  const {
+    form,
+    isSubmitting,
+    onSubmit
+  } = useSubcategoryForm({
+    categoryId,
+    subcategoryId: subcategory?.id,
+    initialData: subcategory,
+    onSuccess
+  });
 
   return (
-    <Card>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)}>
-          <CardHeader>
-            <SubcategoryFormHeader isEdit={!!subcategoryId} />
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <SubcategoryFormFields form={form} />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[550px]">
+        <SubcategoryFormHeader
+          title="Subcategoria"
+          isEdit={isEdit}
+        />
+        
+        <Form {...form}>
+          <form onSubmit={onSubmit} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome da subcategoria" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Descrição da subcategoria" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <CustomFieldsList form={form} />
-          </CardContent>
-          
-          <CardFooter className="flex justify-end gap-2">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? "Salvando..."
-                : subcategoryId
-                ? "Atualizar Subcategoria"
-                : "Criar Subcategoria"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
+            
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isEdit ? "Atualizando..." : "Criando..."}
+                  </>
+                ) : (
+                  isEdit ? "Atualizar" : "Criar"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
-}
+};

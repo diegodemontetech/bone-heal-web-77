@@ -3,93 +3,100 @@ import { supabase } from "@/integrations/supabase/client";
 import { CRMField } from "@/types/crm";
 import { FieldFormData } from "../types";
 
-/**
- * Busca todos os campos de um pipeline
- */
 export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMField[]> => {
-  const { data, error } = await supabase
-    .from('crm_fields')
-    .select('*')
-    .eq('pipeline_id', pipelineId)
-    .order('created_at', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from("crm_fields")
+      .select("*")
+      .eq("pipeline_id", pipelineId)
+      .order("created_at", { ascending: false });
 
-  if (error) throw error;
-  
-  return (data || []) as CRMField[];
+    if (error) throw error;
+    
+    // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
+    return (data || []) as CRMField[];
+  } catch (error) {
+    console.error("Error fetching fields:", error);
+    throw error;
+  }
 };
 
-/**
- * Cria um novo campo
- */
-export const createField = async (pipelineId: string, data: FieldFormData): Promise<CRMField> => {
-  // Processar opções se for um campo tipo select, radio ou checkbox
-  const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
-    ? data.options.split(',').map(opt => opt.trim())
-    : [];
+export const createField = async (pipelineId: string, formData: FieldFormData): Promise<CRMField> => {
+  try {
+    // Processar opções de campos do tipo select, radio, checkbox
+    const options = ["select", "radio", "checkbox"].includes(formData.type) && formData.options
+      ? formData.options.split(",").map(opt => opt.trim())
+      : null;
 
-  const newField = {
-    name: data.name,
-    label: data.label,
-    type: data.type,
-    required: data.required,
-    display_in_kanban: data.display_in_kanban,
-    options: options.length > 0 ? options : null,
-    mask: data.mask || null,
-    default_value: data.default_value || null,
-    pipeline_id: pipelineId
-  };
+    const { data, error } = await supabase
+      .from("crm_fields")
+      .insert([{
+        pipeline_id: pipelineId,
+        name: formData.name,
+        label: formData.label,
+        type: formData.type,
+        required: formData.required,
+        display_in_kanban: formData.display_in_kanban,
+        options: options,
+        mask: formData.mask || null,
+        default_value: formData.default_value || null
+      }])
+      .select()
+      .single();
 
-  const { data: createdField, error } = await supabase
-    .from('crm_fields')
-    .insert([newField])
-    .select()
-    .single();
-
-  if (error) throw error;
-  
-  return createdField as CRMField;
+    if (error) throw error;
+    
+    // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
+    return data as CRMField;
+  } catch (error) {
+    console.error("Error creating field:", error);
+    throw error;
+  }
 };
 
-/**
- * Atualiza um campo existente
- */
-export const updateField = async (fieldId: string, data: FieldFormData) => {
-  // Processar opções se for um campo tipo select, radio ou checkbox
-  const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
-    ? data.options.split(',').map(opt => opt.trim())
-    : [];
+export const updateField = async (fieldId: string, formData: FieldFormData): Promise<CRMField> => {
+  try {
+    // Processar opções de campos do tipo select, radio, checkbox
+    const options = ["select", "radio", "checkbox"].includes(formData.type) && formData.options
+      ? formData.options.split(",").map(opt => opt.trim())
+      : null;
 
-  const updatedField = {
-    name: data.name,
-    label: data.label,
-    type: data.type,
-    required: data.required,
-    display_in_kanban: data.display_in_kanban,
-    options: options.length > 0 ? options : null,
-    mask: data.mask || null,
-    default_value: data.default_value || null
-  };
+    const { data, error } = await supabase
+      .from("crm_fields")
+      .update({
+        name: formData.name,
+        label: formData.label,
+        type: formData.type,
+        required: formData.required,
+        display_in_kanban: formData.display_in_kanban,
+        options: options,
+        mask: formData.mask || null,
+        default_value: formData.default_value || null
+      })
+      .eq("id", fieldId)
+      .select()
+      .single();
 
-  const { error } = await supabase
-    .from('crm_fields')
-    .update(updatedField)
-    .eq('id', fieldId);
-
-  if (error) throw error;
-  
-  return updatedField;
+    if (error) throw error;
+    
+    // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
+    return data as CRMField;
+  } catch (error) {
+    console.error("Error updating field:", error);
+    throw error;
+  }
 };
 
-/**
- * Exclui um campo
- */
-export const deleteField = async (fieldId: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('crm_fields')
-    .delete()
-    .eq('id', fieldId);
+export const deleteField = async (fieldId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("crm_fields")
+      .delete()
+      .eq("id", fieldId);
 
-  if (error) throw error;
-  
-  return true;
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error deleting field:", error);
+    throw error;
+  }
 };

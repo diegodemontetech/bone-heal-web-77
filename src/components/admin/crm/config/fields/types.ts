@@ -1,37 +1,28 @@
 
-import * as z from "zod";
-
-export const fieldSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  label: z.string().min(2, "Rótulo deve ter pelo menos 2 caracteres"),
-  type: z.string(),
-  required: z.boolean().default(false),
-  display_in_kanban: z.boolean().default(false),
-  options: z.string().optional(),
-  mask: z.string().optional(),
-  default_value: z.string().optional(),
-});
-
-export type FieldFormValues = z.infer<typeof fieldSchema>;
-
 export const fieldTypes = [
-  { value: "text", label: "Texto" },
-  { value: "number", label: "Número" },
-  { value: "email", label: "E-mail" },
-  { value: "phone", label: "Telefone" },
-  { value: "date", label: "Data" },
-  { value: "time", label: "Hora" },
-  { value: "datetime", label: "Data e Hora" },
-  { value: "select", label: "Seleção" },
-  { value: "radio", label: "Radio" },
-  { value: "checkbox", label: "Checkbox" },
-  { value: "textarea", label: "Área de Texto" },
-  { value: "money", label: "Valor Monetário" },
-  { value: "cpf", label: "CPF" },
-  { value: "cnpj", label: "CNPJ" },
-  { value: "cep", label: "CEP" }
+  { id: "text", name: "Texto" },
+  { id: "number", name: "Número" },
+  { id: "date", name: "Data" },
+  { id: "datetime", name: "Data e Hora" },
+  { id: "currency", name: "Valor (R$)" },
+  { id: "percent", name: "Percentual" },
+  { id: "select", name: "Seleção" },
+  { id: "multiselect", name: "Múltipla Escolha" },
+  { id: "checkbox", name: "Caixa de Seleção" },
+  { id: "timer", name: "Cronômetro" },
+  { id: "phone", name: "Telefone" },
+  { id: "email", name: "E-mail" },
+  { id: "cpf", name: "CPF" },
+  { id: "cnpj", name: "CNPJ" },
+  { id: "cep", name: "CEP" }
 ];
 
-export interface FieldsFormProps {
-  onSuccess?: () => void;
+export interface Field {
+  id: string;
+  name: string;
+  type: string;
+  department: string;
+  required: boolean;
+  showInCard: boolean;
+  showInKanban: boolean;
 }

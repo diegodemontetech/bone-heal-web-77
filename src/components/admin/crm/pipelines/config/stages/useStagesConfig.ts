@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CRMStage } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,7 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
 
+      // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
       setStages(data as CRMStage[]);
     } catch (error) {
       console.error('Erro ao buscar estágios:', error);
@@ -55,6 +57,7 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
 
+      // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
       setStages([...stages, data as CRMStage]);
       toast.success('Estágio criado com sucesso!');
       fetchStages(); // Recarrega os estágios para atualizar a lista

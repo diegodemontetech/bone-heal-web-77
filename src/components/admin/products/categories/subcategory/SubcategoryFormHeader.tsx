@@ -1,22 +1,15 @@
 
-import {
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { ProductSubcategory } from "@/types/product";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface SubcategoryFormHeaderProps {
-  subcategory: ProductSubcategory | null | undefined;
+  title: string;
+  isEdit?: boolean;
 }
 
-export function SubcategoryFormHeader({ subcategory }: SubcategoryFormHeaderProps) {
+export const SubcategoryFormHeader = ({ title, isEdit = false }: SubcategoryFormHeaderProps) => {
   return (
     <DialogHeader>
-      <DialogTitle>{subcategory ? "Editar Subcategoria" : "Nova Subcategoria"}</DialogTitle>
-      <DialogDescription>
-        {subcategory ? "Edite os campos da subcategoria." : "Adicione uma nova subcategoria."}
-      </DialogDescription>
+      <DialogTitle>{isEdit ? `Editar ${title}` : `Nova ${title}`}</DialogTitle>
     </DialogHeader>
   );
-}
+};
