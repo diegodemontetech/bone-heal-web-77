@@ -38,7 +38,7 @@ export const crmRoutes: RouteObject[] = [
     )
   },
   {
-    path: "leads/configuracoes",
+    path: "crm/configuracoes",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>

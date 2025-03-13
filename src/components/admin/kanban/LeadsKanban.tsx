@@ -253,7 +253,7 @@ const LeadsKanban = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
-            <a href="/admin/leads/configuracoes">
+            <a href="/admin/crm/configuracoes">
               Configurações
             </a>
           </Button>
@@ -284,7 +284,7 @@ const LeadsKanban = () => {
           <CardContent className="flex flex-col items-center justify-center h-48 p-4">
             <p className="text-muted-foreground mb-4">Nenhum estágio configurado para este departamento</p>
             <Button asChild>
-              <a href="/admin/leads/configuracoes">Configurar Estágios</a>
+              <a href="/admin/crm/configuracoes">Configurar Estágios</a>
             </Button>
           </CardContent>
         </Card>

@@ -16,18 +16,19 @@ const LeadCard = ({ lead, index }: LeadCardProps) => {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          className="mb-2"
         >
-          <Card className="mb-2 cursor-pointer hover:shadow-md transition-shadow">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow">
             <CardContent className="p-3">
               <h3 className="font-medium">{lead.name}</h3>
               <p className="text-sm text-muted-foreground">{lead.email}</p>
               <p className="text-sm">{lead.phone}</p>
-              <div className="flex mt-2 text-xs">
+              <div className="flex mt-2 text-xs gap-1">
                 <span className="bg-primary/10 text-primary rounded-full px-2 py-1">
                   {lead.source}
                 </span>
                 {lead.needs_human && (
-                  <span className="bg-red-100 text-red-600 rounded-full px-2 py-1 ml-1">
+                  <span className="bg-red-100 text-red-600 rounded-full px-2 py-1">
                     Atenção
                   </span>
                 )}
