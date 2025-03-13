@@ -50,8 +50,18 @@ const NotificationsBell = () => {
       if (error) throw error;
       
       if (data) {
-        setNotifications(data);
-        setUnreadCount(data.filter(n => !n.read).length);
+        // Mapear os dados do banco para o formato que o componente espera
+        const mappedNotifications: Notification[] = data.map(n => ({
+          id: n.id,
+          title: n.title || n.type || "Notificação",
+          message: n.message || n.content || "",
+          created_at: n.created_at,
+          read: n.read || (n.read_at !== null),
+          link: n.link
+        }));
+        
+        setNotifications(mappedNotifications);
+        setUnreadCount(mappedNotifications.filter(n => !n.read).length);
       }
     } catch (error) {
       console.error("Erro ao buscar notificações:", error);
@@ -105,7 +115,7 @@ const NotificationsBell = () => {
     try {
       const { error } = await supabase
         .from("notifications")
-        .update({ read: true })
+        .update({ read: true, read_at: new Date().toISOString() })
         .eq("id", notificationId);
       
       if (error) throw error;
@@ -123,9 +133,9 @@ const NotificationsBell = () => {
     try {
       const { error } = await supabase
         .from("notifications")
-        .update({ read: true })
+        .update({ read: true, read_at: new Date().toISOString() })
         .eq("user_id", profile?.id)
-        .eq("read", false);
+        .is("read", false);
       
       if (error) throw error;
       

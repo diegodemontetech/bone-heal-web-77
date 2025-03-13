@@ -520,13 +520,53 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          browser_notifications: boolean
+          created_at: string | null
+          email_notifications: boolean
+          id: string
+          new_tickets: boolean
+          sla_alerts: boolean
+          system_updates: boolean
+          ticket_updates: boolean
+          user_id: string
+        }
+        Insert: {
+          browser_notifications?: boolean
+          created_at?: string | null
+          email_notifications?: boolean
+          id?: string
+          new_tickets?: boolean
+          sla_alerts?: boolean
+          system_updates?: boolean
+          ticket_updates?: boolean
+          user_id: string
+        }
+        Update: {
+          browser_notifications?: boolean
+          created_at?: string | null
+          email_notifications?: boolean
+          id?: string
+          new_tickets?: boolean
+          sla_alerts?: boolean
+          system_updates?: boolean
+          ticket_updates?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           content: string
           created_at: string
           id: string
+          link: string | null
+          message: string | null
+          read: boolean | null
           read_at: string | null
           status: string
+          title: string | null
           type: string
           user_id: string | null
         }
@@ -534,8 +574,12 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean | null
           read_at?: string | null
           status?: string
+          title?: string | null
           type: string
           user_id?: string | null
         }
@@ -543,8 +587,12 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean | null
           read_at?: string | null
           status?: string
+          title?: string | null
           type?: string
           user_id?: string | null
         }
