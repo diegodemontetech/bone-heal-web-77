@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,7 +61,13 @@ const LeadsKanban = () => {
 
         if (error) throw error;
         
-        setStages(data || []);
+        // Garantir que todos os estágios tenham pipeline_id
+        const stagesWithPipelineId = (data || []).map(stage => ({
+          ...stage,
+          pipeline_id: stage.pipeline_id || ""
+        })) as CRMStage[];
+        
+        setStages(stagesWithPipelineId);
         
       } catch (err: any) {
         console.error("Erro ao carregar estágios:", err);

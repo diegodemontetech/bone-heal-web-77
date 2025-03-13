@@ -57,3 +57,28 @@ export interface CRMPipelinePermission {
   permission: string;
   created_at?: string;
 }
+
+export interface Department {
+  id: string;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Lead {
+  id: string;
+  name: string;
+  email?: string;
+  phone: string;
+  status: string;
+  stage: string;
+  source: string;
+  created_at: string;
+  updated_at: string;
+  last_contact: string;
+  needs_human: boolean;
+  notes?: string;
+  tags?: string[];
+  assigned_to?: string;
+}

@@ -53,7 +53,13 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
         throw error;
       }
 
-      setStages(data || []);
+      // Aqui precisamos garantir que o tipo retornado está conforme esperado
+      const stagesWithPipelineId = data?.map(stage => ({
+        ...stage,
+        pipeline_id: stage.pipeline_id || ""  // Garantir que pipeline_id sempre existe
+      })) as CRMStage[];
+      
+      setStages(stagesWithPipelineId);
     } catch (error: any) {
       console.error("Erro ao buscar estágios:", error);
       toast.error("Não foi possível carregar os estágios");

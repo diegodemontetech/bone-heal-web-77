@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,14 @@ export const StagesConfig = ({ pipelineId }: StagesConfigProps) => {
         .order("order");
 
       if (error) throw error;
-      setStages(data || []);
+      
+      // Garantir que todas as entradas tenham pipeline_id
+      const formattedStages = (data || []).map(stage => ({
+        ...stage,
+        pipeline_id: stage.pipeline_id || pipelineId
+      })) as CRMStage[];
+      
+      setStages(formattedStages);
     } catch (err) {
       console.error("Erro ao buscar estágios:", err);
       toast.error("Erro ao carregar estágios");
@@ -90,7 +96,13 @@ export const StagesConfig = ({ pipelineId }: StagesConfigProps) => {
 
       if (error) throw error;
 
-      setStages([...stages, data]);
+      // Garantir que o resultado tem o formato correto
+      const newStageWithCorrectType: CRMStage = {
+        ...data,
+        pipeline_id: data.pipeline_id || pipelineId
+      };
+
+      setStages([...stages, newStageWithCorrectType]);
       setNewStage({ name: "", color: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)] });
       toast.success("Estágio adicionado com sucesso");
     } catch (err) {

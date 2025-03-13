@@ -53,7 +53,7 @@ export const usePipelineActions = (
 
       if (error) throw error;
 
-      // Duplicar estágios do pipeline - Simplificando tipos para evitar recursão infinita
+      // Duplicar estágios do pipeline
       const { data: stages, error: stagesError } = await supabase
         .from("crm_stages")
         .select("*")
@@ -62,7 +62,15 @@ export const usePipelineActions = (
       if (stagesError) throw stagesError;
 
       if (stages && stages.length > 0) {
-        const newStages = stages.map((stage: any) => ({
+        // Usar tipagem explícita para evitar recursão infinita
+        type StageType = {
+          name: string;
+          color: string;
+          pipeline_id: string;
+          order: number;
+        };
+
+        const newStages: StageType[] = stages.map((stage: any) => ({
           name: stage.name,
           color: stage.color,
           pipeline_id: newPipeline.id,
@@ -72,7 +80,7 @@ export const usePipelineActions = (
         await supabase.from("crm_stages").insert(newStages);
       }
 
-      // Duplicar campos do pipeline - Simplificando tipos para evitar recursão infinita
+      // Duplicar campos do pipeline
       const { data: fields, error: fieldsError } = await supabase
         .from("crm_fields")
         .select("*")
@@ -81,7 +89,20 @@ export const usePipelineActions = (
       if (fieldsError) throw fieldsError;
 
       if (fields && fields.length > 0) {
-        const newFields = fields.map((field: any) => ({
+        // Usar tipagem explícita para evitar recursão infinita
+        type FieldType = {
+          name: string;
+          label: string;
+          type: string;
+          required: boolean;
+          display_in_kanban: boolean;
+          options?: string[] | null;
+          mask?: string | null;
+          default_value?: string | null;
+          pipeline_id: string;
+        };
+
+        const newFields: FieldType[] = fields.map((field: any) => ({
           name: field.name,
           label: field.label,
           type: field.type,
@@ -97,7 +118,7 @@ export const usePipelineActions = (
       }
 
       // Atualizar a lista de pipelines com o novo pipeline
-      setPipelines(prevPipelines => [...prevPipelines, newPipeline]);
+      setPipelines(prevPipelines => [...prevPipelines, newPipeline as Pipeline]);
       toast.success("Pipeline duplicado com sucesso");
     } catch (err) {
       console.error("Erro ao duplicar pipeline:", err);

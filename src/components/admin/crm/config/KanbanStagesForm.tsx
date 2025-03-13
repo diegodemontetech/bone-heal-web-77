@@ -81,7 +81,8 @@ export function KanbanStagesForm({ onSuccess }: KanbanStagesFormProps) {
           name: data.name,
           color: data.color,
           department_id: data.department_id,
-          order: data.order
+          order: data.order,
+          pipeline_id: "" // Valor padrão vazio para satisfazer o tipo
         }]);
 
       if (error) throw error;
