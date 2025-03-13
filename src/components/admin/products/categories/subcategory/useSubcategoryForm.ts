@@ -22,8 +22,9 @@ export function useSubcategoryForm({
   onClose 
 }: UseSubcategoryFormProps) {
   const [customFields, setCustomFields] = useState<Record<string, any>>(
-    subcategory?.default_fields || {}
+    subcategory?.default_fields as Record<string, any> || {}
   );
+  const [loading, setLoading] = useState(false);
 
   const handleFieldChange = (fieldName: string, value: any) => {
     setCustomFields(prev => ({
@@ -52,12 +53,13 @@ export function useSubcategoryForm({
     defaultValues: {
       name: subcategory?.name || "",
       description: subcategory?.description || "",
-      default_fields: subcategory?.default_fields || {}
+      default_fields: subcategory?.default_fields as Record<string, any> || {}
     }
   });
 
   const onSubmit = async (data: FormFields) => {
     try {
+      setLoading(true);
       // Incluindo os campos personalizados no envio
       data.default_fields = customFields;
       
@@ -94,14 +96,19 @@ export function useSubcategoryForm({
     } catch (error: any) {
       console.error("Erro ao salvar subcategoria:", error);
       toast.error(`Erro: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return {
     form,
     customFields,
+    loading,
     handleFieldChange,
     handleAddField,
-    onSubmit
+    onSubmit: handleFormSubmit
   };
 }

@@ -3,17 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CRMField } from "@/types/crm";
-
-export interface FieldFormData {
-  name: string;
-  label: string;
-  type: string;
-  required: boolean;
-  display_in_kanban: boolean;
-  options?: string[];
-  mask?: string;
-  default_value?: string;
-}
+import { FieldFormData } from "./types";
 
 export const useFieldsConfig = (pipelineId: string) => {
   const [fields, setFields] = useState<CRMField[]>([]);
@@ -27,6 +17,9 @@ export const useFieldsConfig = (pipelineId: string) => {
     type: "text",
     required: false,
     display_in_kanban: false,
+    options: "",
+    mask: "",
+    default_value: ""
   });
 
   const fetchFields = async () => {
@@ -63,9 +56,9 @@ export const useFieldsConfig = (pipelineId: string) => {
         type: field.type,
         required: field.required,
         display_in_kanban: field.display_in_kanban,
-        options: field.options,
-        mask: field.mask,
-        default_value: field.default_value,
+        options: Array.isArray(field.options) ? field.options.join(', ') : '',
+        mask: field.mask || "",
+        default_value: field.default_value || ""
       });
     } else {
       setCurrentField(null);
@@ -75,6 +68,9 @@ export const useFieldsConfig = (pipelineId: string) => {
         type: "text",
         required: false,
         display_in_kanban: false,
+        options: "",
+        mask: "",
+        default_value: ""
       });
     }
     setIsDialogOpen(true);
@@ -88,9 +84,21 @@ export const useFieldsConfig = (pipelineId: string) => {
   const handleCreateField = async (data: FieldFormData) => {
     setIsSaving(true);
     try {
+      // Processar opções se for um campo tipo select, radio ou checkbox
+      const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
+        ? data.options.split(',').map(opt => opt.trim())
+        : [];
+
       const newField = {
-        ...data,
-        pipeline_id: pipelineId,
+        name: data.name,
+        label: data.label,
+        type: data.type,
+        required: data.required,
+        display_in_kanban: data.display_in_kanban,
+        options: options.length > 0 ? options : null,
+        mask: data.mask || null,
+        default_value: data.default_value || null,
+        pipeline_id: pipelineId
       };
 
       const { data: createdField, error } = await supabase
@@ -117,16 +125,32 @@ export const useFieldsConfig = (pipelineId: string) => {
     
     setIsSaving(true);
     try {
+      // Processar opções se for um campo tipo select, radio ou checkbox
+      const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
+        ? data.options.split(',').map(opt => opt.trim())
+        : [];
+
+      const updatedField = {
+        name: data.name,
+        label: data.label,
+        type: data.type,
+        required: data.required,
+        display_in_kanban: data.display_in_kanban,
+        options: options.length > 0 ? options : null,
+        mask: data.mask || null,
+        default_value: data.default_value || null
+      };
+
       const { error } = await supabase
         .from('crm_fields')
-        .update(data)
+        .update(updatedField)
         .eq('id', currentField.id);
 
       if (error) throw error;
 
       setFields(fields.map(field => 
         field.id === currentField.id 
-          ? { ...field, ...data }
+          ? { ...field, ...updatedField }
           : field
       ));
       
@@ -157,14 +181,30 @@ export const useFieldsConfig = (pipelineId: string) => {
     }
   };
 
-  const handleFormChange = (key: keyof FieldFormData, value: any) => {
-    setFormData({
-      ...formData,
-      [key]: value
-    });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleSubmit = () => {
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (currentField) {
       handleUpdateField(formData);
     } else {
@@ -195,12 +235,14 @@ export const useFieldsConfig = (pipelineId: string) => {
     isDialogOpen,
     currentField,
     formData,
+    isSaving,
     handleOpenDialog,
     handleCloseDialog,
-    handleFormChange,
+    handleInputChange,
+    handleSwitchChange,
+    handleSelectChange,
     handleSubmit,
     handleDeleteField,
-    isSaving,
     getDefaultMask
   };
 };

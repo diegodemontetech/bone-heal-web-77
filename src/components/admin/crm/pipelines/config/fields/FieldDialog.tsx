@@ -19,7 +19,8 @@ export const FieldDialog = ({
   handleInputChange,
   handleSwitchChange,
   handleSelectChange,
-  getDefaultMask
+  getDefaultMask,
+  isSaving
 }: FieldDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
@@ -39,11 +40,11 @@ export const FieldDialog = ({
             getDefaultMask={getDefaultMask}
           />
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button type="submit">
-              {currentField ? "Atualizar" : "Criar"} Campo
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Salvando..." : currentField ? "Atualizar" : "Criar"} Campo
             </Button>
           </DialogFooter>
         </form>

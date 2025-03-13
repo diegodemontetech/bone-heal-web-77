@@ -14,13 +14,14 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
     isDialogOpen,
     currentField,
     formData,
+    isSaving,
     handleOpenDialog,
     handleCloseDialog,
     handleInputChange,
     handleSwitchChange,
     handleSelectChange,
-    handleDeleteField,
     handleSubmit,
+    handleDeleteField,
     getDefaultMask
   } = useFieldsConfig(pipelineId);
 
@@ -57,6 +58,7 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
         handleSwitchChange={handleSwitchChange}
         handleSelectChange={handleSelectChange}
         getDefaultMask={getDefaultMask}
+        isSaving={isSaving}
       />
     </>
   );

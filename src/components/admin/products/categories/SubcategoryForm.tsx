@@ -16,12 +16,17 @@ import { useSubcategoryForm } from "./subcategory/useSubcategoryForm";
 export function SubcategoryForm({ open, onClose, onSuccess, category, subcategory }: SubcategoryFormProps) {
   const {
     form,
+    customFields,
     loading,
-    fields,
-    handleAddField,
     handleFieldChange,
+    handleAddField,
     onSubmit
-  } = useSubcategoryForm(category, subcategory, onSuccess, onClose);
+  } = useSubcategoryForm({ 
+    category, 
+    subcategory, 
+    onSuccess, 
+    onClose 
+  });
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -33,7 +38,7 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
             <SubcategoryFormFields form={form} />
 
             <CustomFieldsList 
-              fields={fields}
+              fields={customFields}
               onFieldChange={handleFieldChange}
               onAddField={handleAddField}
             />

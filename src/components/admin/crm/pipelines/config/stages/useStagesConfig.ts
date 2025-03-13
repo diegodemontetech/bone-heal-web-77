@@ -27,6 +27,7 @@ export const useStagesConfig = (pipelineId: string) => {
       const stagesWithPipeline: StageWithPipeline[] = data.map(stage => ({
         ...stage,
         pipeline_id: pipelineId,
+        name: stage.name || ''  // Garantir que name é uma string não nula
       })) as StageWithPipeline[];
       
       setStages(stagesWithPipeline);

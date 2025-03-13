@@ -35,6 +35,7 @@ export interface FieldDialogProps {
   handleSwitchChange: (name: string, checked: boolean) => void;
   handleSelectChange: (name: string, value: string) => void;
   getDefaultMask: (type: string) => string;
+  isSaving: boolean;
 }
 
 export interface FieldsConfigProps {
