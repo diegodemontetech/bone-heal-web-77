@@ -1,134 +1,141 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UserRole } from "@/types/auth";
 import { FormData } from "../RegistrationForm";
 import { syncCustomerWithOmie } from "./omie-sync-service";
 
 export const handleModalRegistration = async (data: FormData, onSuccess?: (customer: any) => void) => {
   try {
-    // Dados do usuário para o cadastro
-    const userData = {
-      full_name: data.fullName,
-      cro: data.cro,
-      specialty: data.specialty,
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      neighborhood: data.neighborhood,
-      zip_code: data.zipCode,
-      phone: data.phone,
-      cnpj: data.cnpj || "",
-      cpf: data.cpf,
-      complemento: data.complemento || "",
-      endereco_numero: data.endereco_numero,
-      receive_news: data.receiveNews,
-      role: 'dentist',
-      pessoa_fisica: !data.cnpj || data.cnpj.trim() === ""
-    };
+    console.log("Iniciando cadastro modal de cliente:", data);
     
-    console.log("Dados do formulário para cadastro em modal:", userData);
+    // Verificar se o e-mail já existe no sistema
+    const { data: existingUsers, error: emailCheckError } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .eq('email', data.email)
+      .maybeSingle();
     
-    // Modificamos para usar .auth.signUp para criar o usuário
-    const { data: newUser, error: authError } = await supabase.auth.signUp({
+    if (emailCheckError) {
+      console.error("Erro ao verificar e-mail existente:", emailCheckError);
+      throw new Error("Erro ao verificar disponibilidade do e-mail");
+    }
+    
+    if (existingUsers) {
+      console.log("Usuário já existe, retornando dados existentes:", existingUsers);
+      
+      // Se o usuário já existe, apenas use seus dados em vez de criar um novo
+      if (onSuccess) {
+        // Busca dados completos do usuário existente
+        const { data: existingUserData, error: userDataError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', existingUsers.id)
+          .single();
+          
+        if (userDataError) {
+          console.error("Erro ao buscar dados do usuário existente:", userDataError);
+          throw new Error("Erro ao buscar dados do cliente existente");
+        }
+        
+        toast.success("Cliente encontrado no sistema");
+        onSuccess(existingUserData);
+      }
+      
+      return existingUsers;
+    }
+    
+    // Criar um novo usuário/perfil sem fazer autenticação
+    const { data: newUser, error: createError } = await supabase.auth.signUp({
       email: data.email,
-      password: data.password || "123456", // Senha padrão se não fornecida
+      password: data.password || Math.random().toString(36).slice(-10), // Gera senha aleatória se não fornecida
       options: {
         data: {
-          ...userData,
-          email: data.email
+          full_name: data.fullName,
+          cro: data.cro,
+          specialty: data.specialty,
+          address: data.address,
+          city: data.city,
+          state: data.state,
+          neighborhood: data.neighborhood,
+          zip_code: data.zipCode,
+          phone: data.phone,
+          cnpj: data.cnpj || "",
+          cpf: data.cpf,
+          complemento: data.complemento || "",
+          endereco_numero: data.endereco_numero,
+          receive_news: data.receiveNews,
+          role: UserRole.DENTIST,
+          pessoa_fisica: !data.cnpj || data.cnpj.trim() === ""
         }
       }
     });
-
-    if (authError) {
-      console.error("Erro ao criar usuário:", authError);
-      throw authError;
+    
+    if (createError) {
+      console.error("Erro ao criar usuário:", createError);
+      throw new Error(createError.message);
     }
     
-    console.log("Usuário criado com sucesso:", newUser);
+    if (!newUser?.user?.id) {
+      console.error("Erro: ID do usuário não encontrado na resposta");
+      throw new Error("Erro ao finalizar cadastro: ID do usuário ausente");
+    }
     
-    // Buscar o profile criado pelo trigger depois do signUp
-    // Adicionamos um pequeno delay para permitir que o trigger execute
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    console.log("Usuário criado com sucesso:", newUser.user.id);
     
-    let newCustomer = null;
-    
-    // Primeiro tenta buscar pelo email
-    const { data: profileByEmail, error: emailError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("email", data.email)
+    // Buscar o perfil recém-criado para ter certeza que temos todos os dados
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', newUser.user.id)
       .single();
       
-    if (emailError || !profileByEmail) {
-      console.log("Não foi possível encontrar perfil por email, tentando por ID...");
-      
-      // Se não encontrar por email, tenta buscar por ID (se disponível)
-      if (newUser?.user?.id) {
-        const { data: profileById, error: idError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", newUser.user.id)
-          .single();
-          
-        if (idError) {
-          console.error("Erro ao buscar perfil por ID:", idError);
-          // Criar o perfil manualmente se não existir
-          const { data: manualProfile, error: insertError } = await supabase
-            .from("profiles")
-            .insert([{
-              id: newUser.user.id,
-              ...userData,
-              email: data.email
-            }])
-            .select("*")
-            .single();
-            
-          if (insertError) {
-            console.error("Erro ao criar perfil manualmente:", insertError);
-            throw new Error("Não foi possível criar o perfil do usuário");
-          }
-          
-          newCustomer = manualProfile;
-        } else {
-          newCustomer = profileById;
+    if (profileError) {
+      console.error("Erro ao buscar perfil:", profileError);
+      throw new Error("Erro ao buscar dados do perfil");
+    }
+    
+    console.log("Perfil de cliente obtido:", profileData);
+    
+    // Tentar sincronizar com Omie
+    try {
+      const syncedData = await syncCustomerWithOmie(profileData);
+      console.log("Cliente sincronizado com Omie:", syncedData);
+    } catch (omieError) {
+      console.error("Erro na resposta da API Omie:", omieError);
+      console.warn("Continuando com o cliente não-sincronizado...");
+      // Continuar mesmo se a sincronização falhar
+    }
+    
+    // IMPORTANTE: Deslogar o usuário recém-criado para manter a sessão do admin
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      console.error("Erro ao fazer logout após cadastro:", signOutError);
+    } else {
+      // Restaurar a sessão anterior do admin (obtido antes do signUp)
+      if (window.adminSessionBeforeSignUp) {
+        try {
+          await supabase.auth.setSession(window.adminSessionBeforeSignUp);
+          console.log("Sessão do admin restaurada com sucesso");
+          delete window.adminSessionBeforeSignUp;
+        } catch (err) {
+          console.error("Erro ao restaurar sessão do admin:", err);
         }
-      } else {
-        throw new Error("Não foi possível obter ID do usuário");
       }
-    } else {
-      newCustomer = profileByEmail;
     }
     
-    if (newCustomer) {
-      console.log("Perfil de cliente obtido:", newCustomer);
-      
-      // Tentar sincronizar com o Omie
-      const syncedCustomer = await syncCustomerWithOmie(newCustomer);
-      
-      // Verificar que temos um cliente com dados completos
-      if (!syncedCustomer || !syncedCustomer.id) {
-        console.error("Cliente sincronizado incompleto:", syncedCustomer);
-        throw new Error("Dados do cliente sincronizado incompletos");
-      }
-      
-      // Chamar o callback de sucesso, se fornecido
-      if (onSuccess) {
-        console.log("Chamando callback onSuccess com:", syncedCustomer);
-        onSuccess(syncedCustomer);
-      } else {
-        console.error("Callback onSuccess não fornecido");
-        toast.error("Erro na configuração do formulário");
-      }
-
-      return syncedCustomer;
-    } else {
-      throw new Error("Não foi possível obter dados do cliente");
+    // Chamar callback de sucesso com os dados do perfil
+    if (onSuccess && profileData) {
+      console.log("Chamando callback onSuccess com:", profileData);
+      onSuccess(profileData);
     }
     
-  } catch (dbError: any) {
-    console.error("Erro ao criar cliente no banco de dados:", dbError);
-    toast.error("Erro ao cadastrar cliente: " + dbError.message);
-    throw dbError;
+    toast.success("Cliente cadastrado com sucesso!");
+    return profileData;
+    
+  } catch (error: any) {
+    console.error("Erro no cadastro modal:", error);
+    toast.error("Erro ao cadastrar cliente: " + error.message);
+    throw error;
   }
 };

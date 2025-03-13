@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,45 +18,46 @@ export const useLoginPage = () => {
   // Obter o caminho de redirecionamento da navegação
   const fromPath = location.state?.from || location.pathname;
 
-  // Verificar a sessão atual usando diretamente o cliente Supabase
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        // Verifica primeiro se o navegador está online
-        if (!navigator.onLine) {
-          console.error("Navegador está offline");
-          setConnectionError(true);
-          setSessionLoading(false);
-          return;
-        }
-
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Erro ao verificar sessão:", error);
-          
-          // Se já tentamos algumas vezes sem sucesso, considere como erro de conexão
-          if (connectionRetries >= 2) {
-            setConnectionError(true);
-            toast.error("Não foi possível conectar ao servidor. Verifique sua conexão.");
-          } else {
-            // Incrementa contagem de tentativas e tenta novamente em 1.5 segundos
-            setConnectionRetries(prev => prev + 1);
-            setTimeout(checkSession, 1500);
-          }
-        } else {
-          // Se não houve erro, desligue o flag de erro de conexão
-          setConnectionError(false);
-          setCurrentSession(data.session);
-          setSessionLoading(false);
-        }
-      } catch (error) {
-        console.error("Erro ao verificar sessão:", error);
+  // Função para verificar a sessão, extraída para poder ser chamada novamente
+  const checkSession = useCallback(async () => {
+    try {
+      // Verifica primeiro se o navegador está online
+      if (!navigator.onLine) {
+        console.error("Navegador está offline");
         setConnectionError(true);
         setSessionLoading(false);
+        return;
       }
-    };
-    
+
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Erro ao verificar sessão:", error);
+        
+        // Se já tentamos algumas vezes sem sucesso, considere como erro de conexão
+        if (connectionRetries >= 2) {
+          setConnectionError(true);
+          toast.error("Não foi possível conectar ao servidor. Verifique sua conexão.");
+        } else {
+          // Incrementa contagem de tentativas e tenta novamente em 1.5 segundos
+          setConnectionRetries(prev => prev + 1);
+          setTimeout(checkSession, 1500);
+        }
+      } else {
+        // Se não houve erro, desligue o flag de erro de conexão
+        setConnectionError(false);
+        setCurrentSession(data.session);
+        setSessionLoading(false);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar sessão:", error);
+      setConnectionError(true);
+      setSessionLoading(false);
+    }
+  }, [connectionRetries]);
+
+  // Verificar a sessão atual usando diretamente o cliente Supabase
+  useEffect(() => {
     // Define um timeout mais curto para a verificação da sessão (8 segundos)
     const timeoutId = setTimeout(() => {
       if (sessionLoading) {
@@ -85,10 +86,10 @@ export const useLoginPage = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [checkSession]);
 
   // Função para lidar com evento de conexão reestabelecida
-  const handleOnline = () => {
+  const handleOnline = useCallback(() => {
     console.log("Conexão restaurada");
     if (connectionError) {
       setConnectionError(false);
@@ -97,7 +98,7 @@ export const useLoginPage = () => {
       // Recarrega a página para reiniciar o processo de autenticação
       window.location.reload();
     }
-  };
+  }, [connectionError]);
 
   // Função para lidar com evento de perda de conexão
   const handleOffline = () => {
@@ -138,12 +139,12 @@ export const useLoginPage = () => {
   }, [isLoading, profile, isAdmin, navigate, fromPath, sessionLoading, currentSession, redirectAttempted, connectionError]);
 
   // Função para tentar novamente a conexão
-  const retryConnection = () => {
+  const retryConnection = useCallback(() => {
     setConnectionError(false);
     setConnectionRetries(0);
     setSessionLoading(true);
-    window.location.reload();
-  };
+    checkSession();
+  }, [checkSession]);
 
   return {
     isLoading: isLoading || sessionLoading,
@@ -155,3 +156,10 @@ export const useLoginPage = () => {
     retryConnection
   };
 };
+
+// Declaração para TypeScript reconhecer a variável global
+declare global {
+  interface Window {
+    adminSessionBeforeSignUp: any;
+  }
+}

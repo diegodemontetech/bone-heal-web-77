@@ -9,6 +9,7 @@ import { handleModalRegistration } from "../services/modal-registration-service"
 import { handleNormalRegistration } from "../services/registration-service";
 import { syncWithOmieAfterSignup } from "../services/normal-omie-sync";
 import { handleRegistrationError } from "../services/registration-error-handler";
+import { supabase } from "@/integrations/supabase/client";
 
 export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (customer: any) => void) => {
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +22,18 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
       setSubmitting(true);
       
       if (isModal) {
-        // No modo modal, inserimos diretamente no banco de dados sem autenticação
+        // No modo modal (cadastro a partir da tela de pedidos)
+        // Armazenar a sessão do admin antes de prosseguir
+        if (!window.adminSessionBeforeSignUp) {
+          const { data: currentSession } = await supabase.auth.getSession();
+          if (currentSession?.session) {
+            // Armazenar sessão para restaurar depois
+            window.adminSessionBeforeSignUp = currentSession.session;
+            console.log("Sessão de admin armazenada para restauração posterior");
+          }
+        }
+        
+        // Cadastrar cliente sem fazer login
         await handleModalRegistration(data, onSuccess);
       } else {
         // Fazer cadastro com autenticação (fluxo original)
