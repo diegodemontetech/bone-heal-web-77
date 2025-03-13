@@ -44,40 +44,35 @@ export const useLoginPage = () => {
             setConnectionRetries(prev => prev + 1);
             setTimeout(checkSession, 1500);
           }
-        } else if (data.session) {
-          console.log("Sessão ativa encontrada:", data.session);
-          setCurrentSession(data.session);
-          setConnectionError(false);
         } else {
-          console.log("Nenhuma sessão ativa encontrada");
+          // Se não houve erro, desligue o flag de erro de conexão
           setConnectionError(false);
+          setCurrentSession(data.session);
+          setSessionLoading(false);
         }
       } catch (error) {
         console.error("Erro ao verificar sessão:", error);
         setConnectionError(true);
-      } finally {
-        if (connectionRetries >= 2) {
-          setSessionLoading(false);
-        }
+        setSessionLoading(false);
       }
     };
     
-    // Define um timeout mais curto para a verificação da sessão (3 segundos)
+    // Define um timeout mais curto para a verificação da sessão (8 segundos)
     const timeoutId = setTimeout(() => {
       if (sessionLoading) {
         console.log("Timeout da verificação de sessão");
         setSessionLoading(false);
         
-        // Verifica se realmente é um problema de conexão ou apenas lentidão
-        if (navigator.onLine) {
-          setConnectionError(true);
-          toast.error("Tempo limite excedido. O servidor pode estar temporariamente indisponível.");
-        } else {
+        // Se ainda estamos carregando após o timeout, verifique a conexão
+        if (!navigator.onLine) {
           setConnectionError(true);
           toast.error("Sem conexão com a internet. Verifique sua rede.");
+        } else {
+          setConnectionError(true);
+          toast.error("Tempo limite excedido. O servidor pode estar temporariamente indisponível.");
         }
       }
-    }, 5000); // Aumentado para 5 segundos para dar mais tempo em conexões mais lentas
+    }, 8000);
     
     checkSession();
     
