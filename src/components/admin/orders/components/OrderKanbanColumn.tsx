@@ -15,10 +15,10 @@ interface OrderKanbanColumnProps {
 const OrderKanbanColumn = ({ id, title, icon: Icon, color, count, children }: OrderKanbanColumnProps) => {
   return (
     <div key={id} className="flex flex-col h-full">
-      <div className={`flex items-center gap-2 mb-3 p-3 rounded-lg ${color}`}>
-        <Icon className="w-4 h-4" />
+      <div className={`flex items-center gap-2 mb-3 p-3 rounded-lg ${color} shadow-sm`}>
+        <Icon className="w-5 h-5" />
         <h3 className="font-semibold">{title}</h3>
-        <span className="ml-auto bg-white bg-opacity-80 backdrop-blur-sm px-2 py-0.5 rounded-full text-sm font-medium">
+        <span className="ml-auto bg-white bg-opacity-90 backdrop-blur-sm px-2.5 py-0.5 rounded-full text-sm font-medium shadow-sm">
           {count}
         </span>
       </div>
@@ -28,7 +28,7 @@ const OrderKanbanColumn = ({ id, title, icon: Icon, color, count, children }: Or
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="flex-1 min-h-[600px] bg-gray-50 rounded-lg p-2 overflow-y-auto"
+            className="flex-1 min-h-[600px] bg-slate-50/50 rounded-lg p-2.5 overflow-y-auto shadow-inner"
           >
             {children}
             {provided.placeholder}

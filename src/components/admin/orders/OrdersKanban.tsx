@@ -1,64 +1,187 @@
 
 import { DragDropContext } from "@hello-pangea/dnd";
-import { Calendar, DollarSign, RefreshCw, FileCheck, Truck } from "lucide-react";
-import { toast } from "sonner";
 import OrderKanbanColumn from "./components/OrderKanbanColumn";
 import OrderCard from "./components/OrderCard";
-import { useOrderActions } from "./components/useOrderActions";
+import { 
+  FilePlus, 
+  CreditCard, 
+  RefreshCw, 
+  FileCheck, 
+  PackageCheck 
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
-const COLUMNS = [
-  { id: 'novo', title: 'Novo', icon: Calendar, color: 'bg-amber-100 border-amber-200 text-amber-800' },
-  { id: 'pago', title: 'Pago', icon: DollarSign, color: 'bg-blue-100 border-blue-200 text-blue-800' },
-  { id: 'sincronizado', title: 'Sincronizado', icon: RefreshCw, color: 'bg-indigo-100 border-indigo-200 text-indigo-800' },
-  { id: 'faturado', title: 'Faturado', icon: FileCheck, color: 'bg-emerald-100 border-emerald-200 text-emerald-800' },
-  { id: 'entregue', title: 'Entregue', icon: Truck, color: 'bg-green-100 border-green-200 text-green-800' }
-];
-
-interface OrdersKanbanProps {
-  orders: any[] | null;
-  refetchOrders: () => void;
-  onViewOrder: (order: any) => void;
+interface Order {
+  id: string;
+  status: string;
+  [key: string]: any;
 }
 
-const OrdersKanban = ({ orders, refetchOrders, onViewOrder }: OrdersKanbanProps) => {
-  const { syncOrderWithOmie, handleUpdateOrderStatus } = useOrderActions(refetchOrders);
+interface OrdersKanbanProps {
+  orders: Order[];
+  onStatusChange?: (orderId: string, newStatus: string) => Promise<void>;
+  onOrderAction?: (action: string, orderId: string) => void;
+}
 
-  const getOrdersByStatus = (status: string) => {
-    return orders?.filter(order => order.omie_status === status) || [];
-  };
+const OrdersKanban = ({ orders, onStatusChange, onOrderAction = () => {} }: OrdersKanbanProps) => {
+  const [groupedOrders, setGroupedOrders] = useState<Record<string, Order[]>>({
+    new: [],
+    paid: [],
+    synced: [],
+    invoiced: [],
+    delivered: [],
+  });
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) return;
+  useEffect(() => {
+    const grouped: Record<string, Order[]> = {
+      new: [],
+      paid: [],
+      synced: [],
+      invoiced: [],
+      delivered: [],
+    };
 
-    const { draggableId, destination } = result;
-    const newStatus = destination.droppableId;
+    orders.forEach(order => {
+      const status = order.status || 'new';
+      if (grouped[status]) {
+        grouped[status].push(order);
+      } else {
+        grouped.new.push(order);
+      }
+    });
 
-    if (newStatus === 'sincronizado') {
-      await syncOrderWithOmie(draggableId);
+    setGroupedOrders(grouped);
+  }, [orders]);
+
+  const handleDragEnd = async (result: any) => {
+    const { destination, source, draggableId } = result;
+
+    // Descartado fora da área de drop ou no mesmo lugar
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+
+    // Pedido movido para uma coluna/status diferente
+    if (destination.droppableId !== source.droppableId) {
+      try {
+        // Atualizar a UI imediatamente para melhor experiência do usuário
+        const sourceOrders = [...groupedOrders[source.droppableId]];
+        const destinationOrders = [...groupedOrders[destination.droppableId]];
+        const movedOrder = sourceOrders.find(order => order.id === draggableId);
+        
+        if (!movedOrder) return;
+        
+        // Remover da coluna de origem
+        const newSourceOrders = sourceOrders.filter(order => order.id !== draggableId);
+        
+        // Adicionar à coluna de destino
+        const newDestinationOrders = [...destinationOrders];
+        newDestinationOrders.splice(destination.index, 0, { ...movedOrder, status: destination.droppableId });
+        
+        // Atualizar estado
+        setGroupedOrders({
+          ...groupedOrders,
+          [source.droppableId]: newSourceOrders,
+          [destination.droppableId]: newDestinationOrders
+        });
+        
+        // Chamar callback de mudança de status
+        if (onStatusChange) {
+          await onStatusChange(draggableId, destination.droppableId);
+        }
+      } catch (error) {
+        console.error("Erro ao atualizar status do pedido:", error);
+        toast.error("Erro ao mover pedido. Tente novamente.");
+        
+        // Reverter para o estado anterior em caso de erro
+        // Recarregando os pedidos originais
+        const grouped: Record<string, Order[]> = {
+          new: [],
+          paid: [],
+          synced: [],
+          invoiced: [],
+          delivered: [],
+        };
+
+        orders.forEach(order => {
+          const status = order.status || 'new';
+          if (grouped[status]) {
+            grouped[status].push(order);
+          } else {
+            grouped.new.push(order);
+          }
+        });
+
+        setGroupedOrders(grouped);
+      }
     } else {
-      await handleUpdateOrderStatus(draggableId, newStatus);
+      // Reordenamento dentro da mesma coluna
+      const columnOrders = [...groupedOrders[source.droppableId]];
+      const [movedOrder] = columnOrders.splice(source.index, 1);
+      columnOrders.splice(destination.index, 0, movedOrder);
+      
+      setGroupedOrders({
+        ...groupedOrders,
+        [source.droppableId]: columnOrders
+      });
     }
   };
 
+  const columns = [
+    { 
+      id: "new", 
+      title: "Novo", 
+      icon: FilePlus, 
+      color: "bg-blue-100 text-blue-800" 
+    },
+    { 
+      id: "paid", 
+      title: "Pago", 
+      icon: CreditCard, 
+      color: "bg-emerald-100 text-emerald-800" 
+    },
+    { 
+      id: "synced", 
+      title: "Sincronizado", 
+      icon: RefreshCw, 
+      color: "bg-purple-100 text-purple-800" 
+    },
+    { 
+      id: "invoiced", 
+      title: "Faturado", 
+      icon: FileCheck, 
+      color: "bg-amber-100 text-amber-800" 
+    },
+    { 
+      id: "delivered", 
+      title: "Entregue", 
+      icon: PackageCheck, 
+      color: "bg-green-100 text-green-800" 
+    }
+  ];
+
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {COLUMNS.map(column => (
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 pb-10">
+        {columns.map((column) => (
           <OrderKanbanColumn
             key={column.id}
             id={column.id}
             title={column.title}
             icon={column.icon}
             color={column.color}
-            count={getOrdersByStatus(column.id).length}
+            count={groupedOrders[column.id]?.length || 0}
           >
-            {getOrdersByStatus(column.id).map((order, index) => (
+            {groupedOrders[column.id]?.map((order, index) => (
               <OrderCard
                 key={order.id}
-                order={order}
+                id={order.id}
                 index={index}
-                onClick={onViewOrder}
-                columnColor={column.color}
+                order={order}
+                onOrderAction={onOrderAction}
               />
             ))}
           </OrderKanbanColumn>

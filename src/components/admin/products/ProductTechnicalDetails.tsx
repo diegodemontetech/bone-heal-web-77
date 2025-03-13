@@ -5,7 +5,7 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,6 +31,20 @@ const ProductTechnicalDetails = ({
     materials: { title: "Materiais", fields: ["material", "composition"] },
     usage: { title: "Uso", fields: ["indication", "contraindication", "instructions"] },
     regulatory: { title: "Regulatório", fields: ["registration", "classification"] }
+  };
+
+  const fieldLabels: Record<string, string> = {
+    weight: "Peso",
+    height: "Altura",
+    width: "Largura",
+    length: "Comprimento",
+    material: "Material",
+    composition: "Composição",
+    indication: "Indicação",
+    contraindication: "Contraindicação",
+    instructions: "Instruções de Uso",
+    registration: "Registro",
+    classification: "Classificação"
   };
 
   const generateTechnicalDetails = async () => {
@@ -106,11 +120,12 @@ const ProductTechnicalDetails = ({
           size="sm"
           onClick={generateTechnicalDetails}
           disabled={isGenerating}
+          className="gap-2"
         >
           {isGenerating ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Sparkles className="h-4 w-4 mr-2" />
+            <Sparkles className="h-4 w-4" />
           )}
           Gerar com IA
         </Button>
@@ -122,28 +137,29 @@ const ProductTechnicalDetails = ({
           Informe os detalhes técnicos do produto. Clique em "Gerar com IA" para preencher automaticamente.
         </FormDescription>
 
-        <div className="space-y-4 mt-2">
+        <div className="space-y-3 mt-2">
           {Object.entries(detailSections).map(([sectionKey, section]) => (
-            <div key={sectionKey} className="border rounded-md overflow-hidden">
+            <div key={sectionKey} className="border rounded-md overflow-hidden shadow-sm">
               <div 
-                className="flex justify-between items-center px-4 py-2 bg-gray-50 cursor-pointer"
+                className="flex justify-between items-center px-4 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
                 onClick={() => toggleSection(sectionKey)}
               >
-                <h4 className="font-medium">{section.title}</h4>
-                <span>{expandedSection === sectionKey ? "▼" : "►"}</span>
+                <h4 className="font-medium text-slate-800">{section.title}</h4>
+                <span>{expandedSection === sectionKey ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</span>
               </div>
               {expandedSection === sectionKey && (
-                <div className="p-4 space-y-3">
+                <div className="p-4 space-y-3 bg-white">
                   {section.fields.map(field => (
-                    <div key={field} className="space-y-1">
-                      <label className="text-sm font-medium">
-                        {field.charAt(0).toUpperCase() + field.slice(1)}
+                    <div key={field} className="space-y-1.5">
+                      <label className="text-sm font-medium text-slate-700">
+                        {fieldLabels[field] || field}
                       </label>
                       <input
                         type="text"
-                        className="w-full p-2 border rounded-md text-sm"
+                        className="w-full p-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary focus:border-primary"
                         value={technicalDetails?.[sectionKey]?.[field] || ""}
                         onChange={(e) => updateField(sectionKey, field, e.target.value)}
+                        placeholder={`Informe ${fieldLabels[field] || field}...`}
                       />
                     </div>
                   ))}
