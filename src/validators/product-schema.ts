@@ -9,7 +9,30 @@ export const productFormSchema = z.object({
   short_description: z.string().optional(),
   description: z.string().optional(),
   video_url: z.string().optional(),
-  categories: z.array(z.string()).default([]), // Mantemos para o formulário, mas não usamos na API
+  department_id: z.string().optional(),
+  category_id: z.string().optional(),
+  subcategory_id: z.string().optional(),
+});
+
+export const departmentFormSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  description: z.string().optional(),
+});
+
+export const categoryFormSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  department_id: z.string().min(1, "Departamento é obrigatório"),
+  description: z.string().optional(),
+});
+
+export const subcategoryFormSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  category_id: z.string().min(1, "Categoria é obrigatória"),
+  description: z.string().optional(),
+  default_fields: z.record(z.any()).optional(),
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;
+export type DepartmentFormValues = z.infer<typeof departmentFormSchema>;
+export type CategoryFormValues = z.infer<typeof categoryFormSchema>;
+export type SubcategoryFormValues = z.infer<typeof subcategoryFormSchema>;

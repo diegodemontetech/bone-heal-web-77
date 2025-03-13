@@ -1,10 +1,74 @@
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { ProductDepartment, ProductCategory, ProductSubcategory } from "@/types/product";
 
 const ProductBasicDetails = ({ form }: { form: any }) => {
+  const [departments, setDepartments] = useState<ProductDepartment[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [subcategories, setSubcategories] = useState<ProductSubcategory[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<ProductCategory[]>([]);
+  const [filteredSubcategories, setFilteredSubcategories] = useState<ProductSubcategory[]>([]);
+
+  const selectedDepartment = form.watch("department_id");
+  const selectedCategory = form.watch("category_id");
+
+  useEffect(() => {
+    async function loadCategoriesData() {
+      try {
+        // Carregar departamentos
+        const { data: deptData } = await supabase
+          .from("product_departments")
+          .select("*")
+          .order("name");
+        setDepartments(deptData || []);
+        
+        // Carregar categorias
+        const { data: catData } = await supabase
+          .from("product_categories")
+          .select("*")
+          .order("name");
+        setCategories(catData || []);
+        
+        // Carregar subcategorias
+        const { data: subData } = await supabase
+          .from("product_subcategories")
+          .select("*")
+          .order("name");
+        setSubcategories(subData || []);
+      } catch (error) {
+        console.error("Erro ao carregar dados de categorias:", error);
+      }
+    }
+    
+    loadCategoriesData();
+  }, []);
+
+  // Filtrar categorias com base no departamento selecionado
+  useEffect(() => {
+    if (selectedDepartment) {
+      setFilteredCategories(
+        categories.filter(cat => cat.department_id === selectedDepartment)
+      );
+    } else {
+      setFilteredCategories(categories);
+    }
+  }, [selectedDepartment, categories]);
+
+  // Filtrar subcategorias com base na categoria selecionada
+  useEffect(() => {
+    if (selectedCategory) {
+      setFilteredSubcategories(
+        subcategories.filter(sub => sub.category_id === selectedCategory)
+      );
+    } else {
+      setFilteredSubcategories(subcategories);
+    }
+  }, [selectedCategory, subcategories]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">Informações Básicas</h3>
@@ -74,54 +138,102 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
         />
       </div>
       
-      <h3 className="text-lg font-medium mt-6">Categorias</h3>
-      <div className="space-y-2">
+      <h3 className="text-lg font-medium mt-6">Categorização</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormField
           control={form.control}
-          name="categories"
+          name="department_id"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value?.includes("cicatrizacao-rapida")}
-                  onCheckedChange={(checked) => {
-                    const currentValue = [...field.value || []];
-                    if (checked) {
-                      field.onChange([...currentValue, "cicatrizacao-rapida"]);
-                    } else {
-                      field.onChange(currentValue.filter(v => v !== "cicatrizacao-rapida"));
-                    }
-                  }}
-                />
-              </FormControl>
-              <FormLabel className="font-normal cursor-pointer">
-                Cicatrização Mais Rápida
-              </FormLabel>
+            <FormItem>
+              <FormLabel>Departamento</FormLabel>
+              <Select 
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  // Limpar a categoria quando mudar o departamento
+                  form.setValue("category_id", "");
+                  form.setValue("subcategory_id", "");
+                }} 
+                value={field.value || ""}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
-          name="categories"
+          name="category_id"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value?.includes("cicatrizacao-normal")}
-                  onCheckedChange={(checked) => {
-                    const currentValue = [...field.value || []];
-                    if (checked) {
-                      field.onChange([...currentValue, "cicatrizacao-normal"]);
-                    } else {
-                      field.onChange(currentValue.filter(v => v !== "cicatrizacao-normal"));
-                    }
-                  }}
-                />
-              </FormControl>
-              <FormLabel className="font-normal cursor-pointer">
-                Cicatrização Normal
-              </FormLabel>
+            <FormItem>
+              <FormLabel>Categoria</FormLabel>
+              <Select 
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  // Limpar a subcategoria quando mudar a categoria
+                  form.setValue("subcategory_id", "");
+                }} 
+                value={field.value || ""}
+                disabled={!selectedDepartment}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="">Nenhuma</SelectItem>
+                  {filteredCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="subcategory_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Subcategoria</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                value={field.value || ""}
+                disabled={!selectedCategory}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="">Nenhuma</SelectItem>
+                  {filteredSubcategories.map((sub) => (
+                    <SelectItem key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
           )}
         />

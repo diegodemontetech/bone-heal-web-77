@@ -24,6 +24,11 @@ export const NavigationItems = [
         title: "Adicionar Produto",
         href: "/admin/products/add",
         permissions: []
+      },
+      {
+        title: "Categorias e Departamentos",
+        href: "/admin/products/categories",
+        permissions: []
       }
     ]
   },

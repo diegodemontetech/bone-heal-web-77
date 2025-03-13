@@ -8,6 +8,7 @@ import { UserPermission } from "@/types/auth";
 const AdminProducts = lazy(() => import("@/pages/admin/Products"));
 const AdminVouchers = lazy(() => import("@/pages/admin/Vouchers"));
 const AdminProductForm = lazy(() => import("@/pages/admin/ProductForm"));
+const ProductCategoriesPage = lazy(() => import("@/components/admin/products/categories/DepartmentsPage"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -43,6 +44,16 @@ export const productRoutes: RouteObject[] = [
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_PRODUCTS}>
           <AdminProductForm />
+        </ProtectedRoute>
+      </Suspense>
+    )
+  },
+  {
+    path: "products/categories",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_PRODUCTS}>
+          <ProductCategoriesPage />
         </ProtectedRoute>
       </Suspense>
     )
