@@ -4,6 +4,9 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// ID do cliente de teste que queremos excluir
+const TEST_CLIENT_ID = "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3";
+
 export const useOrderCustomers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -51,19 +54,24 @@ export const useOrderCustomers = () => {
         
         console.log(`[useOrderCustomers] Encontrados ${profilesData.length} clientes na busca`);
         
-        // Garantir que todos os clientes tenham os campos necessários
-        return profilesData.map(profile => ({
-          id: profile.id,
-          full_name: profile.full_name || "Nome não informado",
-          email: profile.email || "",
-          phone: profile.phone || "",
-          address: profile.address || "",
-          city: profile.city || "",
-          state: profile.state || "",
-          zip_code: profile.zip_code || "",
-          omie_code: profile.omie_code || "",
-          omie_sync: profile.omie_sync || false
-        }));
+        // Garantir que todos os clientes tenham os campos necessários e remover o cliente de teste
+        const formattedCustomers = profilesData
+          .filter(profile => profile.id !== TEST_CLIENT_ID) // Remove o cliente de teste
+          .map(profile => ({
+            id: profile.id,
+            full_name: profile.full_name || "Nome não informado",
+            email: profile.email || "",
+            phone: profile.phone || "",
+            address: profile.address || "",
+            city: profile.city || "",
+            state: profile.state || "",
+            zip_code: profile.zip_code || "",
+            omie_code: profile.omie_code || "",
+            omie_sync: profile.omie_sync || false
+          }));
+
+        console.log(`[useOrderCustomers] Retornando ${formattedCustomers.length} clientes após filtragem`);
+        return formattedCustomers;
       } catch (error) {
         console.error("[useOrderCustomers] Exceção na consulta de clientes:", error);
         toast.error("Erro ao consultar clientes");

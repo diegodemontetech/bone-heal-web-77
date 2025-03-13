@@ -16,6 +16,9 @@ export interface Customer {
   omie_sync?: boolean;
 }
 
+// ID do cliente de teste que queremos excluir
+const TEST_CLIENT_ID = "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3";
+
 export const useCustomerState = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -59,19 +62,21 @@ export const useCustomerState = () => {
         throw profilesError;
       }
 
-      // Formatar os dados de cliente diretamente dos perfis
-      const formattedCustomers = profilesData.map(profile => ({
-        id: profile.id,
-        full_name: profile.full_name || 'Sem nome',
-        email: profile.email,
-        phone: profile.phone,
-        address: profile.address,
-        city: profile.city,
-        state: profile.state,
-        zip_code: profile.zip_code,
-        omie_code: profile.omie_code,
-        omie_sync: profile.omie_sync
-      }));
+      // Formatar os dados de cliente diretamente dos perfis e filtrar o cliente de teste
+      const formattedCustomers = profilesData
+        .filter(profile => profile.id !== TEST_CLIENT_ID) // Remove o cliente de teste
+        .map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name || 'Sem nome',
+          email: profile.email,
+          phone: profile.phone,
+          address: profile.address,
+          city: profile.city,
+          state: profile.state,
+          zip_code: profile.zip_code,
+          omie_code: profile.omie_code,
+          omie_sync: profile.omie_sync
+        }));
 
       console.log(`[useCustomerState] Encontrados ${formattedCustomers.length} clientes na busca`);
       setCustomers(formattedCustomers);
