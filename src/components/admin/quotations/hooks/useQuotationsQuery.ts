@@ -4,6 +4,57 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 import { toast } from "sonner";
+import { Json } from "@/integrations/supabase/types";
+
+// Definir tipos para melhor tipagem e manutenibilidade
+export interface CustomerProfile {
+  full_name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+}
+
+export interface ProductItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  product_image?: string;
+}
+
+export interface ShippingInfo {
+  method?: string;
+  cost?: number;
+  carrier?: string;
+  days?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+}
+
+export interface Quotation {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  customer: CustomerProfile | null;
+  customer_info: Json;
+  items: ProductItem[];
+  shipping_info: ShippingInfo | null;
+  subtotal: number;
+  discount_amount: number;
+  shipping_cost: number;
+  total_amount: number;
+  sent_by_email: boolean;
+  status: string;
+  discount_type: string;
+  payment_method: string;
+  notes: string;
+}
 
 export const useQuotationsQuery = (status?: string) => {
   // Função para carregar cotações do Supabase
@@ -25,61 +76,52 @@ export const useQuotationsQuery = (status?: string) => {
         throw error;
       }
       
-      // Processamento de dados antes de retornar
+      // Processamento de dados para formato padronizado
       return data.map(quotation => {
-        // Garantir que products seja um array
-        let products = [];
-        try {
-          products = parseJsonArray(quotation.products, []);
-        } catch (e) {
-          console.error("Erro ao analisar produtos:", e);
-          products = [];
-        }
+        // Parse dos items (produtos)
+        const items = parseJsonArray(quotation.items, []);
         
-        // Atualizar propriedades derivadas
+        // Parse das informações do cliente
+        const customerInfo = quotation.customer_info ? 
+          (typeof quotation.customer_info === 'string' ? 
+            JSON.parse(quotation.customer_info) : quotation.customer_info) : null;
+        
+        // Parse das informações de envio
+        const shippingInfo = quotation.shipping_info ? 
+          (typeof quotation.shipping_info === 'string' ? 
+            JSON.parse(quotation.shipping_info) : quotation.shipping_info) : null;
+            
+        // Calcular subtotal baseado nos itens
         let subtotal = 0;
-        products.forEach(product => {
-          if (product && product.price && product.quantity) {
-            subtotal += product.price * product.quantity;
+        items.forEach((item: ProductItem) => {
+          if (item && item.unit_price && item.quantity) {
+            subtotal += item.unit_price * item.quantity;
           }
         });
         
-        let discount = quotation.discount || 0;
+        // Utilizar discount_amount do banco de dados
+        const discountAmount = quotation.discount_amount || 0;
         
-        // Processar método de envio
+        // Calcular o custo de envio
         let shippingCost = 0;
-        if (quotation.shipping_method) {
-          let shippingMethod;
-          try {
-            // Se for string, tenta fazer o parse
-            if (typeof quotation.shipping_method === 'string') {
-              shippingMethod = JSON.parse(quotation.shipping_method);
-            } 
-            // Se já for objeto, usa diretamente
-            else if (typeof quotation.shipping_method === 'object') {
-              shippingMethod = quotation.shipping_method;
-            }
-            
-            if (shippingMethod && shippingMethod.cost) {
-              shippingCost = parseFloat(shippingMethod.cost);
-            }
-          } catch (e) {
-            console.error("Erro ao analisar método de envio:", e);
-          }
+        if (shippingInfo && shippingInfo.cost) {
+          shippingCost = parseFloat(String(shippingInfo.cost));
         }
         
-        // Calcular total
-        const total = subtotal - discount + shippingCost;
+        // Calcular total (ou usar o valor do banco se disponível)
+        const total = quotation.total_amount || (subtotal - discountAmount + shippingCost);
         
-        // Retornar objeto processado
+        // Retornar objeto processado e tipado
         return {
           ...quotation,
-          products: products,
+          customer: customerInfo,
+          items: items,
+          shipping_info: shippingInfo,
           subtotal: subtotal,
-          discount: discount,
+          discount_amount: discountAmount,
           shipping_cost: shippingCost,
           total: total
-        };
+        } as Quotation;
       });
     } catch (error) {
       console.error("Erro ao buscar cotações:", error);
