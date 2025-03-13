@@ -1,131 +1,187 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.1.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!;
+
+// Cache para resposta de produtos, para evitar chamadas redundantes
+const productDataCache = new Map();
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { omieCode, productName } = await req.json();
-    console.log(`Gerando conteúdo para produto ${productName} (Código Omie: ${omieCode})`);
-
+    const { omieCode, productName, contentType } = await req.json();
+    
     if (!omieCode) {
-      throw new Error('Código Omie é obrigatório');
+      throw new Error("Código Omie não informado");
     }
-
-    // Inicializar Gemini AI
-    const genAI = new GoogleGenerativeAI(Deno.env.get('GEMINI_API_KEY') || '');
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-
-    // Gerar conteúdo usando Gemini com um prompt estruturado
-    const prompt = `
-      Você é um especialista em produtos odontológicos, especialmente biomateriais da Bone Heal.
+    
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY não configurada");
+    }
+    
+    console.log(`Gerando ${contentType || 'conteúdo'} para produto: ${omieCode} - ${productName}`);
+    
+    // Verificar cache para não repetir chamadas à API
+    const cacheKey = `${omieCode}-${contentType || 'all'}`;
+    if (productDataCache.has(cacheKey)) {
+      console.log("Usando dados em cache");
+      return new Response(
+        JSON.stringify(productDataCache.get(cacheKey)),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Definir o prompt dependendo do tipo de conteúdo solicitado
+    let prompt;
+    
+    if (contentType === 'technical_details') {
+      prompt = `Você é um especialista em produtos médicos. 
+      Gere detalhes técnicos detalhados para o produto com código ${omieCode} e nome "${productName || 'sem nome'}".
       
-      Com base no código Omie "${omieCode}" e no nome do produto "${productName}", gere:
+      Crie um JSON estruturado com as seguintes seções:
+      1. dimensions (dimensões): weight, height, width, length
+      2. materials (materiais): material, composition
+      3. usage (uso): indication, contraindication, instructions
+      4. regulatory (regulatório): registration, classification
       
-      1. Uma descrição curta (2-3 frases) que destaque os principais benefícios
-      2. Uma descrição completa (3-4 parágrafos) detalhando composição, benefícios e indicações
-      3. Detalhes técnicos formatados como um objeto JSON com as seguintes propriedades:
-         - composição
-         - indicações
-         - contraindicações
-         - modo_de_uso
-         - armazenamento
-         - peso (em gramas)
-      
-      Retorne APENAS um objeto JSON com esta estrutura exata (nenhum texto adicional):
+      Não adicione informações não solicitadas. 
+      Formato de resposta: JSON apenas com os campos acima, sem texto explicativo antes ou depois do JSON.
+      Exemplo:
       {
-        "short_description": "Descrição curta aqui",
-        "description": "Descrição completa aqui",
-        "technical_details": {
-          "composição": "Lista dos componentes",
-          "indicações": "Casos onde o produto é indicado",
-          "contraindicações": "Situações onde não deve ser usado",
-          "modo_de_uso": "Como utilizar o produto",
-          "armazenamento": "Como armazenar",
-          "peso": "XX"
+        "dimensions": {
+          "weight": "10g",
+          "height": "5cm",
+          "width": "2cm",
+          "length": "8cm"
+        },
+        "materials": {
+          "material": "Liga de titânio",
+          "composition": "Ti6Al4V"
+        },
+        "usage": {
+          "indication": "Uso em procedimentos ortopédicos",
+          "contraindication": "Pacientes com alergia a metais",
+          "instructions": "Esterilizar antes do uso"
+        },
+        "regulatory": {
+          "registration": "10380460001",
+          "classification": "Classe III"
         }
-      }
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response_text = result.response.text();
+      }`;
+    } else {
+      // Prompt padrão para descrições
+      prompt = `Você é um especialista em produtos médicos.
+      Crie uma descrição curta (máximo 100 palavras) e uma descrição longa (250-300 palavras) para o produto médico com código ${omieCode} e nome "${productName || 'sem nome'}".
+      
+      A descrição curta deve ser objetiva e destacar os principais benefícios.
+      A descrição longa deve ser detalhada, incluindo características, diferenciais e benefícios.
+      
+      Não adicione informações não solicitadas. 
+      Formato de resposta: JSON apenas com os campos "short_description" e "description", sem texto explicativo antes ou depois do JSON.
+      Exemplo:
+      {
+        "short_description": "Texto da descrição curta aqui",
+        "description": "Texto da descrição longa aqui"
+      }`;
+    }
     
-    console.log('Conteúdo gerado com sucesso');
+    // Chamar a API Gemini
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+          topP: 0.8,
+          topK: 40,
+          maxOutputTokens: 1024,
+        }
+      })
+    });
     
-    // Extrair e validar o JSON da resposta
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Erro na resposta da API Gemini:", errorText);
+      throw new Error(`Erro na API Gemini: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    
+    if (!result.candidates || result.candidates.length === 0) {
+      throw new Error("Resposta vazia da API Gemini");
+    }
+    
+    const textContent = result.candidates[0].content.parts[0].text;
+    console.log("Texto gerado:", textContent.substring(0, 100) + "...");
+    
+    // Extrair o JSON da resposta
+    let jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("Formato de resposta inválido");
+    }
+    
+    // Parse do JSON
+    let parsedContent;
     try {
-      // Primeiro, tentar encontrar o padrão JSON na resposta
-      const jsonMatch = response_text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Não foi possível encontrar um JSON válido na resposta');
-      }
+      parsedContent = JSON.parse(jsonMatch[0]);
       
-      const jsonString = jsonMatch[0];
-      const generatedContent = JSON.parse(jsonString);
+      // Preparar resposta final baseada no tipo de conteúdo
+      let responseData;
       
-      // Verificar se o JSON tem a estrutura esperada
-      if (!generatedContent.short_description || !generatedContent.description) {
-        throw new Error('O JSON gerado não contém os campos necessários');
-      }
-      
-      return new Response(JSON.stringify(generatedContent), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    } catch (jsonError) {
-      console.error('Erro ao processar JSON:', jsonError);
-      
-      // Se falhar, fazer uma tentativa mais agressiva de parsing
-      try {
-        // Limpar e construir um JSON manualmente
-        const shortDesc = response_text.match(/["']short_description["']\s*:\s*["']([^"']+)["']/i)?.[1] || 
-                         "Biomaterial odontológico de alta qualidade para regeneração óssea.";
-        const fullDesc = response_text.match(/["']description["']\s*:\s*["']([^"']+)["']/i)?.[1] || 
-                        "Produto de alta qualidade para procedimentos odontológicos regenerativos.";
-        
-        const fallbackContent = {
-          short_description: shortDesc,
-          description: fullDesc,
-          technical_details: {
-            composição: "Biomaterial com base em hidroxiapatita",
-            indicações: "Procedimentos regenerativos",
-            contraindicações: "Alergia a algum dos componentes",
-            modo_de_uso: "Aplicar conforme orientação do profissional",
-            armazenamento: "Local seco e arejado",
-            peso: "0.2"
-          }
+      if (contentType === 'technical_details') {
+        responseData = {
+          technical_details: parsedContent
         };
-        
-        return new Response(JSON.stringify(fallbackContent), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (fallbackError) {
-        throw new Error(`Falha completa no parsing do JSON: ${fallbackError.message}`);
+      } else {
+        responseData = {
+          short_description: parsedContent.short_description,
+          description: parsedContent.description
+        };
       }
+      
+      // Guardar no cache
+      productDataCache.set(cacheKey, responseData);
+      
+      // Limitar o tamanho do cache (máximo 50 itens)
+      if (productDataCache.size > 50) {
+        const firstKey = productDataCache.keys().next().value;
+        productDataCache.delete(firstKey);
+      }
+      
+      return new Response(
+        JSON.stringify(responseData),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (parseError) {
+      console.error("Erro ao fazer parse do JSON:", parseError);
+      console.error("Texto recebido:", textContent);
+      throw new Error("Erro ao processar resposta da IA");
     }
   } catch (error) {
-    console.error('Erro na função generate-product-content:', error);
-    
+    console.error("Erro na função:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: error.stack || 'Sem detalhes adicionais'
-      }), 
+        error: error.message || "Erro desconhecido ao gerar conteúdo" 
+      }),
       { 
-        status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        },
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }

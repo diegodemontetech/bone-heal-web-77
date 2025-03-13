@@ -1,9 +1,12 @@
 
-import { useState } from "react";
+import {
+  FormLabel,
+  FormItem,
+  FormDescription,
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,31 +21,48 @@ const ProductTechnicalDetails = ({
   omieCode,
   productName,
   technicalDetails,
-  onChange
+  onChange,
 }: ProductTechnicalDetailsProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [newFieldKey, setNewFieldKey] = useState("");
-  const [newFieldValue, setNewFieldValue] = useState("");
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  const handleGenerateDetails = async () => {
-    if (!omieCode) {
-      toast.error("É necessário informar o código Omie para gerar os detalhes técnicos");
-      return;
-    }
-    
-    setIsGenerating(true);
-    
+  const detailSections = {
+    dimensions: { title: "Dimensões", fields: ["weight", "height", "width", "length"] },
+    materials: { title: "Materiais", fields: ["material", "composition"] },
+    usage: { title: "Uso", fields: ["indication", "contraindication", "instructions"] },
+    regulatory: { title: "Regulatório", fields: ["registration", "classification"] }
+  };
+
+  const generateTechnicalDetails = async () => {
     try {
+      if (!omieCode) {
+        toast.error("É necessário informar o código Omie para gerar os detalhes técnicos");
+        return;
+      }
+      
+      setIsGenerating(true);
+      
       const { data, error } = await supabase.functions.invoke("generate-product-content", {
-        body: { omieCode, productName }
+        body: { 
+          omieCode, 
+          productName,
+          contentType: "technical_details" 
+        }
       });
       
       if (error) {
         throw error;
       }
       
-      if (data && !data.error && data.technical_details) {
-        onChange(data.technical_details);
+      if (data && !data.error) {
+        // Atualizar os detalhes técnicos
+        const newTechnicalDetails = {
+          ...technicalDetails,
+          ...data.technical_details
+        };
+        
+        onChange(newTechnicalDetails);
+        
         toast.success("Detalhes técnicos gerados com sucesso!");
       } else {
         throw new Error(data?.error || "Erro ao gerar detalhes técnicos");
@@ -55,33 +75,19 @@ const ProductTechnicalDetails = ({
     }
   };
 
-  const handleAddField = () => {
-    if (!newFieldKey.trim()) {
-      toast.error("Informe o nome do campo");
-      return;
-    }
-    
-    const updatedDetails = {
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  const updateField = (section: string, field: string, value: string) => {
+    const updatedDetails = { 
       ...technicalDetails,
-      [newFieldKey.trim()]: newFieldValue
+      [section]: {
+        ...(technicalDetails[section] || {}),
+        [field]: value
+      }
     };
-    
     onChange(updatedDetails);
-    setNewFieldKey("");
-    setNewFieldValue("");
-  };
-
-  const handleRemoveField = (key: string) => {
-    const updatedDetails = { ...technicalDetails };
-    delete updatedDetails[key];
-    onChange(updatedDetails);
-  };
-
-  const handleUpdateField = (key: string, value: string) => {
-    onChange({
-      ...technicalDetails,
-      [key]: value
-    });
   };
 
   return (
@@ -92,74 +98,55 @@ const ProductTechnicalDetails = ({
           type="button" 
           variant="outline" 
           size="sm"
-          onClick={handleGenerateDetails}
+          onClick={generateTechnicalDetails}
           disabled={isGenerating}
         >
           {isGenerating ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
-            <Loader2 className="h-4 w-4 mr-2" />
+            <Sparkles className="h-4 w-4 mr-2" />
           )}
-          Gerar Detalhes Técnicos
+          Gerar com IA
         </Button>
       </div>
 
-      <div className="space-y-3 border rounded-md p-4">
-        {Object.entries(technicalDetails).length > 0 ? (
-          Object.entries(technicalDetails).map(([key, value]) => (
-            <div key={key} className="flex items-start gap-2">
-              <div className="flex-1">
-                <p className="text-sm font-medium">{key}</p>
-                <Textarea
-                  value={value as string}
-                  onChange={(e) => handleUpdateField(key, e.target.value)}
-                  className="mt-1"
-                  rows={2}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemoveField(key)}
-                className="mt-8"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-2">
-            Nenhum detalhe técnico adicionado
-          </p>
-        )}
+      <FormItem>
+        <FormLabel>Especificações do Produto</FormLabel>
+        <FormDescription>
+          Informe os detalhes técnicos do produto. Clique em "Gerar com IA" para preencher automaticamente.
+        </FormDescription>
 
-        <div className="pt-2 border-t mt-4">
-          <h4 className="text-sm font-medium mb-2">Adicionar novo campo</h4>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Nome do campo"
-              value={newFieldKey}
-              onChange={(e) => setNewFieldKey(e.target.value)}
-              className="flex-1"
-            />
-            <Input
-              placeholder="Valor"
-              value={newFieldValue}
-              onChange={(e) => setNewFieldValue(e.target.value)}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant="outline"
-              onClick={handleAddField}
-            >
-              <PlusCircle className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="space-y-4 mt-2">
+          {Object.entries(detailSections).map(([sectionKey, section]) => (
+            <div key={sectionKey} className="border rounded-md overflow-hidden">
+              <div 
+                className="flex justify-between items-center px-4 py-2 bg-gray-50 cursor-pointer"
+                onClick={() => toggleSection(sectionKey)}
+              >
+                <h4 className="font-medium">{section.title}</h4>
+                <span>{expandedSection === sectionKey ? "▼" : "►"}</span>
+              </div>
+              {expandedSection === sectionKey && (
+                <div className="p-4 space-y-3">
+                  {section.fields.map(field => (
+                    <div key={field} className="space-y-1">
+                      <label className="text-sm font-medium">
+                        {field.charAt(0).toUpperCase() + field.slice(1)}
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border rounded-md text-sm"
+                        value={technicalDetails?.[sectionKey]?.[field] || ""}
+                        onChange={(e) => updateField(sectionKey, field, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      </div>
+      </FormItem>
     </div>
   );
 };
