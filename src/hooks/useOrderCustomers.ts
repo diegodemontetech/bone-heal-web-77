@@ -18,7 +18,7 @@ export const useOrderCustomers = () => {
     queryFn: async () => {
       console.log("[useOrderCustomers] Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
-        // Buscar na tabela profiles
+        // Consulta diretamente na tabela profiles
         let query = supabase
           .from("profiles")
           .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync");
@@ -52,17 +52,17 @@ export const useOrderCustomers = () => {
         console.log(`[useOrderCustomers] Encontrados ${profilesData.length} clientes na busca`);
         
         // Garantir que todos os clientes tenham os campos necessários
-        return profilesData.map(customer => ({
-          id: customer.id,
-          full_name: customer.full_name || "Nome não informado",
-          email: customer.email || "",
-          phone: customer.phone || "",
-          address: customer.address || "",
-          city: customer.city || "",
-          state: customer.state || "",
-          zip_code: customer.zip_code || "",
-          omie_code: customer.omie_code || "",
-          omie_sync: customer.omie_sync || false
+        return profilesData.map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name || "Nome não informado",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          address: profile.address || "",
+          city: profile.city || "",
+          state: profile.state || "",
+          zip_code: profile.zip_code || "",
+          omie_code: profile.omie_code || "",
+          omie_sync: profile.omie_sync || false
         }));
       } catch (error) {
         console.error("[useOrderCustomers] Exceção na consulta de clientes:", error);

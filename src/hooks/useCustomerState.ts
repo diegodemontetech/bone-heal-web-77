@@ -59,17 +59,18 @@ export const useCustomerState = () => {
         throw profilesError;
       }
 
-      const formattedCustomers = profilesData.map(customer => ({
-        id: customer.id,
-        full_name: customer.full_name || 'Sem nome',
-        email: customer.email,
-        phone: customer.phone,
-        address: customer.address,
-        city: customer.city,
-        state: customer.state,
-        zip_code: customer.zip_code,
-        omie_code: customer.omie_code,
-        omie_sync: customer.omie_sync
+      // Formatar os dados de cliente diretamente dos perfis
+      const formattedCustomers = profilesData.map(profile => ({
+        id: profile.id,
+        full_name: profile.full_name || 'Sem nome',
+        email: profile.email,
+        phone: profile.phone,
+        address: profile.address,
+        city: profile.city,
+        state: profile.state,
+        zip_code: profile.zip_code,
+        omie_code: profile.omie_code,
+        omie_sync: profile.omie_sync
       }));
 
       console.log(`[useCustomerState] Encontrados ${formattedCustomers.length} clientes na busca`);
