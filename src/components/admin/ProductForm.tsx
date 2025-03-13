@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 import ProductImageUpload from "./ProductImageUpload";
 import ProductBasicDetails from "./products/ProductBasicDetails";
 import ProductDescriptionDetails from "./products/ProductDescriptionDetails";
+import ProductTechnicalDetails from "./products/ProductTechnicalDetails";
 import { useProductForm } from "@/hooks/use-product-form";
 import { FormLabel, FormItem } from "@/components/ui/form";
 
@@ -22,7 +23,15 @@ interface ProductFormProps {
 }
 
 const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
-  const { form, isLoading, images, setImages, handleSubmit } = useProductForm(
+  const { 
+    form, 
+    isLoading, 
+    images, 
+    setImages, 
+    technicalDetails,
+    setTechnicalDetails,
+    handleSubmit 
+  } = useProductForm(
     product,
     onSuccess,
     onClose
@@ -41,9 +50,15 @@ const ProductForm = ({ product, onClose, onSuccess }: ProductFormProps) => {
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <ProductBasicDetails form={form} />
             <ProductDescriptionDetails form={form} />
+            <ProductTechnicalDetails 
+              omieCode={form.getValues("omie_code")} 
+              productName={form.getValues("name")} 
+              technicalDetails={technicalDetails}
+              onChange={setTechnicalDetails}
+            />
 
             <FormItem>
               <FormLabel>Imagens do Produto</FormLabel>

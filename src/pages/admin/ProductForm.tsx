@@ -1,9 +1,9 @@
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProductForm } from "@/hooks/use-product-form";
 import ProductBasicDetails from "@/components/admin/products/ProductBasicDetails";
 import ProductDescriptionDetails from "@/components/admin/products/ProductDescriptionDetails";
+import ProductTechnicalDetails from "@/components/admin/products/ProductTechnicalDetails";
 import ProductImageUpload from "@/components/admin/ProductImageUpload";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,15 @@ import { FormLabel, FormItem } from "@/components/ui/form";
 
 const AdminProductForm = () => {
   const navigate = useNavigate();
-  const { form, isLoading, images, setImages, handleSubmit } = useProductForm(
+  const { 
+    form, 
+    isLoading, 
+    images, 
+    setImages, 
+    technicalDetails,
+    setTechnicalDetails,
+    handleSubmit 
+  } = useProductForm(
     undefined,
     () => {
       navigate("/admin/products");
@@ -29,6 +37,12 @@ const AdminProductForm = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <ProductBasicDetails form={form} />
             <ProductDescriptionDetails form={form} />
+            <ProductTechnicalDetails 
+              omieCode={form.getValues("omie_code")} 
+              productName={form.getValues("name")}
+              technicalDetails={technicalDetails}
+              onChange={setTechnicalDetails}
+            />
 
             <FormItem>
               <FormLabel>Imagens do Produto</FormLabel>

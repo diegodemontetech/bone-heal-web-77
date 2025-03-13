@@ -20,6 +20,9 @@ export const useProductForm = (
     product?.gallery ? [product.main_image, ...product.gallery].filter(Boolean) as string[] : []
   );
   const { notifyProductCreated, notifyProductUpdated, notifyProductError } = useProductNotifications();
+  const [technicalDetails, setTechnicalDetails] = useState<Record<string, any>>(
+    product?.technical_details || {}
+  );
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -65,6 +68,7 @@ export const useProductForm = (
         video_url: values.video_url,
         main_image: images[0] || null,
         gallery: images.slice(1),
+        technical_details: technicalDetails,
         active: true,
       };
 
@@ -94,6 +98,8 @@ export const useProductForm = (
     isLoading,
     images,
     setImages,
+    technicalDetails,
+    setTechnicalDetails,
     onSubmit,
     handleSubmit: form.handleSubmit(onSubmit)
   };
