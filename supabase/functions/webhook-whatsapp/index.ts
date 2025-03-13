@@ -1,172 +1,20 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders } from "../_shared/cors.ts";
+import { 
+  processIncomingMessage, 
+  processLead, 
+  analyzeMessageWithGemini, 
+  checkHumanTransferKeywords,
+  sendWhatsAppResponse,
+  notifyAdminsAboutHumanNeeded
+} from "./message-processor.ts";
 
 // Inicializar cliente Supabase
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Interface para um remetente de mensagem
-interface Sender {
-  phone: string;
-  name: string;
-}
-
-// Interface para uma mensagem recebida
-interface IncomingMessage {
-  leadId: string;
-  content: string;
-  sender: Sender;
-}
-
-// Processa uma mensagem da Evolution API
-function processEvolutionMessage(message: any): IncomingMessage | null {
-  if (!message || !message.key || !message.key.remoteJid) {
-    console.error("Mensagem inválida da Evolution API:", message);
-    return null;
-  }
-
-  const phone = message.key.remoteJid.split('@')[0];
-  const name = message.pushName || 'Desconhecido';
-  const content = message.message?.conversation || 
-                  message.message?.extendedTextMessage?.text ||
-                  '[Mensagem sem texto]';
-  
-  console.log(`Mensagem de ${name} (${phone}): ${content}`);
-  
-  return {
-    content,
-    sender: { phone, name },
-    leadId: '' // Será preenchido depois
-  };
-}
-
-// Processa uma mensagem da Z-API
-function processZAPIMessage(body: any): IncomingMessage | null {
-  if (!body) {
-    console.error("Payload inválido da Z-API");
-    return null;
-  }
-
-  const phone = (body.phone || body.from || '')
-                 .replace(/^(\d+)@.*$/, '$1');
-  const content = body.text || body.message || body.body || '[Sem texto]';
-  const name = body.name || body.notifyName || 'Desconhecido';
-  
-  if (!phone || !content) {
-    console.error("Dados insuficientes da Z-API:", body);
-    return null;
-  }
-  
-  console.log(`Mensagem Z-API de ${name} (${phone}): ${content}`);
-  
-  return {
-    content,
-    sender: { phone, name },
-    leadId: '' // Será preenchido depois
-  };
-}
-
-// Verifica ou cria um lead com base no remetente
-async function findOrCreateLead(sender: Sender): Promise<string> {
-  try {
-    // Buscar lead existente
-    const { data: leadData, error: leadError } = await supabase
-      .from('leads')
-      .select('*')
-      .eq('phone', sender.phone)
-      .single();
-    
-    if (leadError || !leadData) {
-      // Criar novo lead
-      const { data: newLead, error: createError } = await supabase
-        .from('leads')
-        .insert({
-          name: sender.name,
-          phone: sender.phone,
-          status: 'novo',
-          source: 'whatsapp',
-          needs_human: true,
-          last_contact: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
-      if (createError) {
-        console.error("Erro ao criar lead:", createError.message);
-        throw createError;
-      }
-      
-      // Criar notificação para novo lead
-      await supabase
-        .from('notifications')
-        .insert({
-          type: 'whatsapp_human_needed',
-          content: `Novo contato de ${sender.name} (${sender.phone}) precisa de atendimento humano.`,
-          status: 'pending'
-        });
-      
-      return newLead.id;
-    } 
-    
-    // Atualizar lead existente
-    const { error: updateError } = await supabase
-      .from('leads')
-      .update({ 
-        last_contact: new Date().toISOString(),
-        needs_human: true 
-      })
-      .eq('id', leadData.id);
-    
-    if (updateError) {
-      console.error("Erro ao atualizar lead:", updateError.message);
-    }
-    
-    // Criar notificação apenas se o lead ainda não estiver marcado como precisando de atendimento
-    if (!leadData.needs_human) {
-      await supabase
-        .from('notifications')
-        .insert({
-          type: 'whatsapp_human_needed',
-          content: `${sender.name} (${sender.phone}) precisa de atendimento humano.`,
-          status: 'pending'
-        });
-    }
-    
-    return leadData.id;
-  } catch (error) {
-    console.error("Erro ao processar lead:", error.message);
-    throw error;
-  }
-}
-
-// Registra mensagem no banco de dados
-async function saveMessage(leadId: string, content: string): Promise<void> {
-  try {
-    const { error: msgError } = await supabase
-      .from('whatsapp_messages')
-      .insert({
-        lead_id: leadId,
-        message: content,
-        direction: 'incoming',
-        is_bot: false
-      });
-    
-    if (msgError) {
-      console.error("Erro ao registrar mensagem:", msgError.message);
-      throw msgError;
-    }
-  } catch (error) {
-    console.error("Erro ao salvar mensagem:", error);
-    throw error;
-  }
-}
 
 // Processa o webhook
 async function processWebhook(req: Request): Promise<Response> {
@@ -174,30 +22,142 @@ async function processWebhook(req: Request): Promise<Response> {
     const body = await req.json();
     console.log("Webhook recebido:", JSON.stringify(body));
     
-    let message: IncomingMessage | null = null;
-    
-    // Determinar o tipo de webhook e extrair a mensagem
-    if (body.event === 'messages.upsert' && body.message?.key?.fromMe === false) {
-      // Webhook da Evolution API
-      message = processEvolutionMessage(body.message);
-    } else if (body.phone || body.messageId) {
-      // Webhook da Z-API
-      message = processZAPIMessage(body);
-    }
-    
-    if (message) {
-      // Processar a mensagem recebida
-      const leadId = await findOrCreateLead(message.sender);
-      message.leadId = leadId;
+    try {
+      // Extrair dados da mensagem recebida
+      const messageData = processIncomingMessage(body);
+      console.log("Mensagem processada:", JSON.stringify(messageData));
       
-      // Salvar a mensagem no banco
-      await saveMessage(leadId, message.content);
+      // Processar o lead e obter informações
+      const leadInfo = await processLead(supabase, messageData);
+      messageData.leadId = leadInfo.id;
+      
+      // Verificar se o lead já está em atendimento humano
+      if (leadInfo.needsHumanAgent) {
+        console.log(`Lead ${leadInfo.id} já está em atendimento humano. Criando apenas notificação.`);
+        await notifyAdminsAboutHumanNeeded(supabase, leadInfo.id, leadInfo.name, messageData.phone);
+        return new Response(
+          JSON.stringify({ success: true, message: 'Mensagem encaminhada para atendente humano' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Verificar se a mensagem contém palavras-chave que indicam necessidade de atendimento humano
+      if (checkHumanTransferKeywords(messageData.message)) {
+        console.log(`Palavras-chave de atendimento humano detectadas na mensagem`);
+        
+        // Atualizar status do lead
+        await supabase
+          .from('leads')
+          .update({ 
+            needs_human: true,
+            status: 'atendido_humano'
+          })
+          .eq('id', leadInfo.id);
+        
+        // Notificar administradores
+        await notifyAdminsAboutHumanNeeded(supabase, leadInfo.id, leadInfo.name, messageData.phone);
+        
+        // Enviar mensagem informando que um atendente humano irá responder
+        const autoResponse = "Olá! Entendi que você deseja falar com um de nossos atendentes. Um profissional irá atendê-lo o mais breve possível. Agradecemos sua paciência.";
+        await sendWhatsAppResponse(messageData.phone, autoResponse, messageData.isEvolutionApi, messageData.instance);
+        
+        return new Response(
+          JSON.stringify({ success: true, message: 'Mensagem encaminhada para atendente humano' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Tentar analisar a mensagem com IA
+      const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+      if (geminiApiKey) {
+        try {
+          const aiAnalysis = await analyzeMessageWithGemini(geminiApiKey, messageData.message);
+          
+          if (aiAnalysis) {
+            console.log("Análise da IA:", JSON.stringify(aiAnalysis));
+            
+            // Registrar resposta da IA no banco
+            await supabase.from('whatsapp_messages').insert({
+              lead_id: leadInfo.id,
+              message: aiAnalysis.resposta,
+              direction: 'outbound',
+              sent_by: 'bot'
+            });
+            
+            // Enviar resposta
+            await sendWhatsAppResponse(
+              messageData.phone, 
+              aiAnalysis.resposta, 
+              messageData.isEvolutionApi,
+              messageData.instance
+            );
+            
+            // Se a IA indicar transferência para humano
+            if (aiAnalysis.transferir) {
+              // Atualizar status do lead
+              await supabase
+                .from('leads')
+                .update({ 
+                  needs_human: true,
+                  status: 'atendido_humano'
+                })
+                .eq('id', leadInfo.id);
+              
+              // Notificar administradores
+              await notifyAdminsAboutHumanNeeded(supabase, leadInfo.id, leadInfo.name, messageData.phone);
+            }
+            
+            return new Response(
+              JSON.stringify({ success: true, message: 'Mensagem respondida pela IA' }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (aiError) {
+          console.error("Erro ao processar resposta com IA:", aiError);
+        }
+      }
+      
+      // Fallback se a IA não estiver disponível ou falhar
+      console.log("Usando resposta automática padrão");
+      const defaultResponse = "Olá! Recebemos sua mensagem e um de nossos atendentes irá responder em breve. Agradecemos seu contato!";
+      
+      // Registrar resposta automática no banco
+      await supabase.from('whatsapp_messages').insert({
+        lead_id: leadInfo.id,
+        message: defaultResponse,
+        direction: 'outbound',
+        sent_by: 'bot'
+      });
+      
+      // Enviar resposta automática
+      await sendWhatsAppResponse(
+        messageData.phone, 
+        defaultResponse, 
+        messageData.isEvolutionApi,
+        messageData.instance
+      );
+      
+      // Marcar lead para atendimento humano
+      await supabase
+        .from('leads')
+        .update({ needs_human: true })
+        .eq('id', leadInfo.id);
+      
+      // Notificar administradores
+      await notifyAdminsAboutHumanNeeded(supabase, leadInfo.id, leadInfo.name, messageData.phone);
+      
+      return new Response(
+        JSON.stringify({ success: true, message: 'Resposta automática enviada' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+      
+    } catch (processingError) {
+      console.error("Erro ao processar mensagem:", processingError);
+      return new Response(
+        JSON.stringify({ success: false, error: `Erro ao processar mensagem: ${processingError.message}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
-    
-    return new Response(
-      JSON.stringify({ success: true, message: 'Webhook processado com sucesso' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   } catch (error) {
     console.error('Erro no webhook:', error.message);
     return new Response(
