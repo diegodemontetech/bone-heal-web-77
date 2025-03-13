@@ -9,7 +9,8 @@ import OrdersLoading from '@/components/orders/OrdersLoading';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Order, OrderItem, ShippingAddress } from '@/types/order';
+import { Order, OrderItem } from '@/types/order';
+import { ShippingAddress } from '@/types/shipping';
 import { parseJsonArray, parseJsonObject } from '@/utils/supabaseJsonUtils';
 
 const ProfileOrders = () => {
@@ -47,7 +48,7 @@ const ProfileOrders = () => {
           city: "",
           state: "",
           address: ""
-        });
+        }) as ShippingAddress;
         
         return {
           ...order,

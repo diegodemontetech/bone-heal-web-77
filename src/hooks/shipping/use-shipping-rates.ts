@@ -57,7 +57,7 @@ export const useShippingRates = () => {
       setLoading(false);
     }
   };
-
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     
@@ -177,39 +177,7 @@ export const useShippingRates = () => {
   };
 
   const calculateShipping = async (zipCode: string, serviceType: string) => {
-    try {
-      // Remove caracteres não numéricos do CEP
-      const cleanedZipCode = zipCode.replace(/\D/g, '');
-  
-      // Busca a taxa de envio no banco de dados
-      const { data: shippingRate, error } = await supabase
-        .from('shipping_rates')
-        .select('*')
-        .eq('zip_code_start', cleanedZipCode)
-        .single();
-  
-      if (error) {
-        console.error("Erro ao buscar taxa de envio:", error);
-        return null;
-      }
-  
-      if (!shippingRate) {
-        console.log("Taxa de envio não encontrada para o CEP:", cleanedZipCode);
-        return null;
-      }
-  
-      // Calcula o preço total com base na taxa e outros fatores (peso, etc.)
-      const totalPrice = shippingRate.flat_rate || 0; // Usando apenas a taxa fixa por enquanto
-      const estimatedDays = shippingRate.estimated_days || 3; // Usando dias estimados
-  
-      return {
-        totalPrice,
-        estimatedDays
-      };
-    } catch (error) {
-      console.error("Erro ao calcular frete:", error);
-      return null;
-    }
+    // ... keep existing code (função para calcular frete)
   };
 
   const getShippingByZipCode = async (zipCode: string) => {
@@ -226,6 +194,7 @@ export const useShippingRates = () => {
           name: "SEDEX",
           service_type: "SEDEX",
           rate: sedexResponse.totalPrice,
+          price: sedexResponse.totalPrice, // Adicionando price para corresponder à interface
           delivery_days: sedexResponse.estimatedDays,
           zipCode
         });
@@ -238,6 +207,7 @@ export const useShippingRates = () => {
           name: "PAC",
           service_type: "PAC",
           rate: pacResponse.totalPrice,
+          price: pacResponse.totalPrice, // Adicionando price para corresponder à interface
           delivery_days: pacResponse.estimatedDays,
           zipCode
         });

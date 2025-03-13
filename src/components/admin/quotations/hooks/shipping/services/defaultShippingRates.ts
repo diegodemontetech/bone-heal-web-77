@@ -45,6 +45,7 @@ export const createDefaultShippingRates = (
     {
       id: 'default-pac',
       rate: pacRate,
+      price: pacRate,  // Adicionando price para corresponder à interface
       delivery_days: pacDays,
       service_type: 'PAC',
       name: 'PAC (Convencional)',
@@ -53,6 +54,7 @@ export const createDefaultShippingRates = (
     {
       id: 'default-sedex',
       rate: sedexRate,
+      price: sedexRate,  // Adicionando price para corresponder à interface
       delivery_days: sedexDays,
       service_type: 'SEDEX',
       name: 'SEDEX (Express)',

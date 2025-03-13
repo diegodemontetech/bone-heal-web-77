@@ -25,6 +25,7 @@ export interface ShippingCalculationRate {
   delivery_days?: number;
   service_type?: string;
   zipCode?: string;
+  region?: string;
 }
 
 export interface ShippingRate {

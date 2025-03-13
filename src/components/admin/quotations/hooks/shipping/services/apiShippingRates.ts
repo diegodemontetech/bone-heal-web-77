@@ -32,6 +32,7 @@ export const fetchShippingRatesFromAPI = async (
     return apiRates.map((rate: any, index: number) => ({
       id: `api-${index}`,
       rate: rate.rate || 25, // Usar o valor real retornado pela API
+      price: rate.rate || 25, // Adicionando price para corresponder à interface
       delivery_days: rate.delivery_days || 5,
       service_type: rate.service_type || 'PAC',
       name: rate.name || rate.service_type || 'Padrão',
