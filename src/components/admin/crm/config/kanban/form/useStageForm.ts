@@ -25,7 +25,7 @@ export const useStageForm = ({ onSuccess, initialData }: UseStageFormProps = {})
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<StageFormValues>({
-    resolver: zodResolver(stageSchema),
+    resolver: zodResolver(stageSchema) as any,
     defaultValues: {
       name: initialData?.name || "",
       color: initialData?.color || "#3b82f6",

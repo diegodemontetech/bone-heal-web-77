@@ -168,7 +168,7 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
                   <FormLabel className="w-1/4">{key}</FormLabel>
                   <Input
                     className="w-3/4"
-                    value={value}
+                    value={value as string}
                     onChange={(e) => handleAddField(key, e.target.value)}
                   />
                 </div>

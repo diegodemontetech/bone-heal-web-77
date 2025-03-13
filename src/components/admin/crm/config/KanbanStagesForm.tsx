@@ -8,9 +8,15 @@ import { OrderInput } from "./kanban/form/OrderInput";
 import { SubmitButton } from "./kanban/form/SubmitButton";
 import { useStageForm } from "./kanban/form/useStageForm";
 import { StageFormValues } from "@/types/crm";
+import { UseFormReturn } from "react-hook-form";
 
 interface KanbanStagesFormProps {
   onSuccess?: () => void;
+}
+
+// Definindo um tipo específico para as props de componentes que usam o form
+interface FormComponentProps {
+  form: UseFormReturn<StageFormValues>;
 }
 
 export function KanbanStagesForm({ onSuccess }: KanbanStagesFormProps) {
@@ -23,10 +29,10 @@ export function KanbanStagesForm({ onSuccess }: KanbanStagesFormProps) {
       <CardContent className="p-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <DepartmentSelector form={form} departments={departments} />
-            <NameInput form={form} />
-            <ColorSelector form={form} />
-            <OrderInput form={form} />
+            <DepartmentSelector form={form as any} departments={departments} />
+            <NameInput form={form as any} />
+            <ColorSelector form={form as any} />
+            <OrderInput form={form as any} />
             <SubmitButton isLoading={isLoading} />
           </form>
         </Form>
