@@ -1,132 +1,68 @@
 
-import { useState } from "react";
+import { TicketsSection } from "./TicketsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { ContactInfoSection } from "./ContactInfoSection";
 import { AddressSection } from "./AddressSection";
 import { OmieStatusSection } from "./OmieStatusSection";
-import { TicketsSection } from "./TicketsSection";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth-context";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ShoppingBag, Clock, Package } from "lucide-react";
 
 export const ProfileForm = () => {
-  const { profile, refreshProfile } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: profile?.full_name || "",
-    specialty: profile?.specialty || "",
-    cro: profile?.cro || "",
-    cpf: profile?.cpf || "",
-    cnpj: profile?.cnpj || "",
-    phone: profile?.phone || "",
-    zip_code: profile?.zip_code || "",
-    address: profile?.address || "",
-    endereco_numero: profile?.endereco_numero || "",
-    complemento: profile?.complemento || "",
-    neighborhood: profile?.neighborhood || "",
-    city: profile?.city || "",
-    state: profile?.state || "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!profile?.id) {
-      toast.error("Você precisa estar logado para atualizar seu perfil");
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update(formData)
-        .eq("id", profile.id);
-      
-      if (error) throw error;
-      
-      await refreshProfile();
-      toast.success("Perfil atualizado com sucesso");
-    } catch (error: any) {
-      console.error("Erro ao atualizar perfil:", error);
-      toast.error(`Erro ao atualizar perfil: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const navigate = useNavigate();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="border-b pb-4 mb-6">
-        <h1 className="text-2xl font-bold text-primary">Meu Perfil</h1>
-        <p className="text-sm text-gray-500 mt-1">Gerencie suas informações pessoais e de contato</p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">Meu Perfil</h1>
       
-      <div className="bg-gray-50 p-5 rounded-lg border">
-        <h2 className="text-lg font-medium mb-4">Informações Pessoais</h2>
-        <PersonalInfoSection 
-          formData={formData} 
-          handleChange={handleChange} 
-          handleSelectChange={handleSelectChange} 
-        />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="col-span-1 md:col-span-2 space-y-6">
+          <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
+              <TabsTrigger value="contact">Contato</TabsTrigger>
+              <TabsTrigger value="address">Endereço</TabsTrigger>
+            </TabsList>
+            <TabsContent value="personal">
+              <PersonalInfoSection />
+            </TabsContent>
+            <TabsContent value="contact">
+              <ContactInfoSection />
+            </TabsContent>
+            <TabsContent value="address">
+              <AddressSection />
+            </TabsContent>
+          </Tabs>
+          <OmieStatusSection />
+        </div>
+        
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4">
+            <Card className="shadow-sm hover:shadow transition-shadow duration-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <ShoppingBag className="mr-2 h-5 w-5 text-primary" /> 
+                  Meus Pedidos
+                </CardTitle>
+                <CardDescription>Acompanhe seus pedidos e histórico de compras</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => navigate("/orders")}
+                  variant="outline" 
+                  className="w-full"
+                >
+                  <Package className="w-4 h-4 mr-2" />
+                  Ver meus pedidos
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <TicketsSection />
+          </div>
+        </div>
       </div>
-      
-      <div className="bg-gray-50 p-5 rounded-lg border">
-        <h2 className="text-lg font-medium mb-4">Informações de Contato</h2>
-        <ContactInfoSection 
-          formData={formData} 
-          handleChange={handleChange} 
-        />
-      </div>
-      
-      <div className="bg-gray-50 p-5 rounded-lg border">
-        <h2 className="text-lg font-medium mb-4">Endereço</h2>
-        <AddressSection 
-          formData={formData} 
-          handleChange={handleChange} 
-          handleSelectChange={handleSelectChange}
-          setFormData={setFormData}
-        />
-      </div>
-      
-      <div className="bg-gray-50 p-5 rounded-lg border">
-        <h2 className="text-lg font-medium mb-4">Status da Integração Omie</h2>
-        <OmieStatusSection />
-      </div>
-      
-      <div className="bg-gray-50 p-5 rounded-lg border">
-        <h2 className="text-lg font-medium mb-4">Meus Chamados</h2>
-        <TicketsSection />
-      </div>
-      
-      <div className="pt-4 flex justify-end">
-        <Button type="submit" className="px-6" disabled={loading}>
-          {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          Salvar Alterações
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 };

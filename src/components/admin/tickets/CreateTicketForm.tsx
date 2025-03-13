@@ -28,6 +28,7 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
     subject: "",
     description: "",
     priority: "normal",
+    category: "",
     customer_id: null as string | null
   });
 
@@ -51,7 +52,7 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
 
     try {
       // Garantir que os campos obrigatórios estejam preenchidos
-      if (!formData.subject || !formData.description || !formData.customer_id) {
+      if (!formData.subject || !formData.description || !formData.customer_id || !formData.category) {
         throw new Error("Preencha todos os campos obrigatórios");
       }
 
@@ -62,6 +63,7 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
           description: formData.description,
           status: "open",
           priority: formData.priority,
+          category: formData.category,
           customer_id: formData.customer_id,
           created_by: profile?.id,
           assigned_to: profile?.id
@@ -106,6 +108,24 @@ const CreateTicketForm = ({ onSuccess }: CreateTicketFormProps) => {
                 {customer.full_name || customer.email}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category">Categoria</Label>
+        <Select
+          value={formData.category}
+          onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione uma categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="support">Suporte Técnico</SelectItem>
+            <SelectItem value="sales">Vendas</SelectItem>
+            <SelectItem value="logistics">Entregas (Logística)</SelectItem>
+            <SelectItem value="financial">Financeiro</SelectItem>
           </SelectContent>
         </Select>
       </div>

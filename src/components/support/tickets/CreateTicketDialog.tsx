@@ -18,6 +18,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { MessageSquare } from "lucide-react";
+import TicketCategorySelect from "./TicketCategorySelect";
 
 interface CreateTicketDialogProps {
   isOpen: boolean;
@@ -28,9 +29,11 @@ interface CreateTicketDialogProps {
     subject: string;
     description: string;
     priority: string;
+    category: string;
   };
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onPriorityChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
 }
 
 const CreateTicketDialog = ({
@@ -40,7 +43,8 @@ const CreateTicketDialog = ({
   isCreating,
   ticketData,
   onInputChange,
-  onPriorityChange
+  onPriorityChange,
+  onCategoryChange
 }: CreateTicketDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -59,6 +63,11 @@ const CreateTicketDialog = ({
               placeholder="Assunto do chamado"
             />
           </div>
+          
+          <TicketCategorySelect 
+            value={ticketData.category} 
+            onValueChange={onCategoryChange} 
+          />
           
           <div className="space-y-2">
             <Label htmlFor="priority">Prioridade</Label>
@@ -98,7 +107,7 @@ const CreateTicketDialog = ({
             </Button>
             <Button 
               onClick={onCreateTicket}
-              disabled={isCreating || !ticketData.subject || !ticketData.description}
+              disabled={isCreating || !ticketData.subject || !ticketData.description || !ticketData.category}
             >
               {isCreating ? (
                 <>

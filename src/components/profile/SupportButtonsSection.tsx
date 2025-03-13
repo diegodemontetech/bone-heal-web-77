@@ -1,69 +1,31 @@
 
-import { useState, useEffect } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronDown, MessageSquare, Box, CreditCard, TruckIcon, HeadphonesIcon } from "lucide-react";
+import CreateTicketDialog from "@/components/support/tickets/CreateTicketDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
-import TicketsHeader from "@/components/support/tickets/TicketsHeader";
-import TicketStatusTabs from "@/components/support/tickets/TicketStatusTabs";
-import TicketsList from "@/components/support/tickets/TicketsList";
-import CreateTicketDialog from "@/components/support/tickets/CreateTicketDialog";
-import { getPriorityBadge, getStatusBadge } from "@/components/support/tickets/TicketStatusBadges";
 
-const SupportTickets = () => {
+export const SupportButtonsSection = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
-  const [refreshing, setRefreshing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [ticketData, setTicketData] = useState({
     subject: "",
     description: "",
     priority: "medium",
     category: ""
   });
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchTickets();
-    }
-  }, [profile, activeTab]);
-
-  const fetchTickets = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from("support_tickets")
-        .select("*")
-        .eq("customer_id", profile?.id)
-        .order("created_at", { ascending: false });
-
-      if (activeTab !== "all") {
-        query = query.eq("status", activeTab);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      setTickets(data || []);
-    } catch (error) {
-      console.error("Erro ao buscar tickets:", error);
-      toast.error("Erro ao carregar seus chamados de suporte");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchTickets();
-    setRefreshing(false);
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -76,6 +38,11 @@ const SupportTickets = () => {
   
   const handleCategoryChange = (value: string) => {
     setTicketData(prev => ({ ...prev, category: value }));
+  };
+
+  const openTicketDialogWithCategory = (category: string) => {
+    setTicketData(prev => ({ ...prev, category }));
+    setIsDialogOpen(true);
   };
 
   const handleCreateTicket = async () => {
@@ -111,9 +78,6 @@ const SupportTickets = () => {
         category: ""
       });
       
-      // Atualizar a lista de tickets
-      await fetchTickets();
-      
       // Redirecionar para a página de detalhes do chamado
       navigate(`/support/tickets/${data.id}`);
     } catch (error: any) {
@@ -125,31 +89,43 @@ const SupportTickets = () => {
   };
 
   return (
-    <div className="container max-w-4xl py-10">
-      <TicketsHeader 
-        onCreateTicket={() => setIsDialogOpen(true)} 
-        onRefresh={handleRefresh}
-        isRefreshing={refreshing}
-      />
-
-      <Card>
-        <CardHeader className="pb-0">
-          <TicketStatusTabs 
-            activeTab={activeTab} 
-            onTabChange={setActiveTab} 
-          />
-        </CardHeader>
-        <CardContent className="pt-6">
-          <TicketsList 
-            tickets={tickets}
-            loading={loading}
-            activeTab={activeTab}
-            onCreateTicket={() => setIsDialogOpen(true)}
-            getPriorityBadge={getPriorityBadge}
-            getStatusBadge={getStatusBadge}
-          />
-        </CardContent>
-      </Card>
+    <div className="flex flex-wrap gap-3">
+      <Button 
+        onClick={() => navigate("/support/tickets")}
+        variant="outline"
+        className="flex items-center"
+      >
+        <HeadphonesIcon className="w-4 h-4 mr-2" />
+        Meus Chamados
+      </Button>
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button className="flex items-center">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Abrir Chamado
+            <ChevronDown className="w-4 h-4 ml-1" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => openTicketDialogWithCategory("support")}>
+            <HeadphonesIcon className="w-4 h-4 mr-2" />
+            Suporte Técnico
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openTicketDialogWithCategory("sales")}>
+            <Box className="w-4 h-4 mr-2" />
+            Vendas
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openTicketDialogWithCategory("logistics")}>
+            <TruckIcon className="w-4 h-4 mr-2" />
+            Entregas (Logística)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openTicketDialogWithCategory("financial")}>
+            <CreditCard className="w-4 h-4 mr-2" />
+            Financeiro
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <CreateTicketDialog
         isOpen={isDialogOpen}
@@ -164,5 +140,3 @@ const SupportTickets = () => {
     </div>
   );
 };
-
-export default SupportTickets;
