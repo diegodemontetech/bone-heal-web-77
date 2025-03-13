@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,8 +23,9 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentField, setCurrentField] = useState<CRMField | null>(null);
-  // Usando type simples em vez de interface para evitar recursão infinita
-  type FormDataType = {
+  
+  // Definindo o tipo diretamente para evitar recursão infinita
+  interface FieldFormData {
     name: string;
     label: string;
     type: string;
@@ -32,9 +34,9 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
     options: string;
     mask: string;
     default_value: string;
-  };
+  }
   
-  const [formData, setFormData] = useState<FormDataType>({
+  const [formData, setFormData] = useState<FieldFormData>({
     name: "",
     label: "",
     type: "text",
