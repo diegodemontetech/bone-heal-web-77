@@ -44,30 +44,36 @@ const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
     responsibleId?: string,
     hasAttachment?: boolean
   ) => {
-    // Adicionando os novos campos à criação do fluxo
-    const newFlow = await createFlow(
-      name, 
-      description, 
-      {
-        department_id: departmentId,
-        responsible_id: responsibleId,
-        has_attachment: hasAttachment || false
-      }
-    );
-    
-    if (newFlow) {
-      setIsCreateDialogOpen(false);
+    try {
+      // Adicionando os novos campos à criação do fluxo
+      const newFlow = await createFlow(
+        name, 
+        description, 
+        {
+          department_id: departmentId,
+          responsible_id: responsibleId,
+          has_attachment: hasAttachment || false
+        }
+      );
       
-      if (onFlowCreate) {
-        onFlowCreate(newFlow.id);
-      } else {
-        navigate(`/admin/automation-flows/${newFlow.id}`);
+      if (newFlow) {
+        setIsCreateDialogOpen(false);
+        
+        if (onFlowCreate) {
+          onFlowCreate(newFlow.id);
+        } else {
+          navigate(`/admin/automation-flows/${newFlow.id}`);
+        }
+        
+        return newFlow;
       }
       
-      return newFlow;
+      return null;
+    } catch (error) {
+      console.error("Erro ao criar fluxo:", error);
+      toast.error("Erro ao criar o pipeline de automação");
+      return null;
     }
-    
-    return null;
   };
 
   const handleEditFlow = (id: string) => {

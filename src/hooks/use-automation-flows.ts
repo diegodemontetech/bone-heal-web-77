@@ -19,12 +19,15 @@ export const useAutomationFlows = () => {
   const fetchFlows = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('Buscando fluxos de automação...');
       const { data, error } = await supabase
         .from('automation_flows')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      
+      console.log('Fluxos recuperados:', data);
       
       // Converter os nós e bordas de JSON para objetos
       const formattedFlows = data.map(flow => ({
@@ -50,6 +53,8 @@ export const useAutomationFlows = () => {
   // Função para criar um novo fluxo com campos adicionais
   const createFlow = async (name: string, description: string, options?: FlowCreateOptions) => {
     try {
+      console.log('Criando novo fluxo:', { name, description, options });
+      
       const newFlow = {
         name,
         description,
@@ -68,6 +73,8 @@ export const useAutomationFlows = () => {
         .single();
       
       if (error) throw error;
+      
+      console.log('Fluxo criado:', data);
       
       // Adicionar o novo fluxo ao estado
       setFlows(prev => [

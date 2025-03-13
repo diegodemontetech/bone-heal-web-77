@@ -1,52 +1,75 @@
 
+import { Json } from "@/integrations/supabase/types";
+
 /**
- * Utilitário para parse e stringify de arrays JSON para o Supabase
+ * Converte um objeto para string JSON para armazenamento no Supabase
+ * @param data Objeto a ser convertido
+ * @returns String JSON ou null
  */
-
-import { Json } from '@/integrations/supabase/types';
-
-// Converte um array ou objeto em uma string JSON segura para o Supabase
-export const stringifyForSupabase = <T>(data: T): string => {
-  if (!data) return '[]';
-  return JSON.stringify(data);
-};
-
-// Converte uma string JSON do Supabase em um array ou objeto com tipo
-export const parseJsonArray = <T>(json: string | any[] | Json | null, defaultValue: T[]): T[] => {
-  if (!json) return defaultValue;
-  
-  // Se já for um array, retorna diretamente
-  if (Array.isArray(json)) return json as unknown as T[];
-  
-  // Se for um número, string, ou boolean, retorna o valor padrão
-  if (typeof json === 'number' || typeof json === 'boolean') return defaultValue;
-  
+export function stringifyForSupabase(data: any): string | null {
   try {
-    // Tenta fazer o parse da string JSON
-    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
-    return Array.isArray(parsed) ? parsed as T[] : defaultValue;
+    if (data === null || data === undefined) {
+      return null;
+    }
+    return JSON.stringify(data);
   } catch (error) {
-    console.error('Erro ao fazer parse de JSON:', error);
+    console.error("Erro ao converter objeto para JSON:", error);
+    return null;
+  }
+}
+
+/**
+ * Analisa uma string JSON do Supabase para um array
+ * @param jsonData Dados JSON do Supabase
+ * @param defaultValue Valor padrão se o parsing falhar
+ * @returns Array parseado ou valor padrão
+ */
+export function parseJsonArray(jsonData: Json, defaultValue: any[] = []): any[] {
+  try {
+    // Se for diretamente um array, retorna
+    if (Array.isArray(jsonData)) {
+      return jsonData;
+    }
+    
+    // Se for string, tenta fazer o parse
+    if (typeof jsonData === 'string') {
+      const parsed = JSON.parse(jsonData);
+      return Array.isArray(parsed) ? parsed : defaultValue;
+    }
+    
+    // Outros tipos não podem ser convertidos em array
+    return defaultValue;
+  } catch (error) {
+    console.error("Erro ao converter JSON para array:", error, jsonData);
     return defaultValue;
   }
-};
+}
 
-// Converte uma string JSON do Supabase em um objeto com tipo
-export const parseJsonObject = <T>(json: string | object | Json | null, defaultValue: T): T => {
-  if (!json) return defaultValue;
-  
-  // Se for um número, string, ou boolean, retorna o valor padrão
-  if (typeof json === 'number' || typeof json === 'boolean') return defaultValue;
-  
-  // Se já for um objeto e não um array, retorna diretamente
-  if (typeof json === 'object' && !Array.isArray(json)) return json as unknown as T;
-  
+/**
+ * Analisa uma string JSON do Supabase para um objeto
+ * @param jsonData Dados JSON do Supabase
+ * @param defaultValue Valor padrão se o parsing falhar
+ * @returns Objeto parseado ou valor padrão
+ */
+export function parseJsonObject(jsonData: Json, defaultValue: object = {}): object {
   try {
-    // Tenta fazer o parse da string JSON
-    const parsed = typeof json === 'string' ? JSON.parse(json) : json;
-    return !Array.isArray(parsed) && typeof parsed === 'object' ? parsed as T : defaultValue;
+    // Se for diretamente um objeto e não um array, retorna
+    if (typeof jsonData === 'object' && jsonData !== null && !Array.isArray(jsonData)) {
+      return jsonData;
+    }
+    
+    // Se for string, tenta fazer o parse
+    if (typeof jsonData === 'string') {
+      const parsed = JSON.parse(jsonData);
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) 
+        ? parsed 
+        : defaultValue;
+    }
+    
+    // Outros tipos não podem ser convertidos em objeto
+    return defaultValue;
   } catch (error) {
-    console.error('Erro ao fazer parse de JSON:', error);
+    console.error("Erro ao converter JSON para objeto:", error, jsonData);
     return defaultValue;
   }
-};
+}

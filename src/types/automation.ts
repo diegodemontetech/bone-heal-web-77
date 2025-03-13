@@ -1,7 +1,6 @@
 
 import { Edge, Node } from 'reactflow';
 import { Json } from '@/integrations/supabase/types';
-import { WhatsAppMessage as ComponentWhatsAppMessage } from '@/components/admin/whatsapp/types';
 
 export interface AutomationFlow {
   id: string;
@@ -50,7 +49,7 @@ export interface WhatsAppMessage {
 }
 
 // Converter mensagem entre os dois formatos
-export function convertToComponentMessage(message: WhatsAppMessage): ComponentWhatsAppMessage {
+export function convertToComponentMessage(message: WhatsAppMessage): any {
   return {
     id: message.id,
     lead_id: message.lead_id || '',

@@ -1,72 +1,34 @@
 
-import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { UserPermission } from "@/types/auth";
-
-// CRM pages
-const LeadsKanban = lazy(() => import("@/pages/admin/CRMLeads"));
-const CRMConfigPage = lazy(() => import("@/components/admin/crm/config/CRMConfigPage"));
-const LeadsPage = lazy(() => import("@/pages/admin/Leads"));
-const CreateLeadPage = lazy(() => import("@/pages/admin/CreateLead"));
-const AutomationFlowsPage = lazy(() => import("@/pages/admin/AutomationFlows"));
-
-// Loader para componentes com lazy loading
-const AdminLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
+import CRMLeads from "@/pages/admin/CRMLeads";
+import CreateLead from "@/pages/admin/CreateLead";
+import LeadsKanban from "@/pages/admin/LeadsKanban";
+import CRMConfigPage from "@/components/admin/crm/config/CRMConfigPage";
+import AutomationFlowsPage from "@/pages/admin/AutomationFlows";
 
 export const crmRoutes: RouteObject[] = [
   {
-    path: "leads",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
-          <LeadsPage />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    path: "crm-leads",
+    element: <CRMLeads />
   },
   {
-    path: "leads/kanban",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
-          <LeadsKanban />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    path: "criar-lead",
+    element: <CreateLead />
   },
   {
-    path: "leads/create",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
-          <CreateLeadPage />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    path: "leads-kanban",
+    element: <LeadsKanban />
   },
   {
-    path: "crm/configuracoes",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
-          <CRMConfigPage />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    path: "configuracoes",
+    element: <CRMConfigPage />
   },
   {
     path: "automacoes",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
-          <AutomationFlowsPage />
-        </ProtectedRoute>
-      </Suspense>
-    )
+    element: <AutomationFlowsPage />
+  },
+  {
+    path: "automation-flows/:flowId",
+    element: <AutomationFlowsPage />
   }
 ];

@@ -21,6 +21,7 @@ export const useAutomationFlow = (flowId: string | null) => {
     if (!flowId) return null;
     
     try {
+      console.log('Buscando dados do fluxo:', flowId);
       const { data, error } = await supabase
         .from('automation_flows')
         .select('*')
@@ -29,11 +30,16 @@ export const useAutomationFlow = (flowId: string | null) => {
         
       if (error) throw error;
       
+      console.log('Dados do fluxo recuperados:', data);
+      
       setFlowName(data.name || '');
       
       // Parse nodes e edges do JSON usando a função auxiliar
       const parsedNodes = parseJsonArray(data.nodes, []);
       const parsedEdges = parseJsonArray(data.edges, []);
+      
+      console.log('Nodes parseados:', parsedNodes);
+      console.log('Edges parseados:', parsedEdges);
       
       setNodes(parsedNodes);
       setEdges(parsedEdges);
@@ -59,6 +65,8 @@ export const useAutomationFlow = (flowId: string | null) => {
       if (!flowId) throw new Error('ID do fluxo não disponível');
       
       try {
+        console.log('Salvando fluxo:', flowData);
+        
         const dataToSave = {
           ...flowData,
           name: flowData.name || flowName,

@@ -13,6 +13,7 @@ import * as z from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Paperclip, User } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const flowFormSchema = z.object({
   name: z.string().min(3, "Nome precisa ter pelo menos 3 caracteres"),
@@ -161,7 +162,7 @@ const FlowCreateForm = ({
                     <FormLabel>Departamento</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -189,7 +190,7 @@ const FlowCreateForm = ({
                     <FormLabel>Responsável</FormLabel>
                     <Select 
                       onValueChange={field.onChange} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -213,17 +214,15 @@ const FlowCreateForm = ({
                 control={form.control}
                 name="has_attachment"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                     <FormControl>
-                      <input
-                        type="checkbox"
+                      <Switch
                         checked={field.value}
-                        onChange={(e) => field.onChange(e.target.checked)}
-                        className="mr-2"
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel className="flex items-center">
+                      <FormLabel className="flex items-center cursor-pointer">
                         <Paperclip className="h-4 w-4 mr-1" />
                         Permitir anexos
                       </FormLabel>
@@ -232,7 +231,7 @@ const FlowCreateForm = ({
                 )}
               />
               
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end space-x-2 pt-2">
                 <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
                 <Button 
                   type="submit" 
@@ -295,7 +294,7 @@ const FlowCreateForm = ({
               <FormLabel>Departamento</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -323,7 +322,7 @@ const FlowCreateForm = ({
               <FormLabel>Responsável</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -347,17 +346,15 @@ const FlowCreateForm = ({
           control={form.control}
           name="has_attachment"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
-                <input
-                  type="checkbox"
+                <Switch
                   checked={field.value}
-                  onChange={(e) => field.onChange(e.target.checked)}
-                  className="mr-2"
+                  onCheckedChange={field.onChange}
                 />
               </FormControl>
               <div className="space-y-1 leading-none">
-                <FormLabel className="flex items-center">
+                <FormLabel className="flex items-center cursor-pointer">
                   <Paperclip className="h-4 w-4 mr-1" />
                   Permitir anexos
                 </FormLabel>
@@ -366,7 +363,7 @@ const FlowCreateForm = ({
           )}
         />
         
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 pt-2">
           <DialogClose asChild>
             <Button type="button" variant="outline">Cancelar</Button>
           </DialogClose>
