@@ -29,10 +29,8 @@ export function useSubcategoryForm({
     return {};
   };
 
-  const [customFields, setCustomFields] = useState<Record<string, any>>(
-    convertToRecord(subcategory?.default_fields) || {}
-  );
-  
+  const initialCustomFields = convertToRecord(subcategory?.default_fields);
+  const [customFields, setCustomFields] = useState<Record<string, any>>(initialCustomFields);
   const [loading, setLoading] = useState(false);
 
   const handleFieldChange = (fieldName: string, value: any) => {
@@ -56,17 +54,20 @@ export function useSubcategoryForm({
     default_fields: z.record(z.any()).optional()
   });
 
+  // Tipagem explícita para o schema
+  type FormSchema = z.infer<typeof formSchema>;
+
   // Criando o formulário
-  const form = useForm<FormFields>({
+  const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: subcategory?.name || "",
       description: subcategory?.description || "",
-      default_fields: convertToRecord(subcategory?.default_fields)
+      default_fields: initialCustomFields
     }
   });
 
-  const onSubmit = async (data: FormFields) => {
+  const onSubmit = async (data: FormSchema) => {
     try {
       setLoading(true);
       // Incluindo os campos personalizados no envio

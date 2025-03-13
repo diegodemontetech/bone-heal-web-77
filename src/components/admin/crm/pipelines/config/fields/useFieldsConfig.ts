@@ -1,9 +1,11 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { CRMField } from "@/types/crm";
 import { FieldFormData } from "./types";
+import { fetchFieldsFromPipeline, createField, updateField, deleteField } from "./api/fieldsApi";
+import { useFormHandlers } from "./handlers/formHandlers";
+import { getDefaultMask } from "./utils/defaultMasks";
 
 export const useFieldsConfig = (pipelineId: string) => {
   const [fields, setFields] = useState<CRMField[]>([]);
@@ -11,30 +13,20 @@ export const useFieldsConfig = (pipelineId: string) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentField, setCurrentField] = useState<CRMField | null>(null);
-  const [formData, setFormData] = useState<FieldFormData>({
-    name: "",
-    label: "",
-    type: "text",
-    required: false,
-    display_in_kanban: false,
-    options: "",
-    mask: "",
-    default_value: ""
-  });
+  
+  const { 
+    formData, 
+    setFormData, 
+    handleInputChange, 
+    handleSwitchChange, 
+    handleSelectChange 
+  } = useFormHandlers(currentField);
 
   const fetchFields = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('crm_fields')
-        .select('*')
-        .eq('pipeline_id', pipelineId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      // Adicionando uma tipagem explícita para evitar erros de inferência profunda
-      const typedData = (data || []) as CRMField[];
-      setFields(typedData);
+      const fetchedFields = await fetchFieldsFromPipeline(pipelineId);
+      setFields(fetchedFields);
     } catch (error) {
       console.error('Erro ao buscar campos:', error);
       toast.error('Erro ao carregar campos');
@@ -83,35 +75,11 @@ export const useFieldsConfig = (pipelineId: string) => {
     setCurrentField(null);
   };
 
-  const handleCreateField = async (data: FieldFormData) => {
+  const handleCreateField = async () => {
     setIsSaving(true);
     try {
-      // Processar opções se for um campo tipo select, radio ou checkbox
-      const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
-        ? data.options.split(',').map(opt => opt.trim())
-        : [];
-
-      const newField = {
-        name: data.name,
-        label: data.label,
-        type: data.type,
-        required: data.required,
-        display_in_kanban: data.display_in_kanban,
-        options: options.length > 0 ? options : null,
-        mask: data.mask || null,
-        default_value: data.default_value || null,
-        pipeline_id: pipelineId
-      };
-
-      const { data: createdField, error } = await supabase
-        .from('crm_fields')
-        .insert([newField])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setFields([...fields, createdField as CRMField]);
+      const createdField = await createField(pipelineId, formData);
+      setFields([...fields, createdField]);
       toast.success('Campo criado com sucesso!');
       handleCloseDialog();
     } catch (error: any) {
@@ -122,37 +90,16 @@ export const useFieldsConfig = (pipelineId: string) => {
     }
   };
 
-  const handleUpdateField = async (data: FieldFormData) => {
+  const handleUpdateField = async () => {
     if (!currentField) return;
     
     setIsSaving(true);
     try {
-      // Processar opções se for um campo tipo select, radio ou checkbox
-      const options = ["select", "radio", "checkbox"].includes(data.type) && data.options
-        ? data.options.split(',').map(opt => opt.trim())
-        : [];
-
-      const updatedField = {
-        name: data.name,
-        label: data.label,
-        type: data.type,
-        required: data.required,
-        display_in_kanban: data.display_in_kanban,
-        options: options.length > 0 ? options : null,
-        mask: data.mask || null,
-        default_value: data.default_value || null
-      };
-
-      const { error } = await supabase
-        .from('crm_fields')
-        .update(updatedField)
-        .eq('id', currentField.id);
-
-      if (error) throw error;
-
+      const updatedFieldData = await updateField(currentField.id, formData);
+      
       setFields(fields.map(field => 
         field.id === currentField.id 
-          ? { ...field, ...updatedField }
+          ? { ...field, ...updatedFieldData }
           : field
       ));
       
@@ -168,13 +115,7 @@ export const useFieldsConfig = (pipelineId: string) => {
 
   const handleDeleteField = async (fieldId: string) => {
     try {
-      const { error } = await supabase
-        .from('crm_fields')
-        .delete()
-        .eq('id', fieldId);
-
-      if (error) throw error;
-
+      await deleteField(fieldId);
       setFields(fields.filter(field => field.id !== fieldId));
       toast.success('Campo excluído com sucesso!');
     } catch (error: any) {
@@ -183,51 +124,12 @@ export const useFieldsConfig = (pipelineId: string) => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (currentField) {
-      handleUpdateField(formData);
+      handleUpdateField();
     } else {
-      handleCreateField(formData);
-    }
-  };
-
-  const getDefaultMask = (type: string): string => {
-    switch (type) {
-      case "phone":
-        return "(99) 99999-9999";
-      case "cpf":
-        return "999.999.999-99";
-      case "cnpj":
-        return "99.999.999/9999-99";
-      case "date":
-        return "99/99/9999";
-      case "cep":
-        return "99999-999";
-      default:
-        return "";
+      handleCreateField();
     }
   };
 
