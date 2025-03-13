@@ -32,7 +32,9 @@ export const useFieldsConfig = (pipelineId: string) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setFields(data as CRMField[]);
+      // Adicionando uma tipagem explícita para evitar erros de inferência profunda
+      const typedData = (data || []) as CRMField[];
+      setFields(typedData);
     } catch (error) {
       console.error('Erro ao buscar campos:', error);
       toast.error('Erro ao carregar campos');

@@ -110,6 +110,7 @@ export function useSubcategoryForm({
     }
   };
 
+  // Função para converter onSubmit em um handler para events do formulário
   const handleFormSubmit = form.handleSubmit(onSubmit);
 
   return {
