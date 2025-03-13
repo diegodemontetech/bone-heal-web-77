@@ -2,16 +2,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CRMStage } from "@/types/crm";
+import { CRMStage, StageWithPipeline } from "@/types/crm";
 import { DropResult } from "@hello-pangea/dnd";
 
 interface StageFormData {
   name: string;
   color: string;
-}
-
-interface StageWithPipeline extends CRMStage {
-  pipeline_id: string;
 }
 
 export const useStagesConfig = (pipelineId: string) => {

@@ -15,7 +15,7 @@ const stageSchema = z.object({
   pipeline_id: z.string().optional(),
 });
 
-interface UseStageFormProps {
+export interface UseStageFormProps {
   onSuccess?: () => void;
   initialData?: Partial<StageFormValues>;
 }

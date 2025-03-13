@@ -31,9 +31,9 @@ export function AutomationForm({ onSuccess }: AutomationFormProps) {
         <form onSubmit={handleSubmit} className="space-y-6">
           <TriggerSection 
             stages={stages}
-            stage={formData.stage}
-            nextStage={formData.next_stage}
-            hoursTrigger={formData.hours_trigger}
+            stage={formData.stage_id || ''}
+            nextStage={formData.next_stage_id || ''}
+            hoursTrigger={formData.hours_trigger || 0}
             onStageChange={handleStageChange}
             onNextStageChange={handleNextStageChange}
             onHoursTriggerChange={handleHoursTriggerChange}

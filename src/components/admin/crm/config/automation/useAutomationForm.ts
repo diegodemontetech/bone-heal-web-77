@@ -31,8 +31,15 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [formData, setFormData] = useState<AutomationFormValues>({
-    stage: '',
+  const [formData, setFormData] = useState<{
+    stage_id?: string;
+    next_stage_id?: string;
+    hours_trigger?: number;
+    action_type: "notification" | "stage_change" | "assign_user" | "webhook";
+    action_data?: any;
+    is_active: boolean;
+  }>({
+    stage_id: '',
     action_type: 'notification',
     action_data: {},
     is_active: true
@@ -102,11 +109,11 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
   }, []);
 
   const handleStageChange = (stageId: string) => {
-    setFormData(prev => ({ ...prev, stage: stageId }));
+    setFormData(prev => ({ ...prev, stage_id: stageId }));
   };
 
   const handleNextStageChange = (stageId: string) => {
-    setFormData(prev => ({ ...prev, next_stage: stageId }));
+    setFormData(prev => ({ ...prev, next_stage_id: stageId }));
   };
 
   const handleHoursTriggerChange = (hours: number) => {
@@ -115,7 +122,10 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setFormData(prev => ({ ...prev, action_type: tab }));
+    setFormData(prev => ({ 
+      ...prev, 
+      action_type: tab as "notification" | "stage_change" | "assign_user" | "webhook"
+    }));
   };
 
   const handleActionDataChange = (data: any) => {
@@ -133,20 +143,30 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
       setIsLoading(true);
       
       // Validate form data
-      if (!formData.stage) {
+      if (!formData.stage_id) {
         toast.error("Selecione um estágio para o gatilho");
         return;
       }
       
-      if (formData.action_type === 'stage_change' && !formData.next_stage) {
+      if (formData.action_type === 'stage_change' && !formData.next_stage_id) {
         toast.error("Selecione um estágio para a ação");
         return;
       }
       
+      // Prepare data for insertion
+      const dataToInsert = {
+        stage_id: formData.stage_id,
+        next_stage_id: formData.next_stage_id,
+        hours_trigger: formData.hours_trigger,
+        action_type: formData.action_type,
+        action_data: formData.action_data,
+        is_active: formData.is_active
+      };
+      
       // Insert automation data into the correct table
       const { data, error } = await supabase
         .from("crm_stage_automations")
-        .insert(formData)
+        .insert(dataToInsert)
         .select();
 
       if (error) throw error;
@@ -155,7 +175,7 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
       
       // Reset form state
       setFormData({
-        stage: '',
+        stage_id: '',
         action_type: 'notification',
         action_data: {},
         is_active: true

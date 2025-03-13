@@ -1,3 +1,4 @@
+
 import { Json } from "@/integrations/supabase/types";
 
 export interface Pipeline {
@@ -95,7 +96,7 @@ export interface AutomationFormValues {
   name?: string; 
   description?: string;
   is_active?: boolean;
-  action_type?: "stage_change" | "notification" | "assign_user" | "webhook";
+  action_type: "stage_change" | "notification" | "assign_user" | "webhook";
   trigger_type?: "stage_change" | "time_in_stage" | "lead_created";
   stage_id?: string;
   next_stage_id?: string;
@@ -105,4 +106,9 @@ export interface AutomationFormValues {
   webhook_url?: string;
   action_data?: any;
   action_webhook_url?: string;
+}
+
+// Interface para o formulário StageWithPipeline
+export interface StageWithPipeline extends CRMStage {
+  pipeline_id: string;
 }

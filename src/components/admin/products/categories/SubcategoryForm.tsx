@@ -72,13 +72,20 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
   });
 
   const handleAddField = (fieldName: string, value: any) => {
-    setFields(prev => ({ ...prev, [fieldName]: value }));
+    setFields(prev => {
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return { ...prev, [fieldName]: value };
+      } else if (value && typeof value === 'object') {
+        return { ...prev, [fieldName]: value };
+      }
+      return { ...prev, [fieldName]: "" };
+    });
   };
 
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
-      const defaultFields = fields as Record<string, any>;
+      const defaultFields = fields;
       
       const upsertData = {
         name: values.name,
@@ -96,7 +103,7 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
       } else {
         response = await supabase
           .from("product_subcategories")
-          .insert([upsertData]);
+          .insert(upsertData);
       }
 
       if (response.error) {

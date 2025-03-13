@@ -6,15 +6,14 @@ import { NameInput } from "./kanban/form/NameInput";
 import { ColorSelector } from "./kanban/form/ColorSelector";
 import { OrderInput } from "./kanban/form/OrderInput";
 import { SubmitButton } from "./kanban/form/SubmitButton";
-import { useStageForm } from "./kanban/form/useStageForm";
-import { StageFormValues } from "@/types/crm";
+import { useStageForm, UseStageFormProps } from "./kanban/form/useStageForm";
 
 interface KanbanStagesFormProps {
   onSuccess?: () => void;
 }
 
 export function KanbanStagesForm({ onSuccess }: KanbanStagesFormProps) {
-  const { form, departments, isLoading, onSubmit } = useStageForm(onSuccess);
+  const { form, departments, isLoading, onSubmit } = useStageForm({ onSuccess });
 
   return (
     <Card>
