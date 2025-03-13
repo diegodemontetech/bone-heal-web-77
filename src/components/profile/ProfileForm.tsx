@@ -8,7 +8,7 @@ import { OmieStatusSection } from "./OmieStatusSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingBag, Clock, Package } from "lucide-react";
+import { ShoppingBag, Clock, Package, Headset } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const ProfileForm = () => {
@@ -94,6 +94,25 @@ export const ProfileForm = () => {
                 >
                   <Package className="w-4 h-4 mr-2" />
                   Ver meus pedidos
+                </Button>
+              </CardContent>
+            </Card>
+            
+            <Card className="shadow-sm hover:shadow transition-shadow duration-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <Headset className="mr-2 h-5 w-5 text-primary" />
+                  Suporte
+                </CardTitle>
+                <CardDescription>Precisa de ajuda? Fale com nosso suporte</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => navigate("/support/tickets")}
+                  className="w-full"
+                >
+                  <Headset className="w-4 h-4 mr-2" />
+                  Falar com Suporte
                 </Button>
               </CardContent>
             </Card>
