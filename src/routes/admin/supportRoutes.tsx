@@ -6,6 +6,7 @@ import { UserPermission } from "@/types/auth";
 
 // Support-related pages
 const AdminTickets = lazy(() => import("@/pages/admin/Tickets"));
+const AdminTicketDetails = lazy(() => import("@/pages/admin/TicketDetails"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -24,5 +25,16 @@ export const supportRoutes: RouteObject[] = [
         </ProtectedRoute>
       </Suspense>
     )
+  },
+  {
+    path: "tickets/:id",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SUPPORT}>
+          <AdminTicketDetails />
+        </ProtectedRoute>
+      </Suspense>
+    )
   }
 ];
+
