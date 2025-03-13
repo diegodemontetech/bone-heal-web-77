@@ -132,9 +132,22 @@ export const useOrderActions = (refetchOrders: () => void) => {
     }
   };
 
+  // Adicionar funções para atualizar status para faturado e entregue
+  const updateOrderInvoiced = async (orderId: string) => {
+    // Esta função seria chamada quando o pedido é faturado no Omie
+    await handleUpdateOrderStatus(orderId, 'faturado');
+  };
+
+  const updateOrderDelivered = async (orderId: string) => {
+    // Esta função seria chamada quando o pedido é marcado como entregue no Omie
+    await handleUpdateOrderStatus(orderId, 'entregue');
+  };
+
   return {
     syncingOrder,
     handleUpdateOrderStatus,
-    syncOrderWithOmie
+    syncOrderWithOmie,
+    updateOrderInvoiced,
+    updateOrderDelivered
   };
 };

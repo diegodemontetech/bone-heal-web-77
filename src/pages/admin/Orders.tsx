@@ -70,7 +70,10 @@ const Orders = () => {
               full_name,
               phone,
               zip_code,
-              omie_code
+              omie_code,
+              email,
+              city,
+              state
             )
           `)
           .order("created_at", { ascending: false });

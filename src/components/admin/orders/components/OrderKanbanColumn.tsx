@@ -7,17 +7,18 @@ interface OrderKanbanColumnProps {
   id: string;
   title: string;
   icon: LucideIcon;
+  color: string;
   count: number;
   children: ReactNode;
 }
 
-const OrderKanbanColumn = ({ id, title, icon: Icon, count, children }: OrderKanbanColumnProps) => {
+const OrderKanbanColumn = ({ id, title, icon: Icon, color, count, children }: OrderKanbanColumnProps) => {
   return (
-    <div key={id} className="flex flex-col">
-      <div className="flex items-center gap-2 mb-3 p-2 bg-gray-100 rounded">
+    <div key={id} className="flex flex-col h-full">
+      <div className={`flex items-center gap-2 mb-3 p-3 rounded-lg ${color}`}>
         <Icon className="w-4 h-4" />
         <h3 className="font-semibold">{title}</h3>
-        <span className="ml-auto bg-gray-200 px-2 py-0.5 rounded text-sm">
+        <span className="ml-auto bg-white bg-opacity-80 backdrop-blur-sm px-2 py-0.5 rounded-full text-sm font-medium">
           {count}
         </span>
       </div>
@@ -27,7 +28,7 @@ const OrderKanbanColumn = ({ id, title, icon: Icon, count, children }: OrderKanb
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className="flex-1 min-h-[500px]"
+            className="flex-1 min-h-[600px] bg-gray-50 rounded-lg p-2 overflow-y-auto"
           >
             {children}
             {provided.placeholder}
