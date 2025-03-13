@@ -12,6 +12,7 @@ import { PlusCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CRMStage } from "@/types/crm";
+import { SubmitButton } from "./fields/SubmitButton";
 
 interface AutomationFormProps {
   onSuccess?: () => void;
@@ -88,7 +89,7 @@ export function AutomationForm({ onSuccess }: AutomationFormProps) {
 
     try {
       const { error } = await supabase
-        .from("crm_automations")
+        .from("crm_stage_automations")
         .insert([formData]);
 
       if (error) throw error;
@@ -256,19 +257,7 @@ export function AutomationForm({ onSuccess }: AutomationFormProps) {
             <Label htmlFor="is_active">Automação Ativa</Label>
           </div>
           
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Adicionar Automação
-              </>
-            )}
-          </Button>
+          <SubmitButton isLoading={isLoading} />
         </form>
       </CardContent>
     </Card>

@@ -74,15 +74,17 @@ export enum UserPermission {
 
 export enum UserRole {
   ADMIN = 'admin',
+  ADMIN_MASTER = 'admin_master',
   MANAGER = 'manager',
   STAFF = 'staff',
-  CUSTOMER = 'customer'
+  CUSTOMER = 'customer',
+  DENTIST = 'dentist'
 }
 
 export interface UserProfile {
   id: string;
   full_name: string | null;
-  avatar_url: string | null;
+  avatar_url?: string | null;
   email: string | null;
   phone: string | null;
   address: string | null;
@@ -90,4 +92,5 @@ export interface UserProfile {
   is_admin?: boolean;
   specialty?: string;
   omie_code?: string;
+  permissions?: UserPermission[];
 }

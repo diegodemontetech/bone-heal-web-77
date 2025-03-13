@@ -4,20 +4,28 @@ import { PlusCircle, Loader2 } from "lucide-react";
 
 interface SubmitButtonProps {
   isLoading: boolean;
+  label?: string;
+  loadingLabel?: string;
+  icon?: React.ReactNode;
 }
 
-export const SubmitButton = ({ isLoading }: SubmitButtonProps) => {
+export const SubmitButton = ({ 
+  isLoading, 
+  label = "Adicionar Campo", 
+  loadingLabel = "Salvando...",
+  icon = <PlusCircle className="mr-2 h-4 w-4" />
+}: SubmitButtonProps) => {
   return (
     <Button type="submit" disabled={isLoading}>
       {isLoading ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Salvando...
+          {loadingLabel}
         </>
       ) : (
         <>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Campo
+          {icon}
+          {label}
         </>
       )}
     </Button>

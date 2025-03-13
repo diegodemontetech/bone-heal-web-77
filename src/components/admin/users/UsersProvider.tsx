@@ -116,7 +116,7 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
         return;
       }
 
-      if (userToDelete.role === 'admin_master') {
+      if (userToDelete.role === UserRole.ADMIN_MASTER) {
         toast.error('Não é possível excluir um Administrador Master');
         return;
       }
