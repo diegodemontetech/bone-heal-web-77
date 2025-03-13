@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -73,7 +72,6 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Garantir que o resultado tem o formato correto
         const newStageWithCorrectType: CRMStage = {
           ...data,
           pipeline_id: data.pipeline_id || pipelineId
