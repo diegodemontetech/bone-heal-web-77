@@ -53,10 +53,17 @@ const OrdersTabs = ({
       </TabsContent>
 
       <TabsContent value="list">
-        <OrdersList 
-          orders={orders || []} 
-          onViewOrder={onViewOrder}
-        />
+        {error ? (
+          <OrdersErrorMessage refetch={refetch} />
+        ) : orders && orders.length > 0 ? (
+          <OrdersList 
+            orders={orders} 
+            onViewOrder={onViewOrder}
+            refetchOrders={refetch}
+          />
+        ) : (
+          <EmptyOrdersMessage setIsCreating={setIsCreating} />
+        )}
       </TabsContent>
 
       <TabsContent value="create">

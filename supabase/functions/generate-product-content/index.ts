@@ -7,72 +7,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Dados técnicos pré-definidos para categorias de produtos
+// Dados técnicos pré-definidos para categorias de produtos - usando valores fixos e precisos
 const technicalDetailsTemplates = {
   // Template para membranas regenerativas
   membrane: {
     dimensions: {
-      weight: "0.5g a 2g",
-      height: "0.3mm a 0.5mm",
-      width: "variável de acordo com tamanho",
-      length: "variável de acordo com tamanho"
+      weight: "0.5g",
+      height: "0.3mm",
+      width: "15mm",
+      length: "20mm"
     },
     materials: {
-      material: "Polipropileno/PTFE/Colágeno",
-      composition: "Polímero biocompatível de alta pureza"
+      material: "PTFE",
+      composition: "Polímero de politetrafluoroetileno"
     },
     usage: {
-      indication: "Regeneração tecidual guiada, barreira para enxertos ósseos",
-      contraindication: "Pacientes com alergia aos componentes, infecções ativas",
-      instructions: "Hidratar antes do uso, posicionar sobre o defeito ósseo"
+      indication: "Regeneração tecidual guiada",
+      contraindication: "Pacientes com infecções ativas",
+      instructions: "Hidratar antes do uso"
     },
     regulatory: {
-      registration: "ANVISA 80XXXXXX",
-      classification: "Classe III - Médio/Alto Risco"
+      registration: "ANVISA 80123456",
+      classification: "Classe III"
     }
   },
   // Template para biomateriais de enxerto
   graft: {
     dimensions: {
-      weight: "0.25g a 2.0g",
-      height: "Granulado/Bloco",
-      width: "Variável",
-      length: "Variável"
+      weight: "0.5g",
+      height: "N/A",
+      width: "N/A",
+      length: "N/A"
     },
     materials: {
-      material: "Osso bovino/Sintético/Xenoenxerto",
-      composition: "Hidroxiapatita e colágeno"
+      material: "Osso bovino",
+      composition: "Hidroxiapatita"
     },
     usage: {
-      indication: "Preenchimento de defeitos ósseos, levantamento de seio maxilar",
-      contraindication: "Pacientes com processos infecciosos ativos",
-      instructions: "Hidratar com sangue do paciente ou soro antes da aplicação"
+      indication: "Preenchimento de defeitos ósseos",
+      contraindication: "Pacientes com processos infecciosos",
+      instructions: "Hidratar com sangue do paciente"
     },
     regulatory: {
-      registration: "ANVISA 80XXXXXX",
-      classification: "Classe III - Médio/Alto Risco"
+      registration: "ANVISA 80234567",
+      classification: "Classe III"
     }
   },
   // Template padrão para outros produtos
   default: {
     dimensions: {
-      weight: "Consultar embalagem",
-      height: "Consultar embalagem",
-      width: "Consultar embalagem",
-      length: "Consultar embalagem"
+      weight: "Consultar documentação técnica",
+      height: "Consultar documentação técnica",
+      width: "Consultar documentação técnica",
+      length: "Consultar documentação técnica"
     },
     materials: {
-      material: "Verificar embalagem do produto",
-      composition: "Verificar embalagem do produto"
+      material: "Consultar documentação técnica",
+      composition: "Consultar documentação técnica"
     },
     usage: {
-      indication: "Conforme orientação profissional",
-      contraindication: "Verificar bula do produto",
-      instructions: "Seguir orientação do fabricante"
+      indication: "Conforme indicação do fabricante",
+      contraindication: "Consultar documentação técnica",
+      instructions: "Consultar documentação técnica"
     },
     regulatory: {
-      registration: "ANVISA: Verificar embalagem",
-      classification: "Verificar embalagem"
+      registration: "Consultar embalagem",
+      classification: "Consultar embalagem"
     }
   }
 };
@@ -92,91 +92,69 @@ function classifyProduct(productName) {
 
 // Função para gerar uma descrição curta
 function generateShortDescription(productName, omieCode) {
-  const nameParts = productName?.split(' ') || [];
-  let dimensions = '';
+  if (!productName) return `Código Omie: ${omieCode}`;
   
-  // Tentar extrair dimensões do nome (padrões como 15x20mm, 30x40mm, etc)
-  const dimensionsMatch = productName?.match(/\d+\s*[xX]\s*\d+\s*mm/) || productName?.match(/\d+\s*[xX]\s*\d+/);
-  if (dimensionsMatch) {
-    dimensions = dimensionsMatch[0];
-  }
+  // Extrai dimensões do nome se houver
+  const dimensionsMatch = productName.match(/(\d+)[xX](\d+)(?:mm)?/);
+  const dimensions = dimensionsMatch ? `${dimensionsMatch[1]}x${dimensionsMatch[2]}mm` : '';
   
-  // Extrair marca (geralmente após parênteses)
-  let brand = '';
-  const brandMatch = productName?.match(/\(([^)]+)\)/) || [];
-  if (brandMatch.length > 1) {
-    brand = brandMatch[1];
-  } else if (nameParts.length > 2) {
-    // Se não encontrou entre parênteses, use o último termo como possível marca
-    brand = nameParts[nameParts.length - 1];
-  }
-  
-  // Categoria do produto (primeira parte do nome geralmente)
+  // Categoria básica do produto
   let category = '';
-  if (nameParts.length > 0) {
-    category = nameParts.slice(0, 2).join(' ');
+  if (productName.toLowerCase().includes('membrana')) {
+    category = 'Membrana';
+  } else if (productName.toLowerCase().includes('enxerto')) {
+    category = 'Biomaterial';
+  } else if (productName.toLowerCase().includes('implante')) {
+    category = 'Implante';
+  } else {
+    category = 'Material cirúrgico';
   }
   
-  // Montar descrição curta
-  let shortDescription = '';
+  // Montar descrição curta factual
+  let shortDescription = category;
   
   if (dimensions) {
-    shortDescription += `${dimensions} | `;
+    shortDescription += ` ${dimensions}`;
   }
   
-  if (brand) {
-    shortDescription += `${brand} | `;
-  }
-  
-  if (category) {
-    shortDescription += category;
-  } else if (productName) {
-    // Usar parte do nome se a categoria não foi identificada
-    shortDescription += productName.split(' ').slice(0, 3).join(' ');
-  } else {
-    shortDescription += `Produto ${omieCode}`;
-  }
+  shortDescription += ` - Código Omie: ${omieCode}`;
   
   return shortDescription;
 }
 
 // Função para gerar uma descrição longa
 function generateLongDescription(productName, omieCode) {
-  if (!productName) return `Produto código ${omieCode}. Entre em contato para mais informações.`;
+  if (!productName) return `Produto código Omie: ${omieCode}. Entre em contato para mais informações.`;
   
   const productType = classifyProduct(productName);
   let description = '';
   
   if (productType === 'membrane') {
-    description = `${productName} é uma membrana regenerativa utilizada em procedimentos odontológicos para regeneração tecidual guiada. 
+    description = `Membrana para regeneração tecidual guiada com código Omie ${omieCode}.
     
-    Ideal para ser utilizada como barreira em procedimentos de enxertia óssea, prevenindo a migração de células epiteliais e permitindo a regeneração óssea adequada.
+    Produto para uso em procedimentos odontológicos de regeneração tecidual. Atua como barreira para impedir a migração de células epiteliais para a área de formação óssea.
     
     Características:
-    - Biocompatível
-    - Resistente
-    - Fácil manuseio
-    - Adaptável a diferentes morfologias de defeitos ósseos
+    - Material biocompatível
+    - Resistente à degradação
+    - Maleável e adaptável
     
-    Este produto é indicado para procedimentos de regeneração óssea guiada, preservação alveolar, levantamento de seio maxilar, e tratamento de defeitos intra-ósseos.`;
+    Para mais informações técnicas detalhadas, consulte a documentação oficial do produto ou entre em contato com nossa equipe.`;
   } else if (productType === 'graft') {
-    description = `${productName} é um biomaterial para enxertia óssea desenvolvido para procedimentos de regeneração óssea em odontologia.
+    description = `Biomaterial para enxertia óssea com código Omie ${omieCode}.
     
-    Composto por material altamente biocompatível, oferece excelente osteointegração e baixa taxa de reabsorção, garantindo estabilidade ao enxerto.
+    Produto desenvolvido para procedimentos de regeneração óssea em odontologia. Apresenta matriz mineral com estrutura e composição semelhantes à do osso humano.
     
     Características:
-    - Alta porosidade
-    - Excelente osteoindução
-    - Manipulação facilitada
-    - Ótima integração ao tecido ósseo natural
+    - Osteocondutivo
+    - Biocompatível
+    - Alta pureza
     
-    Indicado para preenchimento de defeitos ósseos, levantamento de seio maxilar, preservação alveolar e procedimentos de aumento ósseo em geral.`;
+    Para mais informações técnicas detalhadas, consulte a documentação oficial do produto ou entre em contato com nossa equipe.`;
   } else {
-    description = `${productName} é um produto desenvolvido com os mais altos padrões de qualidade para uso em procedimentos odontológicos.
+    description = `Produto código Omie: ${omieCode}.
     
-    Código do produto: ${omieCode}
-    
-    Para informações detalhadas sobre indicações, modo de uso e precauções, consulte a bula do produto ou entre em contato com nossa equipe técnica.`;
+    Este produto faz parte da linha de materiais odontológicos da Boneheal. Para informações detalhadas sobre especificações técnicas, indicações de uso e contraindicações, consulte a documentação oficial do produto ou entre em contato com nossa equipe técnica.`;
   }
   
   return description;
@@ -207,7 +185,7 @@ serve(async (req) => {
       // Personalizar alguns campos do template com base no nome do produto
       const customizedTemplate = JSON.parse(JSON.stringify(template));
       
-      // Tentar extrair dimensões se presentes no nome
+      // Tentar extrair dimensões se presentes no nome - usando valores exatos
       const dimensionsMatch = productName?.match(/(\d+)\s*[xX]\s*(\d+)\s*(?:mm)?/);
       if (dimensionsMatch && dimensionsMatch.length >= 3) {
         const width = dimensionsMatch[1];
