@@ -1,7 +1,18 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { CRMField } from "@/types/crm";
-import { FieldFormData } from "../types";
+
+// Definindo explicitamente o tipo para o FieldFormData para evitar tipagem excessiva
+export interface FieldFormData {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  display_in_kanban: boolean;
+  options?: string;
+  mask?: string;
+  default_value?: string;
+}
 
 export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMField[]> => {
   try {

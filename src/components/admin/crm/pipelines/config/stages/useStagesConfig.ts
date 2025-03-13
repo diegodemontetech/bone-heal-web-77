@@ -3,12 +3,15 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useColorSort } from "./colorSort";
 import { supabase } from "@/integrations/supabase/client";
-import { CRMStage } from "@/types/crm";
+import { CRMStage, StageWithPipeline } from "@/types/crm";
 
 export const useStagesConfig = (pipelineId: string) => {
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [currentStage, setCurrentStage] = useState<CRMStage | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const sortedColors = useColorSort();
 
   const fetchStages = async () => {
@@ -38,12 +41,23 @@ export const useStagesConfig = (pipelineId: string) => {
     fetchStages();
   }, [pipelineId]);
 
+  const handleOpenDialog = (stage?: CRMStage) => {
+    setCurrentStage(stage || null);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setCurrentStage(null);
+    setIsDialogOpen(false);
+  };
+
   const handleCreateStage = async (formData: {
     name: string;
     color: string;
     department_id: string;
   }) => {
     try {
+      setIsSaving(true);
       // Calcular a ordem para o novo estágio
       let newOrder = 1;
       if (stages.length > 0) {
@@ -69,11 +83,13 @@ export const useStagesConfig = (pipelineId: string) => {
       if (data) {
         setStages([...stages, data[0] as unknown as CRMStage]);
         toast.success("Estágio criado com sucesso!");
-        setIsFormOpen(false);
+        setIsDialogOpen(false);
       }
     } catch (error) {
       console.error("Error creating stage:", error);
       toast.error("Erro ao criar estágio");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -86,6 +102,7 @@ export const useStagesConfig = (pipelineId: string) => {
     }
   ) => {
     try {
+      setIsSaving(true);
       const { data, error } = await supabase
         .from("crm_stages")
         .update({
@@ -107,10 +124,13 @@ export const useStagesConfig = (pipelineId: string) => {
           )
         );
         toast.success("Estágio atualizado com sucesso!");
+        setIsDialogOpen(false);
       }
     } catch (error) {
       console.error("Error updating stage:", error);
       toast.error("Erro ao atualizar estágio");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -166,6 +186,13 @@ export const useStagesConfig = (pipelineId: string) => {
     loading,
     isFormOpen,
     setIsFormOpen,
+    isDialogOpen,
+    setIsDialogOpen,
+    currentStage,
+    setCurrentStage,
+    isSaving,
+    handleOpenDialog,
+    handleCloseDialog,
     handleCreateStage,
     handleUpdateStage,
     handleDeleteStage,

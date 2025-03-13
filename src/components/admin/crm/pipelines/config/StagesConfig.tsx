@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useStagesConfig } from "./stages/useStagesConfig";
 import { CRMStage } from "@/types/crm";
 import { useState } from "react";
+import { NewStageForm } from "./stages/NewStageForm";
 
 export const StagesConfig = ({ pipelineId }: { pipelineId: string }) => {
   const {
@@ -31,7 +32,11 @@ export const StagesConfig = ({ pipelineId }: { pipelineId: string }) => {
     // Removendo id, created_at e updated_at para type safety
     const { id, created_at, updated_at, ...stageData } = updatedStageData;
     
-    handleUpdateStage(stage.id, stageData);
+    handleUpdateStage(stage.id, {
+      name: stageData.name,
+      color: stageData.color,
+      department_id: stageData.department_id || '' // Fornecer valor padrão
+    });
   };
   
   const [dragResult, setDragResult] = useState<any>(null);
@@ -67,6 +72,15 @@ export const StagesConfig = ({ pipelineId }: { pipelineId: string }) => {
                 {JSON.stringify(stages, null, 2)}
               </pre>
             )}
+            
+            <NewStageForm 
+              onAdd={(data) => handleCreateStage({
+                name: data.name,
+                color: data.color,
+                department_id: 'default' // Usar um valor padrão temporário
+              })}
+              isLoading={isSaving}
+            />
           </div>
         )}
       </CardContent>
