@@ -1,5 +1,5 @@
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
@@ -63,7 +63,7 @@ export const useTickets = () => {
           if (ticket.customer_id) {
             const { data: customerData } = await supabase
               .from("profiles")
-              .select("id, full_name, email")
+              .select("id, full_name, email, phone")
               .eq("id", ticket.customer_id)
               .single();
             customer = customerData;
