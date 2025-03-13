@@ -10,7 +10,7 @@ export const DepartmentFilter = ({ value, onChange }: DepartmentFilterProps) => 
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Filtrar por departamento" />
+        <SelectValue placeholder="Todos os departamentos" />
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="all">Todos os departamentos</SelectItem>

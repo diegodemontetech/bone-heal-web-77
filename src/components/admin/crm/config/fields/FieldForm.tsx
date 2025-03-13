@@ -4,17 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { fieldTypes } from "./types";
+import { fieldTypes, Field } from "./types";
 
 interface FieldFormProps {
-  data: {
-    name: string;
-    type: string;
-    department: string;
-    required: boolean;
-    showInCard: boolean;
-    showInKanban: boolean;
-  };
+  data: Omit<Field, "id"> & { id?: string };
   onChange: (field: string, value: any) => void;
   onSubmit: () => void;
   onCancel: () => void;

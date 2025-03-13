@@ -13,7 +13,7 @@ export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMFi
 
     if (error) throw error;
     
-    // Convertemos o resultado para garantir que seja do tipo CRMField[]
+    // Tratando o problema de tipagem usando type assertion
     return (data || []) as unknown as CRMField[];
   } catch (error) {
     console.error("Error fetching fields:", error);
@@ -46,7 +46,7 @@ export const createField = async (pipelineId: string, formData: FieldFormData): 
 
     if (error) throw error;
     
-    // Convertemos o resultado para garantir que seja do tipo CRMField
+    // Tratando o problema de tipagem usando type assertion
     return data as unknown as CRMField;
   } catch (error) {
     console.error("Error creating field:", error);
@@ -79,7 +79,7 @@ export const updateField = async (fieldId: string, formData: FieldFormData): Pro
 
     if (error) throw error;
     
-    // Convertemos o resultado para garantir que seja do tipo CRMField
+    // Tratando o problema de tipagem usando type assertion
     return data as unknown as CRMField;
   } catch (error) {
     console.error("Error updating field:", error);

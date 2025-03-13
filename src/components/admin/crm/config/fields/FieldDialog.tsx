@@ -1,6 +1,5 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FieldForm } from "./FieldForm";
 
 interface FieldDialogProps {
   isOpen: boolean;

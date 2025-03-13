@@ -41,3 +41,31 @@ export interface MaskSectionProps extends FormSectionProps {
 export interface OptionsSectionProps extends FormSectionProps {
   watchType: string;
 }
+
+// Tipos para a tabela de campos
+export interface Field {
+  id: string;
+  name: string;
+  type: string;
+  department: string;
+  required: boolean;
+  showInCard: boolean;
+  showInKanban: boolean;
+}
+
+// Lista de tipos de campos disponíveis
+export const fieldTypes = [
+  { id: "text", name: "Texto" },
+  { id: "email", name: "E-mail" },
+  { id: "phone", name: "Telefone" },
+  { id: "number", name: "Número" },
+  { id: "date", name: "Data" },
+  { id: "select", name: "Seleção" },
+  { id: "checkbox", name: "Checkbox" },
+  { id: "radio", name: "Opções" },
+  { id: "textarea", name: "Área de Texto" },
+  { id: "file", name: "Arquivo" },
+  { id: "currency", name: "Valor Monetário" },
+  { id: "cpf", name: "CPF" },
+  { id: "cnpj", name: "CNPJ" }
+];

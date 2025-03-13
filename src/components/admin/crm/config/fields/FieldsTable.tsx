@@ -2,17 +2,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
-import { fieldTypes } from "./types";
-
-interface Field {
-  id: string;
-  name: string;
-  type: string;
-  department: string;
-  required: boolean;
-  showInCard: boolean;
-  showInKanban: boolean;
-}
+import { fieldTypes, Field } from "./types";
 
 interface FieldsTableProps {
   fields: Field[];

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { fieldTypes } from "./types";
+import { fieldTypes, Field } from "./types";
 
 export const useFieldsConfig = () => {
   // Campos iniciais mockados
@@ -13,8 +13,8 @@ export const useFieldsConfig = () => {
     { id: "5", name: "Data de Contato", type: "date", required: false, showInCard: true, showInKanban: true, department: "Suporte" }
   ];
 
-  const [fields, setFields] = useState(initialFields);
-  const [newField, setNewField] = useState({
+  const [fields, setFields] = useState<Field[]>(initialFields);
+  const [newField, setNewField] = useState<Omit<Field, "id">>({
     name: "",
     type: "text",
     required: false,
@@ -22,15 +22,7 @@ export const useFieldsConfig = () => {
     showInKanban: false,
     department: "Vendas"
   });
-  const [editingField, setEditingField] = useState<null | {
-    id: string,
-    name: string,
-    type: string,
-    required: boolean,
-    showInCard: boolean,
-    showInKanban: boolean,
-    department: string
-  }>(null);
+  const [editingField, setEditingField] = useState<Field | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState<string>("all");
 
@@ -78,7 +70,7 @@ export const useFieldsConfig = () => {
     toast.success("Campo removido com sucesso!");
   };
 
-  const openEditDialog = (field: typeof editingField) => {
+  const openEditDialog = (field: Field) => {
     setEditingField(field);
     setIsDialogOpen(true);
   };
