@@ -1,175 +1,148 @@
-
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { StageWithPipeline } from "@/types/crm";
-import { DropResult } from "@hello-pangea/dnd";
 
 export const useStagesConfig = (pipelineId: string) => {
   const [stages, setStages] = useState<StageWithPipeline[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addingStage, setAddingStage] = useState(false);
-
-  useEffect(() => {
-    fetchStages();
-  }, [pipelineId]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentStage, setCurrentStage] = useState<StageWithPipeline | null>(null);
 
   const fetchStages = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("crm_stages")
-        .select("*")
-        .eq("pipeline_id", pipelineId)
-        .order("order");
+        .from('crm_stages')
+        .select('*')
+        .eq('pipeline_id', pipelineId)
+        .order('order', { ascending: true });
 
       if (error) throw error;
-      
-      // Garantir que todos os estágios tenham pipeline_id definido
-      const stagesWithPipeline = data.map(stage => ({
-        ...stage,
-        pipeline_id: pipelineId // Garantir que o pipeline_id está presente
-      })) as StageWithPipeline[];
-      
-      setStages(stagesWithPipeline);
-    } catch (err) {
-      console.error("Erro ao buscar estágios:", err);
-      toast.error("Erro ao carregar estágios");
+      setStages(data as StageWithPipeline[]);
+    } catch (error) {
+      console.error('Erro ao buscar estágios:', error);
+      toast.error('Erro ao carregar estágios');
     } finally {
       setLoading(false);
     }
   };
 
-  const addStage = async (newStage: { name: string; color: string }) => {
-    setAddingStage(true);
-    try {
-      // Encontrar o maior order para colocar o novo estágio no final
-      const maxOrder = stages.length > 0 
-        ? Math.max(...stages.map(stage => stage.order)) 
-        : 0;
+  useEffect(() => {
+    if (pipelineId) {
+      fetchStages();
+    }
+  }, [pipelineId]);
 
+  const handleOpenDialog = (stage?: StageWithPipeline) => {
+    setCurrentStage(stage || null);
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setCurrentStage(null);
+  };
+
+  const createStage = async (name: string) => {
+    setLoading(true);
+    try {
+      const newOrder = stages.length > 0 ? stages[stages.length - 1].order + 1 : 1;
       const { data, error } = await supabase
-        .from("crm_stages")
-        .insert({
-          name: newStage.name,
-          color: newStage.color,
-          order: maxOrder + 1,
-          pipeline_id: pipelineId
-        })
+        .from('crm_stages')
+        .insert([{ pipeline_id: pipelineId, name: name, order: newOrder }])
         .select()
         .single();
 
       if (error) throw error;
 
-      // Adicionar o novo estágio com pipeline_id garantido
-      setStages([...stages, data as StageWithPipeline]);
-      toast.success("Estágio adicionado com sucesso");
-    } catch (err) {
-      console.error("Erro ao adicionar estágio:", err);
-      toast.error("Erro ao adicionar estágio");
+      setStages([...stages, data]);
+      toast.success('Estágio criado com sucesso!');
+      handleCloseDialog();
+      fetchStages();
+    } catch (error: any) {
+      console.error('Erro ao criar estágio:', error);
+      toast.error(`Erro ao criar estágio: ${error.message}`);
     } finally {
-      setAddingStage(false);
+      setLoading(false);
     }
   };
 
-  const updateStage = async (stage: StageWithPipeline, field: string, value: string) => {
-    const updatedStage = { ...stage, [field]: value };
-    
+  const updateStage = async (stageId: string, newName: string) => {
+    setLoading(true);
     try {
-      // Atualizar na UI primeiro para feedback instantâneo
-      setStages(stages.map(s => s.id === stage.id ? updatedStage : s));
-      
-      // Enviar atualização para o servidor
       const { error } = await supabase
-        .from("crm_stages")
-        .update({ [field]: value })
-        .eq("id", stage.id);
+        .from('crm_stages')
+        .update({ name: newName })
+        .eq('id', stageId);
 
       if (error) throw error;
-    } catch (err) {
-      console.error("Erro ao atualizar estágio:", err);
-      toast.error("Erro ao atualizar estágio");
-      
-      // Reverter mudança na UI se houver erro
-      setStages(stages.map(s => s.id === stage.id ? stage : s));
+
+      setStages(stages.map(stage => stage.id === stageId ? { ...stage, name: newName } : stage));
+      toast.success('Estágio atualizado com sucesso!');
+      handleCloseDialog();
+      fetchStages();
+    } catch (error: any) {
+      console.error('Erro ao atualizar estágio:', error);
+      toast.error(`Erro ao atualizar estágio: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   const deleteStage = async (stageId: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este estágio?")) {
-      return;
-    }
-
+    setLoading(true);
     try {
       const { error } = await supabase
-        .from("crm_stages")
+        .from('crm_stages')
         .delete()
-        .eq("id", stageId);
+        .eq('id', stageId);
 
       if (error) throw error;
 
       setStages(stages.filter(stage => stage.id !== stageId));
-      toast.success("Estágio excluído com sucesso");
-    } catch (err) {
-      console.error("Erro ao excluir estágio:", err);
-      toast.error("Erro ao excluir estágio");
+      toast.success('Estágio excluído com sucesso!');
+      fetchStages();
+    } catch (error: any) {
+      console.error('Erro ao excluir estágio:', error);
+      toast.error(`Erro ao excluir estágio: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDragEnd = async (result: DropResult) => {
-    const { destination, source } = result;
-
-    // Se não houver destino ou o item for arrastado para o mesmo lugar, não fazer nada
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
-      return;
-    }
-
-    // Reordenar os estágios
-    const reorderedStages = Array.from(stages);
-    const [removed] = reorderedStages.splice(source.index, 1);
-    reorderedStages.splice(destination.index, 0, removed);
-
-    // Atualizar a ordem
-    const updatedStages = reorderedStages.map((stage, index) => ({
-      ...stage,
-      order: index + 1
+  const updateStagesOrder = async (reorderedStages: StageWithPipeline[]) => {
+  try {
+    const updateData = reorderedStages.map(stage => ({
+      id: stage.id,
+      name: stage.name, // Adicionando o campo name que é obrigatório
+      order: stage.order,
     }));
 
-    // Atualizar estado localmente primeiro
-    setStages(updatedStages);
+    const { error } = await supabase
+      .from('crm_stages')
+      .upsert(updateData);
 
-    // Atualizar no banco de dados
-    try {
-      // Criar um array de atualizações para enviar
-      const updates = updatedStages.map(stage => ({
-        id: stage.id,
-        order: stage.order
-      }));
-
-      // Fazer atualizações em massa (upsert)
-      const { error } = await supabase
-        .from("crm_stages")
-        .upsert(updates, { onConflict: 'id' });
-
-      if (error) throw error;
-    } catch (err) {
-      console.error("Erro ao atualizar ordem dos estágios:", err);
-      toast.error("Erro ao atualizar ordem");
-      
-      // Reverter para o estado anterior em caso de erro
-      fetchStages();
-    }
-  };
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Erro ao atualizar ordem dos estágios:', error);
+    return false;
+  }
+};
 
   return {
     stages,
     loading,
-    addingStage,
-    addStage,
+    isDialogOpen,
+    currentStage,
+    handleOpenDialog,
+    handleCloseDialog,
+    createStage,
     updateStage,
     deleteStage,
-    handleDragEnd
+    setStages,
+    updateStagesOrder,
+    fetchStages
   };
 };
