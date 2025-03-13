@@ -44,23 +44,55 @@ export const useTickets = () => {
     queryFn: async () => {
       console.log("Buscando tickets para admin, isAdmin:", isAdminMaster || profile?.is_admin);
       
-      // Remover a condição de filtro por usuário para admins verem todos os tickets
-      const { data, error } = await supabase
-        .from("support_tickets")
-        .select(`
-          *,
-          customer:customer_id(id, full_name, email),
-          assigned:assigned_to(id, full_name)
-        `)
-        .order("created_at", { ascending: false });
+      try {
+        // Corrigindo a consulta para não tentar criar relações automáticas
+        const { data, error } = await supabase
+          .from("support_tickets")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Erro ao buscar tickets:", error);
+        if (error) {
+          console.error("Erro ao buscar tickets:", error);
+          throw error;
+        }
+        
+        // Agora vamos buscar os dados relacionados manualmente
+        const ticketsWithRelations = await Promise.all(data.map(async (ticket) => {
+          // Buscar dados do cliente
+          let customer = null;
+          if (ticket.customer_id) {
+            const { data: customerData } = await supabase
+              .from("profiles")
+              .select("id, full_name, email")
+              .eq("id", ticket.customer_id)
+              .single();
+            customer = customerData;
+          }
+          
+          // Buscar dados do agente
+          let assigned = null;
+          if (ticket.assigned_to) {
+            const { data: assignedData } = await supabase
+              .from("profiles")
+              .select("id, full_name")
+              .eq("id", ticket.assigned_to)
+              .single();
+            assigned = assignedData;
+          }
+          
+          return {
+            ...ticket,
+            customer,
+            assigned
+          };
+        }));
+        
+        console.log("Tickets encontrados:", ticketsWithRelations?.length);
+        return ticketsWithRelations;
+      } catch (error) {
+        console.error("Erro ao processar tickets:", error);
         throw error;
       }
-      
-      console.log("Tickets encontrados:", data?.length);
-      return data;
     },
   });
 

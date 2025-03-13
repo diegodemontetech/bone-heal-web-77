@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import TicketsList from "./TicketsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +7,6 @@ import {
   Search, 
   Filter, 
   BellRing, 
-  Clock, 
   RefreshCw, 
   Settings 
 } from "lucide-react";
@@ -150,11 +148,12 @@ const TicketsContent = ({
     if (searchTerm.trim() !== '') {
       const searchLower = searchTerm.toLowerCase();
       const subjectMatch = ticket.subject?.toLowerCase().includes(searchLower);
-      const customerMatch = ticket.customer?.full_name?.toLowerCase().includes(searchLower);
+      const customerNameMatch = ticket.customer?.full_name?.toLowerCase().includes(searchLower);
+      const customerEmailMatch = ticket.customer?.email?.toLowerCase().includes(searchLower);
       const numberMatch = String(ticket.id).includes(searchLower);
       const descriptionMatch = ticket.description?.toLowerCase().includes(searchLower);
       
-      return subjectMatch || customerMatch || numberMatch || descriptionMatch;
+      return subjectMatch || customerNameMatch || customerEmailMatch || numberMatch || descriptionMatch;
     }
 
     return true;
