@@ -8,9 +8,11 @@ import OrdersEmpty from '@/components/orders/OrdersEmpty';
 import OrdersLoading from '@/components/orders/OrdersLoading';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileOrders = () => {
   const { profile, isLoading: isAuthLoading } = useAuthContext();
+  const navigate = useNavigate();
   
   const { data: orders, isLoading } = useQuery({
     queryKey: ['orders', profile?.id],
@@ -24,7 +26,12 @@ const ProfileOrders = () => {
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      return data || [];
+      
+      // Garantir que todos os pedidos tenham a propriedade payment_status
+      return (data || []).map(order => ({
+        ...order,
+        payment_status: order.payment_status || 'pending'
+      }));
     },
     enabled: !!profile?.id
   });
@@ -43,9 +50,9 @@ const ProfileOrders = () => {
           <OrdersHeader />
           
           {orders && orders.length > 0 ? (
-            <OrdersList orders={orders} />
+            <OrdersList orders={orders} navigate={navigate} />
           ) : (
-            <OrdersEmpty />
+            <OrdersEmpty navigate={navigate} />
           )}
         </CardContent>
       </Card>

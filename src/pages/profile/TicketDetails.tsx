@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/hooks/auth/auth-context';
-import TicketDetails from '@/components/support/TicketDetails';
+import { TicketDetails as TicketDetailsComponent } from '@/components/support/TicketDetails';
 import LoadingState from '@/components/support/ticket-details/LoadingState';
 import NotFoundState from '@/components/support/ticket-details/NotFoundState';
 
@@ -45,7 +45,7 @@ const ProfileTicketDetails = () => {
     return <NotFoundState />;
   }
 
-  return <TicketDetails ticket={ticket} />;
+  return <TicketDetailsComponent ticket={ticket} />;
 };
 
 export default ProfileTicketDetails;

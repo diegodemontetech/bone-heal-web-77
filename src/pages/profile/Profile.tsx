@@ -3,9 +3,9 @@ import React from 'react';
 import { useAuthContext } from '@/hooks/auth/auth-context';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ProfileForm from '@/components/profile/ProfileForm';
-import SupportButtonsSection from '@/components/profile/SupportButtonsSection';
-import OmieStatusSection from '@/components/profile/OmieStatusSection';
+import { ProfileForm } from '@/components/profile/ProfileForm';
+import { SupportButtonsSection } from '@/components/profile/SupportButtonsSection';
+import { OmieStatusSection } from '@/components/profile/OmieStatusSection';
 
 const Profile = () => {
   const { profile, isLoading } = useAuthContext();
@@ -50,7 +50,7 @@ const Profile = () => {
         </div>
         
         <div className="space-y-6">
-          <OmieStatusSection profile={profile} />
+          <OmieStatusSection omieCode={profile.omie_code} />
           <SupportButtonsSection />
         </div>
       </div>
