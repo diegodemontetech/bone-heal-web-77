@@ -14,7 +14,8 @@ const Login = () => {
     profile, 
     currentSession, 
     isAuthenticated,
-    connectionError 
+    connectionError,
+    retryConnection
   } = useLoginPage();
 
   // Se houver erro de conexão, mostra mensagem e botão para tentar novamente
@@ -31,7 +32,7 @@ const Login = () => {
               </AlertDescription>
             </Alert>
             <Button 
-              onClick={() => window.location.reload()} 
+              onClick={retryConnection} 
               className="w-full mt-4"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
