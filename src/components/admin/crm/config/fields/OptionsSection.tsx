@@ -1,13 +1,7 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn } from "react-hook-form";
-import { FieldFormValues } from "./types";
-
-interface OptionsSectionProps {
-  form: UseFormReturn<FieldFormValues>;
-  watchType: string;
-}
+import { OptionsSectionProps } from "./types";
 
 export const OptionsSection = ({ form, watchType }: OptionsSectionProps) => {
   if (!["select", "radio", "checkbox"].includes(watchType)) {
@@ -25,6 +19,7 @@ export const OptionsSection = ({ form, watchType }: OptionsSectionProps) => {
             <Input 
               placeholder="Opção 1, Opção 2, Opção 3" 
               {...field} 
+              value={field.value || ""}
             />
           </FormControl>
           <FormDescription>

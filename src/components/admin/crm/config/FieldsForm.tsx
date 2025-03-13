@@ -27,7 +27,7 @@ export function FieldsForm({ onSuccess }: FieldsFormProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <BasicFieldsSection form={form} />
-            <FieldTypeSection form={form} setFieldType={setFieldType} />
+            <FieldTypeSection form={form} />
             <OptionsSection form={form} watchType={watchType} />
             <MaskSection form={form} watchType={watchType} getDefaultMask={getDefaultMask} />
             <DefaultValueSection form={form} />

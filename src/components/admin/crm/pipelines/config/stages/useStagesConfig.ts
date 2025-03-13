@@ -26,8 +26,9 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
 
-      // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
-      setStages(data as CRMStage[]);
+      // Explicitamente tipando o retorno como CRMStage[]
+      const stageData = data as unknown as CRMStage[];
+      setStages(stageData);
     } catch (error) {
       console.error('Erro ao buscar estágios:', error);
       toast.error('Não foi possível carregar os estágios. Por favor, tente novamente.');
@@ -57,8 +58,9 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
 
-      // Explicitamente tipando o retorno para evitar problemas de recursão de tipos
-      setStages([...stages, data as CRMStage]);
+      // Explicitamente tipando o retorno como CRMStage
+      const newStage = data as unknown as CRMStage;
+      setStages([...stages, newStage]);
       toast.success('Estágio criado com sucesso!');
       fetchStages(); // Recarrega os estágios para atualizar a lista
     } catch (error) {

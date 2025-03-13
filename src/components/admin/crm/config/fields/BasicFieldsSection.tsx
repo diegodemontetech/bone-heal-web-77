@@ -1,28 +1,23 @@
 
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn } from "react-hook-form";
-import { FieldFormValues } from "./types";
+import { FormFieldProps } from "./types";
 
-interface BasicFieldsSectionProps {
-  form: UseFormReturn<FieldFormValues>;
-}
-
-export const BasicFieldsSection = ({ form }: BasicFieldsSectionProps) => {
+export const BasicFieldsSection = ({ form }: FormFieldProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
       <FormField
         control={form.control}
         name="name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Nome (ID do campo)</FormLabel>
+            <FormLabel>Nome Técnico</FormLabel>
             <FormControl>
-              <Input placeholder="Ex: email_cliente" {...field} />
+              <Input 
+                placeholder="nome_do_campo" 
+                {...field} 
+              />
             </FormControl>
-            <FormDescription>
-              Usado internamente no sistema (sem espaços)
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -35,15 +30,15 @@ export const BasicFieldsSection = ({ form }: BasicFieldsSectionProps) => {
           <FormItem>
             <FormLabel>Rótulo</FormLabel>
             <FormControl>
-              <Input placeholder="Ex: E-mail do Cliente" {...field} />
+              <Input 
+                placeholder="Nome exibido ao usuário" 
+                {...field} 
+              />
             </FormControl>
-            <FormDescription>
-              Nome exibido no formulário
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
-    </div>
+    </>
   );
 };

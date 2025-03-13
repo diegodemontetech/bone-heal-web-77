@@ -1,33 +1,28 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
-import { UseFormReturn } from "react-hook-form";
-import { FieldFormValues } from "./types";
+import { Switch } from "@/components/ui/switch";
+import { FormFieldProps } from "./types";
 
-interface FieldOptionsSectionProps {
-  form: UseFormReturn<FieldFormValues>;
-}
-
-export const FieldOptionsSection = ({ form }: FieldOptionsSectionProps) => {
+export const FieldOptionsSection = ({ form }: FormFieldProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="required"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <FormLabel>Campo Obrigatório</FormLabel>
+              <FormDescription>
+                Exige que o campo seja preenchido
+              </FormDescription>
+            </div>
             <FormControl>
-              <Checkbox
+              <Switch
                 checked={field.value}
                 onCheckedChange={field.onChange}
               />
             </FormControl>
-            <div className="space-y-1 leading-none">
-              <FormLabel>Campo obrigatório</FormLabel>
-              <FormDescription>
-                O preenchimento deste campo será exigido
-              </FormDescription>
-            </div>
           </FormItem>
         )}
       />
@@ -36,19 +31,19 @@ export const FieldOptionsSection = ({ form }: FieldOptionsSectionProps) => {
         control={form.control}
         name="display_in_kanban"
         render={({ field }) => (
-          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+            <div className="space-y-0.5">
+              <FormLabel>Exibir no Kanban</FormLabel>
+              <FormDescription>
+                O valor deste campo será exibido nos cartões do kanban
+              </FormDescription>
+            </div>
             <FormControl>
-              <Checkbox
+              <Switch
                 checked={field.value}
                 onCheckedChange={field.onChange}
               />
             </FormControl>
-            <div className="space-y-1 leading-none">
-              <FormLabel>Exibir no Kanban</FormLabel>
-              <FormDescription>
-                Este campo será exibido nos cartões do Kanban
-              </FormDescription>
-            </div>
           </FormItem>
         )}
       />

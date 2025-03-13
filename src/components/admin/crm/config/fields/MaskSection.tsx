@@ -1,14 +1,7 @@
 
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn } from "react-hook-form";
-import { FieldFormValues } from "./types";
-
-interface MaskSectionProps {
-  form: UseFormReturn<FieldFormValues>;
-  watchType: string;
-  getDefaultMask: (type: string) => string;
-}
+import { MaskSectionProps } from "./types";
 
 export const MaskSection = ({ form, watchType, getDefaultMask }: MaskSectionProps) => {
   if (!["phone", "cpf", "cnpj", "cep", "money"].includes(watchType)) {
