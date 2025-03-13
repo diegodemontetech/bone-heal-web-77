@@ -12,41 +12,88 @@ export const useOrderCustomers = () => {
 
   console.log("useOrderCustomers hook inicializado com termo:", customerSearchTerm);
 
-  // Buscar clientes diretamente da tabela profiles
+  // Buscar clientes da tabela profiles e também da tabela clientes_omie para garantir dados completos
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["customers", customerSearchTerm],
     queryFn: async () => {
-      console.log("Iniciando busca de clientes na tabela profiles com termo:", customerSearchTerm);
+      console.log("Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
+        // Buscar primeiro na tabela profiles (tabela principal)
         let query = supabase
           .from("profiles")
           .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync");
         
         // Aplicar filtro apenas se houver termo de busca
         if (customerSearchTerm && customerSearchTerm.trim() !== "") {
-          // Usar ilike para cada campo individualmente para melhor corresponder a busca
-          query = query.or(
-            `full_name.ilike.%${customerSearchTerm}%,` +
-            `email.ilike.%${customerSearchTerm}%,` +
-            `phone.ilike.%${customerSearchTerm}%`
-          );
+          // Buscar também por código Omie se o termo parecer ser um número
+          const isNumericSearch = /^\d+$/.test(customerSearchTerm.trim());
+          
+          if (isNumericSearch) {
+            query = query.or(`full_name.ilike.%${customerSearchTerm}%,omie_code.ilike.%${customerSearchTerm}%`);
+          } else {
+            query = query.or(
+              `full_name.ilike.%${customerSearchTerm}%,` +
+              `email.ilike.%${customerSearchTerm}%,` +
+              `phone.ilike.%${customerSearchTerm}%`
+            );
+          }
         }
         
         // Limitar resultados e adicionar ordem para consistência
-        const { data, error } = await query
+        const { data: profilesData, error: profilesError } = await query
           .order("full_name", { ascending: true })
           .limit(50);
 
-        if (error) {
-          console.error("Erro ao buscar clientes do Supabase:", error);
-          toast.error("Erro ao buscar clientes");
-          return [];
+        if (profilesError) {
+          console.error("Erro ao buscar clientes dos perfis:", profilesError);
+          throw profilesError;
         }
         
-        console.log(`Encontrados ${data?.length || 0} clientes na tabela profiles:`, data);
+        // Buscar na tabela clientes_omie para complementar (caso haja clientes que estão no Omie mas não em profiles)
+        const { data: omieData, error: omieError } = await supabase
+          .from("clientes_omie")
+          .select("codigo_cliente_omie, nome_cliente, email, telefone, endereco, cidade, estado, cep")
+          .or(customerSearchTerm ? 
+            `nome_cliente.ilike.%${customerSearchTerm}%,` +
+            `email.ilike.%${customerSearchTerm}%,` +
+            `codigo_cliente_omie.ilike.%${customerSearchTerm}%` : 
+            "nome_cliente.neq.''")
+          .limit(50);
+          
+        if (omieError) {
+          console.error("Erro ao buscar clientes do Omie:", omieError);
+          // Não interrompe o fluxo, apenas continua com os dados de profiles
+        }
+        
+        // Consolidar dados de ambas as tabelas, priorizando profiles
+        const consolidatedCustomers = [...(profilesData || [])];
+        
+        // Adicionar dados da tabela clientes_omie que não existem em profiles
+        if (omieData && omieData.length > 0) {
+          const existingOmieCodes = new Set(profilesData?.map(p => p.omie_code) || []);
+          
+          omieData.forEach(omieCustomer => {
+            if (!existingOmieCodes.has(omieCustomer.codigo_cliente_omie)) {
+              consolidatedCustomers.push({
+                id: null, // Será identificado como cliente apenas do Omie
+                full_name: omieCustomer.nome_cliente || "Nome não informado",
+                email: omieCustomer.email || "",
+                phone: omieCustomer.telefone || "",
+                address: omieCustomer.endereco || "",
+                city: omieCustomer.cidade || "",
+                state: omieCustomer.estado || "",
+                zip_code: omieCustomer.cep || "",
+                omie_code: omieCustomer.codigo_cliente_omie || "",
+                omie_sync: true // É do Omie, então consideramos sincronizado
+              });
+            }
+          });
+        }
+        
+        console.log(`Encontrados ${consolidatedCustomers.length} clientes na busca consolidada`);
         
         // Garantir que todos os clientes tenham os campos necessários
-        return data?.map(customer => ({
+        return consolidatedCustomers.map(customer => ({
           id: customer.id,
           full_name: customer.full_name || "Nome não informado",
           email: customer.email || "",
@@ -57,14 +104,14 @@ export const useOrderCustomers = () => {
           zip_code: customer.zip_code || "",
           omie_code: customer.omie_code || "",
           omie_sync: customer.omie_sync || false
-        })) || [];
+        }));
       } catch (error) {
         console.error("Exceção na consulta de clientes:", error);
         toast.error("Erro ao consultar clientes");
         return [];
       }
     },
-    staleTime: 30000, // 30 segundos (reduzido para atualizar mais frequentemente)
+    staleTime: 30000, // 30 segundos
     refetchOnWindowFocus: true
   });
 

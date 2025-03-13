@@ -24,30 +24,81 @@ export const useCustomerState = () => {
 
   const fetchCustomers = async () => {
     try {
-      console.log("Iniciando busca de clientes na tabela profiles...");
+      console.log("Iniciando busca de clientes...");
       setIsLoadingCustomers(true);
       
-      let query = supabase
+      // Buscar na tabela profiles
+      let profilesQuery = supabase
         .from('profiles')
         .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync')
         .order('full_name');
 
       if (searchTerm) {
-        query = query.or(
-          `full_name.ilike.%${searchTerm}%,` +
+        // Verificar se a busca parece ser um código numérico
+        const isNumericSearch = /^\d+$/.test(searchTerm.trim());
+        
+        if (isNumericSearch) {
+          profilesQuery = profilesQuery.or(
+            `full_name.ilike.%${searchTerm}%,omie_code.ilike.%${searchTerm}%`
+          );
+        } else {
+          profilesQuery = profilesQuery.or(
+            `full_name.ilike.%${searchTerm}%,` +
+            `email.ilike.%${searchTerm}%,` +
+            `phone.ilike.%${searchTerm}%`
+          );
+        }
+      }
+
+      const { data: profilesData, error: profilesError } = await profilesQuery;
+
+      if (profilesError) {
+        console.error('Erro na consulta de perfis:', profilesError);
+        throw profilesError;
+      }
+
+      // Buscar na tabela clientes_omie
+      const { data: omieData, error: omieError } = await supabase
+        .from("clientes_omie")
+        .select("codigo_cliente_omie, nome_cliente, email, telefone, endereco, cidade, estado, cep")
+        .or(searchTerm ? 
+          `nome_cliente.ilike.%${searchTerm}%,` +
           `email.ilike.%${searchTerm}%,` +
-          `phone.ilike.%${searchTerm}%`
-        );
+          `codigo_cliente_omie.ilike.%${searchTerm}%` : 
+          "nome_cliente.neq.''")
+        .limit(50);
+        
+      if (omieError) {
+        console.error("Erro ao buscar clientes do Omie:", omieError);
+        // Não interrompe o fluxo, apenas continua com os dados de profiles
+      }
+      
+      // Consolidar dados de ambas as tabelas, priorizando profiles
+      const consolidatedCustomers = [...(profilesData || [])];
+      
+      // Adicionar dados da tabela clientes_omie que não existem em profiles
+      if (omieData && omieData.length > 0) {
+        const existingOmieCodes = new Set(profilesData?.map(p => p.omie_code) || []);
+        
+        omieData.forEach(omieCustomer => {
+          if (!existingOmieCodes.has(omieCustomer.codigo_cliente_omie)) {
+            consolidatedCustomers.push({
+              id: null, // Será identificado como cliente apenas do Omie
+              full_name: omieCustomer.nome_cliente || "Nome não informado",
+              email: omieCustomer.email || "",
+              phone: omieCustomer.telefone || "",
+              address: omieCustomer.endereco || "",
+              city: omieCustomer.cidade || "",
+              state: omieCustomer.estado || "",
+              zip_code: omieCustomer.cep || "",
+              omie_code: omieCustomer.codigo_cliente_omie || "",
+              omie_sync: true // É do Omie, então consideramos sincronizado
+            });
+          }
+        });
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erro na consulta do Supabase:', error);
-        throw error;
-      }
-
-      const formattedCustomers = data ? data.map(customer => ({
+      const formattedCustomers = consolidatedCustomers.map(customer => ({
         id: customer.id,
         full_name: customer.full_name || 'Sem nome',
         email: customer.email,
@@ -58,9 +109,9 @@ export const useCustomerState = () => {
         zip_code: customer.zip_code,
         omie_code: customer.omie_code,
         omie_sync: customer.omie_sync
-      })) : [];
+      }));
 
-      console.log(`Encontrados ${formattedCustomers.length} clientes na tabela profiles`);
+      console.log(`Encontrados ${formattedCustomers.length} clientes na busca consolidada`);
       setCustomers(formattedCustomers);
     } catch (error) {
       console.error('Erro ao buscar clientes:', error);

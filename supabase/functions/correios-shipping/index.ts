@@ -118,6 +118,7 @@ serve(async (req) => {
     // Sempre retornar duas opções: PAC e SEDEX
     const shippingRates = [
       {
+        id: "pac-" + cleanZipCode,
         service_type: "PAC",
         name: "PAC (Convencional)",
         rate: calculateShippingRate(baseRate, weightFactor),
@@ -125,6 +126,7 @@ serve(async (req) => {
         zipCode: cleanZipCode
       },
       {
+        id: "sedex-" + cleanZipCode,
         service_type: "SEDEX",
         name: "SEDEX (Express)",
         rate: calculateShippingRate(baseRate, weightFactor, 1.7), // SEDEX é 70% mais caro que PAC
@@ -152,6 +154,7 @@ serve(async (req) => {
     // para evitar que a UI mostre "Nenhuma opção de frete disponível"
     const defaultRates = [
       {
+        id: "pac-default",
         service_type: "PAC",
         name: "PAC (Convencional)",
         rate: 30.00,
@@ -159,6 +162,7 @@ serve(async (req) => {
         zipCode: "00000000" // CEP padrão quando há erro
       },
       {
+        id: "sedex-default",
         service_type: "SEDEX",
         name: "SEDEX (Express)",
         rate: 55.00,
