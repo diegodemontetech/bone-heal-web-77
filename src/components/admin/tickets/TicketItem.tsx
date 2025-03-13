@@ -7,6 +7,17 @@ import { Bell, User } from "lucide-react";
 import TicketStatusBadge from "./TicketStatusBadge";
 import TicketPriorityBadge from "./TicketPriorityBadge";
 import { Badge } from "@/components/ui/badge";
+import TicketCategoryBadge from "./TicketCategoryBadge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal } from "lucide-react";
 
 interface TicketItemProps {
   ticket: any;
@@ -15,9 +26,18 @@ interface TicketItemProps {
     priority: Record<string, string>;
     category: Record<string, string>;
   };
+  onAssign?: (ticketId: string, agentId: string) => Promise<void>;
+  onStatusChange?: (ticketId: string, status: string) => Promise<void>;
+  agents?: any[];
 }
 
-const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
+const TicketItem = ({ 
+  ticket, 
+  categoryLabels, 
+  onAssign, 
+  onStatusChange,
+  agents = [] 
+}: TicketItemProps) => {
   const navigate = useNavigate();
 
   // Verificar se o SLA está comprometido (mais de 24h sem atualização)
@@ -51,6 +71,11 @@ const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
     navigate(`/admin/tickets/${ticket.id}`);
   };
 
+  const handleAction = (e: React.MouseEvent, action: Function) => {
+    e.stopPropagation();
+    action();
+  };
+
   return (
     <Card 
       className={`hover:shadow-md transition-shadow duration-200 cursor-pointer ${isSLABreached() ? 'border-red-400' : ''}`}
@@ -74,9 +99,65 @@ const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
                   </Badge>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <TicketStatusBadge status={ticket.status} label={categoryLabels.status[ticket.status]} />
-                <TicketPriorityBadge priority={ticket.priority} label={categoryLabels.priority[ticket.priority]} />
+              <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <TicketStatusBadge status={ticket.status} label={categoryLabels.status[ticket.status]} />
+                  <TicketPriorityBadge priority={ticket.priority} label={categoryLabels.priority[ticket.priority]} />
+                  <TicketCategoryBadge category={ticket.category} label={getCategoryLabel(ticket.category)} />
+                </div>
+                
+                {(onAssign || onStatusChange) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      
+                      {onStatusChange && (
+                        <>
+                          <DropdownMenuItem 
+                            onClick={(e) => handleAction(e as React.MouseEvent, () => onStatusChange(ticket.id, 'in_progress'))}
+                            disabled={ticket.status === 'in_progress'}
+                          >
+                            Marcar como Em Andamento
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => handleAction(e as React.MouseEvent, () => onStatusChange(ticket.id, 'resolved'))}
+                            disabled={ticket.status === 'resolved'}
+                          >
+                            Marcar como Resolvido
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => handleAction(e as React.MouseEvent, () => onStatusChange(ticket.id, 'closed'))}
+                            disabled={ticket.status === 'closed'}
+                          >
+                            Marcar como Fechado
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                        </>
+                      )}
+                      
+                      {onAssign && agents.length > 0 && (
+                        <>
+                          <DropdownMenuLabel>Atribuir para</DropdownMenuLabel>
+                          {agents.map(agent => (
+                            <DropdownMenuItem 
+                              key={agent.id}
+                              onClick={(e) => handleAction(e as React.MouseEvent, () => onAssign(ticket.id, agent.id))}
+                              disabled={ticket.assigned_to === agent.id}
+                            >
+                              {agent.full_name}
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
             
@@ -88,9 +169,17 @@ const TicketItem = ({ ticket, categoryLabels }: TicketItemProps) => {
                 <span className="hidden sm:inline">•</span>
                 <span className="hidden sm:inline">{getCategoryLabel(ticket.category)}</span>
               </div>
-              <span className="text-xs mt-1 sm:mt-0">
-                {format(new Date(ticket.created_at), "dd/MM/yyyy HH:mm")}
-              </span>
+              <div className="flex items-center gap-2">
+                {ticket.assigned && (
+                  <span className="flex items-center text-xs">
+                    <User className="w-3 h-3 mr-1 text-primary" /> 
+                    {ticket.assigned.full_name}
+                  </span>
+                )}
+                <span className="text-xs">
+                  {format(new Date(ticket.created_at), "dd/MM/yyyy HH:mm")}
+                </span>
+              </div>
             </div>
           </div>
         </div>

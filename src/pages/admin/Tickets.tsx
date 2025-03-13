@@ -4,7 +4,14 @@ import CreateTicketDialog from "@/components/admin/tickets/CreateTicketDialog";
 import TicketsContent from "@/components/admin/tickets/TicketsContent";
 
 const AdminTickets = () => {
-  const { tickets, isLoading, refetch, agents } = useTickets();
+  const { 
+    tickets, 
+    isLoading, 
+    refetch, 
+    agents, 
+    assignTicket,
+    updateTicketStatus
+  } = useTickets();
 
   return (
     <div className="p-8">
@@ -16,7 +23,9 @@ const AdminTickets = () => {
       <TicketsContent 
         tickets={tickets} 
         isLoading={isLoading} 
-        agents={agents} 
+        agents={agents}
+        onAssignTicket={assignTicket}
+        onUpdateStatus={updateTicketStatus}
       />
     </div>
   );

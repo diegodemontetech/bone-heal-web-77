@@ -1,28 +1,63 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import TicketsList from "./TicketsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, BellRing, Clock } from "lucide-react";
+import { 
+  Search, 
+  Filter, 
+  BellRing, 
+  Clock, 
+  RefreshCw, 
+  Settings 
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface TicketsContentProps {
   tickets: any[] | null;
   isLoading: boolean;
   agents: any[] | null;
+  onAssignTicket?: (ticketId: string, agentId: string) => Promise<void>;
+  onUpdateStatus?: (ticketId: string, status: string) => Promise<void>;
 }
 
-const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => {
+const TicketsContent = ({ 
+  tickets, 
+  isLoading, 
+  agents,
+  onAssignTicket,
+  onUpdateStatus
+}: TicketsContentProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showSLASettings, setShowSLASettings] = useState(false);
+  const [slaHours, setSlaHours] = useState(24);
   const { toast } = useToast();
+  const previousTicketsLength = useRef<number | null>(null);
 
   // Configurar um intervalo para atualizar os tickets a cada 3 minutos
   useEffect(() => {
     const interval = setInterval(() => {
-      // Este código simularia uma chamada para refresh
       checkSLAViolations();
     }, 180000); // 3 minutos em milissegundos
     
@@ -34,10 +69,27 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
       }
     };
   }, []);
+
+  // Detectar novos tickets
+  useEffect(() => {
+    if (tickets && previousTicketsLength.current !== null) {
+      if (tickets.length > previousTicketsLength.current) {
+        toast({
+          title: "Novos tickets recebidos",
+          description: `${tickets.length - previousTicketsLength.current} novo(s) ticket(s) adicionado(s)`,
+        });
+      }
+    }
+    
+    if (tickets) {
+      previousTicketsLength.current = tickets.length;
+    }
+  }, [tickets, toast]);
   
   // Verificar violações de SLA
   const checkSLAViolations = () => {
     if (!tickets) return;
+    setIsRefreshing(true);
     
     const currentTime = new Date().getTime();
     const ticketsWithSLAViolation = tickets.filter(ticket => {
@@ -46,7 +98,7 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
       const lastUpdateTime = new Date(ticket.updated_at || ticket.created_at).getTime();
       const hoursSinceLastUpdate = (currentTime - lastUpdateTime) / (1000 * 60 * 60);
       
-      return hoursSinceLastUpdate > 24;
+      return hoursSinceLastUpdate > slaHours;
     });
     
     if (ticketsWithSLAViolation.length > 0) {
@@ -55,7 +107,14 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
         description: "Existem tickets que precisam de atenção urgente.",
         variant: "destructive",
       });
+    } else {
+      toast({
+        title: "Verificação de SLA concluída",
+        description: "Todos os tickets estão dentro do prazo de atendimento.",
+      });
     }
+    
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   const categoryLabels = {
@@ -67,7 +126,7 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
     },
     priority: {
       low: 'Baixa',
-      normal: 'Normal',
+      medium: 'Normal',
       high: 'Alta',
       urgent: 'Urgente'
     },
@@ -92,9 +151,10 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
       const searchLower = searchTerm.toLowerCase();
       const subjectMatch = ticket.subject?.toLowerCase().includes(searchLower);
       const customerMatch = ticket.customer?.full_name?.toLowerCase().includes(searchLower);
-      const numberMatch = ticket.number?.toString().includes(searchLower);
+      const numberMatch = String(ticket.id).includes(searchLower);
+      const descriptionMatch = ticket.description?.toLowerCase().includes(searchLower);
       
-      return subjectMatch || customerMatch || numberMatch;
+      return subjectMatch || customerMatch || numberMatch || descriptionMatch;
     }
 
     return true;
@@ -117,11 +177,63 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
             variant="outline" 
             size="sm"
             onClick={checkSLAViolations}
+            disabled={isRefreshing}
             className="flex items-center"
           >
-            <BellRing className="h-4 w-4 mr-2" />
+            {isRefreshing ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <BellRing className="h-4 w-4 mr-2" />
+            )}
             Verificar SLA
           </Button>
+          
+          <Dialog open={showSLASettings} onOpenChange={setShowSLASettings}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                Config. SLA
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Configurações de SLA</DialogTitle>
+                <DialogDescription>
+                  Configure o tempo limite para atendimento de tickets.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="sla-hours" className="col-span-3">
+                    Tempo máximo para resposta (horas)
+                  </Label>
+                  <Input
+                    id="sla-hours"
+                    type="number"
+                    value={slaHours}
+                    onChange={(e) => setSlaHours(parseInt(e.target.value))}
+                    className="col-span-1"
+                    min={1}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                  type="submit" 
+                  onClick={() => {
+                    toast({
+                      title: "Configurações salvas",
+                      description: `SLA definido para ${slaHours} horas`,
+                    });
+                    setShowSLASettings(false);
+                  }}
+                >
+                  Salvar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-2" />
             Filtros
@@ -143,6 +255,9 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
             tickets={filteredTickets || []} 
             isLoading={isLoading} 
             categoryLabels={categoryLabels}
+            onAssign={onAssignTicket}
+            onStatusChange={onUpdateStatus}
+            agents={agents || []}
           />
         </TabsContent>
       </Tabs>

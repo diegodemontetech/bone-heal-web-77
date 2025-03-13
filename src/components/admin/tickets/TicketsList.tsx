@@ -9,11 +9,21 @@ interface TicketsListProps {
   categoryLabels: {
     status: Record<string, string>;
     priority: Record<string, string>;
-    category: Record<string, string>; // Campo category adicionado anteriormente
+    category: Record<string, string>;
   };
+  onAssign?: (ticketId: string, agentId: string) => Promise<void>;
+  onStatusChange?: (ticketId: string, status: string) => Promise<void>;
+  agents?: any[];
 }
 
-const TicketsList = ({ tickets, isLoading, categoryLabels }: TicketsListProps) => {
+const TicketsList = ({ 
+  tickets, 
+  isLoading, 
+  categoryLabels,
+  onAssign,
+  onStatusChange,
+  agents = []
+}: TicketsListProps) => {
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -57,7 +67,10 @@ const TicketsList = ({ tickets, isLoading, categoryLabels }: TicketsListProps) =
           <TicketItem 
             key={ticket.id} 
             ticket={ticket} 
-            categoryLabels={categoryLabels} 
+            categoryLabels={categoryLabels}
+            onAssign={onAssign}
+            onStatusChange={onStatusChange}
+            agents={agents}
           />
         ))}
       </div>

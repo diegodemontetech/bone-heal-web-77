@@ -36,22 +36,30 @@ export const useTickets = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient, toast]);
 
-  // Buscar tickets com filtros
+  // Buscar tickets com filtros - sem restrição por usuário para administradores
   const { data: tickets, isLoading, refetch } = useQuery({
     queryKey: ["tickets"],
     queryFn: async () => {
+      console.log("Buscando tickets para admin, isAdmin:", isAdminMaster || profile?.is_admin);
+      
+      // Remover a condição de filtro por usuário para admins verem todos os tickets
       const { data, error } = await supabase
         .from("support_tickets")
         .select(`
           *,
-          customer:customer_id(full_name, email),
-          assigned:assigned_to(full_name)
+          customer:customer_id(id, full_name, email),
+          assigned:assigned_to(id, full_name)
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar tickets:", error);
+        throw error;
+      }
+      
+      console.log("Tickets encontrados:", data?.length);
       return data;
     },
   });
@@ -77,7 +85,7 @@ export const useTickets = () => {
         });
       }
     }
-  }, [tickets]);
+  }, [tickets, toast]);
 
   // Buscar agentes (usuários administradores)
   const { data: agents } = useQuery({
@@ -93,6 +101,58 @@ export const useTickets = () => {
     },
   });
 
+  // Atribuir um ticket a um agente
+  const assignTicket = async (ticketId: string, agentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ assigned_to: agentId, status: 'in_progress' })
+        .eq("id", ticketId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Ticket atribuído com sucesso",
+        description: "O ticket foi atribuído e está em andamento",
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error("Erro ao atribuir ticket:", error);
+      toast({
+        title: "Erro ao atribuir ticket",
+        description: "Não foi possível atribuir o ticket",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Atualizar status do ticket
+  const updateTicketStatus = async (ticketId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ status })
+        .eq("id", ticketId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Status atualizado",
+        description: `O ticket foi atualizado para ${status}`,
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status do ticket",
+        variant: "destructive"
+      });
+    }
+  };
+
   return {
     tickets,
     isLoading,
@@ -100,6 +160,8 @@ export const useTickets = () => {
     agents,
     profile,
     isAdminMaster,
-    hasPermission
+    hasPermission,
+    assignTicket,
+    updateTicketStatus
   };
 };
