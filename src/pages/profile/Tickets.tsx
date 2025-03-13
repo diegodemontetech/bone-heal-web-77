@@ -11,6 +11,17 @@ import TicketsHeader from '@/components/support/tickets/TicketsHeader';
 import TicketStatusTabs from '@/components/support/tickets/TicketStatusTabs';
 import { toast } from 'sonner';
 
+// Interface para o ticket no formato esperado pelo componente TicketList
+interface Ticket {
+  id: string;
+  number: number;
+  subject: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  ticket_messages: { id: string }[];
+}
+
 const ProfileTickets = () => {
   const { profile } = useAuthContext();
   const [activeTab, setActiveTab] = useState('all');
@@ -42,7 +53,22 @@ const ProfileTickets = () => {
       const { data, error } = await query;
       
       if (error) throw error;
-      return data || [];
+      
+      // Transformar os dados para o formato esperado pelo componente TicketList
+      return (data || []).map((ticket): Ticket => {
+        // Gerar um número sequencial baseado no ID para usar como número do ticket
+        const ticketNumber = parseInt(ticket.id.substring(0, 8), 16) % 10000;
+        
+        return {
+          id: ticket.id,
+          number: ticketNumber,
+          subject: ticket.subject,
+          status: ticket.status,
+          priority: ticket.priority,
+          created_at: ticket.created_at,
+          ticket_messages: ticket.ticket_messages || []
+        };
+      });
     },
     enabled: !!profile?.id
   });

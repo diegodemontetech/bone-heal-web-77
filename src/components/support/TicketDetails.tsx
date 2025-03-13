@@ -30,7 +30,7 @@ export function TicketDetails({ ticket, messages }: TicketDetailsProps) {
 
   return (
     <div className="space-y-6">
-      {messages.map((message) => (
+      {messages && messages.map((message) => (
         <div 
           key={message.id} 
           className={`flex ${

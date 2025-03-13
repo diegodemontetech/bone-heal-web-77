@@ -9,6 +9,8 @@ import OrdersLoading from '@/components/orders/OrdersLoading';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { Order, OrderItem } from '@/types/order';
+import { parseJsonArray } from '@/utils/supabaseJsonUtils';
 
 const ProfileOrders = () => {
   const { profile, isLoading: isAuthLoading } = useAuthContext();
@@ -27,11 +29,24 @@ const ProfileOrders = () => {
         
       if (error) throw error;
       
-      // Garantir que todos os pedidos tenham a propriedade payment_status
-      return (data || []).map(order => ({
-        ...order,
-        payment_status: order.payment_status || 'pending'
-      }));
+      // Converter os dados e garantir que todos os pedidos tenham a propriedade payment_status e items processados
+      return (data || []).map(order => {
+        // Processar os items para garantir que são do tipo OrderItem[]
+        const processedItems = parseJsonArray(order.items, []).map((item: any) => ({
+          product_id: item.product_id || "",
+          quantity: item.quantity || 0,
+          price: item.price || 0,
+          name: item.name || item.product_name || "Produto",
+          product_name: item.product_name || item.name || "Produto",
+          total_price: item.total_price || (item.price * item.quantity) || 0
+        } as OrderItem));
+        
+        return {
+          ...order,
+          payment_status: order.payment_status || 'pending',
+          items: processedItems
+        } as Order;
+      });
     },
     enabled: !!profile?.id
   });

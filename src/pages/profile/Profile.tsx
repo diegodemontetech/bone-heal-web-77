@@ -44,7 +44,8 @@ const Profile = () => {
               <CardTitle>Meu Perfil</CardTitle>
             </CardHeader>
             <CardContent>
-              <ProfileForm profile={profile} />
+              {/* O componente ProfileForm não espera props, então remova a passagem de profile */}
+              <ProfileForm />
             </CardContent>
           </Card>
         </div>
