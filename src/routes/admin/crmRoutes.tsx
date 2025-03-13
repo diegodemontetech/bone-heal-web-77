@@ -4,9 +4,9 @@ import { RouteObject } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { UserPermission } from "@/types/auth";
 
-// CRM-related pages
-const AdminLeads = lazy(() => import("@/pages/admin/Leads"));
-const LeadsKanbanPage = lazy(() => import("@/pages/admin/LeadsKanban"));
+// CRM pages
+const LeadsKanban = lazy(() => import("@/components/admin/kanban/LeadsKanban"));
+const CRMConfigPage = lazy(() => import("@/components/admin/crm/config/CRMConfigPage"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -17,21 +17,21 @@ const AdminLoader = () => (
 
 export const crmRoutes: RouteObject[] = [
   {
-    path: "leads",
+    path: "leads/kanban",
     element: (
       <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
-          <AdminLeads />
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
+          <LeadsKanban />
         </ProtectedRoute>
       </Suspense>
     )
   },
   {
-    path: "leads/kanban",
+    path: "configuracoes",
     element: (
       <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
-          <LeadsKanbanPage />
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
+          <CRMConfigPage />
         </ProtectedRoute>
       </Suspense>
     )
