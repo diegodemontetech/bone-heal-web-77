@@ -148,19 +148,33 @@ export const handleModalRegistration = async (data: FormData, onSuccess?: (custo
       } catch (err) {
         console.error("Erro ao restaurar sessão do admin:", err);
         
-        // Se falhar, tente fazer login novamente com a sessão armazenada
-        try {
-          await supabase.auth.setSession(adminSession?.session || {});
-          console.log("Sessão alternativa do admin restaurada");
-        } catch (errAlt) {
-          console.error("Erro ao restaurar sessão alternativa do admin:", errAlt);
+        // Verifica se a sessão admin tem as propriedades necessárias antes de tentar restaurá-la
+        if (adminSession?.session && 
+            adminSession.session.access_token && 
+            adminSession.session.refresh_token) {
+          try {
+            await supabase.auth.setSession({
+              access_token: adminSession.session.access_token,
+              refresh_token: adminSession.session.refresh_token
+            });
+            console.log("Sessão alternativa do admin restaurada");
+          } catch (errAlt) {
+            console.error("Erro ao restaurar sessão alternativa do admin:", errAlt);
+          }
+        } else {
+          console.error("Sessão do admin não possui tokens válidos para restauração");
         }
       }
-    } else if (adminSession?.session) {
+    } else if (adminSession?.session && 
+               adminSession.session.access_token && 
+               adminSession.session.refresh_token) {
       // Tente restaurar usando a sessão capturada no início da função
       try {
         console.log("Tentando restaurar sessão admin capturada:", adminSession.session.user.id);
-        await supabase.auth.setSession(adminSession.session);
+        await supabase.auth.setSession({
+          access_token: adminSession.session.access_token,
+          refresh_token: adminSession.session.refresh_token
+        });
         console.log("Sessão admin capturada restaurada com sucesso");
       } catch (err) {
         console.error("Erro ao restaurar sessão admin capturada:", err);
