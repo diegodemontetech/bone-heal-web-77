@@ -52,6 +52,7 @@ export const usePipelineActions = (
         .single();
 
       if (error) throw error;
+      if (!newPipeline) throw new Error("Falha ao criar o novo pipeline");
 
       // Duplicar estágios do pipeline
       const { data: stages, error: stagesError } = await supabase
@@ -62,15 +63,15 @@ export const usePipelineActions = (
       if (stagesError) throw stagesError;
 
       if (stages && stages.length > 0) {
-        // Usar tipagem explícita para evitar recursão infinita
-        type StageType = {
+        // Definir tipo explicitamente
+        interface StageInsert {
           name: string;
           color: string;
           pipeline_id: string;
           order: number;
-        };
+        }
 
-        const newStages: StageType[] = stages.map((stage: any) => ({
+        const newStages: StageInsert[] = stages.map((stage: any) => ({
           name: stage.name,
           color: stage.color,
           pipeline_id: newPipeline.id,
@@ -89,8 +90,8 @@ export const usePipelineActions = (
       if (fieldsError) throw fieldsError;
 
       if (fields && fields.length > 0) {
-        // Usar tipagem explícita para evitar recursão infinita
-        type FieldType = {
+        // Definir tipo explicitamente
+        interface FieldInsert {
           name: string;
           label: string;
           type: string;
@@ -100,9 +101,9 @@ export const usePipelineActions = (
           mask?: string | null;
           default_value?: string | null;
           pipeline_id: string;
-        };
+        }
 
-        const newFields: FieldType[] = fields.map((field: any) => ({
+        const newFields: FieldInsert[] = fields.map((field: any) => ({
           name: field.name,
           label: field.label,
           type: field.type,

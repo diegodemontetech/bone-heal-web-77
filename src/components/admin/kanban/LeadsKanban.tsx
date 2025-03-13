@@ -61,13 +61,15 @@ const LeadsKanban = () => {
 
         if (error) throw error;
         
-        // Garantir que todos os estágios tenham pipeline_id
-        const stagesWithPipelineId = (data || []).map(stage => ({
-          ...stage,
-          pipeline_id: stage.pipeline_id || ""
-        })) as CRMStage[];
-        
-        setStages(stagesWithPipelineId);
+        if (data) {
+          // Garantir que todos os estágios tenham pipeline_id
+          const stagesWithPipelineId = data.map(stage => ({
+            ...stage,
+            pipeline_id: stage.pipeline_id || ""
+          })) as CRMStage[];
+          
+          setStages(stagesWithPipelineId);
+        }
         
       } catch (err: any) {
         console.error("Erro ao carregar estágios:", err);
@@ -80,9 +82,8 @@ const LeadsKanban = () => {
     fetchStages();
   }, [selectedDepartment]);
 
-  // Carregar leads (simulados por enquanto)
+  // Dados mockados de leads para demonstração
   useEffect(() => {
-    // Dados mockados de leads para demonstração
     const mockLeads: Lead[] = [
       {
         id: "1",

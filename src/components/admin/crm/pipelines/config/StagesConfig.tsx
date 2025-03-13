@@ -56,13 +56,15 @@ export const StagesConfig = ({ pipelineId }: StagesConfigProps) => {
 
       if (error) throw error;
       
-      // Garantir que todas as entradas tenham pipeline_id
-      const formattedStages = (data || []).map(stage => ({
-        ...stage,
-        pipeline_id: stage.pipeline_id || pipelineId
-      })) as CRMStage[];
-      
-      setStages(formattedStages);
+      if (data) {
+        // Garantir que todas as entradas tenham pipeline_id
+        const formattedStages = data.map(stage => ({
+          ...stage,
+          pipeline_id: stage.pipeline_id || pipelineId
+        })) as CRMStage[];
+        
+        setStages(formattedStages);
+      }
     } catch (err) {
       console.error("Erro ao buscar estágios:", err);
       toast.error("Erro ao carregar estágios");
@@ -96,15 +98,17 @@ export const StagesConfig = ({ pipelineId }: StagesConfigProps) => {
 
       if (error) throw error;
 
-      // Garantir que o resultado tem o formato correto
-      const newStageWithCorrectType: CRMStage = {
-        ...data,
-        pipeline_id: data.pipeline_id || pipelineId
-      };
+      if (data) {
+        // Garantir que o resultado tem o formato correto
+        const newStageWithCorrectType: CRMStage = {
+          ...data,
+          pipeline_id: data.pipeline_id || pipelineId
+        };
 
-      setStages([...stages, newStageWithCorrectType]);
-      setNewStage({ name: "", color: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)] });
-      toast.success("Estágio adicionado com sucesso");
+        setStages([...stages, newStageWithCorrectType]);
+        setNewStage({ name: "", color: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)] });
+        toast.success("Estágio adicionado com sucesso");
+      }
     } catch (err) {
       console.error("Erro ao adicionar estágio:", err);
       toast.error("Erro ao adicionar estágio");

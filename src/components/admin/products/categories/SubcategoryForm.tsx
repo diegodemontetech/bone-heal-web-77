@@ -1,175 +1,126 @@
 import { useState, useEffect } from "react";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { subcategoryFormSchema, SubcategoryFormValues } from "@/validators/product-schema";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
-import { ProductCategory } from "@/types/product";
-import { parseJsonObject, stringifyForSupabase } from "@/utils/supabaseJsonUtils";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { ProductSubcategory, ProductCategory } from "@/types/product";
+import { parseJsonObject } from "@/utils/supabaseJsonUtils";
+import { Json } from "@/integrations/supabase/types";
 
-interface SubcategoryFormProps {
-  subcategory?: any;
+// Apenas definindo a interface correta da props para evitar erros de tipo
+export interface SubcategoryFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  cloneFrom?: string;
+  category: ProductCategory;
+  subcategory?: ProductSubcategory | null;
 }
 
-export function SubcategoryForm({ subcategory, open, onClose, onSuccess, cloneFrom }: SubcategoryFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
-  
-  const form = useForm<SubcategoryFormValues>({
-    resolver: zodResolver(subcategoryFormSchema),
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "O nome deve ter pelo menos 2 caracteres.",
+  }),
+  description: z.string().optional(),
+  default_fields: z.record(z.string(), z.any()).optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
+
+export function SubcategoryForm({ open, onClose, onSuccess, category, subcategory }: SubcategoryFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [fields, setFields] = useState<{ [key: string]: any }>({});
+
+  useEffect(() => {
+    if (subcategory) {
+      setFields(subcategory.default_fields || {});
+    } else {
+      setFields({});
+    }
+  }, [subcategory]);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: subcategory?.name || "",
-      category_id: subcategory?.category_id || "",
       description: subcategory?.description || "",
-      default_fields: subcategory?.default_fields ? parseJsonObject(subcategory.default_fields, {}) : {},
-    }
+      default_fields: subcategory?.default_fields || {},
+    },
   });
 
-  useEffect(() => {
-    async function loadCategories() {
-      try {
-        const { data, error } = await supabase
-          .from("product_categories")
-          .select("*")
-          .order("name");
-          
-        if (error) throw error;
-        setCategories(data || []);
-      } catch (error) {
-        console.error("Erro ao carregar categorias:", error);
-      }
-    }
-    
-    loadCategories();
-  }, []);
+  const handleAddField = (fieldName: string, value: any) => {
+    setFields(prev => ({ ...prev, [fieldName]: value }));
+  };
 
-  useEffect(() => {
-    if (cloneFrom && !subcategory) {
-      async function loadCloneData() {
-        try {
-          const { data, error } = await supabase
-            .from("product_subcategories")
-            .select("*")
-            .eq("id", cloneFrom)
-            .single();
-            
-          if (error) throw error;
-          
-          if (data) {
-            form.setValue("category_id", data.category_id);
-            form.setValue("description", data.description || "");
-            form.setValue("default_fields", parseJsonObject(data.default_fields, {}));
-          }
-        } catch (error) {
-          console.error("Erro ao carregar dados para clonar:", error);
-        }
-      }
-      
-      loadCloneData();
-    }
-  }, [cloneFrom, form, subcategory]);
-
-  async function onSubmit(values: SubcategoryFormValues) {
+  const onSubmit = async (values: FormValues) => {
+    setLoading(true);
     try {
-      setIsLoading(true);
-      
-      // Converter default_fields de Record<string, any> para Json
-      const formattedValues = {
-        name: values.name,
-        category_id: values.category_id,
-        description: values.description,
-        default_fields: stringifyForSupabase(values.default_fields)
+      const upsertData = {
+        ...values,
+        category_id: category.id,
+        default_fields: fields as Json,
       };
-      
+
+      let response;
       if (subcategory) {
-        // Atualizar subcategoria existente
-        const { error } = await supabase
+        response = await supabase
           .from("product_subcategories")
-          .update(formattedValues)
+          .update(upsertData)
           .eq("id", subcategory.id);
-          
-        if (error) throw error;
-        toast.success("Subcategoria atualizada com sucesso");
       } else {
-        // Criar nova subcategoria
-        const { error } = await supabase
+        response = await supabase
           .from("product_subcategories")
-          .insert(formattedValues);
-          
-        if (error) throw error;
-        toast.success("Subcategoria criada com sucesso");
+          .insert([upsertData]);
       }
-      
-      form.reset();
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      toast.success(`Subcategoria ${subcategory ? 'atualizada' : 'criada'} com sucesso!`);
       onSuccess();
+      onClose();
     } catch (error: any) {
       console.error("Erro ao salvar subcategoria:", error);
-      toast.error(`Erro: ${error.message}`);
+      toast.error(`Erro ao salvar subcategoria: ${error.message}`);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
-          <DialogTitle>
-            {subcategory ? "Editar" : cloneFrom ? "Clonar" : "Nova"} Subcategoria
-          </DialogTitle>
+          <DialogTitle>{subcategory ? "Editar Subcategoria" : "Nova Subcategoria"}</DialogTitle>
           <DialogDescription>
-            {subcategory 
-              ? "Atualize os detalhes da subcategoria" 
-              : cloneFrom 
-                ? "Clone uma subcategoria existente com suas configurações"
-                : "Crie uma nova subcategoria para organizar seus produtos"}
+            {subcategory ? "Edite os campos da subcategoria." : "Adicione uma nova subcategoria."}
           </DialogDescription>
         </DialogHeader>
-        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="category_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             <FormField
               control={form.control}
               name="name"
@@ -183,30 +134,53 @@ export function SubcategoryForm({ subcategory, open, onClose, onSuccess, cloneFr
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição (opcional)</FormLabel>
+                  <FormLabel>Descrição</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Descrição da subcategoria" {...field} />
+                    <Input placeholder="Descrição da subcategoria" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <div className="flex justify-end space-x-4 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {subcategory ? "Atualizar" : "Criar"}
+
+            <div>
+              <p className="text-sm font-medium text-gray-700">Campos Personalizados</p>
+              <FormDescription>Adicione campos personalizados para esta subcategoria.</FormDescription>
+              {Object.entries(fields).map(([key, value]) => (
+                <div key={key} className="flex items-center space-x-2 mt-2">
+                  <FormLabel className="w-1/4">{key}</FormLabel>
+                  <Input
+                    className="w-3/4"
+                    value={value}
+                    onChange={(e) => handleAddField(key, e.target.value)}
+                  />
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={() => {
+                const newFieldName = prompt("Nome do novo campo:");
+                if (newFieldName) {
+                  handleAddField(newFieldName, "");
+                }
+              }}>
+                Adicionar Campo
               </Button>
             </div>
+
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Cancelar
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Salvando..." : "Salvar"}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

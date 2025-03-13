@@ -118,20 +118,21 @@ export default function DepartmentsPage() {
 
   const handleDeleteItem = async (type: string, id: string) => {
     try {
-      let table = "";
+      // Determinar a tabela baseada no tipo
+      let tableName = "";
       
       if (type === "department") {
-        table = "product_departments";
+        tableName = "product_departments";
       } else if (type === "category") {
-        table = "product_categories";
+        tableName = "product_categories";
       } else if (type === "subcategory") {
-        table = "product_subcategories";
+        tableName = "product_subcategories";
       } else {
         throw new Error("Tipo inválido");
       }
       
       const { error } = await supabase
-        .from(table)
+        .from(tableName)
         .delete()
         .eq("id", id);
 
@@ -159,7 +160,7 @@ export default function DepartmentsPage() {
     <div className="container mx-auto py-8">
       <DepartmentForm
         open={departmentFormOpen}
-        onClose={handleCloseDepartmentForm}
+        onClose={() => setDepartmentFormOpen(false)}
         onSuccess={fetchData}
         department={selectedDepartment}
       />
@@ -167,9 +168,9 @@ export default function DepartmentsPage() {
       {selectedDepartment && (
         <CategoryForm
           open={categoryFormOpen}
-          onClose={handleCloseCategoryForm}
+          onClose={() => setCategoryFormOpen(false)}
           onSuccess={fetchData}
-          departmentId={selectedDepartment.id}
+          department={selectedDepartment}
           category={selectedCategory}
         />
       )}
@@ -177,9 +178,9 @@ export default function DepartmentsPage() {
       {selectedCategory && (
         <SubcategoryForm
           open={subcategoryFormOpen}
-          onClose={handleCloseSubcategoryForm}
+          onClose={() => setSubcategoryFormOpen(false)}
           onSuccess={fetchData}
-          categoryId={selectedCategory.id}
+          category={selectedCategory}
           subcategory={subcategories.find(sub => sub.category_id === selectedCategory.id)}
         />
       )}
