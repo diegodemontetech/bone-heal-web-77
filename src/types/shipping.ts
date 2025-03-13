@@ -20,6 +20,11 @@ export interface ShippingCalculationRate {
   icon?: string;
   code?: string;
   selected?: boolean;
+  // Campos adicionais necessários para correção dos erros
+  rate?: number;
+  delivery_days?: number;
+  service_type?: string;
+  zipCode?: string;
 }
 
 export interface ShippingRate {
@@ -32,4 +37,11 @@ export interface ShippingRate {
   region?: string;
   created_at?: string;
   updated_at?: string;
+  // Campos adicionais necessários para correção dos erros
+  zip_code_start?: string;
+  zip_code_end?: string;
+  flat_rate?: number;
+  additional_kg_rate?: number;
+  estimated_days?: number;
+  is_active?: boolean;
 }
