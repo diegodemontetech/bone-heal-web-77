@@ -15,8 +15,16 @@ import OrderDetails from "@/pages/orders/OrderDetails";
 import { adminRoutes } from "@/routes/adminRoutes";
 import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
-import { AdminRoute } from "@/routes/admin/adminLoader"; 
+import { AdminRoute } from "@/routes/admin/adminLoader";
 import Layout from "@/components/admin/Layout";
+
+// Importação das páginas de perfil
+import ProfilePage from "@/pages/profile/Profile";
+import ProfileOrders from "@/pages/profile/Orders";
+import ProfileOrderDetails from "@/pages/profile/OrderDetails";
+import ProfileTickets from "@/pages/profile/Tickets";
+import ProfileTicketDetails from "@/pages/profile/TicketDetails";
+import NotificationSettings from "@/pages/profile/NotificationSettings";
 
 export function Routes() {
   return (
@@ -35,6 +43,14 @@ export function Routes() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/:id" element={<OrderDetails />} />
+        
+        {/* Rotas de perfil */}
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/orders" element={<ProfileOrders />} />
+        <Route path="/profile/orders/:id" element={<ProfileOrderDetails />} />
+        <Route path="/profile/tickets" element={<ProfileTickets />} />
+        <Route path="/profile/tickets/:id" element={<ProfileTicketDetails />} />
+        <Route path="/profile/notifications" element={<NotificationSettings />} />
         
         {/* Rotas de Admin - usando o componente das rotas administrativas diretamente */}
         <Route path="/admin" element={<AdminRoute>{adminRoutes.element}</AdminRoute>}>
