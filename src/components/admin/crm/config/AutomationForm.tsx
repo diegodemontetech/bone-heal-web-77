@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,6 +26,7 @@ import {
 import { PlusCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CRMStage } from "@/types/crm";
 
 const automationSchema = z.object({
   stage: z.string().min(1, "Estágio obrigatório"),
@@ -36,11 +37,6 @@ const automationSchema = z.object({
 });
 
 type AutomationFormValues = z.infer<typeof automationSchema>;
-
-interface CRMStage {
-  id: string;
-  name: string;
-}
 
 interface AutomationFormProps {
   onSuccess?: () => void;
@@ -63,7 +59,7 @@ export function AutomationForm({ onSuccess }: AutomationFormProps) {
 
   const watchActionType = form.watch("action_type");
 
-  useState(() => {
+  useEffect(() => {
     const fetchStages = async () => {
       try {
         const { data, error } = await supabase
@@ -80,7 +76,7 @@ export function AutomationForm({ onSuccess }: AutomationFormProps) {
     };
 
     fetchStages();
-  });
+  }, []);
 
   const onSubmit = async (data: AutomationFormValues) => {
     try {

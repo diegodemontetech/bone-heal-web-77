@@ -24,6 +24,7 @@ import {
 import { PlusCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Department } from "@/types/crm";
 
 const stageSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -33,11 +34,6 @@ const stageSchema = z.object({
 });
 
 type StageFormValues = z.infer<typeof stageSchema>;
-
-interface Department {
-  id: string;
-  name: string;
-}
 
 interface KanbanStagesFormProps {
   onSuccess?: () => void;

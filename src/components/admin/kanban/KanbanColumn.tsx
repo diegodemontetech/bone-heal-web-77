@@ -1,82 +1,42 @@
 
+import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { ReactNode } from "react";
-import { Droppable } from "@hello-pangea/dnd";
-import { Draggable } from "@hello-pangea/dnd";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Interface para os cards de lead
-interface LeadCardProps {
-  lead: any;
-  index: number;
-  onClick: (lead: any) => void;
-}
-
-// Componente do card de lead
-const LeadCard = ({ lead, index, onClick }: LeadCardProps) => {
-  return (
-    <Draggable draggableId={lead.id} index={index}>
-      {(provided) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          className="bg-white p-3 rounded-md mb-2 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => onClick(lead)}
-        >
-          <h4 className="font-medium mb-1 truncate">{lead.name}</h4>
-          <p className="text-gray-500 text-sm truncate">{lead.phone}</p>
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-              {lead.source === "whatsapp_widget" ? "WhatsApp" : "Formulário"}
-            </span>
-            <span className="text-xs text-gray-400">
-              {new Date(lead.created_at).toLocaleDateString('pt-BR')}
-            </span>
-          </div>
-        </div>
-      )}
-    </Draggable>
-  );
-};
-
-// Interface para a coluna Kanban
-export interface KanbanColumnProps {
-  id: string;
+interface KanbanColumnProps {
   title: string;
-  leads: any[];
-  onLeadClick: (lead: any) => void;
-  onStatusChange: (leadId: string, newStatus: string) => Promise<void>;
+  count: number;
+  color?: string;
+  children: ReactNode;
 }
 
-export const KanbanColumn = ({ id, title, leads, onLeadClick, onStatusChange }: KanbanColumnProps) => {
+const KanbanColumn = ({ title, count, color = "#3b82f6", children }: KanbanColumnProps) => {
   return (
-    <div className="flex flex-col bg-gray-100 p-3 rounded-lg h-[70vh]">
-      <div className="flex justify-between items-center mb-4 px-2">
-        <h3 className="font-medium">{title}</h3>
-        <span className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
-          {leads.length}
-        </span>
-      </div>
-      
-      <Droppable droppableId={id}>
-        {(provided) => (
+    <Card className="h-[calc(100vh-250px)] flex flex-col">
+      <CardHeader className="p-3 pb-0 flex flex-row justify-between items-center">
+        <div className="flex items-center space-x-2">
           <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className="flex-1 overflow-y-auto pr-1 pb-2"
-            style={{ minHeight: "100px" }}
-          >
-            {leads.map((lead, index) => (
-              <LeadCard 
-                key={lead.id} 
-                lead={lead} 
-                index={index}
-                onClick={onLeadClick}
-              />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </div>
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: color }}
+          />
+          <h3 className="font-medium text-sm">{title}</h3>
+          <span className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
+            {count}
+          </span>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow overflow-auto p-2">
+        {children}
+      </CardContent>
+      <CardFooter className="p-2 border-t">
+        <Button variant="ghost" size="sm" className="w-full justify-start">
+          <Plus className="h-4 w-4 mr-1" />
+          <span>Adicionar</span>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
+
+export default KanbanColumn;

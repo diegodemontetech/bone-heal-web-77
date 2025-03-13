@@ -207,6 +207,72 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_fields: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          display_in_kanban: boolean
+          id: string
+          label: string
+          mask: string | null
+          name: string
+          options: string[] | null
+          required: boolean
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          display_in_kanban?: boolean
+          id?: string
+          label: string
+          mask?: string | null
+          name: string
+          options?: string[] | null
+          required?: boolean
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          display_in_kanban?: boolean
+          id?: string
+          label?: string
+          mask?: string | null
+          name?: string
+          options?: string[] | null
+          required?: boolean
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_stage_automations: {
         Row: {
           action_data: Json
@@ -242,6 +308,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      crm_stages: {
+        Row: {
+          color: string
+          created_at: string
+          department_id: string | null
+          id: string
+          name: string
+          order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          name: string
+          order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          name?: string
+          order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_stages_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "crm_departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dental_specialties: {
         Row: {
