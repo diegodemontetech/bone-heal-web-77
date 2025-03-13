@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Droppable } from "@hello-pangea/dnd";
+import { Link } from "react-router-dom";
 
 interface KanbanColumnProps {
   id: string;
@@ -41,9 +42,11 @@ const KanbanColumn = ({ id, title, count, color = "#3b82f6", children }: KanbanC
         )}
       </Droppable>
       <CardFooter className="p-2 border-t">
-        <Button variant="ghost" size="sm" className="w-full justify-start">
-          <Plus className="h-4 w-4 mr-1" />
-          <span>Adicionar</span>
+        <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
+          <Link to="/admin/leads/create">
+            <Plus className="h-4 w-4 mr-1" />
+            <span>Adicionar</span>
+          </Link>
         </Button>
       </CardFooter>
     </Card>

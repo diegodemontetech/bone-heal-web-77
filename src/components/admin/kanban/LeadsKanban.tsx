@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import KanbanColumn from "./KanbanColumn";
 import LeadCard from "./LeadCard";
 import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const LeadsKanban = () => {
   const [loading, setLoading] = useState(true);
@@ -253,12 +255,14 @@ const LeadsKanban = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
-            <a href="/admin/crm/configuracoes">
+            <Link to="/admin/crm/configuracoes">
               Configurações
-            </a>
+            </Link>
           </Button>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" /> Novo Lead
+          <Button asChild>
+            <Link to="/admin/leads/create">
+              <Plus className="mr-2 h-4 w-4" /> Novo Lead
+            </Link>
           </Button>
         </div>
       </div>
@@ -284,7 +288,7 @@ const LeadsKanban = () => {
           <CardContent className="flex flex-col items-center justify-center h-48 p-4">
             <p className="text-muted-foreground mb-4">Nenhum estágio configurado para este departamento</p>
             <Button asChild>
-              <a href="/admin/crm/configuracoes">Configurar Estágios</a>
+              <Link to="/admin/crm/configuracoes">Configurar Estágios</Link>
             </Button>
           </CardContent>
         </Card>
