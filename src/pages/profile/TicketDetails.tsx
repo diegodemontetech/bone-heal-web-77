@@ -19,6 +19,18 @@ interface TicketMessage {
   };
 }
 
+// Interface para ticket formatado
+interface FormattedTicket {
+  id: string;
+  number: number;
+  subject: string;
+  description: string;
+  status: string;
+  priority: string;
+  created_at: string;
+  messages: TicketMessage[];
+}
+
 const ProfileTicketDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { profile } = useAuthContext();
@@ -43,7 +55,7 @@ const ProfileTicketDetails = () => {
           return null;
         }
         
-        // Buscar mensagens relacionadas
+        // Buscar mensagens relacionadas manualmente
         const { data: messagesData, error: messagesError } = await supabase
           .from('support_messages')
           .select('*')
@@ -55,12 +67,12 @@ const ProfileTicketDetails = () => {
           return {
             ...ticketData,
             messages: []
-          };
+          } as FormattedTicket;
         }
         
         // Adaptar a estrutura do ticket para o formato esperado pelo componente
         // Criar um número sequencial para o ticket se não existir
-        const ticketNumber = ticketData.number || parseInt(ticketData.id.substring(0, 8), 16) % 10000;
+        const ticketNumber = parseInt(ticketData.id.substring(0, 8), 16) % 10000;
         
         // Formatar as mensagens para atender à interface esperada
         const messages: TicketMessage[] = Array.isArray(messagesData) 
@@ -84,7 +96,7 @@ const ProfileTicketDetails = () => {
           priority: ticketData.priority,
           created_at: ticketData.created_at,
           messages
-        };
+        } as FormattedTicket;
       } catch (error) {
         console.error('Erro ao processar dados do ticket:', error);
         return null;

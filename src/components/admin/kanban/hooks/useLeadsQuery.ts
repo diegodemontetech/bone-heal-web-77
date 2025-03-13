@@ -28,13 +28,20 @@ export const useLeadsQuery = (filter: string | null) => {
         // Buscar pedidos relacionados separadamente para cada lead
         const leadsWithOrders = await Promise.all(
           (data || []).map(async (lead) => {
-            // Verificar se o lead tem um id de perfil associado
-            if (lead.profile_id) {
+            // Verificar se o lead tem um perfil associado
+            // Buscar perfil relacionado a esse lead pelo telefone
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("id")
+              .eq("phone", lead.phone)
+              .maybeSingle();
+              
+            if (profileData?.id) {
               // Buscar pedidos para este perfil
               const { data: orders, error: ordersError } = await supabase
                 .from("orders")
                 .select("*")
-                .eq("user_id", lead.profile_id);
+                .eq("user_id", profileData.id);
                 
               if (ordersError) {
                 console.error(`Erro ao buscar pedidos para lead ${lead.id}:`, ordersError);

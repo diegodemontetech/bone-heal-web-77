@@ -1,24 +1,26 @@
 
-// Tipos compartilhados para as funções do webhook WhatsApp
+// Tipos compartilhados para funções do WhatsApp
 export interface WhatsAppMessagePayload {
-  data?: {
-    key?: {
-      remoteJid?: string;
-    };
-    message?: {
-      conversation?: string;
-      extendedTextMessage?: {
-        text: string;
-      };
-    };
-    pushName?: string;
-  };
+  data?: any;
+  instance?: string;
   phone?: string;
   body?: string;
   message?: string;
   name?: string;
   contactName?: string;
-  instance?: string;
+}
+
+export interface WhatsAppConfig {
+  evolutionApiUrl?: string;
+  evolutionApiKey?: string;
+  zApiInstanceId?: string;
+  zApiToken?: string;
+}
+
+export interface SendMessageOptions {
+  phone: string;
+  message: string;
+  instanceName?: string;
 }
 
 export interface LeadInfo {
@@ -31,9 +33,15 @@ export interface LeadInfo {
 export interface MessageData {
   leadId: string;
   message: string;
-  timestamp: string;
-  isEvolutionApi: boolean;
   phone: string;
   name: string;
+  isEvolutionApi: boolean;
+  timestamp: string;
   instance?: string;
+}
+
+export interface ApiResponse {
+  success: boolean;
+  message: string;
+  result?: any;
 }
