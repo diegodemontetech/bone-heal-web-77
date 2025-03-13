@@ -43,8 +43,10 @@ serve(async (req) => {
     let prompt;
     
     if (contentType === 'technical_details') {
-      prompt = `Você é um especialista em produtos médicos. 
+      prompt = `Você é um especialista em produtos médicos e odontológicos da Bone Heal. 
       Gere detalhes técnicos detalhados para o produto com código ${omieCode} e nome "${productName || 'sem nome'}".
+      
+      A Bone Heal é especializada em biomateriais e produtos para enxertos ósseos, regeneração tecidual e procedimentos odontológicos avançados.
       
       Crie um JSON estruturado com as seguintes seções:
       1. dimensions (dimensões): weight, height, width, length
@@ -52,9 +54,8 @@ serve(async (req) => {
       3. usage (uso): indication, contraindication, instructions
       4. regulatory (regulatório): registration, classification
       
-      Não adicione informações não solicitadas. 
-      Formato de resposta: JSON apenas com os campos acima, sem texto explicativo antes ou depois do JSON.
-      Exemplo:
+      Formato de resposta: Apenas JSON com os campos acima.
+      Exemplo de formato (preencha com informações realistas para produtos odontológicos):
       {
         "dimensions": {
           "weight": "10g",
@@ -78,14 +79,15 @@ serve(async (req) => {
       }`;
     } else {
       // Prompt padrão para descrições
-      prompt = `Você é um especialista em produtos médicos.
-      Crie uma descrição curta (máximo 100 palavras) e uma descrição longa (250-300 palavras) para o produto médico com código ${omieCode} e nome "${productName || 'sem nome'}".
+      prompt = `Você é um especialista em produtos médicos e odontológicos da Bone Heal.
+      Crie uma descrição curta (máximo 100 palavras) e uma descrição longa (250-300 palavras) para o produto com código ${omieCode} e nome "${productName || 'sem nome'}".
+      
+      A Bone Heal é especializada em biomateriais e produtos para enxertos ósseos, regeneração tecidual e procedimentos odontológicos avançados.
       
       A descrição curta deve ser objetiva e destacar os principais benefícios.
       A descrição longa deve ser detalhada, incluindo características, diferenciais e benefícios.
       
-      Não adicione informações não solicitadas. 
-      Formato de resposta: JSON apenas com os campos "short_description" e "description", sem texto explicativo antes ou depois do JSON.
+      Formato de resposta: Apenas JSON com os campos "short_description" e "description".
       Exemplo:
       {
         "short_description": "Texto da descrição curta aqui",
@@ -93,85 +95,93 @@ serve(async (req) => {
       }`;
     }
     
-    // Chamar a API Gemini
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.4,
-          topP: 0.8,
-          topK: 40,
-          maxOutputTokens: 1024,
-        }
-      })
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Erro na resposta da API Gemini:", errorText);
-      throw new Error(`Erro na API Gemini: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    
-    if (!result.candidates || result.candidates.length === 0) {
-      throw new Error("Resposta vazia da API Gemini");
-    }
-    
-    const textContent = result.candidates[0].content.parts[0].text;
-    console.log("Texto gerado:", textContent.substring(0, 100) + "...");
-    
-    // Extrair o JSON da resposta
-    let jsonMatch = textContent.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("Formato de resposta inválido");
-    }
-    
-    // Parse do JSON
-    let parsedContent;
     try {
-      parsedContent = JSON.parse(jsonMatch[0]);
+      // Chamar a API Gemini
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.4,
+            topP: 0.8,
+            topK: 40,
+            maxOutputTokens: 1024,
+          }
+        })
+      });
       
-      // Preparar resposta final baseada no tipo de conteúdo
-      let responseData;
-      
-      if (contentType === 'technical_details') {
-        responseData = {
-          technical_details: parsedContent
-        };
-      } else {
-        responseData = {
-          short_description: parsedContent.short_description,
-          description: parsedContent.description
-        };
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erro na resposta da API Gemini:", errorText);
+        throw new Error(`Erro na API Gemini: ${response.status} - ${errorText}`);
       }
       
-      // Guardar no cache
-      productDataCache.set(cacheKey, responseData);
+      const result = await response.json();
       
-      // Limitar o tamanho do cache (máximo 50 itens)
-      if (productDataCache.size > 50) {
-        const firstKey = productDataCache.keys().next().value;
-        productDataCache.delete(firstKey);
+      if (!result.candidates || result.candidates.length === 0) {
+        console.error("Resposta vazia da API Gemini:", JSON.stringify(result));
+        throw new Error("Resposta vazia da API Gemini");
       }
       
-      return new Response(
-        JSON.stringify(responseData),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } catch (parseError) {
-      console.error("Erro ao fazer parse do JSON:", parseError);
-      console.error("Texto recebido:", textContent);
-      throw new Error("Erro ao processar resposta da IA");
+      const textContent = result.candidates[0].content.parts[0].text;
+      console.log("Texto gerado:", textContent.substring(0, 100) + "...");
+      
+      // Extrair o JSON da resposta
+      try {
+        // Tentar extrair JSON da resposta
+        let jsonMatch = textContent.match(/\{[\s\S]*\}/);
+        
+        if (!jsonMatch) {
+          console.error("Formato de resposta inválido, texto completo:", textContent);
+          throw new Error("Formato de resposta inválido");
+        }
+        
+        // Parse do JSON
+        let parsedContent = JSON.parse(jsonMatch[0]);
+        
+        // Preparar resposta final baseada no tipo de conteúdo
+        let responseData;
+        
+        if (contentType === 'technical_details') {
+          responseData = {
+            technical_details: parsedContent
+          };
+        } else {
+          responseData = {
+            short_description: parsedContent.short_description,
+            description: parsedContent.description
+          };
+        }
+        
+        // Guardar no cache
+        productDataCache.set(cacheKey, responseData);
+        
+        // Limitar o tamanho do cache (máximo 50 itens)
+        if (productDataCache.size > 50) {
+          const firstKey = productDataCache.keys().next().value;
+          productDataCache.delete(firstKey);
+        }
+        
+        return new Response(
+          JSON.stringify(responseData),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (parseError) {
+        console.error("Erro ao fazer parse do JSON:", parseError);
+        console.error("Texto recebido:", textContent);
+        throw new Error("Erro ao processar resposta da IA");
+      }
+    } catch (apiError) {
+      console.error("Erro ao chamar API Gemini:", apiError);
+      throw apiError;
     }
   } catch (error) {
     console.error("Erro na função:", error);

@@ -51,7 +51,8 @@ const ProductTechnicalDetails = ({
       });
       
       if (error) {
-        throw error;
+        console.error("Erro da função:", error);
+        throw new Error(`Erro ao chamar a função: ${error.message}`);
       }
       
       if (data && !data.error) {
@@ -64,6 +65,11 @@ const ProductTechnicalDetails = ({
         onChange(newTechnicalDetails);
         
         toast.success("Detalhes técnicos gerados com sucesso!");
+        
+        // Expandir automaticamente a primeira seção
+        if (Object.keys(detailSections).length > 0) {
+          setExpandedSection(Object.keys(detailSections)[0]);
+        }
       } else {
         throw new Error(data?.error || "Erro ao gerar detalhes técnicos");
       }
