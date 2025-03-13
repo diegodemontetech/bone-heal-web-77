@@ -10,13 +10,13 @@ export const useOrderCustomers = () => {
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  console.log("useOrderCustomers hook inicializado com termo:", customerSearchTerm);
+  console.log("[useOrderCustomers] Hook inicializado com termo:", customerSearchTerm);
 
   // Buscar clientes apenas da tabela profiles
   const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["customers", customerSearchTerm],
     queryFn: async () => {
-      console.log("Iniciando busca de clientes com termo:", customerSearchTerm);
+      console.log("[useOrderCustomers] Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
         // Buscar na tabela profiles
         let query = supabase
@@ -45,11 +45,11 @@ export const useOrderCustomers = () => {
           .limit(50);
 
         if (profilesError) {
-          console.error("Erro ao buscar clientes dos perfis:", profilesError);
+          console.error("[useOrderCustomers] Erro ao buscar clientes dos perfis:", profilesError);
           throw profilesError;
         }
         
-        console.log(`Encontrados ${profilesData.length} clientes na busca`);
+        console.log(`[useOrderCustomers] Encontrados ${profilesData.length} clientes na busca`);
         
         // Garantir que todos os clientes tenham os campos necessários
         return profilesData.map(customer => ({
@@ -65,7 +65,7 @@ export const useOrderCustomers = () => {
           omie_sync: customer.omie_sync || false
         }));
       } catch (error) {
-        console.error("Exceção na consulta de clientes:", error);
+        console.error("[useOrderCustomers] Exceção na consulta de clientes:", error);
         toast.error("Erro ao consultar clientes");
         return [];
       }
@@ -76,7 +76,7 @@ export const useOrderCustomers = () => {
 
   // Quando um novo cliente é registrado com sucesso
   const handleRegistrationSuccess = (newCustomer: any) => {
-    console.log("Novo cliente registrado:", newCustomer);
+    console.log("[useOrderCustomers] Novo cliente registrado:", newCustomer);
     // Invalidar a consulta para forçar uma nova busca de clientes
     queryClient.invalidateQueries({ queryKey: ["customers"] });
     setSelectedCustomer(newCustomer);

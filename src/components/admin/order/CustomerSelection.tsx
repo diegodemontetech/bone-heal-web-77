@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomerDisplay } from "./CustomerDisplay";
-import { Search, UserPlus, X, CheckCircle, XCircle } from "lucide-react";
+import { Search, UserPlus, X, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { useState } from "react";

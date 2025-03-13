@@ -24,25 +24,24 @@ export const useCustomerState = () => {
 
   const fetchCustomers = async () => {
     try {
-      console.log("Iniciando busca de clientes...");
+      console.log("[useCustomerState] Iniciando busca de clientes com termo:", searchTerm);
       setIsLoadingCustomers(true);
       
       // Buscar apenas na tabela profiles
-      let profilesQuery = supabase
+      let query = supabase
         .from('profiles')
-        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync')
-        .order('full_name');
-
+        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync');
+      
       if (searchTerm) {
         // Verificar se a busca parece ser um código numérico
         const isNumericSearch = /^\d+$/.test(searchTerm.trim());
         
         if (isNumericSearch) {
-          profilesQuery = profilesQuery.or(
+          query = query.or(
             `full_name.ilike.%${searchTerm}%,omie_code.ilike.%${searchTerm}%`
           );
         } else {
-          profilesQuery = profilesQuery.or(
+          query = query.or(
             `full_name.ilike.%${searchTerm}%,` +
             `email.ilike.%${searchTerm}%,` +
             `phone.ilike.%${searchTerm}%`
@@ -50,10 +49,13 @@ export const useCustomerState = () => {
         }
       }
 
-      const { data: profilesData, error: profilesError } = await profilesQuery;
+      // Adicionar ordenação para manter consistente
+      query = query.order('full_name', { ascending: true });
+      
+      const { data: profilesData, error: profilesError } = await query;
 
       if (profilesError) {
-        console.error('Erro na consulta de perfis:', profilesError);
+        console.error('[useCustomerState] Erro na consulta de perfis:', profilesError);
         throw profilesError;
       }
 
@@ -70,10 +72,10 @@ export const useCustomerState = () => {
         omie_sync: customer.omie_sync
       }));
 
-      console.log(`Encontrados ${formattedCustomers.length} clientes na busca`);
+      console.log(`[useCustomerState] Encontrados ${formattedCustomers.length} clientes na busca`);
       setCustomers(formattedCustomers);
     } catch (error) {
-      console.error('Erro ao buscar clientes:', error);
+      console.error('[useCustomerState] Erro ao buscar clientes:', error);
       toast.error('Erro ao carregar lista de clientes');
     } finally {
       setIsLoadingCustomers(false);

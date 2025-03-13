@@ -10,6 +10,7 @@ interface CustomerDisplayProps {
     state?: string;
     zip_code?: string;
     email?: string;
+    omie_code?: string;
   };
 }
 
@@ -39,6 +40,9 @@ export const CustomerDisplay = ({ customer }: CustomerDisplayProps) => {
                 : "Cidade/Estado não informados"}
               {customer.zip_code && ` (CEP: ${customer.zip_code})`}
             </p>
+            {customer.omie_code && (
+              <p className="text-sm font-medium text-green-600">Código Omie: {customer.omie_code}</p>
+            )}
           </div>
         </div>
       </div>
