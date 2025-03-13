@@ -1,11 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { StageWithPipeline } from "@/types/crm";
+import { StageWithPipeline, CRMStage } from "@/types/crm";
+import { DropResult } from "@hello-pangea/dnd";
 
 export const useStagesConfig = (pipelineId: string) => {
   const [stages, setStages] = useState<StageWithPipeline[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentStage, setCurrentStage] = useState<StageWithPipeline | null>(null);
 
@@ -19,7 +22,14 @@ export const useStagesConfig = (pipelineId: string) => {
         .order('order', { ascending: true });
 
       if (error) throw error;
-      setStages(data as StageWithPipeline[]);
+      
+      // Garantir que todos os estágios tenham pipeline_id
+      const stagesWithPipeline: StageWithPipeline[] = data.map(stage => ({
+        ...stage,
+        pipeline_id: pipelineId,
+      })) as StageWithPipeline[];
+      
+      setStages(stagesWithPipeline);
     } catch (error) {
       console.error('Erro ao buscar estágios:', error);
       toast.error('Erro ao carregar estágios');
@@ -44,54 +54,52 @@ export const useStagesConfig = (pipelineId: string) => {
     setCurrentStage(null);
   };
 
-  const createStage = async (name: string) => {
-    setLoading(true);
+  const handleAddStage = async (data: { name: string, color: string }) => {
+    setSaving(true);
     try {
-      const newOrder = stages.length > 0 ? stages[stages.length - 1].order + 1 : 1;
-      const { data, error } = await supabase
+      const newOrder = stages.length > 0 ? Math.max(...stages.map(s => s.order)) + 1 : 1;
+      const newStage = {
+        pipeline_id: pipelineId,
+        name: data.name,
+        color: data.color,
+        order: newOrder
+      };
+
+      const { data: createdStage, error } = await supabase
         .from('crm_stages')
-        .insert([{ pipeline_id: pipelineId, name: name, order: newOrder }])
+        .insert([newStage])
         .select()
         .single();
 
       if (error) throw error;
 
-      setStages([...stages, data]);
+      setStages([...stages, createdStage as StageWithPipeline]);
       toast.success('Estágio criado com sucesso!');
-      handleCloseDialog();
-      fetchStages();
     } catch (error: any) {
       console.error('Erro ao criar estágio:', error);
       toast.error(`Erro ao criar estágio: ${error.message}`);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const updateStage = async (stageId: string, newName: string) => {
-    setLoading(true);
+  const handleUpdateStage = async (stage: StageWithPipeline, field: string, value: string) => {
     try {
       const { error } = await supabase
         .from('crm_stages')
-        .update({ name: newName })
-        .eq('id', stageId);
+        .update({ [field]: value })
+        .eq('id', stage.id);
 
       if (error) throw error;
 
-      setStages(stages.map(stage => stage.id === stageId ? { ...stage, name: newName } : stage));
-      toast.success('Estágio atualizado com sucesso!');
-      handleCloseDialog();
-      fetchStages();
+      setStages(stages.map(s => s.id === stage.id ? { ...s, [field]: value } : s));
     } catch (error: any) {
       console.error('Erro ao atualizar estágio:', error);
       toast.error(`Erro ao atualizar estágio: ${error.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const deleteStage = async (stageId: string) => {
-    setLoading(true);
+  const handleDeleteStage = async (stageId: string) => {
     try {
       const { error } = await supabase
         .from('crm_stages')
@@ -102,47 +110,65 @@ export const useStagesConfig = (pipelineId: string) => {
 
       setStages(stages.filter(stage => stage.id !== stageId));
       toast.success('Estágio excluído com sucesso!');
-      fetchStages();
     } catch (error: any) {
       console.error('Erro ao excluir estágio:', error);
       toast.error(`Erro ao excluir estágio: ${error.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
-  const updateStagesOrder = async (reorderedStages: StageWithPipeline[]) => {
-  try {
-    const updateData = reorderedStages.map(stage => ({
-      id: stage.id,
-      name: stage.name, // Adicionando o campo name que é obrigatório
-      order: stage.order,
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source } = result;
+    
+    if (!destination) return;
+    
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+    
+    const reorderedStages = Array.from(stages);
+    const [removed] = reorderedStages.splice(source.index, 1);
+    reorderedStages.splice(destination.index, 0, removed);
+    
+    // Atualizar a ordem dos estágios
+    const updatedStages = reorderedStages.map((stage, index) => ({
+      ...stage,
+      order: index + 1
     }));
-
-    const { error } = await supabase
-      .from('crm_stages')
-      .upsert(updateData);
-
-    if (error) throw error;
-    return true;
-  } catch (error) {
-    console.error('Erro ao atualizar ordem dos estágios:', error);
-    return false;
-  }
-};
+    
+    setStages(updatedStages);
+    
+    try {
+      const updatePromises = updatedStages.map(stage => 
+        supabase
+          .from('crm_stages')
+          .update({ order: stage.order })
+          .eq('id', stage.id)
+      );
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('Erro ao reordenar estágios:', error);
+      toast.error('Erro ao salvar a nova ordem dos estágios');
+      fetchStages(); // Recarregar os estágios em caso de erro
+    }
+  };
 
   return {
     stages,
     loading,
+    saving,
     isDialogOpen,
     currentStage,
     handleOpenDialog,
     handleCloseDialog,
-    createStage,
-    updateStage,
-    deleteStage,
+    handleAddStage,
+    handleUpdateStage,
+    handleDeleteStage,
     setStages,
-    updateStagesOrder,
+    onDragEnd,
     fetchStages
   };
 };

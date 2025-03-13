@@ -3,27 +3,22 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CRMField } from "@/types/crm";
-import { FieldFormData } from "./types";
 
-// Função para converter o objeto FieldFormData para CRMField
-const convertFormDataToField = (formData: FieldFormData, pipelineId: string, fieldId?: string): Partial<CRMField> => {
-  return {
-    id: fieldId,
-    pipeline_id: pipelineId,
-    name: formData.name,
-    label: formData.label,
-    type: formData.type,
-    required: formData.required,
-    display_in_kanban: formData.display_in_kanban,
-    options: formData.options ? JSON.parse(formData.options) : null,
-    mask: formData.mask || null,
-    default_value: formData.default_value || null,
-  };
-};
+export interface FieldFormData {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  display_in_kanban: boolean;
+  options?: string[];
+  mask?: string;
+  default_value?: string;
+}
 
 export const useFieldsConfig = (pipelineId: string) => {
   const [fields, setFields] = useState<CRMField[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentField, setCurrentField] = useState<CRMField | null>(null);
   const [formData, setFormData] = useState<FieldFormData>({
@@ -32,26 +27,22 @@ export const useFieldsConfig = (pipelineId: string) => {
     type: "text",
     required: false,
     display_in_kanban: false,
-    options: "",
-    mask: "",
-    default_value: "",
   });
 
-  // Carrega os campos do pipeline
   const fetchFields = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from("crm_fields")
-        .select("*")
-        .eq("pipeline_id", pipelineId)
-        .order("created_at", { ascending: true });
+        .from('crm_fields')
+        .select('*')
+        .eq('pipeline_id', pipelineId)
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
       setFields(data as CRMField[]);
     } catch (error) {
-      console.error("Erro ao buscar campos:", error);
-      toast.error("Erro ao carregar campos");
+      console.error('Erro ao buscar campos:', error);
+      toast.error('Erro ao carregar campos');
     } finally {
       setLoading(false);
     }
@@ -72,9 +63,9 @@ export const useFieldsConfig = (pipelineId: string) => {
         type: field.type,
         required: field.required,
         display_in_kanban: field.display_in_kanban,
-        options: field.options ? JSON.stringify(field.options) : "",
-        mask: field.mask || "",
-        default_value: field.default_value || "",
+        options: field.options,
+        mask: field.mask,
+        default_value: field.default_value,
       });
     } else {
       setCurrentField(null);
@@ -84,9 +75,6 @@ export const useFieldsConfig = (pipelineId: string) => {
         type: "text",
         required: false,
         display_in_kanban: false,
-        options: "",
-        mask: "",
-        default_value: "",
       });
     }
     setIsDialogOpen(true);
@@ -94,80 +82,110 @@ export const useFieldsConfig = (pipelineId: string) => {
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
+    setCurrentField(null);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleCreateField = async (data: FieldFormData) => {
+    setIsSaving(true);
+    try {
+      const newField = {
+        ...data,
+        pipeline_id: pipelineId,
+      };
+
+      const { data: createdField, error } = await supabase
+        .from('crm_fields')
+        .insert([newField])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setFields([...fields, createdField as CRMField]);
+      toast.success('Campo criado com sucesso!');
+      handleCloseDialog();
+    } catch (error: any) {
+      console.error('Erro ao criar campo:', error);
+      toast.error(`Erro ao criar campo: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleUpdateField = async (data: FieldFormData) => {
+    if (!currentField) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('crm_fields')
+        .update(data)
+        .eq('id', currentField.id);
+
+      if (error) throw error;
+
+      setFields(fields.map(field => 
+        field.id === currentField.id 
+          ? { ...field, ...data }
+          : field
+      ));
+      
+      toast.success('Campo atualizado com sucesso!');
+      handleCloseDialog();
+    } catch (error: any) {
+      console.error('Erro ao atualizar campo:', error);
+      toast.error(`Erro ao atualizar campo: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }));
+  const handleDeleteField = async (fieldId: string) => {
+    try {
+      const { error } = await supabase
+        .from('crm_fields')
+        .delete()
+        .eq('id', fieldId);
+
+      if (error) throw error;
+
+      setFields(fields.filter(field => field.id !== fieldId));
+      toast.success('Campo excluído com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao excluir campo:', error);
+      toast.error(`Erro ao excluir campo: ${error.message}`);
+    }
   };
 
-  const getDefaultMask = (type: string): string => {
+  const handleFormChange = (key: keyof FieldFormData, value: any) => {
+    setFormData({
+      ...formData,
+      [key]: value
+    });
+  };
+
+  const handleSubmit = () => {
+    if (currentField) {
+      handleUpdateField(formData);
+    } else {
+      handleCreateField(formData);
+    }
+  };
+
+  const getDefaultMask = (type: string) => {
     switch (type) {
       case "phone":
         return "(99) 99999-9999";
-      case "date":
-        return "99/99/9999";
       case "cpf":
         return "999.999.999-99";
       case "cnpj":
         return "99.999.999/9999-99";
+      case "date":
+        return "99/99/9999";
       case "cep":
         return "99999-999";
       default:
         return "";
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const fieldData = convertFormDataToField(formData, pipelineId, currentField?.id);
-
-      let response;
-      if (currentField) {
-        response = await supabase
-          .from("crm_fields")
-          .update(fieldData)
-          .eq("id", currentField.id);
-      } else {
-        response = await supabase
-          .from("crm_fields")
-          .insert([fieldData]);
-      }
-
-      if (response.error) throw response.error;
-
-      toast.success(`Campo ${currentField ? "atualizado" : "criado"} com sucesso!`);
-      handleCloseDialog();
-      fetchFields();
-    } catch (error: any) {
-      console.error("Erro ao salvar campo:", error);
-      toast.error(`Erro ao salvar campo: ${error.message}`);
-    }
-  };
-
-  const deleteField = async (fieldId: string) => {
-    try {
-      const { error } = await supabase
-        .from("crm_fields")
-        .delete()
-        .eq("id", fieldId);
-
-      if (error) throw error;
-
-      toast.success("Campo excluído com sucesso!");
-      fetchFields();
-    } catch (error: any) {
-      console.error("Erro ao excluir campo:", error);
-      toast.error(`Erro ao excluir campo: ${error.message}`);
     }
   };
 
@@ -179,11 +197,10 @@ export const useFieldsConfig = (pipelineId: string) => {
     formData,
     handleOpenDialog,
     handleCloseDialog,
-    handleInputChange,
-    handleSelectChange,
-    handleSwitchChange,
+    handleFormChange,
     handleSubmit,
-    deleteField,
-    getDefaultMask,
+    handleDeleteField,
+    isSaving,
+    getDefaultMask
   };
 };

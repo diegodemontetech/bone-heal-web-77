@@ -1,104 +1,107 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { FormFields } from "../types";
+import { ProductCategory, ProductSubcategory } from "@/types/product";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ProductCategory, ProductSubcategory } from "@/types/product";
-import { FormFields } from "../types";
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "O nome deve ter pelo menos 2 caracteres.",
-  }),
-  description: z.string().optional(),
-  default_fields: z.record(z.any()).optional(),
-});
+interface UseSubcategoryFormProps {
+  category: ProductCategory;
+  subcategory?: ProductSubcategory | null;
+  onSuccess: () => void;
+  onClose: () => void;
+}
 
-export function useSubcategoryForm(
-  category: ProductCategory,
-  subcategory: ProductSubcategory | null | undefined,
-  onSuccess: () => void,
-  onClose: () => void
-) {
-  const [loading, setLoading] = useState(false);
-  const [fields, setFields] = useState<Record<string, any>>({});
-
-  useEffect(() => {
-    if (subcategory) {
-      setFields(subcategory.default_fields || {});
-    } else {
-      setFields({});
-    }
-  }, [subcategory]);
-
-  const form = useForm<FormFields>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: subcategory?.name || "",
-      description: subcategory?.description || "",
-      default_fields: subcategory?.default_fields || {},
-    },
-  });
-
-  const handleAddField = () => {
-    const newFieldName = prompt("Nome do novo campo:");
-    if (newFieldName) {
-      handleFieldChange(newFieldName, "");
-    }
-  };
+export function useSubcategoryForm({ 
+  category, 
+  subcategory, 
+  onSuccess, 
+  onClose 
+}: UseSubcategoryFormProps) {
+  const [customFields, setCustomFields] = useState<Record<string, any>>(
+    subcategory?.default_fields || {}
+  );
 
   const handleFieldChange = (fieldName: string, value: any) => {
-    setFields(prev => ({
+    setCustomFields(prev => ({
       ...prev,
       [fieldName]: value
     }));
   };
 
-  const onSubmit = async (values: FormFields) => {
-    setLoading(true);
+  const handleAddField = () => {
+    setCustomFields(prev => ({
+      ...prev,
+      [`campo_${Object.keys(prev).length + 1}`]: ""
+    }));
+  };
+
+  // Schema para validação do formulário
+  const formSchema = z.object({
+    name: z.string().min(1, "O nome é obrigatório"),
+    description: z.string().optional(),
+    default_fields: z.record(z.any()).optional()
+  });
+
+  // Criando o formulário
+  const form = useForm<FormFields>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: subcategory?.name || "",
+      description: subcategory?.description || "",
+      default_fields: subcategory?.default_fields || {}
+    }
+  });
+
+  const onSubmit = async (data: FormFields) => {
     try {
-      const upsertData = {
-        name: values.name,
-        description: values.description,
-        category_id: category.id,
-        default_fields: fields,
-      };
-
-      let response;
+      // Incluindo os campos personalizados no envio
+      data.default_fields = customFields;
+      
       if (subcategory) {
-        response = await supabase
+        // Atualizar subcategoria existente
+        const { error } = await supabase
           .from("product_subcategories")
-          .update(upsertData)
+          .update({
+            name: data.name,
+            description: data.description,
+            default_fields: data.default_fields
+          })
           .eq("id", subcategory.id);
+          
+        if (error) throw error;
+        toast.success("Subcategoria atualizada com sucesso!");
       } else {
-        response = await supabase
+        // Criar nova subcategoria
+        const { error } = await supabase
           .from("product_subcategories")
-          .insert(upsertData);
+          .insert({
+            name: data.name,
+            description: data.description,
+            default_fields: data.default_fields,
+            category_id: category.id
+          });
+          
+        if (error) throw error;
+        toast.success("Subcategoria criada com sucesso!");
       }
-
-      if (response.error) {
-        throw response.error;
-      }
-
-      toast.success(`Subcategoria ${subcategory ? 'atualizada' : 'criada'} com sucesso!`);
+      
       onSuccess();
       onClose();
     } catch (error: any) {
       console.error("Erro ao salvar subcategoria:", error);
-      toast.error(`Erro ao salvar subcategoria: ${error.message}`);
-    } finally {
-      setLoading(false);
+      toast.error(`Erro: ${error.message}`);
     }
   };
 
   return {
     form,
-    loading,
-    fields,
-    handleAddField,
+    customFields,
     handleFieldChange,
-    onSubmit: form.handleSubmit(onSubmit)
+    handleAddField,
+    onSubmit
   };
 }
