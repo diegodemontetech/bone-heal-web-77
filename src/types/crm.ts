@@ -58,4 +58,17 @@ export interface Lead {
   last_contact: string;
   needs_human: boolean;
   tags?: string[];
+  city?: string;
+  state?: string;
+  custom_fields?: Record<string, any>;
+}
+
+export interface Pipeline {
+  id: string;
+  name: string;
+  description?: string;
+  form_url?: string;
+  created_at?: string;
+  updated_at?: string;
+  is_active?: boolean;
 }

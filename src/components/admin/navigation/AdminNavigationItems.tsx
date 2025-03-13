@@ -60,18 +60,18 @@ export const NavigationItems = [
   },
   {
     title: "CRM",
-    href: "/admin/leads",
+    href: "/admin/crm/pipelines",
     icon: BarChart2,
     permissions: [],
     children: [
       {
-        title: "Leads",
-        href: "/admin/leads",
+        title: "Pipelines",
+        href: "/admin/crm/pipelines",
         permissions: []
       },
       {
-        title: "Kanban de Leads",
-        href: "/admin/leads/kanban",
+        title: "Automações",
+        href: "/admin/crm/automacoes",
         permissions: []
       }
     ]
@@ -167,11 +167,6 @@ export const NavigationItems = [
       {
         title: "Templates de Email",
         href: "/admin/email-templates",
-        permissions: []
-      },
-      {
-        title: "CRM",
-        href: "/admin/crm/configuracoes",
         permissions: []
       },
       {
