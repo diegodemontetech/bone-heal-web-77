@@ -5,6 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { AutomationFlow } from '@/types/automation';
 import { parseJsonArray, stringifyForSupabase } from '@/utils/supabaseJsonUtils';
 
+interface FlowCreateOptions {
+  department_id?: string;
+  responsible_id?: string;
+  has_attachment?: boolean;
+}
+
 export const useAutomationFlows = () => {
   const [flows, setFlows] = useState<AutomationFlow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,15 +47,18 @@ export const useAutomationFlows = () => {
     fetchFlows();
   }, [fetchFlows]);
   
-  // Função para criar um novo fluxo
-  const createFlow = async (name: string, description: string) => {
+  // Função para criar um novo fluxo com campos adicionais
+  const createFlow = async (name: string, description: string, options?: FlowCreateOptions) => {
     try {
       const newFlow = {
         name,
         description,
         is_active: true,
         nodes: stringifyForSupabase([]),
-        edges: stringifyForSupabase([])
+        edges: stringifyForSupabase([]),
+        department_id: options?.department_id || null,
+        responsible_id: options?.responsible_id || null,
+        has_attachment: options?.has_attachment || false
       };
       
       const { data, error } = await supabase
@@ -70,11 +79,11 @@ export const useAutomationFlows = () => {
         ...prev
       ]);
       
-      toast.success('Fluxo criado com sucesso');
+      toast.success('Pipeline criado com sucesso');
       return data;
     } catch (err) {
-      console.error('Erro ao criar fluxo:', err);
-      toast.error('Erro ao criar fluxo');
+      console.error('Erro ao criar pipeline:', err);
+      toast.error('Erro ao criar pipeline');
       throw err;
     }
   };
@@ -112,11 +121,11 @@ export const useAutomationFlows = () => {
         } : flow
       ));
       
-      toast.success('Fluxo atualizado com sucesso');
+      toast.success('Pipeline atualizado com sucesso');
       return data;
     } catch (err) {
-      console.error('Erro ao atualizar fluxo:', err);
-      toast.error('Erro ao atualizar fluxo');
+      console.error('Erro ao atualizar pipeline:', err);
+      toast.error('Erro ao atualizar pipeline');
       throw err;
     }
   };
@@ -128,7 +137,7 @@ export const useAutomationFlows = () => {
       const flowToDuplicate = flows.find(flow => flow.id === id);
       
       if (!flowToDuplicate) {
-        throw new Error('Fluxo não encontrado');
+        throw new Error('Pipeline não encontrado');
       }
       
       // Criar um novo fluxo baseado no existente
@@ -139,7 +148,10 @@ export const useAutomationFlows = () => {
           description: flowToDuplicate.description,
           is_active: false, // Começar como inativo
           nodes: stringifyForSupabase(flowToDuplicate.nodes),
-          edges: stringifyForSupabase(flowToDuplicate.edges)
+          edges: stringifyForSupabase(flowToDuplicate.edges),
+          department_id: flowToDuplicate.department_id,
+          responsible_id: flowToDuplicate.responsible_id,
+          has_attachment: flowToDuplicate.has_attachment
         })
         .select()
         .single();
@@ -156,11 +168,11 @@ export const useAutomationFlows = () => {
         ...prev
       ]);
       
-      toast.success('Fluxo duplicado com sucesso');
+      toast.success('Pipeline duplicado com sucesso');
       return data;
     } catch (err) {
-      console.error('Erro ao duplicar fluxo:', err);
-      toast.error('Erro ao duplicar fluxo');
+      console.error('Erro ao duplicar pipeline:', err);
+      toast.error('Erro ao duplicar pipeline');
       return null;
     }
   };
@@ -178,11 +190,11 @@ export const useAutomationFlows = () => {
       // Remover o fluxo do estado
       setFlows(prev => prev.filter(flow => flow.id !== id));
       
-      toast.success('Fluxo excluído com sucesso');
+      toast.success('Pipeline excluído com sucesso');
       return true;
     } catch (err) {
-      console.error('Erro ao excluir fluxo:', err);
-      toast.error('Erro ao excluir fluxo');
+      console.error('Erro ao excluir pipeline:', err);
+      toast.error('Erro ao excluir pipeline');
       return false;
     }
   };
@@ -204,11 +216,11 @@ export const useAutomationFlows = () => {
         flow.id === id ? { ...flow, is_active: isActive } : flow
       ));
       
-      toast.success(`Fluxo ${isActive ? 'ativado' : 'desativado'} com sucesso`);
+      toast.success(`Pipeline ${isActive ? 'ativado' : 'desativado'} com sucesso`);
       return data;
     } catch (err) {
-      console.error('Erro ao alterar status do fluxo:', err);
-      toast.error('Erro ao alterar status do fluxo');
+      console.error('Erro ao alterar status do pipeline:', err);
+      toast.error('Erro ao alterar status do pipeline');
       return null;
     }
   };

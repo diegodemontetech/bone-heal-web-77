@@ -1,9 +1,13 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, PlusCircle } from "lucide-react";
 
-const NoFlowSelected = () => {
+interface NoFlowSelectedProps {
+  onCreateNew?: () => void;
+}
+
+const NoFlowSelected = ({ onCreateNew }: NoFlowSelectedProps) => {
   return (
     <div className="h-[600px] border rounded-md flex flex-col items-center justify-center p-6">
       <div className="mb-4 p-3 rounded-full bg-muted">
@@ -18,6 +22,13 @@ const NoFlowSelected = () => {
         <Button asChild variant="outline">
           <Link to="/admin/automacoes">Voltar para Lista</Link>
         </Button>
+        
+        {onCreateNew && (
+          <Button onClick={onCreateNew}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Criar Novo Fluxo
+          </Button>
+        )}
       </div>
     </div>
   );

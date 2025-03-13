@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
 import { useAutomationFlows } from "@/hooks/use-automation-flows";
-import { AutomationFlow } from "@/types/automation";
 import FlowsTable from "./flows/FlowsTable";
 import NoFlowsMessage from "./flows/NoFlowsMessage";
 import FlowCreateForm from "./flows/FlowCreateForm";
@@ -38,8 +37,24 @@ const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
         flow.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleCreateFlow = async (name: string, description: string) => {
-    const newFlow = await createFlow(name, description);
+  const handleCreateFlow = async (
+    name: string, 
+    description: string,
+    departmentId?: string,
+    responsibleId?: string,
+    hasAttachment?: boolean
+  ) => {
+    // Adicionando os novos campos à criação do fluxo
+    const newFlow = await createFlow(
+      name, 
+      description, 
+      {
+        department_id: departmentId,
+        responsible_id: responsibleId,
+        has_attachment: hasAttachment || false
+      }
+    );
+    
     if (newFlow) {
       setIsCreateDialogOpen(false);
       
@@ -48,7 +63,11 @@ const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
       } else {
         navigate(`/admin/automation-flows/${newFlow.id}`);
       }
+      
+      return newFlow;
     }
+    
+    return null;
   };
 
   const handleEditFlow = (id: string) => {
@@ -91,20 +110,20 @@ const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Fluxos de Automação</h2>
+        <h2 className="text-3xl font-bold">Pipelines de Automação</h2>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Novo Fluxo
+          Novo Pipeline
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Fluxos Disponíveis</CardTitle>
+          <CardTitle>Pipelines Disponíveis</CardTitle>
           <div className="relative mt-2 w-full md:w-72">
             <Search className="absolute left-2 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar fluxos..."
+              placeholder="Buscar pipelines..."
               className="pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -115,7 +134,7 @@ const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
           {isLoading ? (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
-              <p className="mt-2 text-muted-foreground">Carregando fluxos...</p>
+              <p className="mt-2 text-muted-foreground">Carregando pipelines...</p>
             </div>
           ) : filteredFlows.length > 0 ? (
             <FlowsTable

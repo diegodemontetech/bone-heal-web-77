@@ -4,25 +4,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Paperclip, User } from "lucide-react";
 
 const flowFormSchema = z.object({
   name: z.string().min(3, "Nome precisa ter pelo menos 3 caracteres"),
   description: z.string().optional(),
+  department_id: z.string().optional(),
+  responsible_id: z.string().optional(),
+  has_attachment: z.boolean().default(false),
 });
 
 type FlowFormValues = z.infer<typeof flowFormSchema>;
 
 interface FlowCreateFormProps {
-  onCreateFlow: (name: string, description: string) => Promise<any>;
+  onCreateFlow: (name: string, description: string, departmentId?: string, responsibleId?: string, hasAttachment?: boolean) => Promise<any>;
   onComplete: () => void;
   isOpen?: boolean;
   onClose?: () => void;
-  onSubmit?: (name: string, description: string) => Promise<any>;
+  onSubmit?: (name: string, description: string, departmentId?: string, responsibleId?: string, hasAttachment?: boolean) => Promise<any>;
 }
 
 const FlowCreateForm = ({ 
@@ -39,7 +46,38 @@ const FlowCreateForm = ({
     defaultValues: {
       name: "",
       description: "",
+      department_id: undefined,
+      responsible_id: undefined,
+      has_attachment: false,
     },
+  });
+
+  // Consulta para buscar departamentos
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_departments')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Consulta para buscar usuários
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .order('full_name');
+      
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const handleCreate = async (values: FlowFormValues) => {
@@ -48,17 +86,23 @@ const FlowCreateForm = ({
       
       // Use onSubmit se fornecido, caso contrário use onCreateFlow
       const handler = onSubmit || onCreateFlow;
-      const result = await handler(values.name, values.description || "");
+      const result = await handler(
+        values.name, 
+        values.description || "", 
+        values.department_id,
+        values.responsible_id,
+        values.has_attachment
+      );
       
       if (result) {
         form.reset();
-        toast.success("Fluxo criado com sucesso!");
+        toast.success("Pipeline criado com sucesso!");
         onComplete();
         if (onClose) onClose();
       }
     } catch (error) {
-      console.error("Erro ao criar fluxo:", error);
-      toast.error("Erro ao criar fluxo. Tente novamente.");
+      console.error("Erro ao criar pipeline:", error);
+      toast.error("Erro ao criar pipeline. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +114,7 @@ const FlowCreateForm = ({
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Criar Novo Fluxo de Automação</DialogTitle>
+            <DialogTitle>Criar Novo Pipeline de Automação</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleCreate)} className="space-y-4 py-4">
@@ -79,17 +123,18 @@ const FlowCreateForm = ({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Fluxo</FormLabel>
+                    <FormLabel>Nome do Pipeline</FormLabel>
                     <FormControl>
                       <Input 
                         {...field} 
-                        placeholder="Automação de Leads" 
+                        placeholder="Pipeline de Leads" 
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="description"
@@ -99,7 +144,7 @@ const FlowCreateForm = ({
                     <FormControl>
                       <Textarea
                         {...field}
-                        placeholder="Detalhe o propósito deste fluxo..."
+                        placeholder="Detalhe o propósito deste pipeline..."
                         rows={3}
                       />
                     </FormControl>
@@ -107,13 +152,93 @@ const FlowCreateForm = ({
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={form.control}
+                name="department_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um departamento" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="responsible_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Responsável</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um responsável" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="has_attachment"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        className="mr-2"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel className="flex items-center">
+                        <Paperclip className="h-4 w-4 mr-1" />
+                        Permitir anexos
+                      </FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
               <div className="flex justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
                 <Button 
                   type="submit" 
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Criando..." : "Criar Fluxo"}
+                  {isSubmitting ? "Criando..." : "Criar Pipeline"}
                 </Button>
               </div>
             </form>
@@ -132,17 +257,18 @@ const FlowCreateForm = ({
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do Fluxo</FormLabel>
+              <FormLabel>Nome do Pipeline</FormLabel>
               <FormControl>
                 <Input 
                   {...field} 
-                  placeholder="Automação de Leads" 
+                  placeholder="Pipeline de Leads" 
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        
         <FormField
           control={form.control}
           name="description"
@@ -152,7 +278,7 @@ const FlowCreateForm = ({
               <FormControl>
                 <Textarea
                   {...field}
-                  placeholder="Detalhe o propósito deste fluxo..."
+                  placeholder="Detalhe o propósito deste pipeline..."
                   rows={3}
                 />
               </FormControl>
@@ -160,6 +286,86 @@ const FlowCreateForm = ({
             </FormItem>
           )}
         />
+        
+        <FormField
+          control={form.control}
+          name="department_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Departamento</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um departamento" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="responsible_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Responsável</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um responsável" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="has_attachment"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <input
+                  type="checkbox"
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  className="mr-2"
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel className="flex items-center">
+                  <Paperclip className="h-4 w-4 mr-1" />
+                  Permitir anexos
+                </FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+        
         <div className="flex justify-end space-x-2">
           <DialogClose asChild>
             <Button type="button" variant="outline">Cancelar</Button>
@@ -168,7 +374,7 @@ const FlowCreateForm = ({
             type="submit" 
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Criando..." : "Criar Fluxo"}
+            {isSubmitting ? "Criando..." : "Criar Pipeline"}
           </Button>
         </div>
       </form>

@@ -1,8 +1,9 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import FlowToolbar from "./FlowToolbar";
 import FlowCanvas from "./FlowCanvas";
 import NoFlowSelected from "./NoFlowSelected";
+import FlowCreateForm from "./flows/FlowCreateForm";
 import { useAutomationFlow } from "@/hooks/use-automation-flow";
 
 interface FlowBuilderProps {
@@ -10,6 +11,8 @@ interface FlowBuilderProps {
 }
 
 const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  
   const {
     nodes,
     edges,
@@ -35,8 +38,24 @@ const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
     }
   }, [flowId, fetchFlowData]);
 
+  const handleCreateFlow = async (name: string, description: string) => {
+    // Esta função será implementada posteriormente quando integrarmos com o componente FlowCreateForm
+    console.log("Criar novo fluxo:", name, description);
+    setIsCreateDialogOpen(false);
+  };
+
   if (!flowId) {
-    return <NoFlowSelected />;
+    return (
+      <>
+        <NoFlowSelected onCreateNew={() => setIsCreateDialogOpen(true)} />
+        <FlowCreateForm 
+          isOpen={isCreateDialogOpen}
+          onClose={() => setIsCreateDialogOpen(false)}
+          onCreateFlow={handleCreateFlow}
+          onComplete={() => {}}
+        />
+      </>
+    );
   }
 
   const handleSave = () => {

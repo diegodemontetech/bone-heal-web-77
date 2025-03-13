@@ -12,6 +12,9 @@ export interface AutomationFlow {
   edges: Edge[];
   created_at: string;
   updated_at: string;
+  department_id?: string;
+  responsible_id?: string;
+  has_attachment?: boolean;
 }
 
 export interface WhatsAppInstance {
