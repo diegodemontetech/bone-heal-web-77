@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { TicketsSection } from "./TicketsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { ContactInfoSection } from "./ContactInfoSection";
@@ -8,9 +9,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ShoppingBag, Clock, Package } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const ProfileForm = () => {
   const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    full_name: '',
+    specialty: '',
+    cro: '',
+    cpf: '',
+    cnpj: '',
+    phone: '',
+    zip_code: '',
+    address: '',
+    endereco_numero: '',
+    complemento: '',
+    neighborhood: '',
+    city: '',
+    state: ''
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   return (
     <div className="space-y-6">
@@ -25,13 +52,25 @@ export const ProfileForm = () => {
               <TabsTrigger value="address">Endereço</TabsTrigger>
             </TabsList>
             <TabsContent value="personal">
-              <PersonalInfoSection />
+              <PersonalInfoSection 
+                formData={formData}
+                handleChange={handleChange}
+                handleSelectChange={handleSelectChange}
+              />
             </TabsContent>
             <TabsContent value="contact">
-              <ContactInfoSection />
+              <ContactInfoSection 
+                formData={formData}
+                handleChange={handleChange}
+              />
             </TabsContent>
             <TabsContent value="address">
-              <AddressSection />
+              <AddressSection 
+                formData={formData}
+                handleChange={handleChange}
+                handleSelectChange={handleSelectChange}
+                setFormData={setFormData}
+              />
             </TabsContent>
           </Tabs>
           <OmieStatusSection />

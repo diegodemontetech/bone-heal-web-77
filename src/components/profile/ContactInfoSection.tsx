@@ -20,6 +20,7 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
         <Label htmlFor="phone">Telefone</Label>
         <Input
           id="phone"
+          name="phone"
           value={formData.phone}
           onChange={handleChange}
         />
