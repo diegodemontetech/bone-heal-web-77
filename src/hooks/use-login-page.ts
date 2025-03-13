@@ -37,15 +37,15 @@ export const useLoginPage = () => {
       }
     };
     
-    // Define um timeout para a verificação da sessão
+    // Define um timeout mais curto para a verificação da sessão (3 segundos)
     const timeoutId = setTimeout(() => {
       if (sessionLoading) {
         console.log("Timeout da verificação de sessão");
         setSessionLoading(false);
         setConnectionError(true);
-        toast.error("Tempo limite excedido ao verificar sessão. Verifique sua conexão.");
+        toast.error("Tempo limite excedido ao verificar sessão. Tente novamente.");
       }
-    }, 5000); // 5 segundos de timeout
+    }, 3000); // Reduzido de 5 para 3 segundos
     
     checkSession();
     
@@ -75,7 +75,6 @@ export const useLoginPage = () => {
         console.log("Redirecionando admin para /admin/dashboard");
         navigate("/admin/dashboard");
       } else {
-        // Não redirecionamos para /profile, mas sim para a página onde o usuário estava
         // Não redirecionamos para a própria página de login (evitar loop)
         const targetPath = fromPath === "/login" ? "/" : fromPath;
         console.log(`Redirecionando usuário normal para: ${targetPath}`);
@@ -85,7 +84,7 @@ export const useLoginPage = () => {
   }, [isLoading, profile, isAdmin, navigate, fromPath, sessionLoading, currentSession, redirectAttempted, connectionError]);
 
   return {
-    isLoading,
+    isLoading: isLoading || sessionLoading,
     sessionLoading,
     profile,
     currentSession,

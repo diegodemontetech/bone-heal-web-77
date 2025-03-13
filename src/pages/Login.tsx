@@ -1,5 +1,5 @@
 
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 const Login = () => {
   const { 
     isLoading, 
-    sessionLoading, 
     profile, 
     currentSession, 
     isAuthenticated,
@@ -33,8 +32,9 @@ const Login = () => {
             </Alert>
             <Button 
               onClick={() => window.location.reload()} 
-              className="w-full"
+              className="w-full mt-4"
             >
+              <RefreshCw className="h-4 w-4 mr-2" />
               Tentar novamente
             </Button>
           </div>
@@ -46,7 +46,7 @@ const Login = () => {
   }
 
   // Se estiver carregando, mostra o loader com timeout
-  if (isLoading || sessionLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
