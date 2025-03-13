@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CRMStage, Department } from "@/types/crm";
+import { CRMStage, Department, AutomationFormValues } from "@/types/crm";
 
 const automationSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -19,7 +20,7 @@ const automationSchema = z.object({
   is_active: z.boolean().default(true),
 });
 
-type AutomationFormValues = z.infer<typeof automationSchema>;
+type AutomationFormSchemaValues = z.infer<typeof automationSchema>;
 
 interface UseAutomationFormProps {
   onSuccess?: () => void;
@@ -30,8 +31,15 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [formData, setFormData] = useState<AutomationFormValues>({
+    stage: '',
+    action_type: 'notification',
+    action_data: {},
+    is_active: true
+  });
+  const [activeTab, setActiveTab] = useState<string>("notification");
 
-  const form = useForm<AutomationFormValues>({
+  const form = useForm<AutomationFormSchemaValues>({
     resolver: zodResolver(automationSchema),
     defaultValues: {
       name: "",
@@ -93,49 +101,65 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
     fetchData();
   }, []);
 
-  const onSubmit = async (data: AutomationFormValues) => {
+  const handleStageChange = (stageId: string) => {
+    setFormData(prev => ({ ...prev, stage: stageId }));
+  };
+
+  const handleNextStageChange = (stageId: string) => {
+    setFormData(prev => ({ ...prev, next_stage: stageId }));
+  };
+
+  const handleHoursTriggerChange = (hours: number) => {
+    setFormData(prev => ({ ...prev, hours_trigger: hours }));
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setFormData(prev => ({ ...prev, action_type: tab }));
+  };
+
+  const handleActionDataChange = (data: any) => {
+    setFormData(prev => ({ ...prev, action_data: { ...prev.action_data, ...data } }));
+  };
+
+  const handleToggleActive = (isActive: boolean) => {
+    setFormData(prev => ({ ...prev, is_active: isActive }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     try {
       setIsLoading(true);
       
-      // Validate conditional fields
-      if (data.trigger_type === "stage_change" && !data.trigger_stage_id) {
+      // Validate form data
+      if (!formData.stage) {
         toast.error("Selecione um estágio para o gatilho");
         return;
       }
       
-      if (data.trigger_type === "time_in_stage" && !data.trigger_stage_id) {
-        toast.error("Selecione um estágio para o gatilho");
-        return;
-      }
-      
-      if (data.trigger_type === "time_in_stage" && !data.trigger_time_hours) {
-        toast.error("Defina o tempo em horas para o gatilho");
-        return;
-      }
-      
-      if (data.action_type === "stage_change" && !data.action_stage_id) {
+      if (formData.action_type === 'stage_change' && !formData.next_stage) {
         toast.error("Selecione um estágio para a ação");
         return;
       }
       
-      if (data.action_type === "assign_user" && !data.action_user_id) {
-        toast.error("Selecione um usuário para atribuir");
-        return;
-      }
-      
-      if (data.action_type === "webhook" && !data.action_webhook_url) {
-        toast.error("Informe a URL do webhook");
-        return;
-      }
-      
-      const { error } = await supabase
-        .from("crm_automations")
-        .insert([data]);
+      // Insert automation data into the correct table
+      const { data, error } = await supabase
+        .from("crm_stage_automations")
+        .insert(formData)
+        .select();
 
       if (error) throw error;
       
       toast.success("Automação criada com sucesso!");
-      form.reset();
+      
+      // Reset form state
+      setFormData({
+        stage: '',
+        action_type: 'notification',
+        action_data: {},
+        is_active: true
+      });
       
       if (onSuccess) {
         onSuccess();
@@ -156,6 +180,17 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
     users,
     triggerType,
     actionType,
-    onSubmit: form.handleSubmit(onSubmit),
+    formData,
+    activeTab,
+    handleStageChange,
+    handleNextStageChange,
+    handleHoursTriggerChange,
+    handleTabChange,
+    handleActionDataChange,
+    handleToggleActive,
+    handleSubmit,
+    onSubmit: form.handleSubmit(values => {
+      console.log("Form values:", values);
+    }),
   };
 }

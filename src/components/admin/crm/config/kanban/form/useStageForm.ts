@@ -12,6 +12,7 @@ const stageSchema = z.object({
   color: z.string().min(1, "Cor é obrigatória"),
   department_id: z.string().min(1, "Departamento é obrigatório"),
   order: z.number().int().positive("Ordem deve ser um número positivo").optional(),
+  pipeline_id: z.string().optional(),
 });
 
 interface UseStageFormProps {
@@ -30,6 +31,7 @@ export const useStageForm = (onSuccess?: () => void, initialData?: Partial<Stage
       color: initialData?.color || "#3b82f6",
       department_id: initialData?.department_id || "",
       order: initialData?.order || 0,
+      pipeline_id: initialData?.pipeline_id || undefined,
     },
   });
 
@@ -67,6 +69,7 @@ export const useStageForm = (onSuccess?: () => void, initialData?: Partial<Stage
           color: values.color,
           department_id: values.department_id,
           order: values.order || 0,
+          pipeline_id: values.pipeline_id,
         })
         .select()
         .single();
@@ -79,6 +82,7 @@ export const useStageForm = (onSuccess?: () => void, initialData?: Partial<Stage
         color: "#3b82f6",
         department_id: values.department_id,
         order: 0,
+        pipeline_id: values.pipeline_id,
       });
 
       if (onSuccess) {

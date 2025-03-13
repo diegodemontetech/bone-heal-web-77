@@ -16,7 +16,7 @@ export interface CRMStage {
   name: string;
   color: string;
   order: number;
-  pipeline_id: string;
+  pipeline_id?: string;
   department_id?: string;
   created_at?: string;
   updated_at?: string;
@@ -89,4 +89,14 @@ export interface StageFormValues {
   color: string;
   department_id: string;
   order: number;
+  pipeline_id?: string;
+}
+
+export interface AutomationFormValues {
+  stage: string;
+  next_stage?: string;
+  hours_trigger?: number;
+  action_type: string;
+  action_data: any;
+  is_active: boolean;
 }

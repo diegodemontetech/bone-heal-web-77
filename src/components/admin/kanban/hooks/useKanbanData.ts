@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -105,8 +106,9 @@ export const useKanbanData = (): UseKanbanDataReturn => {
 
   const fetchLeads = useCallback(async (stageIds: string[]) => {
     try {
+      // Verifique se a tabela leads existe
       const { data: leadsData, error: leadsError } = await supabase
-        .from("crm_leads")
+        .from("leads")
         .select("*")
         .in("stage", stageIds);
 
@@ -162,7 +164,7 @@ export const useKanbanData = (): UseKanbanDataReturn => {
       setLoading(true);
 
       const { error: updateError } = await supabase
-        .from("crm_leads")
+        .from("leads")
         .update({ stage: newStageId })
         .eq("id", leadId);
 
