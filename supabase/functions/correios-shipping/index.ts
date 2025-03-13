@@ -55,7 +55,8 @@ serve(async (req) => {
     // Esta é uma simulação mais real, baseada em faixas de CEP
     const getBaseRateByRegion = (prefix: number) => {
       // Capitais e grandes centros (simplificação)
-      if ([010, 011, 012, 013, 020, 021, 022, 030, 040, 050, 060, 070, 080, 090].includes(prefix)) {
+      // Substituição dos valores octais por decimais
+      if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
         return 20; // Taxa base para grandes centros
       }
       
@@ -91,8 +92,8 @@ serve(async (req) => {
 
     // Determinar prazo de entrega baseado na região
     const getDeliveryDaysByRegion = (prefix: number, isExpress: boolean) => {
-      // Capitais e grandes centros
-      if ([010, 011, 012, 013, 020, 021, 022, 030, 040, 050, 060, 070, 080, 090].includes(prefix)) {
+      // Capitais e grandes centros - correção dos valores octais
+      if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
         return isExpress ? 1 : 4;
       }
       
