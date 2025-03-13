@@ -1,65 +1,38 @@
 
 import { GeminiAnalysisResult } from '../_shared/types.ts';
+import { callGeminiAPI } from './gemini-api-service.ts';
+import { parseGeminiResponse, generateFallbackAnalysis } from './response-analyzer.ts';
 
-// Analisa a mensagem usando Gemini API
+/**
+ * Analisa a mensagem usando Gemini API
+ * Função principal que coordena o fluxo de análise
+ * @param geminiApiKey Chave de API do Gemini
+ * @param message Mensagem a ser analisada
+ * @returns Resultado da análise ou null em caso de falha total
+ */
 export async function analyzeMessageWithGemini(
   geminiApiKey: string,
   message: string
 ): Promise<GeminiAnalysisResult | null> {
   try {
-    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": geminiApiKey
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `Você é Sueli, assistente virtual premium especializada em atendimento para dentistas e profissionais odontológicos. 
-            Você valoriza a cordialidade e oferece informações precisas sobre produtos odontológicos premium da Bone Heal. 
-            Responda de forma rápida, amigável e técnica.
-            
-            Analise a seguinte mensagem do cliente: "${message}"
-            
-            Forneça:
-            1. Uma resposta curta, cordial e profissional (máximo 3 parágrafos)
-            2. Classifique a intenção do cliente como: Curiosidade, Intenção de Compra, Orçamento ou Dúvida Técnica
-            3. Indique se o cliente deve ser transferido para um atendente humano (true/false)
-            
-            Formato da resposta:
-            {
-              "resposta": "Sua resposta aqui",
-              "intencao": "Curiosidade/Intenção de Compra/Orçamento/Dúvida Técnica",
-              "transferir": true/false
-            }`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 800
-        }
-      })
-    });
+    // 1. Chamar a API do Gemini
+    const geminiData = await callGeminiAPI(geminiApiKey, message);
     
-    const geminiData = await geminiResponse.json();
-    
-    if (geminiData.candidates && geminiData.candidates[0] && geminiData.candidates[0].content) {
-      const textContent = geminiData.candidates[0].content.parts[0].text;
+    // 2. Se houver resposta, analisar
+    if (geminiData) {
+      const parsedResult = parseGeminiResponse(geminiData);
       
-      try {
-        // Extrair o JSON da resposta
-        const jsonMatch = textContent.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      } catch (parseError) {
-        console.error('Erro ao processar resposta do Gemini:', parseError);
+      // 3. Se a análise for bem-sucedida, retornar o resultado
+      if (parsedResult) {
+        return parsedResult;
       }
     }
-  } catch (aiError) {
-    console.error('Erro ao consultar Gemini API:', aiError);
+    
+    // 4. Em caso de falha na chamada ou na análise, gerar resposta padrão
+    console.warn("Usando análise padrão devido a falha na API ou processamento");
+    return generateFallbackAnalysis(message);
+  } catch (error) {
+    console.error('Erro no processo de análise de mensagem:', error);
+    return null;
   }
-  
-  return null;
 }
