@@ -16,6 +16,7 @@ export interface ShippingAddress {
   number?: string;
   complement?: string;
   neighborhood?: string;
+  recipient_name?: string;
 }
 
 export interface Order {

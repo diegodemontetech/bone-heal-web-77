@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import {
   Table,
@@ -222,7 +221,7 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
                     #{formatShortId(order.id)}
                   </TableCell>
                   <TableCell>
-                    {order.profiles?.full_name || (order.shipping_address && order.shipping_address.recipient_name) || "Cliente não especificado"}
+                    {order.profiles?.full_name || (order.shipping_address && order.shipping_address.address) || "Cliente não especificado"}
                   </TableCell>
                   <TableCell>
                     {formatDate(order.created_at)}

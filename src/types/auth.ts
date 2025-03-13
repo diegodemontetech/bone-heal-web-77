@@ -1,4 +1,3 @@
-
 import { Session } from '@supabase/supabase-js';
 
 export enum UserRole {
@@ -15,7 +14,8 @@ export enum UserPermission {
   MANAGE_USERS = 'manage_users',
   VIEW_REPORTS = 'view_reports',
   MANAGE_SETTINGS = 'manage_settings',
-  MANAGE_INTEGRATIONS = 'manage_integrations'
+  MANAGE_INTEGRATIONS = 'manage_integrations',
+  MANAGE_LEADS = 'manage_leads'
 }
 
 export interface UserProfile {
