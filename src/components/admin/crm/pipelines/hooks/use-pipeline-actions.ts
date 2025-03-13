@@ -1,17 +1,34 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Pipeline } from "@/types/crm";
 
-export const usePipelineActions = () => {
+interface UsePipelineActionsReturn {
+  loading: boolean;
+  createPipeline: (data: Omit<Pipeline, "id">) => Promise<Pipeline | null>;
+  updatePipeline: (id: string, data: Partial<Pipeline>) => Promise<Pipeline | null>;
+  deletePipeline: (id: string) => Promise<boolean>;
+  duplicatePipeline: (pipeline: Pipeline) => Promise<Pipeline | null>;
+}
+
+interface UsePipelineActionsProps {
+  pipelines?: Pipeline[];
+  setPipelines?: React.Dispatch<React.SetStateAction<Pipeline[]>>;
+}
+
+export const usePipelineActions = (
+  pipelines?: Pipeline[],
+  setPipelines?: React.Dispatch<React.SetStateAction<Pipeline[]>>
+): UsePipelineActionsReturn => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const createPipeline = async (data: Omit<Pipeline, "id">) => {
+  const createPipeline = async (data: Omit<Pipeline, "id">): Promise<Pipeline | null> => {
     setLoading(true);
     try {
-      const result: { data: any; error: any } = await supabase
+      const result = await supabase
         .from("crm_pipelines")
         .insert({
           name: data.name,
@@ -24,7 +41,13 @@ export const usePipelineActions = () => {
       if (result.error) throw result.error;
 
       toast.success("Pipeline criado com sucesso!");
-      return result.data;
+      
+      // Atualizar o estado local se setPipelines for fornecido
+      if (setPipelines && pipelines) {
+        setPipelines([...pipelines, result.data as Pipeline]);
+      }
+      
+      return result.data as Pipeline;
     } catch (error: any) {
       console.error("Erro ao criar pipeline:", error);
       toast.error(`Erro ao criar pipeline: ${error.message}`);
@@ -34,10 +57,10 @@ export const usePipelineActions = () => {
     }
   };
 
-  const updatePipeline = async (id: string, data: Partial<Pipeline>) => {
+  const updatePipeline = async (id: string, data: Partial<Pipeline>): Promise<Pipeline | null> => {
     setLoading(true);
     try {
-      const result: { data: any; error: any } = await supabase
+      const result = await supabase
         .from("crm_pipelines")
         .update({
           name: data.name,
@@ -52,7 +75,13 @@ export const usePipelineActions = () => {
       if (result.error) throw result.error;
 
       toast.success("Pipeline atualizado com sucesso!");
-      return result.data;
+      
+      // Atualizar o estado local se setPipelines for fornecido
+      if (setPipelines && pipelines) {
+        setPipelines(pipelines.map(p => p.id === id ? { ...p, ...data } as Pipeline : p));
+      }
+      
+      return result.data as Pipeline;
     } catch (error: any) {
       console.error("Erro ao atualizar pipeline:", error);
       toast.error(`Erro ao atualizar pipeline: ${error.message}`);
@@ -62,7 +91,7 @@ export const usePipelineActions = () => {
     }
   };
 
-  const deletePipeline = async (id: string) => {
+  const deletePipeline = async (id: string): Promise<boolean> => {
     if (!window.confirm("Tem certeza que deseja excluir este pipeline? Esta ação não pode ser desfeita.")) {
       return false;
     }
@@ -77,6 +106,12 @@ export const usePipelineActions = () => {
       if (error) throw error;
 
       toast.success("Pipeline excluído com sucesso!");
+      
+      // Atualizar o estado local se setPipelines for fornecido
+      if (setPipelines && pipelines) {
+        setPipelines(pipelines.filter(p => p.id !== id));
+      }
+      
       navigate("/admin/crm/pipelines");
       return true;
     } catch (error: any) {
@@ -88,7 +123,7 @@ export const usePipelineActions = () => {
     }
   };
 
-  const duplicatePipeline = async (pipeline: Pipeline) => {
+  const duplicatePipeline = async (pipeline: Pipeline): Promise<Pipeline | null> => {
     setLoading(true);
     try {
       // 1. Criar novo pipeline
@@ -159,7 +194,13 @@ export const usePipelineActions = () => {
       }
 
       toast.success("Pipeline duplicado com sucesso!");
-      return newPipeline;
+      
+      // Atualizar o estado local se setPipelines for fornecido
+      if (setPipelines && pipelines) {
+        setPipelines([...pipelines, newPipeline as Pipeline]);
+      }
+      
+      return newPipeline as Pipeline;
     } catch (error: any) {
       console.error("Erro ao duplicar pipeline:", error);
       toast.error(`Erro ao duplicar pipeline: ${error.message}`);

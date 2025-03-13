@@ -2,13 +2,7 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-
-interface StageFormValues {
-  name: string;
-  color: string;
-  department_id: string;
-  order: number;
-}
+import { StageFormValues } from "@/types/crm";
 
 interface OrderInputProps {
   form: UseFormReturn<StageFormValues>;
@@ -28,6 +22,8 @@ export function OrderInput({ form }: OrderInputProps) {
               min="1"
               placeholder="Ordem de exibição"
               {...field} 
+              onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+              value={field.value || ''}
             />
           </FormControl>
           <FormMessage />

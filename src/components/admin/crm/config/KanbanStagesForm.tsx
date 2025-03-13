@@ -7,6 +7,7 @@ import { ColorSelector } from "./kanban/form/ColorSelector";
 import { OrderInput } from "./kanban/form/OrderInput";
 import { SubmitButton } from "./kanban/form/SubmitButton";
 import { useStageForm } from "./kanban/form/useStageForm";
+import { StageFormValues } from "@/types/crm";
 
 interface KanbanStagesFormProps {
   onSuccess?: () => void;

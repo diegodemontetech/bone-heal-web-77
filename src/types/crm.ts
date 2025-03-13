@@ -83,3 +83,10 @@ export interface Lead {
   assigned_to?: string;
   orders?: any[];
 }
+
+export interface StageFormValues {
+  name: string;
+  color: string;
+  department_id: string;
+  order: number;
+}

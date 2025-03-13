@@ -2,13 +2,7 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
-
-interface StageFormValues {
-  name: string;
-  color: string;
-  department_id: string;
-  order: number;
-}
+import { StageFormValues } from "@/types/crm";
 
 interface NameInputProps {
   form: UseFormReturn<StageFormValues>;
