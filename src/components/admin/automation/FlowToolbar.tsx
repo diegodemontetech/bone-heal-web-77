@@ -1,8 +1,7 @@
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Save, Play } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Save, Play, Undo, Redo } from "lucide-react";
 
 interface FlowToolbarProps {
   flowName: string;
@@ -24,33 +23,44 @@ const FlowToolbar = ({
   canExecute,
 }: FlowToolbarProps) => {
   return (
-    <div className="bg-background p-4 border-b flex justify-between items-center">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4 p-3 border-b bg-muted/20">
+      <div className="flex-1">
         <Input
+          placeholder="Nome do fluxo"
           value={flowName}
           onChange={(e) => onFlowNameChange(e.target.value)}
-          className="w-64 text-lg font-medium"
-          disabled
+          className="max-w-xs"
         />
-        <Badge variant={nodeCount > 0 ? "outline" : "secondary"}>
-          {nodeCount} nós
-        </Badge>
       </div>
+
+      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+        <span>{nodeCount} nós</span>
+      </div>
+
       <div className="flex items-center gap-2">
-        <Button 
-          onClick={onExecute} 
-          size="sm" 
+        <Button
+          size="sm"
           variant="outline"
+          title="Executar Fluxo"
+          onClick={onExecute}
           disabled={!canExecute}
         >
-          <Play className="mr-2 h-4 w-4" /> Executar
+          <Play className="mr-1 h-4 w-4" />
+          Executar
         </Button>
-        <Button 
-          onClick={onSave} 
-          disabled={isSaving}
-          size="sm"
-        >
-          <Save className="mr-2 h-4 w-4" /> {isSaving ? "Salvando..." : "Salvar"}
+
+        <Button size="sm" onClick={onSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <div className="mr-1 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-1 h-4 w-4" />
+              Salvar
+            </>
+          )}
         </Button>
       </div>
     </div>

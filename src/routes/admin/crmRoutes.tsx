@@ -9,6 +9,7 @@ const LeadsKanban = lazy(() => import("@/pages/admin/CRMLeads"));
 const CRMConfigPage = lazy(() => import("@/components/admin/crm/config/CRMConfigPage"));
 const LeadsPage = lazy(() => import("@/pages/admin/Leads"));
 const CreateLeadPage = lazy(() => import("@/pages/admin/CreateLead"));
+const AutomationFlowsPage = lazy(() => import("@/pages/admin/AutomationFlows"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -54,6 +55,16 @@ export const crmRoutes: RouteObject[] = [
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
           <CRMConfigPage />
+        </ProtectedRoute>
+      </Suspense>
+    )
+  },
+  {
+    path: "automacoes",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_LEADS}>
+          <AutomationFlowsPage />
         </ProtectedRoute>
       </Suspense>
     )

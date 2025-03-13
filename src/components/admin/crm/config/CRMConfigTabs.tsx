@@ -5,6 +5,9 @@ import { DepartmentForm } from "./DepartmentForm";
 import { FieldsForm } from "./FieldsForm";
 import KanbanConfig from "./KanbanConfig";
 import { AutomationForm } from "./AutomationForm";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 
 export function CRMConfigTabs() {
   const [activeTab, setActiveTab] = useState("departments");
@@ -52,6 +55,13 @@ export function CRMConfigTabs() {
         <p className="text-muted-foreground mb-6">
           Configure automações para executar ações quando leads mudam de estágio ou permanecem em um estágio por um determinado tempo.
         </p>
+        <div className="mb-6">
+          <Button asChild variant="outline" className="mb-6">
+            <Link to="/admin/automacoes">
+              Gerenciar Fluxos de Automação Avançados <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
         <AutomationForm onSuccess={() => {}} />
       </TabsContent>
     </Tabs>

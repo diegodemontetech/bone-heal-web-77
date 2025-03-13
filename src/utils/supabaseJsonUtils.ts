@@ -1,64 +1,42 @@
 
-import { Json } from '@/integrations/supabase/types';
-
 /**
- * Converte um objeto JavaScript para string JSON, tratando arrays vazios como arrays vazios
- * ao invés de null (comportamento que o Supabase espera).
+ * Utilitário para parse e stringify de arrays JSON para o Supabase
  */
-export const stringifyForSupabase = (obj: any): Json => {
-  if (Array.isArray(obj) && obj.length === 0) {
-    return [];
-  }
-  
-  if (obj === null || obj === undefined) {
-    return [];
-  }
-  
-  return obj;
+
+// Converte um array ou objeto em uma string JSON segura para o Supabase
+export const stringifyForSupabase = <T>(data: T): string => {
+  if (!data) return '[]';
+  return JSON.stringify(data);
 };
 
-/**
- * Parse um objeto JSON do Supabase para um array, com fallback caso seja null
- */
-export const parseJsonArray = <T>(json: Json | null, fallback: T[]): T[] => {
-  if (!json) return fallback;
+// Converte uma string JSON do Supabase em um array ou objeto com tipo
+export const parseJsonArray = <T>(json: string | any[] | null, defaultValue: T[]): T[] => {
+  if (!json) return defaultValue;
   
-  if (Array.isArray(json)) {
-    return json as T[];
-  }
+  // Se já for um array, retorna diretamente
+  if (Array.isArray(json)) return json as unknown as T[];
   
   try {
-    if (typeof json === 'string') {
-      const parsed = JSON.parse(json);
-      return Array.isArray(parsed) ? parsed : fallback;
-    }
-  } catch (e) {
-    console.error('Erro ao parsear JSON array:', e);
+    // Tenta fazer o parse da string JSON
+    return JSON.parse(json) as T[];
+  } catch (error) {
+    console.error('Erro ao fazer parse de JSON:', error);
+    return defaultValue;
   }
-  
-  return fallback;
 };
 
-/**
- * Parse um objeto JSON do Supabase para um objeto, com fallback caso seja null
- */
-export const parseJsonObject = <T extends object>(json: Json | null, fallback: T): T => {
-  if (!json) return fallback;
+// Converte uma string JSON do Supabase em um objeto com tipo
+export const parseJsonObject = <T>(json: string | object | null, defaultValue: T): T => {
+  if (!json) return defaultValue;
   
-  if (typeof json === 'object' && !Array.isArray(json) && json !== null) {
-    return json as T;
-  }
+  // Se já for um objeto e não um array, retorna diretamente
+  if (typeof json === 'object' && !Array.isArray(json)) return json as unknown as T;
   
   try {
-    if (typeof json === 'string') {
-      const parsed = JSON.parse(json);
-      return typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null
-        ? parsed
-        : fallback;
-    }
-  } catch (e) {
-    console.error('Erro ao parsear JSON object:', e);
+    // Tenta fazer o parse da string JSON
+    return JSON.parse(json as string) as T;
+  } catch (error) {
+    console.error('Erro ao fazer parse de JSON:', error);
+    return defaultValue;
   }
-  
-  return fallback;
 };

@@ -1,70 +1,119 @@
 
-// Simuladores de ações para diferentes tipos de nós
-export function simulateAction(service: string, action: string, inputData: any): any {
-  // Simulação de ações
-  switch (service) {
-    case 'email':
-      return {
-        success: true,
-        action: "Enviou email",
-        to: inputData.email || "destinatario@exemplo.com",
-        subject: "Assunto do email",
-        data: inputData
-      };
-    
-    case 'whatsapp':
-      return {
-        success: true,
-        action: "Enviou mensagem WhatsApp",
-        to: inputData.phone || "+5511999999999",
-        message: "Conteúdo da mensagem",
-        data: inputData
-      };
-    
-    case 'database':
-      return {
-        success: true,
-        action: "Atualizou registro",
-        table: "users",
-        id: inputData.id || "123",
-        fields: { updated: true },
-        data: inputData
-      };
-    
-    default:
-      return {
-        success: true,
-        action: `Executou ${action} em ${service}`,
-        data: inputData
-      };
-  }
-}
+// Simuladores para ações e condições durante execução de fluxos de trabalho
 
-export function simulateCondition(action: string, inputData: any): any {
-  // Simulação de condições
-  if (action === "filter") {
-    // Simular alguma lógica de filtro
-    const result = Math.random() > 0.5;
-    return {
-      condition: "filter",
-      result,
-      data: inputData
-    };
+export const simulateAction = (service: string, action: string, data: any) => {
+  console.log(`Simulando ação: ${service}.${action} com dados:`, data);
+  
+  // Simular diferentes tipos de ações
+  switch (service) {
+    case "email":
+      if (action === "sendEmail") {
+        return {
+          success: true,
+          messageId: `sim-${Date.now()}`,
+          to: data.email || "destinatario@exemplo.com",
+          message: "Email enviado com sucesso (simulação)"
+        };
+      }
+      break;
+      
+    case "whatsapp":
+      if (action === "sendMessage") {
+        return {
+          success: true,
+          messageId: `whats-${Date.now()}`,
+          to: data.phone || "5511999999999",
+          message: "Mensagem WhatsApp enviada com sucesso (simulação)"
+        };
+      }
+      break;
+      
+    case "crm":
+      if (action === "updateLead") {
+        return {
+          success: true,
+          leadId: data.id || "lead-id",
+          updatedFields: data.fields || {},
+          message: "Lead atualizado com sucesso (simulação)"
+        };
+      }
+      break;
+      
+    case "notification":
+      if (action === "sendNotification") {
+        return {
+          success: true,
+          notificationId: `notif-${Date.now()}`,
+          message: "Notificação enviada com sucesso (simulação)"
+        };
+      }
+      break;
   }
   
-  if (action === "errorCheck") {
-    // Verificar se há erro nos dados de entrada
-    const hasError = inputData.error !== undefined;
-    return {
-      condition: "errorCheck",
-      result: !hasError,
-      data: inputData
-    };
-  }
-  
+  // Retorno padrão para ações não específicas
   return {
-    condition: action,
-    result: true,
-    data: inputData
+    success: true,
+    action: `${service}.${action}`,
+    timestamp: new Date().toISOString(),
+    simulatedResponse: "Esta é uma resposta simulada para fins de teste"
   };
-}
+};
+
+export const simulateCondition = (action: string, data: any) => {
+  console.log(`Simulando condição: ${action} com dados:`, data);
+  
+  switch (action) {
+    case "filter":
+      // Simular verificação de condição baseada em um campo específico
+      const fieldValue = data.fieldToCheck ? data.value : null;
+      const condition = data.condition || "equals";
+      const targetValue = data.targetValue;
+      
+      let result = false;
+      if (fieldValue) {
+        switch (condition) {
+          case "equals":
+            result = fieldValue === targetValue;
+            break;
+          case "contains":
+            result = String(fieldValue).includes(String(targetValue));
+            break;
+          case "greaterThan":
+            result = Number(fieldValue) > Number(targetValue);
+            break;
+          case "lessThan":
+            result = Number(fieldValue) < Number(targetValue);
+            break;
+          default:
+            result = true;
+        }
+      }
+      
+      return {
+        success: true,
+        result,
+        condition,
+        fieldValue,
+        targetValue,
+        message: `Condição avaliada como ${result ? 'verdadeira' : 'falsa'} (simulação)`
+      };
+      
+    case "errorCheck":
+      // Verifica se há um erro nas etapas anteriores
+      const hasError = data.error !== undefined;
+      return {
+        success: true,
+        result: hasError,
+        message: hasError ? "Erro detectado" : "Nenhum erro detectado"
+      };
+      
+    default:
+      // Condição genérica - alterna entre verdadeiro e falso para testes
+      const randomResult = Math.random() > 0.5;
+      return {
+        success: true,
+        result: randomResult,
+        message: `Condição avaliada como ${randomResult ? 'verdadeira' : 'falsa'} (aleatório para testes)`
+      };
+  }
+};

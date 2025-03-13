@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Plus, Search, X } from "lucide-react";
+import { PlusCircle, RefreshCw } from "lucide-react";
 
 interface NoFlowsMessageProps {
   onCreateNew: () => void;
@@ -8,24 +8,38 @@ interface NoFlowsMessageProps {
   onClearSearch?: () => void;
 }
 
-const NoFlowsMessage = ({ onCreateNew, hasSearch, onClearSearch }: NoFlowsMessageProps) => {
+const NoFlowsMessage = ({ 
+  onCreateNew,
+  hasSearch = false,
+  onClearSearch
+}: NoFlowsMessageProps) => {
   return (
-    <div className="text-center py-8 border rounded-lg">
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="mb-4 p-3 rounded-full bg-muted">
+        {hasSearch ? (
+          <RefreshCw className="h-8 w-8 text-muted-foreground" />
+        ) : (
+          <PlusCircle className="h-8 w-8 text-muted-foreground" />
+        )}
+      </div>
+      
       {hasSearch ? (
         <>
-          <Search className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-muted-foreground mb-4">Nenhum fluxo de trabalho encontrado com este termo de busca</p>
-          {onClearSearch && (
-            <Button variant="outline" onClick={onClearSearch}>
-              <X className="mr-2 h-4 w-4" /> Limpar Busca
-            </Button>
-          )}
+          <h3 className="text-lg font-medium mb-2">Nenhum fluxo encontrado</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Não foi possível encontrar fluxos com os termos de busca utilizados.
+          </p>
+          <Button onClick={onClearSearch}>Limpar Busca</Button>
         </>
       ) : (
         <>
-          <p className="text-muted-foreground mb-4">Nenhum fluxo de trabalho encontrado</p>
+          <h3 className="text-lg font-medium mb-2">Nenhum fluxo criado</h3>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Você ainda não criou nenhum fluxo de automação. Crie o primeiro para começar.
+          </p>
           <Button onClick={onCreateNew}>
-            <Plus className="mr-2 h-4 w-4" /> Criar Primeiro Fluxo
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Criar Novo Fluxo
           </Button>
         </>
       )}
