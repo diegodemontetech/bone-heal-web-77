@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,10 @@ const CRMPipelinesPage = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPipeline, setCurrentPipeline] = useState<Pipeline | null>(null);
-  const { deletePipeline, duplicatePipeline } = usePipelineActions(pipelines, setPipelines);
+  const { deletePipeline, duplicatePipeline, handleActivate, handleDeactivate } = usePipelineActions({
+    pipelines,
+    onPipelinesChange: setPipelines
+  });
 
   useEffect(() => {
     fetchPipelines();

@@ -1,4 +1,3 @@
-
 import { Json } from "@/integrations/supabase/types";
 
 export interface Pipeline {
@@ -88,15 +87,22 @@ export interface StageFormValues {
   name: string;
   color: string;
   department_id: string;
-  order: number;
+  order?: number;
   pipeline_id?: string;
 }
 
 export interface AutomationFormValues {
-  stage: string;
-  next_stage?: string;
+  name?: string; 
+  description?: string;
+  is_active?: boolean;
+  action_type?: "stage_change" | "notification" | "assign_user" | "webhook";
+  trigger_type?: "stage_change" | "time_in_stage" | "lead_created";
+  stage_id?: string;
+  next_stage_id?: string;
   hours_trigger?: number;
-  action_type: string;
-  action_data: any;
-  is_active: boolean;
+  user_id?: string;
+  email_template_id?: string;
+  webhook_url?: string;
+  action_data?: any;
+  action_webhook_url?: string;
 }

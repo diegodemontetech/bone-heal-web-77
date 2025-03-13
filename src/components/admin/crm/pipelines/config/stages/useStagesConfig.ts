@@ -10,8 +10,12 @@ interface StageFormData {
   color: string;
 }
 
+interface StageWithPipeline extends CRMStage {
+  pipeline_id: string;
+}
+
 export const useStagesConfig = (pipelineId: string) => {
-  const [stages, setStages] = useState<CRMStage[]>([]);
+  const [stages, setStages] = useState<StageWithPipeline[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -35,7 +39,7 @@ export const useStagesConfig = (pipelineId: string) => {
         const formattedStages = data.map(stage => ({
           ...stage,
           pipeline_id: stage.pipeline_id || pipelineId
-        })) as CRMStage[];
+        })) as StageWithPipeline[];
         
         setStages(formattedStages);
       }
@@ -73,7 +77,7 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        const newStageWithCorrectType: CRMStage = {
+        const newStageWithCorrectType: StageWithPipeline = {
           ...data,
           pipeline_id: data.pipeline_id || pipelineId
         };
@@ -110,7 +114,7 @@ export const useStagesConfig = (pipelineId: string) => {
     }
   };
 
-  const handleUpdateStage = async (stage: CRMStage, field: string, value: string) => {
+  const handleUpdateStage = async (stage: StageWithPipeline, field: string, value: string) => {
     const updatedStage = { ...stage, [field]: value };
     
     try {

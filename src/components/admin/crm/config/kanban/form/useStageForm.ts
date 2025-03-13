@@ -20,7 +20,7 @@ interface UseStageFormProps {
   initialData?: Partial<StageFormValues>;
 }
 
-export const useStageForm = (onSuccess?: () => void, initialData?: Partial<StageFormValues>) => {
+export const useStageForm = ({ onSuccess, initialData }: UseStageFormProps = {}) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 

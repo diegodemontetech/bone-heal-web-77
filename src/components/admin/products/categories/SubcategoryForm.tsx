@@ -78,10 +78,13 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
+      const defaultFields = fields as Record<string, any>;
+      
       const upsertData = {
-        ...values,
+        name: values.name,
+        description: values.description,
         category_id: category.id,
-        default_fields: fields as Json,
+        default_fields: defaultFields,
       };
 
       let response;

@@ -285,7 +285,7 @@ const DepartmentsPage = () => {
         open={openCategoryForm}
         onClose={() => setOpenCategoryForm(false)}
         onSuccess={fetchData}
-        departmentId={selectedDepartmentId}
+        department={selectedDepartmentId}
         category={editCategory}
       />
       <SubcategoryForm

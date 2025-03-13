@@ -3,13 +3,14 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { Pipeline } from "@/types/crm";
 
-// Interface simplificada para Pipeline
 interface SimplePipeline {
   id: string;
   name: string;
   description?: string;
   is_active?: boolean;
+  form_url?: string;
 }
 
 interface UsePipelineActionsProps {
@@ -115,6 +116,9 @@ export const usePipelineActions = ({
       setIsLoading(false);
     }
   };
+
+  // Aliases para manter compatibilidade com a versão anterior
+  const deletePipeline = handleDelete;
   
   const handleConfigure = (id: string) => {
     navigate(`/admin/pipelines/${id}/configurar`);
@@ -134,6 +138,39 @@ export const usePipelineActions = ({
       });
   };
 
+  const duplicatePipeline = async (pipeline: Pipeline) => {
+    try {
+      setIsLoading(true);
+      
+      const duplicateName = `${pipeline.name} (cópia)`;
+      
+      // Create a new pipeline based on the original
+      const { data, error } = await supabase
+        .from("crm_pipelines")
+        .insert({
+          name: duplicateName,
+          description: pipeline.description,
+          is_active: false // Start inactive by default
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Update local state to include the new pipeline
+      if (data && onPipelinesChange) {
+        onPipelinesChange([data, ...pipelines]);
+      }
+      
+      toast.success("Pipeline duplicado com sucesso");
+    } catch (error: any) {
+      console.error("Erro ao duplicar pipeline:", error);
+      toast.error(error.message || "Erro ao duplicar pipeline");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     handleActivate,
@@ -141,6 +178,8 @@ export const usePipelineActions = ({
     handleDelete,
     handleConfigure,
     handleView,
-    handleCopyUrl
+    handleCopyUrl,
+    deletePipeline,
+    duplicatePipeline
   };
 };
