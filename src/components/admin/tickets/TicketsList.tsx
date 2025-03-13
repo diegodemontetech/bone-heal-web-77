@@ -1,8 +1,6 @@
 
 import { Loader2 } from "lucide-react";
 import TicketItem from "./TicketItem";
-import TicketStatusBadge from "./TicketStatusBadge";
-import TicketPriorityBadge from "./TicketPriorityBadge";
 
 interface TicketsListProps {
   tickets: any[] | null;
@@ -10,6 +8,7 @@ interface TicketsListProps {
   categoryLabels: {
     status: Record<string, string>;
     priority: Record<string, string>;
+    category: Record<string, string>; // Adicionado o campo category aqui
   };
 }
 

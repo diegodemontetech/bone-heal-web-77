@@ -1,8 +1,6 @@
 
 import { useState } from "react";
 import TicketsList from "./TicketsList";
-import TicketStatusBadge from "./TicketStatusBadge";
-import TicketPriorityBadge from "./TicketPriorityBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,7 +33,8 @@ const TicketsContent = ({ tickets, isLoading, agents }: TicketsContentProps) => 
       support: 'Suporte Técnico',
       sales: 'Vendas',
       logistics: 'Entregas (Logística)',
-      financial: 'Financeiro'
+      financial: 'Financeiro',
+      general: 'Geral'
     }
   };
 
