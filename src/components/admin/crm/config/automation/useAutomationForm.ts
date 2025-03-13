@@ -11,12 +11,12 @@ const automationSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   description: z.string().optional(),
   trigger_type: z.enum(["stage_change", "time_in_stage", "lead_created"]),
-  trigger_stage_id: z.string().optional(),
-  trigger_time_hours: z.coerce.number().int().min(1).optional(),
+  stage_id: z.string().optional(),
+  hours_trigger: z.coerce.number().int().min(1).optional(),
   action_type: z.enum(["notification", "stage_change", "assign_user", "webhook"]),
-  action_stage_id: z.string().optional(),
-  action_user_id: z.string().optional(),
-  action_webhook_url: z.string().url().optional(),
+  next_stage_id: z.string().optional(),
+  user_id: z.string().optional(),
+  webhook_url: z.string().url().optional(),
   is_active: z.boolean().default(true),
 });
 
@@ -31,14 +31,7 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [formData, setFormData] = useState<{
-    stage_id?: string;
-    next_stage_id?: string;
-    hours_trigger?: number;
-    action_type: "notification" | "stage_change" | "assign_user" | "webhook";
-    action_data?: any;
-    is_active: boolean;
-  }>({
+  const [formData, setFormData] = useState<AutomationFormValues>({
     stage_id: '',
     action_type: 'notification',
     action_data: {},
@@ -155,8 +148,8 @@ export function useAutomationForm({ onSuccess }: UseAutomationFormProps = {}) {
       
       // Prepare data for insertion
       const dataToInsert = {
-        stage_id: formData.stage_id,
-        next_stage_id: formData.next_stage_id,
+        stage: formData.stage_id,  // Renomeando para corresponder à coluna do banco
+        next_stage: formData.next_stage_id,  // Renomeando para corresponder à coluna do banco
         hours_trigger: formData.hours_trigger,
         action_type: formData.action_type,
         action_data: formData.action_data,

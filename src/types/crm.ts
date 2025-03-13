@@ -84,6 +84,7 @@ export interface Lead {
   orders?: any[];
 }
 
+// Corrigindo a interface StageFormValues para garantir que os campos correspondam com o uso
 export interface StageFormValues {
   name: string;
   color: string;
