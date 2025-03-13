@@ -29,12 +29,13 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
           if (currentSession?.session) {
             // Armazenar sessão para restaurar depois
             window.adminSessionBeforeSignUp = currentSession.session;
-            console.log("Sessão de admin armazenada para restauração posterior");
+            console.log("Sessão de admin armazenada para restauração posterior", currentSession.session);
           }
         }
         
         // Cadastrar cliente sem fazer login
-        await handleModalRegistration(data, onSuccess);
+        const customerData = await handleModalRegistration(data, onSuccess);
+        console.log("Cliente cadastrado com sucesso através do modal:", customerData);
       } else {
         // Fazer cadastro com autenticação (fluxo original)
         const signUpResult = await handleNormalRegistration(data, signUp);

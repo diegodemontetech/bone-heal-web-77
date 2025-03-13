@@ -14,6 +14,7 @@ export const useLoginPage = () => {
   const [redirectAttempted, setRedirectAttempted] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [connectionRetries, setConnectionRetries] = useState(0);
+  const [maxRetries] = useState(3); // Máximo de tentativas automáticas
 
   // Obter o caminho de redirecionamento da navegação
   const fromPath = location.state?.from || location.pathname;
@@ -29,13 +30,14 @@ export const useLoginPage = () => {
         return;
       }
 
+      console.log(`Tentativa ${connectionRetries + 1} de verificar sessão`);
       const { data, error } = await supabase.auth.getSession();
       
       if (error) {
         console.error("Erro ao verificar sessão:", error);
         
         // Se já tentamos algumas vezes sem sucesso, considere como erro de conexão
-        if (connectionRetries >= 2) {
+        if (connectionRetries >= maxRetries) {
           setConnectionError(true);
           toast.error("Não foi possível conectar ao servidor. Verifique sua conexão.");
         } else {
@@ -48,17 +50,18 @@ export const useLoginPage = () => {
         setConnectionError(false);
         setCurrentSession(data.session);
         setSessionLoading(false);
+        console.log("Sessão verificada com sucesso:", data.session?.user?.id);
       }
     } catch (error) {
       console.error("Erro ao verificar sessão:", error);
       setConnectionError(true);
       setSessionLoading(false);
     }
-  }, [connectionRetries]);
+  }, [connectionRetries, maxRetries]);
 
   // Verificar a sessão atual usando diretamente o cliente Supabase
   useEffect(() => {
-    // Define um timeout mais curto para a verificação da sessão (8 segundos)
+    // Define um timeout mais curto para a verificação da sessão (10 segundos)
     const timeoutId = setTimeout(() => {
       if (sessionLoading) {
         console.log("Timeout da verificação de sessão");
@@ -73,7 +76,7 @@ export const useLoginPage = () => {
           toast.error("Tempo limite excedido. O servidor pode estar temporariamente indisponível.");
         }
       }
-    }, 8000);
+    }, 10000);
     
     checkSession();
     

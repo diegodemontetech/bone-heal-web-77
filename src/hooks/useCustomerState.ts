@@ -12,7 +12,8 @@ export interface Customer {
   city?: string;
   state?: string;
   zip_code?: string;
-  omie_code?: string; // Adicionado código Omie
+  omie_code?: string;
+  omie_sync?: boolean;
 }
 
 export const useCustomerState = () => {
@@ -28,7 +29,7 @@ export const useCustomerState = () => {
       
       let query = supabase
         .from('profiles')
-        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code')
+        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync')
         .order('full_name');
 
       if (searchTerm) {
@@ -55,7 +56,8 @@ export const useCustomerState = () => {
         city: customer.city,
         state: customer.state,
         zip_code: customer.zip_code,
-        omie_code: customer.omie_code // Incluindo código Omie
+        omie_code: customer.omie_code,
+        omie_sync: customer.omie_sync
       })) : [];
 
       console.log(`Clientes encontrados no Supabase:`, formattedCustomers);

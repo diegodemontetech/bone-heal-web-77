@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomerDisplay } from "./CustomerDisplay";
-import { Search, UserPlus, X } from "lucide-react";
+import { Search, UserPlus, X, CheckCircle, XCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import RegistrationForm from "@/components/auth/RegistrationForm";
 import { useState } from "react";
@@ -67,7 +67,21 @@ export const CustomerSelection = ({
                   className="p-3 border-b last:border-0 hover:bg-gray-50 cursor-pointer"
                   onClick={() => setSelectedCustomer(customer)}
                 >
-                  <p className="font-medium">{customer.full_name}</p>
+                  <div className="flex justify-between">
+                    <p className="font-medium">{customer.full_name}</p>
+                    {customer.omie_sync && (
+                      <span className="text-xs inline-flex items-center text-green-600">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Omie
+                      </span>
+                    )}
+                    {customer.omie_code && !customer.omie_sync && (
+                      <span className="text-xs inline-flex items-center text-yellow-600">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        {customer.omie_code}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {customer.email} {customer.phone && `• ${customer.phone}`}
                   </p>

@@ -45,6 +45,10 @@ export const handleModalRegistration = async (data: FormData, onSuccess?: (custo
       return existingUsers;
     }
     
+    // Armazenar a sessão atual antes de fazer qualquer alteração
+    const { data: adminSession } = await supabase.auth.getSession();
+    console.log("Sessão admin capturada antes do signUp:", adminSession?.session?.user?.id);
+    
     // Criar um novo usuário/perfil sem fazer autenticação
     const { data: newUser, error: createError } = await supabase.auth.signUp({
       email: data.email,
@@ -101,6 +105,21 @@ export const handleModalRegistration = async (data: FormData, onSuccess?: (custo
     try {
       const syncedData = await syncCustomerWithOmie(profileData);
       console.log("Cliente sincronizado com Omie:", syncedData);
+      
+      // Atualizar o status de sincronização do cliente
+      if (syncedData?.omie_code) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ 
+            omie_sync: true,
+            omie_code: syncedData.omie_code
+          })
+          .eq('id', newUser.user.id);
+        
+        if (updateError) {
+          console.error("Erro ao atualizar status de sincronização:", updateError);
+        }
+      }
     } catch (omieError) {
       console.error("Erro na resposta da API Omie:", omieError);
       console.warn("Continuando com o cliente não-sincronizado...");
@@ -111,16 +130,40 @@ export const handleModalRegistration = async (data: FormData, onSuccess?: (custo
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
       console.error("Erro ao fazer logout após cadastro:", signOutError);
-    } else {
-      // Restaurar a sessão anterior do admin (obtido antes do signUp)
-      if (window.adminSessionBeforeSignUp) {
+    } 
+    
+    // Restaurar a sessão anterior do admin (obtido antes do signUp)
+    if (window.adminSessionBeforeSignUp) {
+      try {
+        console.log("Tentando restaurar sessão admin salva:", window.adminSessionBeforeSignUp.user.id);
+        await supabase.auth.setSession(window.adminSessionBeforeSignUp);
+        console.log("Sessão do admin restaurada com sucesso");
+        
+        // Verificar se a restauração funcionou
+        const { data: sessionCheck } = await supabase.auth.getSession();
+        console.log("Sessão após restauração:", sessionCheck?.session?.user?.id);
+        
+        // Limpar a sessão armazenada
+        delete window.adminSessionBeforeSignUp;
+      } catch (err) {
+        console.error("Erro ao restaurar sessão do admin:", err);
+        
+        // Se falhar, tente fazer login novamente com a sessão armazenada
         try {
-          await supabase.auth.setSession(window.adminSessionBeforeSignUp);
-          console.log("Sessão do admin restaurada com sucesso");
-          delete window.adminSessionBeforeSignUp;
-        } catch (err) {
-          console.error("Erro ao restaurar sessão do admin:", err);
+          await supabase.auth.setSession(adminSession?.session || {});
+          console.log("Sessão alternativa do admin restaurada");
+        } catch (errAlt) {
+          console.error("Erro ao restaurar sessão alternativa do admin:", errAlt);
         }
+      }
+    } else if (adminSession?.session) {
+      // Tente restaurar usando a sessão capturada no início da função
+      try {
+        console.log("Tentando restaurar sessão admin capturada:", adminSession.session.user.id);
+        await supabase.auth.setSession(adminSession.session);
+        console.log("Sessão admin capturada restaurada com sucesso");
+      } catch (err) {
+        console.error("Erro ao restaurar sessão admin capturada:", err);
       }
     }
     
