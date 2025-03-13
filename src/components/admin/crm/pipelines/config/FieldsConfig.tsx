@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { CRMField } from "@/types/crm";
@@ -23,7 +22,19 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentField, setCurrentField] = useState<CRMField | null>(null);
-  const [formData, setFormData] = useState({
+  // Usando type simples em vez de interface para evitar recursão infinita
+  type FormDataType = {
+    name: string;
+    label: string;
+    type: string;
+    required: boolean;
+    display_in_kanban: boolean;
+    options: string;
+    mask: string;
+    default_value: string;
+  };
+  
+  const [formData, setFormData] = useState<FormDataType>({
     name: "",
     label: "",
     type: "text",
