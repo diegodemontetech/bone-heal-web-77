@@ -30,18 +30,19 @@ export const useCustomerState = () => {
       console.log("[useCustomerState] Iniciando busca de clientes com termo:", searchTerm);
       setIsLoadingCustomers(true);
       
-      // Buscar apenas na tabela profiles
+      // Buscar apenas na tabela profiles, excluindo o cliente de teste
       let query = supabase
         .from('profiles')
-        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync');
+        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync')
+        .neq('id', TEST_CLIENT_ID);
       
-      if (searchTerm) {
+      if (searchTerm && searchTerm.trim() !== "") {
         // Verificar se a busca parece ser um código numérico
         const isNumericSearch = /^\d+$/.test(searchTerm.trim());
         
         if (isNumericSearch) {
           query = query.or(
-            `full_name.ilike.%${searchTerm}%,omie_code.ilike.%${searchTerm}%`
+            `full_name.ilike.%${searchTerm}%,omie_code.eq.${searchTerm}`
           );
         } else {
           query = query.or(
@@ -62,21 +63,19 @@ export const useCustomerState = () => {
         throw profilesError;
       }
 
-      // Formatar os dados de cliente diretamente dos perfis e filtrar o cliente de teste
-      const formattedCustomers = profilesData
-        .filter(profile => profile.id !== TEST_CLIENT_ID) // Remove o cliente de teste
-        .map(profile => ({
-          id: profile.id,
-          full_name: profile.full_name || 'Sem nome',
-          email: profile.email,
-          phone: profile.phone,
-          address: profile.address,
-          city: profile.city,
-          state: profile.state,
-          zip_code: profile.zip_code,
-          omie_code: profile.omie_code,
-          omie_sync: profile.omie_sync
-        }));
+      // Formatar os dados de cliente diretamente dos perfis
+      const formattedCustomers = (profilesData || []).map(profile => ({
+        id: profile.id,
+        full_name: profile.full_name || 'Sem nome',
+        email: profile.email,
+        phone: profile.phone,
+        address: profile.address,
+        city: profile.city,
+        state: profile.state,
+        zip_code: profile.zip_code,
+        omie_code: profile.omie_code,
+        omie_sync: profile.omie_sync
+      }));
 
       console.log(`[useCustomerState] Encontrados ${formattedCustomers.length} clientes na busca`);
       setCustomers(formattedCustomers);

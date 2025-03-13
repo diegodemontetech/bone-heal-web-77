@@ -18,9 +18,6 @@ interface CustomerSelectionProps {
   setSearchTerm: (term: string) => void;
 }
 
-// ID do cliente de teste que queremos excluir da exibição
-const TEST_CLIENT_ID = "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3";
-
 export const CustomerSelection = ({
   customers,
   isLoadingCustomers,
@@ -30,9 +27,6 @@ export const CustomerSelection = ({
   setSearchTerm,
 }: CustomerSelectionProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  // Filtra o cliente de teste da lista de clientes
-  const filteredCustomers = customers.filter(customer => customer.id !== TEST_CLIENT_ID);
 
   const handleRegistrationSuccess = (newCustomer: any) => {
     console.log("CustomerSelection: recebeu callback com cliente:", newCustomer);
@@ -66,8 +60,8 @@ export const CustomerSelection = ({
               <div className="flex justify-center p-4">
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
               </div>
-            ) : filteredCustomers.length > 0 ? (
-              filteredCustomers.map(customer => (
+            ) : customers.length > 0 ? (
+              customers.map(customer => (
                 <div
                   key={customer.id}
                   className="p-3 border-b last:border-0 hover:bg-gray-50 cursor-pointer"

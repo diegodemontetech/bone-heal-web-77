@@ -24,7 +24,8 @@ export const useOrderCustomers = () => {
         // Consulta diretamente na tabela profiles
         let query = supabase
           .from("profiles")
-          .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync");
+          .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync")
+          .neq('id', TEST_CLIENT_ID); // Exclui o cliente de teste independente do termo de busca
         
         // Aplicar filtro apenas se houver termo de busca
         if (customerSearchTerm && customerSearchTerm.trim() !== "") {
@@ -32,7 +33,7 @@ export const useOrderCustomers = () => {
           const isNumericSearch = /^\d+$/.test(customerSearchTerm.trim());
           
           if (isNumericSearch) {
-            query = query.or(`full_name.ilike.%${customerSearchTerm}%,omie_code.ilike.%${customerSearchTerm}%`);
+            query = query.or(`full_name.ilike.%${customerSearchTerm}%,omie_code.eq.${customerSearchTerm}`);
           } else {
             query = query.or(
               `full_name.ilike.%${customerSearchTerm}%,` +
@@ -52,25 +53,23 @@ export const useOrderCustomers = () => {
           throw profilesError;
         }
         
-        console.log(`[useOrderCustomers] Encontrados ${profilesData.length} clientes na busca`);
+        console.log(`[useOrderCustomers] Encontrados ${profilesData?.length || 0} clientes na busca`);
         
-        // Garantir que todos os clientes tenham os campos necessários e remover o cliente de teste
-        const formattedCustomers = profilesData
-          .filter(profile => profile.id !== TEST_CLIENT_ID) // Remove o cliente de teste
-          .map(profile => ({
-            id: profile.id,
-            full_name: profile.full_name || "Nome não informado",
-            email: profile.email || "",
-            phone: profile.phone || "",
-            address: profile.address || "",
-            city: profile.city || "",
-            state: profile.state || "",
-            zip_code: profile.zip_code || "",
-            omie_code: profile.omie_code || "",
-            omie_sync: profile.omie_sync || false
-          }));
+        // Garantir que todos os clientes tenham os campos necessários
+        const formattedCustomers = (profilesData || []).map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name || "Nome não informado",
+          email: profile.email || "",
+          phone: profile.phone || "",
+          address: profile.address || "",
+          city: profile.city || "",
+          state: profile.state || "",
+          zip_code: profile.zip_code || "",
+          omie_code: profile.omie_code || "",
+          omie_sync: profile.omie_sync || false
+        }));
 
-        console.log(`[useOrderCustomers] Retornando ${formattedCustomers.length} clientes após filtragem`);
+        console.log(`[useOrderCustomers] Retornando ${formattedCustomers.length} clientes após formatação`);
         return formattedCustomers;
       } catch (error) {
         console.error("[useOrderCustomers] Exceção na consulta de clientes:", error);
