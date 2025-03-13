@@ -24,8 +24,8 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentField, setCurrentField] = useState<CRMField | null>(null);
   
-  // Definindo o tipo diretamente para evitar recursão infinita
-  interface FieldFormData {
+  // Interface separada para evitar recursão infinita na tipagem
+  type FieldFormData = {
     name: string;
     label: string;
     type: string;
@@ -34,7 +34,7 @@ export const FieldsConfig = ({ pipelineId }: FieldsConfigProps) => {
     options: string;
     mask: string;
     default_value: string;
-  }
+  };
   
   const [formData, setFormData] = useState<FieldFormData>({
     name: "",

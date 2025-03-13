@@ -73,7 +73,7 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
 
   const handleAddField = (fieldName: string, value: any) => {
     setFields(prev => {
-      // Tratamento específico para garantir que o valor seja sempre um objeto se não for um tipo primitivo
+      // Usa uma função para atualizar o estado anterior, garantindo tipagem correta
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         return { ...prev, [fieldName]: value };
       } else if (value && typeof value === 'object') {
@@ -86,13 +86,14 @@ export function SubcategoryForm({ open, onClose, onSuccess, category, subcategor
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
+      // Usa o fields do state para garantir tipagem correta
       const defaultFields = fields;
       
       const upsertData = {
         name: values.name,
         description: values.description,
         category_id: category.id,
-        default_fields: defaultFields,
+        default_fields: defaultFields, // Objeto de campos personalizados já tratado
       };
 
       let response;
