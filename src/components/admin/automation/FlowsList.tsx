@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,21 +15,36 @@ import { toast } from "sonner";
 interface FlowsListProps {
   onFlowSelect?: (flowId: string) => void;
   onFlowCreate?: (flowId: string) => void;
+  flows?: AutomationFlow[];
+  isLoading?: boolean;
+  onRefresh?: () => Promise<void>;
 }
 
-const FlowsList = ({ onFlowSelect, onFlowCreate }: FlowsListProps) => {
+const FlowsList = ({ 
+  onFlowSelect, 
+  onFlowCreate,
+  flows: propFlows,
+  isLoading: propIsLoading,
+  onRefresh: propOnRefresh
+}: FlowsListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   const {
-    flows,
-    isLoading,
+    flows: hookFlows,
+    isLoading: hookIsLoading,
     createFlow,
     toggleFlowStatus,
     duplicateFlow,
     deleteFlow,
+    fetchFlows: hookFetchFlows,
   } = useAutomationFlows();
+
+  // Usar os flows passados por props, ou os do hook se não forem fornecidos
+  const flows = propFlows || hookFlows;
+  const isLoading = propIsLoading !== undefined ? propIsLoading : hookIsLoading;
+  const fetchFlows = propOnRefresh || hookFetchFlows;
 
   const filteredFlows = flows.filter(
     (flow) =>
