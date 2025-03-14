@@ -16,9 +16,10 @@ const DEFAULT_COLORS = [
   "#f97316", // orange
 ];
 
-interface StageFormData {
+export interface StageFormData {
   name: string;
   color: string;
+  department_id?: string;
 }
 
 interface NewStageFormProps {

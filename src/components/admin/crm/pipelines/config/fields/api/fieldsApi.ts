@@ -24,8 +24,8 @@ export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMFi
 
     if (error) throw error;
     
-    // Usar type assertion para evitar a recursão de tipo
-    return (data || []) as CRMField[];
+    // Simplificar o type assertion
+    return data as CRMField[] || [];
   } catch (error) {
     console.error("Error fetching fields:", error);
     throw error;
@@ -57,7 +57,7 @@ export const createField = async (pipelineId: string, formData: FieldFormData): 
 
     if (error) throw error;
     
-    // Usar type assertion para evitar a recursão de tipo
+    // Simplificar o type assertion
     return data as CRMField;
   } catch (error) {
     console.error("Error creating field:", error);
