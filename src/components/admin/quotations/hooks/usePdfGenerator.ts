@@ -1,132 +1,119 @@
 
-import { useCallback } from "react";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { jsPDF } from "jspdf";
+import { 
+  addHeader,
+  addQuotationInfo,
+  addCustomerInfo,
+  addPaymentInfo,
+  addProductsTable,
+  addSummary,
+  addNotes,
+  addFooter
+} from "./pdf/sections";
+import type { QuotationData, EnhancedItem } from "./pdf/types";
 import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
 
-// Função para gerar PDF de uma cotação
 export const usePdfGenerator = () => {
-  const generatePdf = useCallback((quotation) => {
-    if (!quotation) return null;
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    // Criar nova instância de PDF
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    // Extrair dados
-    const quotationData = quotation;
-    const customerData = quotationData.customer_data || {};
-    const products = parseJsonArray(quotationData.products, []);
-    const notes = quotationData.notes || '';
-    const shipping = quotationData.shipping_method 
-      ? parseJsonObject(quotationData.shipping_method, {})
-      : {};
-    
-    // Adicionar cabeçalho da empresa
-    doc.setFontSize(20);
-    doc.text("Boneheal", pageWidth / 2, 15, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.text("Cotação de Produtos", pageWidth / 2, 25, { align: "center" });
-    
-    // Informações da cotação
-    doc.setFontSize(10);
-    doc.text(`Número: #${quotationData.id.substring(0, 8)}`, 14, 35);
-    doc.text(`Data: ${new Date(quotationData.created_at).toLocaleDateString('pt-BR')}`, 14, 40);
-    doc.text(`Status: ${quotationData.status}`, 14, 45);
-    
-    // Informações do cliente
-    doc.setFontSize(12);
-    doc.text("Dados do Cliente", 14, 55);
-    doc.setFontSize(10);
-    doc.text(`Nome: ${customerData.name || 'N/A'}`, 14, 65);
-    doc.text(`Email: ${customerData.email || 'N/A'}`, 14, 70);
-    doc.text(`Telefone: ${customerData.phone || 'N/A'}`, 14, 75);
-    
-    // Produtos
-    doc.setFontSize(12);
-    doc.text("Produtos", 14, 90);
-    
-    // Tabela de produtos
-    const tableColumn = ["Produto", "Quantidade", "Preço Unitário", "Total"];
-    const tableRows = [];
-    
-    let subtotal = 0;
-    
-    products.forEach(product => {
-      const productTotal = product.quantity * product.price;
-      subtotal += productTotal;
+  const enhanceItems = async (items: any[]): Promise<EnhancedItem[]> => {
+    return Promise.all(items.map(async (item: any) => {
+      let productImage;
+      if (item.product_id) {
+        const { data: product } = await supabase
+          .from("products")
+          .select("main_image, default_image_url")
+          .eq("id", item.product_id)
+          .single();
+        productImage = product?.main_image || product?.default_image_url;
+      }
       
-      tableRows.push([
-        product.name,
-        product.quantity.toString(),
-        `R$ ${product.price.toFixed(2)}`,
-        `R$ ${productTotal.toFixed(2)}`
-      ]);
-    });
-    
-    // @ts-ignore
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 95,
-      theme: 'grid',
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185] }
-    });
-    
-    // Obter a posição Y após a tabela
-    // @ts-ignore
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    
-    // Informações de frete
-    doc.setFontSize(12);
-    doc.text("Informações de Envio", 14, finalY);
-    doc.setFontSize(10);
-    
-    if (shipping && typeof shipping === 'object') {
-      const shippingCost = (shipping as any).cost || 0;
-      doc.text(`Método: ${(shipping as any).name || 'N/A'}`, 14, finalY + 10);
-      doc.text(`Custo: R$ ${typeof shippingCost === 'number' ? shippingCost.toFixed(2) : '0.00'}`, 14, finalY + 15);
-      doc.text(`Prazo: ${(shipping as any).delivery_time || 'N/A'}`, 14, finalY + 20);
-    } else {
-      doc.text(`Método: N/A`, 14, finalY + 10);
-      doc.text(`Custo: R$ 0.00`, 14, finalY + 15);
-      doc.text(`Prazo: N/A`, 14, finalY + 20);
+      return {
+        product_name: item.product_name || "Produto sem nome",
+        quantity: Number(item.quantity) || 0,
+        unit_price: Number(item.unit_price) || 0,
+        total_price: Number(item.total_price) || Number(item.unit_price) * Number(item.quantity) || 0,
+        product_image: productImage
+      };
+    }));
+  };
+
+  const fetchQuotationData = async (quotationId: string): Promise<QuotationData> => {
+    const { data: quotation, error } = await supabase
+      .from("quotations")
+      .select("*, customer:profiles(full_name, email, phone, address, city, state, zip_code, cnpj, cpf)")
+      .eq("id", quotationId)
+      .single();
+
+    if (error) throw error;
+    if (!quotation) throw new Error("Orçamento não encontrado");
+
+    // Processar o campo items, garantindo que seja um array
+    const processedItems = parseJsonArray(quotation.items, []);
+
+    // Processar shipping_info, garantindo que seja um objeto
+    const defaultShippingInfo = { cost: 0 };
+    const shippingInfo = parseJsonObject(quotation.shipping_info, defaultShippingInfo);
+
+    return {
+      ...quotation,
+      items: processedItems,
+      subtotal_amount: Number(quotation.subtotal_amount) || 0,
+      discount_amount: Number(quotation.discount_amount) || 0,
+      shipping_info: {
+        cost: Number(shippingInfo.cost || 0)
+      },
+      total_amount: Number(quotation.total_amount) || 0
+    };
+  };
+
+  const generatePdf = async (quotationId: string) => {
+    setIsGeneratingPdf(true);
+    try {
+      const quotation = await fetchQuotationData(quotationId);
+      const enhancedItems = await enhanceItems(quotation.items || []);
+      
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPos = 20;
+      
+      // Adicionar seções do PDF
+      yPos = addHeader(doc, pageWidth, yPos);
+      yPos = addQuotationInfo(doc, quotation, margin, yPos);
+      yPos = addCustomerInfo(doc, quotation.customer, margin, yPos);
+      yPos = addPaymentInfo(doc, quotation.payment_method, margin, yPos);
+      yPos = addProductsTable(doc, enhancedItems, margin, yPos);
+      yPos = addSummary(
+        doc, 
+        quotation.subtotal_amount,
+        quotation.discount_amount,
+        quotation.shipping_info?.cost || 0,
+        quotation.total_amount,
+        pageWidth,
+        margin,
+        yPos
+      );
+      yPos = addNotes(doc, quotation.notes, margin, pageWidth, yPos);
+      addFooter(doc, pageWidth);
+
+      // Salvar o PDF
+      doc.save(`orcamento-${quotation.id.substring(0, 8)}.pdf`);
+      
+      toast.success("PDF gerado com sucesso");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Não foi possível gerar o PDF do orçamento");
+    } finally {
+      setIsGeneratingPdf(false);
     }
-    
-    // Observações
-    doc.setFontSize(12);
-    doc.text("Observações", 14, finalY + 35);
-    doc.setFontSize(10);
-    
-    // Quebra o texto em múltiplas linhas
-    const splitNotes = doc.splitTextToSize(notes, pageWidth - 30);
-    doc.text(splitNotes, 14, finalY + 45);
-    
-    // Total
-    const discount = quotationData.discount || 0;
-    const shippingCost = shipping && typeof shipping === 'object' ? (shipping as any).cost || 0 : 0;
-    const total = subtotal - discount + shippingCost;
-    
-    const totalY = finalY + 45 + (splitNotes.length * 5) + 15;
-    
-    doc.setFontSize(12);
-    doc.text("Resumo", pageWidth - 60, totalY);
-    doc.setFontSize(10);
-    doc.text(`Subtotal: R$ ${subtotal.toFixed(2)}`, pageWidth - 60, totalY + 10);
-    doc.text(`Desconto: R$ ${discount.toFixed(2)}`, pageWidth - 60, totalY + 15);
-    doc.text(`Frete: R$ ${shippingCost.toFixed(2)}`, pageWidth - 60, totalY + 20);
-    doc.setFontSize(12);
-    doc.text(`Total: R$ ${total.toFixed(2)}`, pageWidth - 60, totalY + 30);
-    
-    // Rodapé
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.text("Este documento é apenas uma cotação e não representa uma venda finalizada.", pageWidth / 2, pageHeight - 10, { align: "center" });
-    
-    return doc;
-  }, []);
-  
-  return { generatePdf };
+  };
+
+  return {
+    isGeneratingPdf,
+    generatePdf
+  };
 };

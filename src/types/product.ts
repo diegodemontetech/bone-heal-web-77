@@ -1,6 +1,4 @@
 
-import { Json } from "@/integrations/supabase/types";
-
 export interface Product {
   id: string;
   name: string;
@@ -25,34 +23,5 @@ export interface Product {
   height?: number;
   width?: number;
   length?: number;
-  department_id?: string;
-  category_id?: string;
-  subcategory_id?: string;
-}
-
-export interface ProductDepartment {
-  id: string;
-  name: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ProductCategory {
-  id: string;
-  department_id: string;
-  name: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ProductSubcategory {
-  id: string;
-  category_id: string;
-  name: string;
-  description?: string;
-  default_fields?: Record<string, any> | Json;
-  created_at?: string;
-  updated_at?: string;
+  categories?: string[]; // Mantemos no tipo, mas não enviamos para o banco
 }

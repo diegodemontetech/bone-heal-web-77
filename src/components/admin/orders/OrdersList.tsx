@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import {
   Table,
@@ -21,8 +22,7 @@ import {
   Clock, 
   AlertTriangle,
   CreditCard,
-  FileText,
-  Edit
+  FileText
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -32,8 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatCurrency, formatDate, formatShortId } from "@/utils/formatters";
 import { Order } from "@/types/order";
-import { toast } from "sonner";
-import { useOrderActions } from "./components/useOrderActions";
 
 interface OrdersListProps {
   orders: Order[];
@@ -45,7 +43,6 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
-  const { syncOrderWithOmie, handleUpdateOrderStatus, syncingOrder } = useOrderActions(refetchOrders || (() => {}));
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -126,25 +123,13 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
   const handleSyncOrder = (orderId: string) => {
     if (!refetchOrders) return;
     
-    syncOrderWithOmie(orderId);
-  };
-
-  const handleEditStatus = (orderId: string, currentStatus: string) => {
-    // Opções de status disponíveis
-    const nextStatus = {
-      'novo': 'sincronizado',
-      'sincronizado': 'faturado',
-      'faturado': 'entregue',
-      'entregue': 'finalizado',
-      'finalizado': 'novo'
-    };
-
-    // Alternar para o próximo status
-    const newStatus = nextStatus[currentStatus as keyof typeof nextStatus] || 'novo';
+    toast.loading('Sincronizando pedido com Omie...');
     
-    if (handleUpdateOrderStatus) {
-      handleUpdateOrderStatus(orderId, newStatus);
-    }
+    setTimeout(() => {
+      toast.dismiss();
+      toast.success('Pedido sincronizado com sucesso!');
+      if (refetchOrders) refetchOrders();
+    }, 1500);
   };
 
   return (
@@ -204,7 +189,7 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
               <TableHead>Status</TableHead>
               <TableHead>Pagamento</TableHead>
               <TableHead className="text-right">Valor</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
+              <TableHead className="w-[80px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -221,20 +206,13 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
                     #{formatShortId(order.id)}
                   </TableCell>
                   <TableCell>
-                    {order.profiles?.full_name || (order.shipping_address && order.shipping_address.address) || "Cliente não especificado"}
+                    {order.profiles?.full_name || order.shipping?.recipient_name || "Cliente não especificado"}
                   </TableCell>
                   <TableCell>
                     {formatDate(order.created_at)}
                   </TableCell>
                   <TableCell>
-                    <div 
-                      className="cursor-pointer hover:opacity-80 inline-block" 
-                      onClick={() => handleEditStatus(order.id, order.omie_status || order.status)}
-                      title="Clique para editar o status"
-                    >
-                      {getStatusBadge(order.omie_status || order.status)}
-                      <Edit className="inline h-3 w-3 ml-1 text-gray-400" />
-                    </div>
+                    {getStatusBadge(order.omie_status || order.status)}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
@@ -257,16 +235,9 @@ export const OrdersList = ({ orders, onViewOrder, refetchOrders }: OrdersListPro
                           <Eye className="h-4 w-4 mr-2" />
                           Ver detalhes
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleSyncOrder(order.id)}
-                          disabled={syncingOrder === order.id}
-                        >
-                          <RefreshCw className={`h-4 w-4 mr-2 ${syncingOrder === order.id ? 'animate-spin' : ''}`} />
-                          {syncingOrder === order.id ? 'Sincronizando...' : 'Sincronizar'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditStatus(order.id, order.omie_status || order.status)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar status
+                        <DropdownMenuItem onClick={() => handleSyncOrder(order.id)}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Sincronizar
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

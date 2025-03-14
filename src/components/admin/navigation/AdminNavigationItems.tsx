@@ -24,11 +24,6 @@ export const NavigationItems = [
         title: "Adicionar Produto",
         href: "/admin/products/add",
         permissions: []
-      },
-      {
-        title: "Categorias e Departamentos",
-        href: "/admin/products/categories",
-        permissions: []
       }
     ]
   },
@@ -65,18 +60,18 @@ export const NavigationItems = [
   },
   {
     title: "CRM",
-    href: "/admin/crm/pipelines",
+    href: "/admin/leads",
     icon: BarChart2,
     permissions: [],
     children: [
       {
-        title: "Pipelines",
-        href: "/admin/crm/pipelines",
+        title: "Leads",
+        href: "/admin/leads",
         permissions: []
       },
       {
-        title: "Automações",
-        href: "/admin/crm/automacoes",
+        title: "Kanban de Leads",
+        href: "/admin/leads/kanban",
         permissions: []
       }
     ]

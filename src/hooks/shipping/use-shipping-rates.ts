@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -58,7 +57,7 @@ export const useShippingRates = () => {
       setLoading(false);
     }
   };
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
     
@@ -227,7 +226,6 @@ export const useShippingRates = () => {
           name: "SEDEX",
           service_type: "SEDEX",
           rate: sedexResponse.totalPrice,
-          price: sedexResponse.totalPrice, // Adicionando price para corresponder à interface
           delivery_days: sedexResponse.estimatedDays,
           zipCode
         });
@@ -240,7 +238,6 @@ export const useShippingRates = () => {
           name: "PAC",
           service_type: "PAC",
           rate: pacResponse.totalPrice,
-          price: pacResponse.totalPrice, // Adicionando price para corresponder à interface
           delivery_days: pacResponse.estimatedDays,
           zipCode
         });

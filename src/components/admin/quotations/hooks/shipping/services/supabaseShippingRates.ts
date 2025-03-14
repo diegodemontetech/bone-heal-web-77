@@ -60,8 +60,7 @@ export const fetchShippingRatesFromSupabase = async (
 
         applicableRates = Array.from(uniqueServices.values()).map(rate => ({
           id: rate.id,
-          rate: rate.flat_rate || 25,
-          price: rate.flat_rate || 25, // Adicionando price para corresponder à interface
+          rate: rate.flat_rate || 25, 
           delivery_days: rate.estimated_days || 5,
           service_type: rate.service_type || 'PAC',
           name: rate.service_type === 'SEDEX' ? 'SEDEX (Express)' : 'PAC (Convencional)',

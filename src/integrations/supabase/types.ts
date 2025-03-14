@@ -207,181 +207,6 @@ export type Database = {
         }
         Relationships: []
       }
-      crm_departments: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      crm_fields: {
-        Row: {
-          created_at: string
-          default_value: string | null
-          display_in_kanban: boolean
-          id: string
-          label: string
-          mask: string | null
-          name: string
-          options: string[] | null
-          required: boolean
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          default_value?: string | null
-          display_in_kanban?: boolean
-          id?: string
-          label: string
-          mask?: string | null
-          name: string
-          options?: string[] | null
-          required?: boolean
-          type: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          default_value?: string | null
-          display_in_kanban?: boolean
-          id?: string
-          label?: string
-          mask?: string | null
-          name?: string
-          options?: string[] | null
-          required?: boolean
-          type?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      crm_form_settings: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          is_public: boolean | null
-          pipeline_id: string | null
-          redirect_url: string | null
-          success_message: string | null
-          theme_color: string | null
-          title: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          pipeline_id?: string | null
-          redirect_url?: string | null
-          success_message?: string | null
-          theme_color?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_public?: boolean | null
-          pipeline_id?: string | null
-          redirect_url?: string | null
-          success_message?: string | null
-          theme_color?: string | null
-          title?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_form_settings_pipeline_id_fkey"
-            columns: ["pipeline_id"]
-            isOneToOne: false
-            referencedRelation: "crm_pipelines"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_pipeline_permissions: {
-        Row: {
-          created_at: string | null
-          id: string
-          permission: string
-          pipeline_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          permission: string
-          pipeline_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          permission?: string
-          pipeline_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_pipeline_permissions_pipeline_id_fkey"
-            columns: ["pipeline_id"]
-            isOneToOne: false
-            referencedRelation: "crm_pipelines"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_pipelines: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          form_url: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          form_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          form_url?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       crm_stage_automations: {
         Row: {
           action_data: Json
@@ -417,44 +242,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      crm_stages: {
-        Row: {
-          color: string
-          created_at: string
-          department_id: string | null
-          id: string
-          name: string
-          order: number
-          updated_at: string
-        }
-        Insert: {
-          color?: string
-          created_at?: string
-          department_id?: string | null
-          id?: string
-          name: string
-          order?: number
-          updated_at?: string
-        }
-        Update: {
-          color?: string
-          created_at?: string
-          department_id?: string | null
-          id?: string
-          name?: string
-          order?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_stages_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "crm_departments"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       dental_specialties: {
         Row: {
@@ -1101,65 +888,6 @@ export type Database = {
         }
         Relationships: []
       }
-      product_categories: {
-        Row: {
-          created_at: string | null
-          department_id: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          department_id?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          department_id?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_categories_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "product_departments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      product_departments: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       product_reviews: {
         Row: {
           comment: string | null
@@ -1195,53 +923,12 @@ export type Database = {
           },
         ]
       }
-      product_subcategories: {
-        Row: {
-          category_id: string | null
-          created_at: string | null
-          default_fields: Json | null
-          description: string | null
-          id: string
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          category_id?: string | null
-          created_at?: string | null
-          default_fields?: Json | null
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          category_id?: string | null
-          created_at?: string | null
-          default_fields?: Json | null
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_subcategories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "product_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       products: {
         Row: {
           active: boolean | null
-          category_id: string | null
           created_at: string
           default_image_url: string | null
-          department_id: string | null
           description: string | null
-          full_description: string | null
           gallery: string[] | null
           height: number | null
           id: string
@@ -1254,7 +941,6 @@ export type Database = {
           price: number | null
           short_description: string | null
           slug: string
-          subcategory_id: string | null
           technical_details: Json | null
           updated_at: string
           video_url: string | null
@@ -1263,12 +949,9 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
-          category_id?: string | null
           created_at?: string
           default_image_url?: string | null
-          department_id?: string | null
           description?: string | null
-          full_description?: string | null
           gallery?: string[] | null
           height?: number | null
           id?: string
@@ -1281,7 +964,6 @@ export type Database = {
           price?: number | null
           short_description?: string | null
           slug: string
-          subcategory_id?: string | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
@@ -1290,12 +972,9 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
-          category_id?: string | null
           created_at?: string
           default_image_url?: string | null
-          department_id?: string | null
           description?: string | null
-          full_description?: string | null
           gallery?: string[] | null
           height?: number | null
           id?: string
@@ -1308,36 +987,13 @@ export type Database = {
           price?: number | null
           short_description?: string | null
           slug?: string
-          subcategory_id?: string | null
           technical_details?: Json | null
           updated_at?: string
           video_url?: string | null
           weight?: number | null
           width?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "product_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_department_id_fkey"
-            columns: ["department_id"]
-            isOneToOne: false
-            referencedRelation: "product_departments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_subcategory_id_fkey"
-            columns: ["subcategory_id"]
-            isOneToOne: false
-            referencedRelation: "product_subcategories"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {

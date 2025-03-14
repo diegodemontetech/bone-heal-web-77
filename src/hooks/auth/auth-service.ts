@@ -23,20 +23,7 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile | nu
       
     if (profileError) throw profileError;
     
-    // Converter o perfil da DB para UserProfile, garantindo compatibilidade
-    const userProfile: UserProfile = {
-      id: profileData.id,
-      full_name: profileData.full_name,
-      email: profileData.email,
-      phone: profileData.phone,
-      address: profileData.address,
-      role: profileData.role as UserRole || UserRole.DENTIST,
-      is_admin: profileData.is_admin || false,
-      specialty: profileData.specialty,
-      omie_code: profileData.omie_code
-    };
-    
-    return userProfile;
+    return profileData as UserProfile;
   } catch (error) {
     console.error('Erro ao buscar dados do perfil:', error);
     return null;

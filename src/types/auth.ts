@@ -1,63 +1,10 @@
 
-export interface Session {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  refresh_token: string;
-  user: User;
-}
+import { Session } from '@supabase/supabase-js';
 
-export interface User {
-  id: string;
-  aud: string;
-  role: string;
-  email: string;
-  email_confirmed_at: string;
-  phone: string;
-  confirmed_at: string;
-  last_sign_in_at: string;
-  app_metadata: AppMetadata;
-  user_metadata: UserMetadata;
-  identities: Identity[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AppMetadata {
-  provider: string;
-  [key: string]: any;
-}
-
-export interface UserMetadata {
-  avatar_url: string;
-  email: string;
-  email_change_count: number;
-  full_name: string;
-  iss: string;
-  name: string;
-  phone: string;
-  provider_id: string;
-  sub: string;
-  [key: string]: any;
-}
-
-export interface Identity {
-  id: string;
-  user_id: string;
-  identity_data: IdentityData;
-  provider: string;
-  created_at: string;
-  updated_at: string;
-  last_sign_in_at: string;
-}
-
-export interface IdentityData {
-  avatar_url: string;
-  email: string;
-  name: string;
-  sub: string;
-  email_verified: boolean;
-  [key: string]: any;
+export enum UserRole {
+  DENTIST = 'dentist',
+  ADMIN = 'admin',
+  ADMIN_MASTER = 'admin_master'
 }
 
 export enum UserPermission {
@@ -68,29 +15,47 @@ export enum UserPermission {
   MANAGE_USERS = 'manage_users',
   VIEW_REPORTS = 'view_reports',
   MANAGE_SETTINGS = 'manage_settings',
-  MANAGE_INTEGRATIONS = 'manage_integrations',
-  MANAGE_LEADS = 'manage_leads'
-}
-
-export enum UserRole {
-  ADMIN = 'admin',
-  ADMIN_MASTER = 'admin_master',
-  MANAGER = 'manager',
-  STAFF = 'staff',
-  CUSTOMER = 'customer',
-  DENTIST = 'dentist'
+  MANAGE_INTEGRATIONS = 'manage_integrations'
 }
 
 export interface UserProfile {
   id: string;
-  full_name: string | null;
-  avatar_url?: string | null;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  role?: UserRole;
-  is_admin?: boolean;
+  email: string;
+  role: UserRole;
+  full_name?: string;
+  phone?: string;
+  cro?: string;
   specialty?: string;
-  omie_code?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  neighborhood?: string;
+  cpf?: string;
+  cnpj?: string;
+  pessoa_fisica?: boolean;
   permissions?: UserPermission[];
+  created_at?: string;
+  updated_at?: string;
+  is_omie_synced?: boolean;
+  omie_code?: string;
+  endereco_numero?: string;
+  complemento?: string;
+  avatar_url?: string;
+  is_admin?: boolean; // Adicionando a propriedade is_admin que estava faltando
+}
+
+export interface AuthContextType {
+  profile: UserProfile | null;
+  session: Session | null;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, userData: any) => Promise<any>;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  isDentist: boolean;
+  isAdmin: boolean;
+  isAdminMaster: boolean;
+  hasPermission: (permission: UserPermission) => boolean;
+  isAuthenticated: boolean; // Adicionando propriedade necessária
 }

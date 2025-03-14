@@ -1,44 +1,39 @@
 
+import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
-import CRMLeads from "@/pages/admin/CRMLeads";
-import CreateLead from "@/pages/admin/CreateLead";
-import LeadsKanban from "@/pages/admin/LeadsKanban";
-import CRMConfigPage from "@/components/admin/crm/config/CRMConfigPage";
-import AutomationFlowsPage from "@/pages/admin/AutomationFlows";
-import CRMPipelines from "@/pages/admin/CRMPipelines";
-import PipelineConfig from "@/pages/admin/PipelineConfig";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { UserPermission } from "@/types/auth";
+
+// CRM-related pages
+const AdminLeads = lazy(() => import("@/pages/admin/Leads"));
+const LeadsKanbanPage = lazy(() => import("@/pages/admin/LeadsKanban"));
+
+// Loader para componentes com lazy loading
+const AdminLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  </div>
+);
 
 export const crmRoutes: RouteObject[] = [
   {
-    path: "crm-leads",
-    element: <CRMLeads />
+    path: "leads",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
+          <AdminLeads />
+        </ProtectedRoute>
+      </Suspense>
+    )
   },
   {
-    path: "criar-lead",
-    element: <CreateLead />
-  },
-  {
-    path: "leads-kanban",
-    element: <LeadsKanban />
-  },
-  {
-    path: "configuracoes",
-    element: <CRMConfigPage />
-  },
-  {
-    path: "automacoes",
-    element: <AutomationFlowsPage />
-  },
-  {
-    path: "automation-flows/:flowId",
-    element: <AutomationFlowsPage />
-  },
-  {
-    path: "pipelines",
-    element: <CRMPipelines />
-  },
-  {
-    path: "pipelines/:id/configurar",
-    element: <PipelineConfig />
+    path: "leads/kanban",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
+          <LeadsKanbanPage />
+        </ProtectedRoute>
+      </Suspense>
+    )
   }
 ];

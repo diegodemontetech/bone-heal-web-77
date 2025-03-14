@@ -34,9 +34,7 @@ export const useProductForm = (
       short_description: product?.short_description || "",
       description: product?.description || "",
       video_url: product?.video_url || "",
-      department_id: product?.department_id || "",
-      category_id: product?.category_id || "",
-      subcategory_id: product?.subcategory_id || "",
+      categories: product?.categories || [],
     },
   });
 
@@ -72,9 +70,6 @@ export const useProductForm = (
         gallery: images.slice(1),
         technical_details: technicalDetails,
         active: true,
-        department_id: values.department_id || null,
-        category_id: values.category_id || null,
-        subcategory_id: values.subcategory_id || null,
       };
 
       console.log("Dados do produto a serem salvos:", data);

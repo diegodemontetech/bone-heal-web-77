@@ -37,10 +37,7 @@ interface UsersTableProps {
 const UserRoleLabels = {
   [UserRole.ADMIN]: 'Administrador',
   [UserRole.ADMIN_MASTER]: 'Administrador Master',
-  [UserRole.DENTIST]: 'Dentista',
-  [UserRole.MANAGER]: 'Gerente',
-  [UserRole.STAFF]: 'Funcionário',
-  [UserRole.CUSTOMER]: 'Cliente'
+  [UserRole.DENTIST]: 'Dentista'
 };
 
 const UsersTable = ({ 

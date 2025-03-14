@@ -27,8 +27,7 @@ export function usePermissions() {
       UserPermission.MANAGE_CUSTOMERS,
       UserPermission.MANAGE_SETTINGS,
       UserPermission.MANAGE_INTEGRATIONS,
-      UserPermission.MANAGE_SUPPORT,
-      UserPermission.MANAGE_LEADS
+      UserPermission.MANAGE_SUPPORT
     ];
   };
 

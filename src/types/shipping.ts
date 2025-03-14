@@ -1,48 +1,26 @@
 
-export interface ShippingAddress {
-  zip_code: string;
-  city: string;
+export interface ShippingRate {
+  id: string;
+  region: string;
   state: string;
-  address: string;
-  number?: string;
-  complement?: string;
-  neighborhood?: string;
+  zip_code_start: string;
+  zip_code_end: string;
+  flat_rate: number;
+  rate: number;
+  additional_kg_rate: number;
+  estimated_days: number;
+  is_active: boolean;
+  service_type: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ShippingCalculationRate {
   id: string;
+  service_type: string;
   name: string;
-  price: number;
-  delivery_time?: number;
-  delivery_date?: string;
-  min_days?: number;
-  max_days?: number;
-  icon?: string;
-  code?: string;
-  selected?: boolean;
-  // Campos adicionais necessários para correção dos erros
-  rate?: number;
-  delivery_days?: number;
-  service_type?: string;
-  zipCode?: string;
+  rate: number;
+  delivery_days: number;
+  zipCode: string;
   region?: string;
-}
-
-export interface ShippingRate {
-  id: string;
-  price: number;
-  delivery_time: number;
-  min_weight?: number;
-  max_weight?: number;
-  state: string;
-  region?: string;
-  created_at?: string;
-  updated_at?: string;
-  // Campos adicionais necessários para correção dos erros
-  zip_code_start?: string;
-  zip_code_end?: string;
-  flat_rate?: number;
-  additional_kg_rate?: number;
-  estimated_days?: number;
-  is_active?: boolean;
 }

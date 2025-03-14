@@ -1,137 +1,142 @@
 
-import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { parseJsonArray } from "@/utils/supabaseJsonUtils";
-import { toast } from "sonner";
-import { Json } from "@/integrations/supabase/types";
+import { parseJsonArray, parseJsonObject } from "@/utils/supabaseJsonUtils";
 
-// Definir tipos para melhor tipagem e manutenibilidade
+// Interface para os dados do cliente com tipagem melhorada
 export interface CustomerProfile {
+  id: string;
   full_name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
+  email: string | null;
+  phone: string | null;
 }
 
-export interface ProductItem {
+// Enum para status de orçamento
+export enum QuotationStatus {
+  DRAFT = "draft",
+  SENT = "sent",
+  ACCEPTED = "accepted",
+  REJECTED = "rejected",
+  EXPIRED = "expired",
+  CONVERTED = "converted"
+}
+
+// Interface para item do orçamento
+export interface QuotationItem {
   product_id: string;
   product_name: string;
   quantity: number;
   unit_price: number;
-  product_image?: string;
+  total_price: number;
 }
 
-export interface ShippingInfo {
-  method?: string;
-  cost?: number;
-  carrier?: string;
-  days?: number;
-  address?: string;
-  city?: string;
-  state?: string;
-  zip_code?: string;
-}
-
+// Interface para os dados do orçamento com tipagem melhorada
 export interface Quotation {
   id: string;
   created_at: string;
-  updated_at: string;
-  user_id: string;
   customer: CustomerProfile | null;
-  customer_info: Json;
-  items: ProductItem[];
-  shipping_info: ShippingInfo | null;
-  subtotal: number;
-  discount_amount: number;
-  shipping_cost: number;
+  status: QuotationStatus;
   total_amount: number;
-  sent_by_email: boolean;
-  status: string;
-  discount_type: string;
+  discount_amount: number;
   payment_method: string;
-  notes: string;
+  sent_by_email: boolean;
+  items: QuotationItem[];
+  subtotal_amount: number;
 }
 
-export const useQuotationsQuery = (status?: string) => {
-  // Função para carregar cotações do Supabase
-  const fetchQuotations = useCallback(async () => {
-    try {
-      let query = supabase
-        .from('quotations')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      // Filtra por status se fornecido
-      if (status && status !== 'all') {
-        query = query.eq('status', status);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Processamento de dados para formato padronizado
-      return data.map(quotation => {
-        // Parse dos items (produtos)
-        const items = parseJsonArray(quotation.items, []);
-        
-        // Parse das informações do cliente
-        const customerInfo = quotation.customer_info ? 
-          (typeof quotation.customer_info === 'string' ? 
-            JSON.parse(quotation.customer_info) : quotation.customer_info) : null;
-        
-        // Parse das informações de envio
-        const shippingInfo = quotation.shipping_info ? 
-          (typeof quotation.shipping_info === 'string' ? 
-            JSON.parse(quotation.shipping_info) : quotation.shipping_info) : null;
-            
-        // Calcular subtotal baseado nos itens
-        let subtotal = 0;
-        items.forEach((item: ProductItem) => {
-          if (item && item.unit_price && item.quantity) {
-            subtotal += item.unit_price * item.quantity;
-          }
-        });
-        
-        // Utilizar discount_amount do banco de dados
-        const discountAmount = quotation.discount_amount || 0;
-        
-        // Calcular o custo de envio
-        let shippingCost = 0;
-        if (shippingInfo && shippingInfo.cost) {
-          shippingCost = parseFloat(String(shippingInfo.cost));
+export const useQuotationsQuery = () => {
+  return useQuery({
+    queryKey: ["quotations"],
+    queryFn: async () => {
+      try {
+        console.log("Buscando orçamentos do banco de dados...");
+        const { data, error } = await supabase
+          .from("quotations")
+          .select(`
+            id,
+            created_at,
+            customer:profiles(id, full_name, email, phone),
+            status,
+            total_amount,
+            discount_amount,
+            payment_method,
+            sent_by_email,
+            items,
+            subtotal_amount
+          `)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Erro ao buscar orçamentos:", error);
+          throw new Error(`Não foi possível carregar os orçamentos: ${error.message}`);
         }
         
-        // Calcular total (ou usar o valor do banco se disponível)
-        const total = quotation.total_amount || (subtotal - discountAmount + shippingCost);
+        console.log(`Encontrados ${data?.length || 0} orçamentos`);
         
-        // Retornar objeto processado e tipado
-        return {
-          ...quotation,
-          customer: customerInfo,
-          items: items,
-          shipping_info: shippingInfo,
-          subtotal: subtotal,
-          discount_amount: discountAmount,
-          shipping_cost: shippingCost,
-          total: total
-        } as Quotation;
-      });
-    } catch (error) {
-      console.error("Erro ao buscar cotações:", error);
-      toast.error("Erro ao carregar cotações");
-      throw error;
-    }
-  }, [status]);
-
-  return useQuery({
-    queryKey: ['quotations', status],
-    queryFn: fetchQuotations
+        // Transformar a resposta com tipagem forte e tratamento de dados consistente
+        return (data || []).map(quotation => {
+          // Garantir que customer seja um objeto e não um array
+          const customerData = Array.isArray(quotation.customer) 
+            ? (quotation.customer.length > 0 ? quotation.customer[0] : null)
+            : quotation.customer;
+          
+          // Garantir que items seja um array e processar cada item corretamente
+          const parsedItems = parseJsonArray<any>(quotation.items, []);
+          const items = parsedItems.map(item => {
+            // Se o item for um objeto ou uma string JSON, processá-lo corretamente
+            if (typeof item === 'string') {
+              try {
+                item = JSON.parse(item);
+              } catch (e) {
+                console.error("Erro ao parsear item como string JSON:", e);
+                item = {};
+              }
+            }
+            
+            return {
+              product_id: String(item?.product_id || ''),
+              product_name: String(item?.product_name || ''),
+              quantity: Number(item?.quantity || 0),
+              unit_price: Number(item?.unit_price || 0),
+              total_price: Number(item?.total_price || 0)
+            };
+          });
+          
+          // Converter valores numéricos corretamente
+          const total_amount = typeof quotation.total_amount === 'number' 
+            ? quotation.total_amount 
+            : parseFloat(quotation.total_amount || '0');
+          
+          const discount_amount = typeof quotation.discount_amount === 'number' 
+            ? quotation.discount_amount 
+            : parseFloat(quotation.discount_amount || '0');
+          
+          const subtotal_amount = typeof quotation.subtotal_amount === 'number' 
+            ? quotation.subtotal_amount 
+            : parseFloat(quotation.subtotal_amount || '0');
+            
+          const result: Quotation = {
+            id: quotation.id,
+            created_at: quotation.created_at,
+            customer: customerData,
+            items,
+            total_amount,
+            discount_amount,
+            subtotal_amount,
+            payment_method: quotation.payment_method || '',
+            sent_by_email: Boolean(quotation.sent_by_email),
+            status: (quotation.status || QuotationStatus.DRAFT) as QuotationStatus
+          };
+          
+          return result;
+        });
+      } catch (error) {
+        console.error("Erro ao processar dados de orçamentos:", error);
+        throw error;
+      }
+    },
+    retry: 1,
+    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 };
