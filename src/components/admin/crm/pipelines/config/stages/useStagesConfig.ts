@@ -25,8 +25,8 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Usando tipagem explícita para evitar recursão profunda
-      setStages(data as CRMStage[]);
+      // Usando uma dupla assertiva de tipo para quebrar a cadeia de inferência
+      setStages(data as unknown as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -65,8 +65,8 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usando tipagem explícita para evitar recursão profunda
-        const newStage = data[0] as CRMStage;
+        // Usando uma dupla assertiva de tipo para quebrar a cadeia de inferência
+        const newStage = data[0] as unknown as CRMStage;
         setStages([...stages, newStage]);
         toast.success("Estágio criado com sucesso!");
       }
@@ -97,8 +97,8 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usando tipagem explícita para evitar recursão profunda
-        const updatedStage = data[0] as CRMStage;
+        // Usando uma dupla assertiva de tipo para quebrar a cadeia de inferência
+        const updatedStage = data[0] as unknown as CRMStage;
         setStages(
           stages.map((stage) =>
             stage.id === stageId
