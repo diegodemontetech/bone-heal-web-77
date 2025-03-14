@@ -18,7 +18,9 @@ export const StagesConfig = ({ pipelineId }: { pipelineId: string }) => {
     handleCloseDialog,
     handleCreateStage,
     handleUpdateStage,
-    handleDeleteStage
+    handleDeleteStage,
+    handleUpdateStageField,
+    handleDragEnd
   } = useStagesConfig(pipelineId);
 
   return (
@@ -44,7 +46,9 @@ export const StagesConfig = ({ pipelineId }: { pipelineId: string }) => {
               <StagesList 
                 stages={stages} 
                 onEdit={handleOpenDialog} 
-                onDelete={handleDeleteStage} 
+                onDelete={handleDeleteStage}
+                onDragEnd={handleDragEnd}
+                onUpdate={handleUpdateStageField}
               />
             )}
             

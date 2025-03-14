@@ -2,7 +2,7 @@
 import { CRMStage } from "@/types/crm";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 import { ColorPickerPopover } from "./ColorPickerPopover";
 
 interface StageItemProps {
@@ -10,9 +10,10 @@ interface StageItemProps {
   provided: any;
   onUpdate: (stage: CRMStage, field: string, value: string) => void;
   onDelete: (stageId: string) => void;
+  onEdit?: (stage: CRMStage) => void; // Adicionando onEdit como propriedade opcional
 }
 
-export const StageItem = ({ stage, provided, onUpdate, onDelete }: StageItemProps) => {
+export const StageItem = ({ stage, provided, onUpdate, onDelete, onEdit }: StageItemProps) => {
   return (
     <div
       ref={provided.innerRef}
@@ -35,6 +36,17 @@ export const StageItem = ({ stage, provided, onUpdate, onDelete }: StageItemProp
         color={stage.color}
         onChange={(color) => onUpdate(stage, "color", color)}
       />
+      {onEdit && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => onEdit(stage)}
+          className="text-primary hover:text-primary hover:bg-primary/10"
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+      )}
       <Button
         type="button"
         variant="ghost"

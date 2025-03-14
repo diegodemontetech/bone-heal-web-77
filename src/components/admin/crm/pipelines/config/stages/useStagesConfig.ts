@@ -25,7 +25,8 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      setStages(data as CRMStage[]);
+      // Simplificando a asserção de tipo para evitar recursão excessiva
+      setStages(data || []);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -64,9 +65,10 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        setStages([...stages, data[0] as CRMStage]);
+        // Simplificando a asserção de tipo
+        const newStage = data[0] || {};
+        setStages([...stages, newStage as CRMStage]);
         toast.success("Estágio criado com sucesso!");
-        setIsDialogOpen(false);
       }
     } catch (error) {
       console.error("Error creating stage:", error);
@@ -95,15 +97,16 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
+        // Simplificando a asserção de tipo
+        const updatedStage = data[0] || {};
         setStages(
           stages.map((stage) =>
             stage.id === stageId
-              ? { ...stage, ...data[0] as Partial<CRMStage> }
+              ? { ...stage, ...updatedStage }
               : stage
           )
         );
         toast.success("Estágio atualizado com sucesso!");
-        setIsDialogOpen(false);
       }
     } catch (error) {
       console.error("Error updating stage:", error);
@@ -130,6 +133,66 @@ export const useStagesConfig = (pipelineId: string) => {
     }
   };
 
+  // Adicione a função para atualizar um campo específico do estágio
+  const handleUpdateStageField = (stage: CRMStage, field: string, value: string) => {
+    const updatedStages = stages.map((s) => {
+      if (s.id === stage.id) {
+        return { ...s, [field]: value };
+      }
+      return s;
+    });
+    
+    setStages(updatedStages);
+    
+    // Persistir a mudança no banco de dados
+    supabase
+      .from("crm_stages")
+      .update({ [field]: value })
+      .eq("id", stage.id)
+      .then(({ error }) => {
+        if (error) {
+          console.error("Error updating stage field:", error);
+          toast.error("Erro ao atualizar campo do estágio");
+          // Reverter as mudanças se houver erro
+          setStages(stages);
+        }
+      });
+  };
+
+  // Adicione a função para ordenar estágios após drag and drop
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) return;
+    
+    const reorderedStages = Array.from(stages);
+    const [movedStage] = reorderedStages.splice(result.source.index, 1);
+    reorderedStages.splice(result.destination.index, 0, movedStage);
+    
+    // Atualizar a ordem localmente
+    const updatedStages = reorderedStages.map((stage, index) => ({
+      ...stage,
+      order: index + 1
+    }));
+    
+    setStages(updatedStages);
+    
+    // Persistir a nova ordem no banco de dados
+    try {
+      for (const stage of updatedStages) {
+        await supabase
+          .from("crm_stages")
+          .update({ order: stage.order })
+          .eq("id", stage.id);
+      }
+      
+      toast.success("Ordem dos estágios atualizada");
+    } catch (error) {
+      console.error("Error updating stages order:", error);
+      toast.error("Erro ao atualizar ordem dos estágios");
+      // Recarregar os estágios em caso de erro
+      fetchStages();
+    }
+  };
+
   return {
     stages,
     loading,
@@ -146,6 +209,8 @@ export const useStagesConfig = (pipelineId: string) => {
     },
     handleCreateStage,
     handleUpdateStage,
-    handleDeleteStage
+    handleDeleteStage,
+    handleUpdateStageField,
+    handleDragEnd
   };
 };
