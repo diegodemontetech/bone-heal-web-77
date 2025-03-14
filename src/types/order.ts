@@ -9,7 +9,7 @@ export interface Order {
   total_amount: number;
   subtotal?: number;
   discount?: number;
-  shipping_cost?: number;
+  shipping_fee?: number; // Adicionando explicitamente shipping_fee
   shipping_address?: ShippingAddress;
   created_at: string;
   updated_at?: string;
@@ -46,10 +46,36 @@ export interface ShippingAddress {
   state: string;
   neighborhood?: string;
   complement?: string;
-  name?: string; // Adicionando propriedade name
+  name?: string;
 }
 
-export interface OrderWithJson extends Order {
-  items: string | OrderItem[];
-  shipping_address: string | ShippingAddress;
+// Modificando a interface OrderWithJson para ser compatível com Order
+export interface OrderWithJson {
+  id: string;
+  user_id: string;
+  status: string;
+  items: string | OrderItem[]; // Pode ser uma string JSON ou já processado como array
+  shipping_address: string | ShippingAddress; // Pode ser uma string JSON ou já processado como objeto
+  payment_method?: string;
+  payment_status?: string;
+  total_amount: number;
+  subtotal?: number;
+  discount?: number;
+  shipping_fee?: number;
+  created_at: string;
+  updated_at?: string;
+  profiles?: {
+    id?: string;
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    zip_code?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    complemento?: string;
+    endereco_numero?: string;
+  };
+  omie_order_id?: string;
+  omie_status?: string;
 }

@@ -46,7 +46,8 @@ const ProfileOrders = () => {
           zip_code: "",
           city: "",
           state: "",
-          address: ""
+          address: "",
+          number: "", // Adicionando a propriedade number que estava faltando
         });
         
         return {

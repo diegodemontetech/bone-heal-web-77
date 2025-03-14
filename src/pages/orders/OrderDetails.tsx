@@ -75,7 +75,7 @@ const OrderDetails = () => {
             <OrderDetailsContent order={order} />
             <OrderSummaryCard 
               subtotal={order.subtotal}
-              shipping_fee={order.shipping_fee}
+              shipping_fee={order.shipping_fee || 0} // Garantindo que shipping_fee seja passado ou 0
               discount={order.discount}
               total_amount={order.total_amount}
               status={order.status}

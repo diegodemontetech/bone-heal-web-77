@@ -41,8 +41,9 @@ const FlowBuilder = ({ flowId, onCreateFlow }: FlowBuilderProps) => {
     return <NoFlowSelected onCreateFlow={onCreateFlow} />;
   }
 
-  const handleSave = () => {
-    saveFlow({ 
+  // Modificar o handleSave para retornar uma Promise
+  const handleSave = async () => {
+    return saveFlow({ 
       nodes,
       edges,
       name: flowName
