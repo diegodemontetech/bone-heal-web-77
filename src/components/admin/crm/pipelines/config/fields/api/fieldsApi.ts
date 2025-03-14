@@ -24,8 +24,23 @@ export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMFi
 
     if (error) throw error;
     
-    // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
-    return (data || []) as unknown as CRMField[];
+    // Convertendo o resultado para um tipo seguro
+    const fields: CRMField[] = data ? data.map(item => ({
+      id: item.id,
+      name: item.name,
+      label: item.label,
+      type: item.type,
+      required: item.required,
+      display_in_kanban: item.display_in_kanban,
+      options: item.options,
+      mask: item.mask,
+      default_value: item.default_value,
+      pipeline_id: item.pipeline_id,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    })) : [];
+    
+    return fields;
   } catch (error) {
     console.error("Error fetching fields:", error);
     throw error;
@@ -57,8 +72,27 @@ export const createField = async (pipelineId: string, formData: FieldFormData): 
 
     if (error) throw error;
     
-    // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
-    return data as unknown as CRMField;
+    if (!data) {
+      throw new Error("No data returned after creating field");
+    }
+    
+    // Convertendo o resultado para um tipo seguro
+    const field: CRMField = {
+      id: data.id,
+      name: data.name,
+      label: data.label,
+      type: data.type,
+      required: data.required,
+      display_in_kanban: data.display_in_kanban,
+      options: data.options,
+      mask: data.mask,
+      default_value: data.default_value,
+      pipeline_id: data.pipeline_id,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+    
+    return field;
   } catch (error) {
     console.error("Error creating field:", error);
     throw error;
@@ -90,8 +124,27 @@ export const updateField = async (fieldId: string, formData: FieldFormData): Pro
 
     if (error) throw error;
     
-    // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
-    return data as unknown as CRMField;
+    if (!data) {
+      throw new Error("No data returned after updating field");
+    }
+    
+    // Convertendo o resultado para um tipo seguro
+    const field: CRMField = {
+      id: data.id,
+      name: data.name,
+      label: data.label,
+      type: data.type,
+      required: data.required,
+      display_in_kanban: data.display_in_kanban,
+      options: data.options,
+      mask: data.mask,
+      default_value: data.default_value,
+      pipeline_id: data.pipeline_id,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    };
+    
+    return field;
   } catch (error) {
     console.error("Error updating field:", error);
     throw error;

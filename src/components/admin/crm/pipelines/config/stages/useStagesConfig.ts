@@ -25,8 +25,19 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
-      setStages((data || []) as unknown as CRMStage[]);
+      // Convertendo o resultado para um tipo seguro
+      const fetchedStages: CRMStage[] = data ? data.map(item => ({
+        id: item.id,
+        name: item.name,
+        color: item.color,
+        order: item.order,
+        pipeline_id: item.pipeline_id,
+        department_id: item.department_id,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      })) : [];
+      
+      setStages(fetchedStages);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -64,9 +75,19 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
 
-      if (data) {
-        // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
-        const newStage = data[0] as unknown as CRMStage;
+      if (data && data.length > 0) {
+        // Convertendo o resultado para um tipo seguro
+        const newStage: CRMStage = {
+          id: data[0].id,
+          name: data[0].name,
+          color: data[0].color,
+          order: data[0].order,
+          pipeline_id: data[0].pipeline_id,
+          department_id: data[0].department_id,
+          created_at: data[0].created_at,
+          updated_at: data[0].updated_at
+        };
+        
         setStages([...stages, newStage]);
         toast.success("Estágio criado com sucesso!");
       }
@@ -96,9 +117,19 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
 
-      if (data) {
-        // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
-        const updatedStage = data[0] as unknown as CRMStage;
+      if (data && data.length > 0) {
+        // Convertendo o resultado para um tipo seguro
+        const updatedStage: CRMStage = {
+          id: data[0].id,
+          name: data[0].name,
+          color: data[0].color,
+          order: data[0].order,
+          pipeline_id: data[0].pipeline_id,
+          department_id: data[0].department_id,
+          created_at: data[0].created_at,
+          updated_at: data[0].updated_at
+        };
+        
         setStages(
           stages.map((stage) =>
             stage.id === stageId
