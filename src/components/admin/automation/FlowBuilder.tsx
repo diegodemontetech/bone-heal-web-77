@@ -4,12 +4,14 @@ import FlowToolbar from "./FlowToolbar";
 import FlowCanvas from "./FlowCanvas";
 import NoFlowSelected from "./NoFlowSelected";
 import { useAutomationFlow } from "@/hooks/use-automation-flow";
+import { Card } from "@/components/ui/card";
 
 interface FlowBuilderProps {
   flowId: string | null;
+  onCreateFlow?: () => void;
 }
 
-const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
+const FlowBuilder = ({ flowId, onCreateFlow }: FlowBuilderProps) => {
   const {
     nodes,
     edges,
@@ -36,7 +38,7 @@ const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
   }, [flowId, fetchFlowData]);
 
   if (!flowId) {
-    return <NoFlowSelected />;
+    return <NoFlowSelected onCreateFlow={onCreateFlow} />;
   }
 
   const handleSave = () => {
@@ -51,36 +53,43 @@ const FlowBuilder = ({ flowId }: FlowBuilderProps) => {
     executeFlow();
   };
 
+  const canExecute = nodes.length > 0 && edges.length > 0;
+
   return (
-    <div className="h-[600px] border rounded-md">
+    <Card className="h-[600px] border overflow-hidden">
       {isLoading ? (
         <div className="h-full flex items-center justify-center">
-          <p>Carregando fluxo...</p>
+          <div className="flex flex-col items-center">
+            <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mb-4"></div>
+            <p className="text-muted-foreground">Carregando fluxo...</p>
+          </div>
         </div>
       ) : (
-        <div className="h-full">
+        <div className="h-full flex flex-col">
           <FlowToolbar
             flowName={flowName}
             onFlowNameChange={setFlowName}
             nodeCount={nodes.length}
-            onSave={handleSave}
-            onExecute={handleExecute}
-            isSaving={isSaving}
-            canExecute={nodes.length > 0 && edges.length > 0}
           />
-          <FlowCanvas
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onInit={setReactFlowInstance}
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-          />
+          <div className="flex-grow">
+            <FlowCanvas
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onInit={setReactFlowInstance}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onSave={handleSave}
+              onExecute={handleExecute}
+              isSaving={isSaving}
+              canExecute={canExecute}
+            />
+          </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 
