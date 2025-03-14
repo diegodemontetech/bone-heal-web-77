@@ -1,64 +1,55 @@
 
-export interface OrderItem {
-  product_id: string;
-  quantity: number;
-  price: number;
-  name: string;
-  product_name?: string;
-  total_price?: number;
-}
-
-export interface ShippingAddress {
-  zip_code: string;
-  city: string;
-  state: string;
-  address: string;
-  number?: string;
-  complement?: string;
-  neighborhood?: string;
-}
-
 export interface Order {
   id: string;
   user_id: string;
+  status: string;
   items: OrderItem[];
-  status: 'pending' | 'processing' | 'completed' | 'cancelled';
-  payment_status: string;
-  subtotal: number;
-  discount: number;
-  shipping_fee: number;
-  total_amount: number;
   payment_method?: string;
-  installments?: number;
-  mp_preference_id?: string;
+  payment_status?: string;
+  total_amount: number;
+  subtotal?: number;
+  discount?: number;
+  shipping_cost?: number;
   shipping_address?: ShippingAddress;
   created_at: string;
-  updated_at: string;
-  omie_status: string;
-  omie_order_id?: string;
-  omie_invoice_number?: string;
-  omie_invoice_key?: string;
-  omie_invoice_date?: string;
-  omie_tracking_code?: string;
-  omie_shipping_code?: string;
-  omie_shipping_company?: string;
+  updated_at?: string;
   profiles?: {
     id?: string;
     full_name?: string;
     email?: string;
     phone?: string;
     zip_code?: string;
+    address?: string;
     city?: string;
     state?: string;
-    address?: string;
-    endereco_numero?: string; 
     complemento?: string;
-    neighborhood?: string;
+    endereco_numero?: string;
   };
+  omie_order_id?: string;
+  omie_status?: string;
 }
 
-export interface CreateOrderDTO {
-  items: OrderItem[];
-  shipping_address: ShippingAddress;
-  voucher_code?: string;
+export interface OrderItem {
+  product_id: string;
+  quantity: number;
+  price: number;
+  name: string;
+  image_url?: string;
+  sku?: string;
+}
+
+export interface ShippingAddress {
+  zip_code: string;
+  address: string;
+  number: string;
+  city: string;
+  state: string;
+  neighborhood?: string;
+  complement?: string;
+  name?: string; // Adicionando propriedade name
+}
+
+export interface OrderWithJson extends Order {
+  items: string | OrderItem[];
+  shipping_address: string | ShippingAddress;
 }
