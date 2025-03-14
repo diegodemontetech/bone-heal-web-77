@@ -26,7 +26,7 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
       
       // Usando tipagem explícita para evitar recursão profunda
-      setStages(data as unknown as CRMStage[]);
+      setStages(data as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -66,7 +66,7 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (data) {
         // Usando tipagem explícita para evitar recursão profunda
-        const newStage = data[0] as unknown as CRMStage;
+        const newStage = data[0] as CRMStage;
         setStages([...stages, newStage]);
         toast.success("Estágio criado com sucesso!");
       }
@@ -98,7 +98,7 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (data) {
         // Usando tipagem explícita para evitar recursão profunda
-        const updatedStage = data[0] as unknown as CRMStage;
+        const updatedStage = data[0] as CRMStage;
         setStages(
           stages.map((stage) =>
             stage.id === stageId
