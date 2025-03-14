@@ -1,31 +1,34 @@
 
-import {
-  ReactFlow,
-  Background,
+import React, { useCallback, useState, useRef } from 'react';
+import ReactFlow, {
+  ReactFlowProvider,
   Controls,
-  MiniMap,
-  Node,
-  Edge,
+  Background,
+  BackgroundVariant,
+  ConnectionLineType,
+  NodeTypes,
+  addEdge,
+  useNodesState,
+  useEdgesState,
   Connection,
-  OnNodesChange,
-  OnEdgesChange,
-  OnConnect,
-  OnInit,
-  Panel,
+  Edge,
+  Node,
   useReactFlow,
-} from "reactflow";
-import "reactflow/dist/style.css";
+} from 'reactflow';
+import 'reactflow/dist/style.css';
 
-// Importando os nós customizados
-import TriggerNode from "./nodes/TriggerNode";
-import ActionNode from "./nodes/ActionNode";
-import ConditionNode from "./nodes/ConditionNode";
-import TimerNode from "./nodes/TimerNode";
-import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, Maximize2, Save, Play } from "lucide-react";
+import TriggerNode from './nodes/TriggerNode';
+import ActionNode from './nodes/ActionNode';
+import ConditionNode from './nodes/ConditionNode';
+import TimerNode from './nodes/TimerNode';
 
-// Registrando os tipos de nós
-const nodeTypes = {
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { AlertTriangle, Save, Play } from 'lucide-react';
+import { toast } from 'sonner';
+
+// Definir tipos de nós
+const nodeTypes: NodeTypes = {
   triggerNode: TriggerNode,
   actionNode: ActionNode,
   conditionNode: ConditionNode,
@@ -33,149 +36,173 @@ const nodeTypes = {
 };
 
 interface FlowCanvasProps {
-  nodes: Node[];
-  edges: Edge[];
-  onNodesChange: OnNodesChange;
-  onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
-  onInit: OnInit;
-  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
-  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
-  onSave?: () => void;
-  onExecute?: () => void;
-  isSaving?: boolean;
-  canExecute?: boolean;
+  flowId: string;
+  onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
+  initialNodes?: Node[];
+  initialEdges?: Edge[];
 }
 
-const FlowCanvas = ({
-  nodes,
-  edges,
-  onNodesChange,
-  onEdgesChange,
-  onConnect,
-  onInit,
-  onDrop,
-  onDragOver,
-  onSave,
-  onExecute,
-  isSaving,
-  canExecute = false,
-}: FlowCanvasProps) => {
-  const { fitView, zoomIn, zoomOut } = useReactFlow();
+const FlowCanvas = ({ flowId, onSave, initialNodes = [], initialEdges = [] }: FlowCanvasProps) => {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { project } = useReactFlow();
+  const [isExecuting, setIsExecuting] = useState(false);
 
-  const handleFitView = () => {
-    fitView({ padding: 0.2 });
+  // Configurar o DnD
+  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  // Lidar com soltar o elemento
+  const onDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+
+      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!reactFlowBounds) return;
+
+      try {
+        const dataStr = event.dataTransfer.getData('application/reactflow');
+        const nodeData = JSON.parse(dataStr);
+
+        // Calcular posição onde o nó foi solto
+        const position = project({
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        });
+
+        // Criar novo nó
+        const newNode = {
+          id: `${nodeData.nodeType}_${Date.now()}`,
+          type: nodeData.nodeType,
+          position,
+          data: {
+            label: nodeData.label,
+            description: nodeData.description,
+            icon: nodeData.icon,
+            service: nodeData.service,
+            action: nodeData.action,
+          },
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+      } catch (error) {
+        console.error('Erro ao processar o drop:', error);
+      }
+    },
+    [project, setNodes]
+  );
+
+  // Adicionar conexão
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
+
+  // Salvar fluxo
+  const handleSave = async () => {
+    if (!onSave) return;
+    
+    try {
+      setIsSaving(true);
+      await onSave(nodes, edges);
+      toast.success('Fluxo salvo com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar fluxo:', error);
+      toast.error('Erro ao salvar fluxo');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleZoomIn = () => {
-    zoomIn({ duration: 300 });
-  };
+  // Executar fluxo
+  const handleExecute = async () => {
+    if (!flowId) return;
+    
+    try {
+      setIsExecuting(true);
+      const response = await fetch(`/api/automation/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ flowId }),
+      });
 
-  const handleZoomOut = () => {
-    zoomOut({ duration: 300 });
+      if (!response.ok) {
+        throw new Error('Falha ao executar fluxo');
+      }
+      
+      toast.success('Fluxo executado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao executar fluxo:', error);
+      toast.error('Erro ao executar fluxo');
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   return (
-    <div className="relative h-full">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onInit={onInit}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        nodeTypes={nodeTypes}
-        fitView
-        defaultEdgeOptions={{
-          animated: true,
-          type: 'smoothstep',
-        }}
-        connectionLineType="smoothstep"
-        connectionLineStyle={{ stroke: '#999', strokeWidth: 2 }}
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background
-          color="#f0f0f0"
-          gap={16}
-          size={1}
-          variant="dots"
-        />
-        <Controls position="bottom-right" showInteractive={false} />
-        <MiniMap
-          nodeStrokeColor={(n) => {
-            if (n.type === 'triggerNode') return '#10b981';
-            if (n.type === 'actionNode') return '#3b82f6';
-            if (n.type === 'conditionNode') return '#f59e0b';
-            if (n.type === 'timerNode') return '#9333ea';
-            return '#666';
-          }}
-          nodeColor={(n) => {
-            if (n.type === 'triggerNode') return '#d1fae5';
-            if (n.type === 'actionNode') return '#dbeafe';
-            if (n.type === 'conditionNode') return '#fef3c7';
-            if (n.type === 'timerNode') return '#f3e8ff';
-            return '#fff';
-          }}
-          maskColor="rgba(240, 240, 240, 0.5)"
-        />
-        
-        <Panel position="top-right" className="flex gap-2">
-          {onSave && (
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="bg-white"
-              onClick={onSave}
-              disabled={isSaving}
-            >
-              <Save className="h-4 w-4 mr-1" />
-              {isSaving ? "Salvando..." : "Salvar"}
-            </Button>
-          )}
-          {onExecute && (
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="bg-white"
-              onClick={onExecute}
-              disabled={!canExecute}
-            >
-              <Play className="h-4 w-4 mr-1" />
-              Executar
-            </Button>
-          )}
-        </Panel>
-        
-        <Panel position="bottom-left" className="flex gap-2">
+    <Card className="h-[600px] w-full">
+      <div className="flex justify-between items-center p-2 border-b">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            {nodes.length === 0 ? (
+              <span className="flex items-center">
+                <AlertTriangle className="h-4 w-4 mr-1 text-yellow-500" />
+                Arraste elementos para o canvas para construir seu fluxo
+              </span>
+            ) : (
+              <span>{nodes.length} nós e {edges.length} conexões</span>
+            )}
+          </p>
+        </div>
+        <div className="flex gap-2">
           <Button 
-            size="icon" 
             variant="outline" 
-            className="h-8 w-8 bg-white"
-            onClick={handleZoomIn}
+            size="sm" 
+            onClick={handleSave} 
+            disabled={isSaving}
           >
-            <ZoomIn className="h-4 w-4" />
+            <Save className="h-4 w-4 mr-1" />
+            Salvar
           </Button>
           <Button 
-            size="icon" 
-            variant="outline" 
-            className="h-8 w-8 bg-white"
-            onClick={handleZoomOut}
+            variant="default" 
+            size="sm" 
+            onClick={handleExecute} 
+            disabled={isExecuting || nodes.length === 0}
           >
-            <ZoomOut className="h-4 w-4" />
+            <Play className="h-4 w-4 mr-1" />
+            Executar
           </Button>
-          <Button 
-            size="icon" 
-            variant="outline" 
-            className="h-8 w-8 bg-white"
-            onClick={handleFitView}
+        </div>
+      </div>
+      <div className="h-[550px] w-full" ref={reactFlowWrapper}>
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            nodeTypes={nodeTypes}
+            connectionLineType={ConnectionLineType.SmoothStep}
+            fitView
+            attributionPosition="bottom-right"
           >
-            <Maximize2 className="h-4 w-4" />
-          </Button>
-        </Panel>
-      </ReactFlow>
-    </div>
+            <Controls />
+            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+          </ReactFlow>
+        </ReactFlowProvider>
+      </div>
+    </Card>
   );
 };
 
