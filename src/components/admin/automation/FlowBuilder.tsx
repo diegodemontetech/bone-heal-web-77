@@ -5,6 +5,7 @@ import FlowCanvas from "./FlowCanvas";
 import NoFlowSelected from "./NoFlowSelected";
 import { useAutomationFlow } from "@/hooks/use-automation-flow";
 import { Card } from "@/components/ui/card";
+import { Node, Edge } from "reactflow";
 
 interface FlowBuilderProps {
   flowId: string | null;
@@ -41,9 +42,9 @@ const FlowBuilder = ({ flowId, onCreateFlow }: FlowBuilderProps) => {
     return <NoFlowSelected onCreateFlow={onCreateFlow} />;
   }
 
-  // Modificar o handleSave para retornar uma Promise
-  const handleSave = async () => {
-    return saveFlow({ 
+  // Corrigindo a função handleSave para garantir compatibilidade de tipo retornando Promise<void>
+  const handleSave = async (): Promise<void> => {
+    await saveFlow({ 
       nodes,
       edges,
       name: flowName
