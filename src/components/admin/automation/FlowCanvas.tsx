@@ -7,13 +7,10 @@ import ReactFlow, {
   BackgroundVariant,
   ConnectionLineType,
   NodeTypes,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  Connection,
-  Edge,
   Node,
-  useReactFlow,
+  Edge,
+  Connection,
+  ReactFlowInstance,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -35,109 +32,54 @@ const nodeTypes: NodeTypes = {
   timerNode: TimerNode,
 };
 
-interface FlowCanvasProps {
-  flowId: string;
-  onSave?: (nodes: Node[], edges: Edge[]) => Promise<void>;
-  initialNodes?: Node[];
-  initialEdges?: Edge[];
+export interface FlowCanvasProps {
+  nodes: Node[];
+  edges: Edge[];
+  onNodesChange: (changes: any) => void;
+  onEdgesChange: (changes: any) => void;
+  onConnect: (connection: Connection) => void;
+  onInit: (instance: ReactFlowInstance) => void;
+  onDrop: (event: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (event: React.DragEvent<HTMLDivElement>) => void;
+  onSave: () => Promise<void>;
+  onExecute: () => void;
+  isSaving: boolean;
+  canExecute: boolean;
 }
 
-const FlowCanvas = ({ flowId, onSave, initialNodes = [], initialEdges = [] }: FlowCanvasProps) => {
+const FlowCanvas: React.FC<FlowCanvasProps> = ({
+  nodes,
+  edges,
+  onNodesChange,
+  onEdgesChange,
+  onConnect,
+  onInit,
+  onDrop,
+  onDragOver,
+  onSave,
+  onExecute,
+  isSaving,
+  canExecute,
+}) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const { project } = useReactFlow();
   const [isExecuting, setIsExecuting] = useState(false);
 
-  // Configurar o DnD
-  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  // Lidar com soltar o elemento
-  const onDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>) => {
-      event.preventDefault();
-
-      const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-      if (!reactFlowBounds) return;
-
-      try {
-        const dataStr = event.dataTransfer.getData('application/reactflow');
-        const nodeData = JSON.parse(dataStr);
-
-        // Calcular posição onde o nó foi solto
-        const position = project({
-          x: event.clientX - reactFlowBounds.left,
-          y: event.clientY - reactFlowBounds.top,
-        });
-
-        // Criar novo nó
-        const newNode = {
-          id: `${nodeData.nodeType}_${Date.now()}`,
-          type: nodeData.nodeType,
-          position,
-          data: {
-            label: nodeData.label,
-            description: nodeData.description,
-            icon: nodeData.icon,
-            service: nodeData.service,
-            action: nodeData.action,
-          },
-        };
-
-        setNodes((nds) => nds.concat(newNode));
-      } catch (error) {
-        console.error('Erro ao processar o drop:', error);
-      }
-    },
-    [project, setNodes]
-  );
-
-  // Adicionar conexão
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
-  );
-
-  // Salvar fluxo
   const handleSave = async () => {
-    if (!onSave) return;
-    
     try {
-      setIsSaving(true);
-      await onSave(nodes, edges);
+      await onSave();
       toast.success('Fluxo salvo com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar fluxo:', error);
       toast.error('Erro ao salvar fluxo');
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  // Executar fluxo
   const handleExecute = async () => {
-    if (!flowId) return;
+    if (!canExecute) return;
     
     try {
       setIsExecuting(true);
-      const response = await fetch(`/api/automation/execute`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ flowId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Falha ao executar fluxo');
-      }
-      
-      toast.success('Fluxo executado com sucesso!');
+      await onExecute();
     } catch (error) {
       console.error('Erro ao executar fluxo:', error);
       toast.error('Erro ao executar fluxo');
@@ -175,7 +117,7 @@ const FlowCanvas = ({ flowId, onSave, initialNodes = [], initialEdges = [] }: Fl
             variant="default" 
             size="sm" 
             onClick={handleExecute} 
-            disabled={isExecuting || nodes.length === 0}
+            disabled={isExecuting || !canExecute}
           >
             <Play className="h-4 w-4 mr-1" />
             Executar
@@ -190,6 +132,7 @@ const FlowCanvas = ({ flowId, onSave, initialNodes = [], initialEdges = [] }: Fl
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onInit={onInit}
             onDragOver={onDragOver}
             onDrop={onDrop}
             nodeTypes={nodeTypes}
