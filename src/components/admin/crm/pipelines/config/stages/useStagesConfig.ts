@@ -27,8 +27,8 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Tratando o problema de tipagem usando type assertion
-      setStages(data as unknown as CRMStage[] || []);
+      // Usar type assertion explícita para evitar a recursão de tipo
+      setStages(data as CRMStage[] || []);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -81,7 +81,8 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        setStages([...stages, data[0] as unknown as CRMStage]);
+        // Usar type assertion explícita
+        setStages([...stages, data[0] as CRMStage]);
         toast.success("Estágio criado com sucesso!");
         setIsDialogOpen(false);
       }
@@ -119,7 +120,7 @@ export const useStagesConfig = (pipelineId: string) => {
         setStages(
           stages.map((stage) =>
             stage.id === stageId
-              ? { ...stage, ...data[0] as unknown as CRMStage }
+              ? { ...stage, ...data[0] as CRMStage }
               : stage
           )
         );

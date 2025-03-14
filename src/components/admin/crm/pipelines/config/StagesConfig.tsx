@@ -77,7 +77,7 @@ export const StagesConfig = ({ pipelineId }: { pipelineId: string }) => {
               onAdd={(data) => handleCreateStage({
                 name: data.name,
                 color: data.color,
-                department_id: 'default' // Usar um valor padrão temporário
+                department_id: data.department_id || 'default' // Garantir que department_id está sempre presente
               })}
               isLoading={isSaving}
             />
