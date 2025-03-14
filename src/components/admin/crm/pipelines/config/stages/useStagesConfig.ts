@@ -25,8 +25,8 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Simplificando a asserção de tipo para evitar recursão excessiva
-      setStages(data || []);
+      // Usando cast simples para evitar recursão excessiva
+      setStages((data || []) as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -65,9 +65,9 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Simplificando a asserção de tipo
-        const newStage = data[0] || {};
-        setStages([...stages, newStage as CRMStage]);
+        // Usando cast simples para evitar recursão excessiva
+        const newStage = data[0] as CRMStage;
+        setStages([...stages, newStage]);
         toast.success("Estágio criado com sucesso!");
       }
     } catch (error) {
@@ -97,8 +97,8 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Simplificando a asserção de tipo
-        const updatedStage = data[0] || {};
+        // Usando cast simples para evitar recursão excessiva
+        const updatedStage = data[0] as CRMStage;
         setStages(
           stages.map((stage) =>
             stage.id === stageId
