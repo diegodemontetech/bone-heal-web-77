@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,8 +25,8 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Simplificar o type assertion
-      setStages(data as CRMStage[] || []);
+      // Usando type assertion direto para evitar a recursão de tipo
+      setStages((data || []) as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -145,92 +146,8 @@ export const useStagesConfig = (pipelineId: string) => {
       setCurrentStage(null);
       setIsDialogOpen(false);
     },
-    handleCreateStage: async (formData: StageFormData) => {
-      try {
-        setIsSaving(true);
-        // Calcular a ordem para o novo estágio
-        let newOrder = 1;
-        if (stages.length > 0) {
-          const maxOrder = Math.max(...stages.map(s => s.order));
-          newOrder = maxOrder + 1;
-        }
-
-        const { data, error } = await supabase
-          .from("crm_stages")
-          .insert([
-            {
-              name: formData.name,
-              color: formData.color,
-              order: newOrder,
-              pipeline_id: pipelineId,
-              department_id: formData.department_id,
-            },
-          ])
-          .select();
-
-        if (error) throw error;
-
-        if (data) {
-          // Usar type assertion explícita
-          setStages([...stages, data[0] as CRMStage]);
-          toast.success("Estágio criado com sucesso!");
-          setIsDialogOpen(false);
-        }
-      } catch (error) {
-        console.error("Error creating stage:", error);
-        toast.error("Erro ao criar estágio");
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    handleUpdateStage: async (stageId: string, formData: StageFormData) => {
-      try {
-        setIsSaving(true);
-        const { data, error } = await supabase
-          .from("crm_stages")
-          .update({
-            name: formData.name,
-            color: formData.color,
-            department_id: formData.department_id,
-          })
-          .eq("id", stageId)
-          .select();
-
-        if (error) throw error;
-
-        if (data) {
-          setStages(
-            stages.map((stage) =>
-              stage.id === stageId
-                ? { ...stage, ...data[0] as CRMStage }
-                : stage
-            )
-          );
-          toast.success("Estágio atualizado com sucesso!");
-          setIsDialogOpen(false);
-        }
-      } catch (error) {
-        console.error("Error updating stage:", error);
-        toast.error("Erro ao atualizar estágio");
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    handleDeleteStage: async (stageId: string) => {
-      try {
-        const { error } = await supabase
-          .from("crm_stages")
-          .delete()
-          .eq("id", stageId);
-
-        if (error) throw error;
-
-        setStages(stages.filter((stage) => stage.id !== stageId));
-        toast.success("Estágio excluído com sucesso!");
-      } catch (error) {
-        console.error("Error deleting stage:", error);
-        toast.error("Erro ao excluir estágio");
-      }
-    }
+    handleCreateStage,
+    handleUpdateStage,
+    handleDeleteStage
   };
 };

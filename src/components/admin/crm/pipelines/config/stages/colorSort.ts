@@ -1,24 +1,58 @@
 
-export const useColorSort = () => {
-  // Array com cores organizadas por categorias de cores
-  const sortedColors = [
-    // Azuis
-    '#3b82f6', '#60a5fa', '#2563eb', '#1d4ed8', '#1e40af',
-    // Verdes
-    '#10b981', '#34d399', '#059669', '#047857', '#065f46',
-    // Laranjas/Âmbar
-    '#f59e0b', '#fbbf24', '#d97706', '#b45309', '#92400e',
-    // Vermelhos
-    '#ef4444', '#f87171', '#dc2626', '#b91c1c', '#991b1b',
-    // Roxos
-    '#8b5cf6', '#a78bfa', '#7c3aed', '#6d28d9', '#5b21b6',
-    // Rosas
-    '#ec4899', '#f472b6', '#db2777', '#be185d', '#9d174d',
-    // Ciano
-    '#06b6d4', '#22d3ee', '#0891b2', '#0e7490', '#155e75',
-    // Cinzas
-    '#6b7280', '#9ca3af', '#4b5563', '#374151', '#1f2937'
-  ];
+/**
+ * Função auxiliar para ordenar cores por matiz
+ * Converte cores hex para HSL e as ordena pelo valor de H (matiz)
+ */
+export const sortColorsByHue = (colors: string[]): string[] => {
+  return [...colors].sort((a, b) => {
+    const hueA = hexToHSL(a)[0];
+    const hueB = hexToHSL(b)[0];
+    return hueA - hueB;
+  });
+};
+
+/**
+ * Converte uma cor hexadecimal para HSL
+ * Retorna um array [h, s, l] com valores de matiz, saturação e luminosidade
+ */
+export const hexToHSL = (hex: string): [number, number, number] => {
+  // Remover o # se presente
+  hex = hex.replace(/^#/, '');
   
-  return sortedColors;
+  // Convertendo para RGB
+  let r, g, b;
+  if (hex.length === 3) {
+    r = parseInt(hex.charAt(0) + hex.charAt(0), 16) / 255;
+    g = parseInt(hex.charAt(1) + hex.charAt(1), 16) / 255;
+    b = parseInt(hex.charAt(2) + hex.charAt(2), 16) / 255;
+  } else {
+    r = parseInt(hex.substring(0, 2), 16) / 255;
+    g = parseInt(hex.substring(2, 4), 16) / 255;
+    b = parseInt(hex.substring(4, 6), 16) / 255;
+  }
+  
+  // Encontrando o mínimo e máximo
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  
+  // Calculando o H e S
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    
+    switch (max) {
+      case r:
+        h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+        break;
+      case g:
+        h = ((b - r) / d + 2) * 60;
+        break;
+      case b:
+        h = ((r - g) / d + 4) * 60;
+        break;
+    }
+  }
+  
+  return [h, s * 100, l * 100];
 };
