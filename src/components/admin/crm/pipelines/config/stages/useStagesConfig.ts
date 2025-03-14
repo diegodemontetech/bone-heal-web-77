@@ -25,8 +25,7 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Usando type assertion direto para evitar a recursão de tipo
-      setStages((data || []) as CRMStage[]);
+      setStages(data as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -65,7 +64,6 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usar type assertion explícita
         setStages([...stages, data[0] as CRMStage]);
         toast.success("Estágio criado com sucesso!");
         setIsDialogOpen(false);
@@ -100,7 +98,7 @@ export const useStagesConfig = (pipelineId: string) => {
         setStages(
           stages.map((stage) =>
             stage.id === stageId
-              ? { ...stage, ...data[0] as CRMStage }
+              ? { ...stage, ...data[0] as Partial<CRMStage> }
               : stage
           )
         );

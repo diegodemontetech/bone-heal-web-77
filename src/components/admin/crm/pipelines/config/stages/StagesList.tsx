@@ -5,19 +5,24 @@ import { StageItem } from "./StageItem";
 
 interface StagesListProps {
   stages: CRMStage[];
-  onDragEnd: (result: DropResult) => void;
-  onUpdateStage: (stage: CRMStage, field: string, value: string) => void;
-  onDeleteStage: (stageId: string) => void;
+  onEdit: (stage: CRMStage) => void;
+  onDelete: (stageId: string) => void;
+  onDragEnd?: (result: DropResult) => void;
 }
 
 export const StagesList = ({ 
   stages, 
-  onDragEnd, 
-  onUpdateStage, 
-  onDeleteStage 
+  onEdit, 
+  onDelete,
+  onDragEnd 
 }: StagesListProps) => {
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || !onDragEnd) return;
+    onDragEnd(result);
+  };
+
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DragDropContext onDragEnd={handleDragEnd}>
       <Droppable droppableId="stages-list">
         {(provided) => (
           <div 
@@ -31,8 +36,12 @@ export const StagesList = ({
                   <StageItem
                     stage={stage}
                     provided={provided}
-                    onUpdate={onUpdateStage}
-                    onDelete={onDeleteStage}
+                    onUpdate={(stage, field, value) => {
+                      // Esta função será implementada quando atualizarmos useStagesConfig
+                      console.log("Update stage", stage.id, field, value);
+                    }}
+                    onDelete={onDelete}
+                    onEdit={() => onEdit(stage)}
                   />
                 )}
               </Draggable>
