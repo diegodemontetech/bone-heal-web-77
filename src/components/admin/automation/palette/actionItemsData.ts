@@ -49,7 +49,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Lead Criado", 
     description: "Ativa quando um novo lead é registrado", 
-    icon: <UserPlus className="h-4 w-4" />, 
+    icon: React.createElement(UserPlus, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "crm",
@@ -58,7 +58,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Pedido Realizado", 
     description: "Ativa quando um novo pedido é feito", 
-    icon: <CreditCard className="h-4 w-4" />, 
+    icon: React.createElement(CreditCard, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "orders",
@@ -67,7 +67,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Mensagem WhatsApp", 
     description: "Ativa ao receber uma mensagem no WhatsApp", 
-    icon: <MessageCircle className="h-4 w-4" />, 
+    icon: React.createElement(MessageCircle, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "whatsapp",
@@ -76,7 +76,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Agendamento", 
     description: "Executa em uma programação definida", 
-    icon: <Calendar className="h-4 w-4" />, 
+    icon: React.createElement(Calendar, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "scheduler",
@@ -85,7 +85,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Formulário Enviado", 
     description: "Ativa quando um formulário é enviado", 
-    icon: <Edit className="h-4 w-4" />, 
+    icon: React.createElement(Edit, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "forms",
@@ -94,7 +94,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Produto Criado", 
     description: "Ativa quando um produto é criado", 
-    icon: <Briefcase className="h-4 w-4" />, 
+    icon: React.createElement(Briefcase, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "products",
@@ -103,7 +103,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Estágio de Lead Alterado", 
     description: "Ativa quando um lead muda de estágio", 
-    icon: <GitBranch className="h-4 w-4" />, 
+    icon: React.createElement(GitBranch, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "crm",
@@ -112,7 +112,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Email Recebido", 
     description: "Ativa quando um email é recebido", 
-    icon: <Mail className="h-4 w-4" />, 
+    icon: React.createElement(Mail, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "email",
@@ -121,7 +121,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Ticket de Suporte", 
     description: "Ativa quando um ticket é criado ou atualizado", 
-    icon: <AlertTriangle className="h-4 w-4" />, 
+    icon: React.createElement(AlertTriangle, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "support",
@@ -130,7 +130,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Pagamento Confirmado", 
     description: "Ativa quando um pagamento é confirmado", 
-    icon: <DollarSign className="h-4 w-4" />, 
+    icon: React.createElement(DollarSign, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "payments",
@@ -139,7 +139,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Gatilho Manual", 
     description: "Ativa manualmente pela interface", 
-    icon: <Target className="h-4 w-4" />, 
+    icon: React.createElement(Target, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "manual",
@@ -148,7 +148,7 @@ export const triggerItems: ActionItemData[] = [
   { 
     label: "Webhook", 
     description: "Ativa por chamada de API externa", 
-    icon: <Share2 className="h-4 w-4" />, 
+    icon: React.createElement(Share2, { className: "h-4 w-4" }), 
     nodeType: "triggerNode", 
     type: "trigger",
     service: "webhook",
@@ -161,7 +161,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Enviar Email", 
     description: "Envia uma mensagem por email", 
-    icon: <Mail className="h-4 w-4" />, 
+    icon: React.createElement(Mail, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "email",
@@ -170,7 +170,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Enviar WhatsApp", 
     description: "Envia uma mensagem pelo WhatsApp", 
-    icon: <MessageCircle className="h-4 w-4" />, 
+    icon: React.createElement(MessageCircle, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "whatsapp",
@@ -179,7 +179,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Atualizar Database", 
     description: "Atualiza registros no banco de dados", 
-    icon: <Database className="h-4 w-4" />, 
+    icon: React.createElement(Database, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "database",
@@ -188,7 +188,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Criar Registro", 
     description: "Cria um novo registro no banco", 
-    icon: <UploadCloud className="h-4 w-4" />, 
+    icon: React.createElement(UploadCloud, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "database",
@@ -197,7 +197,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Excluir Registro", 
     description: "Remove um registro do banco", 
-    icon: <Trash2 className="h-4 w-4" />, 
+    icon: React.createElement(Trash2, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "database",
@@ -206,7 +206,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Notificação", 
     description: "Envia notificação para administradores", 
-    icon: <Bell className="h-4 w-4" />, 
+    icon: React.createElement(Bell, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "notification",
@@ -215,7 +215,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Gerar PDF", 
     description: "Cria um documento PDF", 
-    icon: <FileText className="h-4 w-4" />, 
+    icon: React.createElement(FileText, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "document",
@@ -224,7 +224,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Mover Lead", 
     description: "Move lead para outro estágio", 
-    icon: <GitMerge className="h-4 w-4" />, 
+    icon: React.createElement(GitMerge, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "crm",
@@ -233,7 +233,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Atribuir Lead", 
     description: "Atribui lead para um usuário", 
-    icon: <User className="h-4 w-4" />, 
+    icon: React.createElement(User, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "crm",
@@ -242,7 +242,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Iniciar SLA", 
     description: "Inicia um temporizador de SLA", 
-    icon: <Timer className="h-4 w-4" />, 
+    icon: React.createElement(Timer, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "timer",
@@ -251,7 +251,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Adicionar Tag", 
     description: "Adiciona etiqueta a um registro", 
-    icon: <Tag className="h-4 w-4" />, 
+    icon: React.createElement(Tag, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "tag",
@@ -260,7 +260,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Remover Tag", 
     description: "Remove etiqueta de um registro", 
-    icon: <Tag className="h-4 w-4" />, 
+    icon: React.createElement(Tag, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "tag",
@@ -269,7 +269,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Fazer Chamada", 
     description: "Inicia uma chamada telefônica", 
-    icon: <Phone className="h-4 w-4" />, 
+    icon: React.createElement(Phone, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "phone",
@@ -278,7 +278,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Webhook Externo", 
     description: "Chama webhook de serviço externo", 
-    icon: <Share2 className="h-4 w-4" />, 
+    icon: React.createElement(Share2, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "webhook",
@@ -287,7 +287,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Criar Usuário", 
     description: "Cria um novo usuário", 
-    icon: <UserPlus className="h-4 w-4" />, 
+    icon: React.createElement(UserPlus, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "user",
@@ -296,7 +296,7 @@ export const actionItems: ActionItemData[] = [
   { 
     label: "Atualizar Função", 
     description: "Atualiza função de usuário", 
-    icon: <User className="h-4 w-4" />, 
+    icon: React.createElement(User, { className: "h-4 w-4" }), 
     nodeType: "actionNode", 
     type: "action",
     service: "user",
@@ -309,7 +309,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Filtro", 
     description: "Condicional baseado em dados", 
-    icon: <Filter className="h-4 w-4" />, 
+    icon: React.createElement(Filter, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -318,7 +318,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Verificar Erro", 
     description: "Verifica se houve erro nas etapas anteriores", 
-    icon: <AlertTriangle className="h-4 w-4" />, 
+    icon: React.createElement(AlertTriangle, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -327,7 +327,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Comparar Valores", 
     description: "Compara dois valores", 
-    icon: <Check className="h-4 w-4" />, 
+    icon: React.createElement(Check, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -336,7 +336,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Verificar SLA", 
     description: "Verifica status de SLA", 
-    icon: <Clock className="h-4 w-4" />, 
+    icon: React.createElement(Clock, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -345,7 +345,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Contém Tag", 
     description: "Verifica se contém uma etiqueta", 
-    icon: <Tag className="h-4 w-4" />, 
+    icon: React.createElement(Tag, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -354,7 +354,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Verificar Status", 
     description: "Verifica status de um registro", 
-    icon: <BarChart2 className="h-4 w-4" />, 
+    icon: React.createElement(BarChart2, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -363,7 +363,7 @@ export const conditionItems: ActionItemData[] = [
   { 
     label: "Verificar Permissão", 
     description: "Verifica permissão de usuário", 
-    icon: <User className="h-4 w-4" />, 
+    icon: React.createElement(User, { className: "h-4 w-4" }), 
     nodeType: "conditionNode", 
     type: "condition",
     service: "logic",
@@ -376,7 +376,7 @@ export const timerItems: ActionItemData[] = [
   { 
     label: "Esperar", 
     description: "Aguarda por tempo determinado", 
-    icon: <Clock className="h-4 w-4" />, 
+    icon: React.createElement(Clock, { className: "h-4 w-4" }), 
     nodeType: "timerNode", 
     type: "timer",
     service: "timer",
@@ -385,7 +385,7 @@ export const timerItems: ActionItemData[] = [
   { 
     label: "Agendamento", 
     description: "Executa em data/hora específica", 
-    icon: <Calendar className="h-4 w-4" />, 
+    icon: React.createElement(Calendar, { className: "h-4 w-4" }), 
     nodeType: "timerNode", 
     type: "timer",
     service: "timer",
@@ -394,7 +394,7 @@ export const timerItems: ActionItemData[] = [
   { 
     label: "Expressão Cron", 
     description: "Executa em padrão recorrente", 
-    icon: <Infinity className="h-4 w-4" />, 
+    icon: React.createElement(Infinity, { className: "h-4 w-4" }), 
     nodeType: "timerNode", 
     type: "timer",
     service: "timer",
@@ -403,7 +403,7 @@ export const timerItems: ActionItemData[] = [
   { 
     label: "SLA", 
     description: "Monitora tempo de resposta", 
-    icon: <Timer className="h-4 w-4" />, 
+    icon: React.createElement(Timer, { className: "h-4 w-4" }), 
     nodeType: "timerNode", 
     type: "timer",
     service: "timer",
