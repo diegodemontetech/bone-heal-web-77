@@ -25,8 +25,8 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Usando uma assertiva de tipo direta para evitar inferência recursiva
-      setStages(data as CRMStage[]);
+      // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
+      setStages((data || []) as unknown as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
       toast.error("Erro ao carregar estágios");
@@ -65,8 +65,8 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usando uma assertiva de tipo direta para evitar inferência recursiva
-        const newStage = data[0] as CRMStage;
+        // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
+        const newStage = data[0] as unknown as CRMStage;
         setStages([...stages, newStage]);
         toast.success("Estágio criado com sucesso!");
       }
@@ -97,8 +97,8 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usando uma assertiva de tipo direta para evitar inferência recursiva
-        const updatedStage = data[0] as CRMStage;
+        // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
+        const updatedStage = data[0] as unknown as CRMStage;
         setStages(
           stages.map((stage) =>
             stage.id === stageId

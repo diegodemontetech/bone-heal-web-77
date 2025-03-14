@@ -24,8 +24,8 @@ export const fetchFieldsFromPipeline = async (pipelineId: string): Promise<CRMFi
 
     if (error) throw error;
     
-    // Usando uma assertiva de tipo direta para evitar inferência recursiva
-    return data as CRMField[];
+    // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
+    return (data || []) as unknown as CRMField[];
   } catch (error) {
     console.error("Error fetching fields:", error);
     throw error;
@@ -57,8 +57,8 @@ export const createField = async (pipelineId: string, formData: FieldFormData): 
 
     if (error) throw error;
     
-    // Usando uma assertiva de tipo direta para evitar inferência recursiva
-    return data as CRMField;
+    // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
+    return data as unknown as CRMField;
   } catch (error) {
     console.error("Error creating field:", error);
     throw error;
@@ -90,8 +90,8 @@ export const updateField = async (fieldId: string, formData: FieldFormData): Pro
 
     if (error) throw error;
     
-    // Usando uma assertiva de tipo direta para evitar inferência recursiva
-    return data as CRMField;
+    // Usando uma assertiva de tipo dupla para evitar a recursão na inferência de tipo
+    return data as unknown as CRMField;
   } catch (error) {
     console.error("Error updating field:", error);
     throw error;
