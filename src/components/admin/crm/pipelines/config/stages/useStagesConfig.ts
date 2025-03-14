@@ -25,7 +25,7 @@ export const useStagesConfig = (pipelineId: string) => {
 
       if (error) throw error;
       
-      // Usando cast simples para evitar recursão excessiva
+      // Conversão direta para o tipo CRMStage[] sem recursão
       setStages((data || []) as CRMStage[]);
     } catch (error) {
       console.error("Error fetching stages:", error);
@@ -65,7 +65,7 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usando cast simples para evitar recursão excessiva
+        // Conversão direta para o tipo CRMStage
         const newStage = data[0] as CRMStage;
         setStages([...stages, newStage]);
         toast.success("Estágio criado com sucesso!");
@@ -97,7 +97,7 @@ export const useStagesConfig = (pipelineId: string) => {
       if (error) throw error;
 
       if (data) {
-        // Usando cast simples para evitar recursão excessiva
+        // Conversão direta para o tipo CRMStage
         const updatedStage = data[0] as CRMStage;
         setStages(
           stages.map((stage) =>
