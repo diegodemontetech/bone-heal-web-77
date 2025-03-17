@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProductGalleryProps {
@@ -19,11 +19,21 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
       return imagePath;
     }
     
-    const { data } = supabase.storage
-      .from('products')
-      .getPublicUrl(imagePath);
+    // Verificar se a imagem já tem o caminho completo ou apenas o nome do arquivo
+    if (!imagePath.includes('/')) {
+      imagePath = `products/${imagePath}`;
+    }
     
-    return data.publicUrl;
+    try {
+      const { data } = supabase.storage
+        .from('products')
+        .getPublicUrl(imagePath);
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Erro ao obter URL da imagem:", error);
+      return fallbackImage;
+    }
   };
   
   const safeMainImage = mainImage ? getImageUrl(mainImage) : fallbackImage;
@@ -33,9 +43,12 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
   const safeGallery = Array.isArray(gallery) && gallery.length > 0 
     ? gallery.filter(Boolean).map(img => getImageUrl(img))
     : [];
-
-  console.log("Imagem principal:", safeMainImage);
-  console.log("Galeria de imagens:", safeGallery);
+    
+  // Para debug
+  useEffect(() => {
+    console.log("Imagem principal:", safeMainImage);
+    console.log("Galeria de imagens:", safeGallery);
+  }, [safeMainImage, safeGallery]);
 
   return (
     <div className="space-y-4">
@@ -44,6 +57,7 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
           src={selectedImage || fallbackImage}
           alt="Imagem do produto"
           className="w-full h-full object-contain"
+          loading="eager"
           onError={(e) => {
             console.error("Erro ao carregar imagem:", selectedImage);
             (e.target as HTMLImageElement).src = fallbackImage;
@@ -52,24 +66,27 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
       </div>
       
       {(safeMainImage || safeGallery.length > 0) && (
-        <div className="grid grid-cols-5 gap-4">
-          {[safeMainImage, ...safeGallery].filter(Boolean).map((image, index) => (
+        <div className="grid grid-cols-5 gap-2 mt-2">
+          {[safeMainImage, ...safeGallery].filter(Boolean).slice(0, 5).map((image, index) => (
             <button
               key={index}
               onClick={() => setSelectedImage(image)}
-              className={`aspect-square rounded-lg overflow-hidden bg-gray-100 hover:ring-2 ring-violet-600 transition-all ${
-                selectedImage === image ? "ring-2" : ""
+              className={`aspect-square rounded-lg overflow-hidden bg-gray-100 border hover:border-violet-600 transition-all ${
+                selectedImage === image ? "border-violet-600 ring-1 ring-violet-600" : "border-gray-200"
               }`}
             >
-              <img
-                src={image}
-                alt={`Imagem ${index + 1}`}
-                className="w-full h-full object-contain p-2"
-                onError={(e) => {
-                  console.error("Erro ao carregar thumbnail:", image);
-                  (e.target as HTMLImageElement).src = fallbackImage;
-                }}
-              />
+              <div className="relative w-full h-full">
+                <img
+                  src={image}
+                  alt={`Imagem ${index + 1}`}
+                  className="absolute inset-0 w-full h-full object-contain p-1"
+                  loading="eager"
+                  onError={(e) => {
+                    console.error("Erro ao carregar thumbnail:", image);
+                    (e.target as HTMLImageElement).src = fallbackImage;
+                  }}
+                />
+              </div>
             </button>
           ))}
         </div>
