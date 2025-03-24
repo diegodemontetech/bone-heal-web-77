@@ -1,83 +1,81 @@
 
-import { useState } from "react";
-import CRMKanban from "@/components/admin/crm/CRMKanban";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PipelineSelector } from "@/components/admin/crm/PipelineSelector";
-import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Users } from "lucide-react";
+import { useState } from 'react';
+import { CRMKanban } from '@/components/admin/crm/CRMKanban';
+import Layout from '@/components/admin/Layout';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Filter, Plus } from 'lucide-react';
+import ContactDrawer from '@/components/admin/crm/ContactDrawer';
 
-const LeadsCRMPage = () => {
-  const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  const handleRefresh = () => {
-    setRefreshTrigger(prev => prev + 1);
+const LeadsCRM = () => {
+  const [activeTab, setActiveTab] = useState("kanban");
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact);
+    setDrawerOpen(true);
+  };
+  
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedContact(null);
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="h-8 w-8 text-primary" />
-            CRM Boneheal
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Gerencie leads, contatos e oportunidades em diversos pipelines
-          </p>
+    <Layout>
+      <div className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Gestão de Leads</h1>
+          
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filtrar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Todos os leads</DropdownMenuItem>
+                <DropdownMenuItem>Leads ativos</DropdownMenuItem>
+                <DropdownMenuItem>Leads inativos</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Lead
+            </Button>
+          </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <PipelineSelector 
-            selectedPipeline={selectedPipeline} 
-            onPipelineChange={setSelectedPipeline} 
-          />
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            <TabsTrigger value="list">Lista</TabsTrigger>
+          </TabsList>
           
-          <Button variant="outline" size="icon" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          <TabsContent value="kanban" className="mt-0">
+            <CRMKanban onContactSelect={handleContactSelect} />
+          </TabsContent>
           
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Contato
-          </Button>
-        </div>
+          <TabsContent value="list" className="mt-0">
+            <div className="text-center p-8">
+              <p className="text-muted-foreground">Visualização em lista em desenvolvimento</p>
+            </div>
+          </TabsContent>
+        </Tabs>
+        
+        <ContactDrawer 
+          open={drawerOpen}
+          onClose={closeDrawer}
+          contactId={selectedContact?.id}
+        />
       </div>
-      
-      <Tabs defaultValue="kanban" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="kanban">Kanban</TabsTrigger>
-          <TabsTrigger value="list">Lista</TabsTrigger>
-          <TabsTrigger value="metrics">Métricas</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="kanban" className="w-full">
-          <CRMKanban 
-            pipelineId={selectedPipeline} 
-            refreshTrigger={refreshTrigger}
-          />
-        </TabsContent>
-        
-        <TabsContent value="list">
-          <div className="bg-muted/50 border rounded-md p-8 text-center">
-            <h3 className="text-lg font-medium mb-2">Visualização em Lista</h3>
-            <p className="text-muted-foreground">
-              Esta funcionalidade estará disponível em breve.
-            </p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="metrics">
-          <div className="bg-muted/50 border rounded-md p-8 text-center">
-            <h3 className="text-lg font-medium mb-2">Métricas e Relatórios</h3>
-            <p className="text-muted-foreground">
-              Esta funcionalidade estará disponível em breve.
-            </p>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+    </Layout>
   );
 };
 
-export default LeadsCRMPage;
+export default LeadsCRM;

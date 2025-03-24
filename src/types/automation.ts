@@ -1,10 +1,10 @@
 
 import { WhatsAppMessage } from "@/components/admin/whatsapp/types";
+import { Node, Edge } from 'reactflow';
 
 export type NodeType = 'trigger' | 'action' | 'condition' | 'timer';
 
-export interface ActionNode {
-  id: string;
+export interface ActionNode extends Node<any, string> {
   type: 'action';
   actionType: string;
   data: {
@@ -12,8 +12,7 @@ export interface ActionNode {
   };
 }
 
-export interface ConditionNode {
-  id: string;
+export interface ConditionNode extends Node<any, string> {
   type: 'condition';
   conditionType: string;
   data: {
@@ -21,8 +20,7 @@ export interface ConditionNode {
   };
 }
 
-export interface TimerNode {
-  id: string;
+export interface TimerNode extends Node<any, string> {
   type: 'timer';
   timerType: string;
   data: {
@@ -30,8 +28,7 @@ export interface TimerNode {
   };
 }
 
-export interface TriggerNode {
-  id: string;
+export interface TriggerNode extends Node<any, string> {
   type: 'trigger';
   triggerType: string;
   data: {
@@ -41,10 +38,7 @@ export interface TriggerNode {
 
 export type FlowNode = ActionNode | ConditionNode | TimerNode | TriggerNode;
 
-export interface FlowEdge {
-  id: string;
-  source: string;
-  target: string;
+export interface FlowEdge extends Edge<any> {
   label?: string;
 }
 

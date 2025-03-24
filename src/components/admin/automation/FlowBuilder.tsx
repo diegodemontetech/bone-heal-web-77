@@ -5,6 +5,8 @@ import FlowCanvas from "./FlowCanvas";
 import NoFlowSelected from "./NoFlowSelected";
 import { useAutomationFlow } from "@/hooks/use-automation-flow";
 import { Card } from "@/components/ui/card";
+import { Node, Edge } from "reactflow";
+import { FlowNode, FlowEdge } from "@/types/automation";
 
 interface FlowBuilderProps {
   flowId: string | null;
@@ -41,14 +43,12 @@ const FlowBuilder = ({ flowId, onCreateFlow }: FlowBuilderProps) => {
     return <NoFlowSelected onCreateFlow={onCreateFlow} />;
   }
 
-  // Corrigimos a função handleSave para não retornar um boolean explicitamente
   const handleSave = async (): Promise<void> => {
     await saveFlow({ 
-      nodes,
-      edges,
+      nodes: nodes as FlowNode[],
+      edges: edges as FlowEdge[],
       name: flowName
     });
-    // Não retorna valor, apenas uma Promise<void>
   };
 
   const handleExecute = () => {

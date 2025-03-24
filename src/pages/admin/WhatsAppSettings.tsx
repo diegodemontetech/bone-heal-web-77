@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { MessageSquare, Users, Settings, Webhook, Smartphone, Api, Loader2 } from "lucide-react";
+import { MessageSquare, Users, Settings, Webhook, Smartphone, Loader2 } from "lucide-react";
 import { CreateInstanceDialog } from "@/components/admin/whatsapp/dashboard/dialogs/CreateInstanceDialog";
 import { InstancesTab } from "@/components/admin/whatsapp/dashboard/instances/InstancesTab";
 import { ChatTab } from "@/components/admin/whatsapp/dashboard/chat/ChatTab";
@@ -26,7 +26,7 @@ const WhatsAppSettings = () => {
   
   const {
     messages,
-    isLoading: messagesLoading,
+    loading: messagesLoading,
     sendMessage,
   } = useWhatsAppMessages(selectedInstanceId);
 
@@ -165,18 +165,7 @@ const WhatsAppSettings = () => {
 
     try {
       // Implementação simplificada apenas para demonstração
-      const success = await sendMessage({
-        message,
-        to: "5511999999999", // Número de exemplo
-        instanceId: selectedInstanceId
-      });
-
-      if (success) {
-        toast.success("Mensagem enviada com sucesso");
-        return true;
-      } else {
-        throw new Error("Falha ao enviar mensagem");
-      }
+      return await sendMessage(message);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       toast.error("Falha ao enviar mensagem");

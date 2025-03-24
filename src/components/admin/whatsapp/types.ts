@@ -14,6 +14,18 @@ export interface WhatsAppMessage {
   lead_id: string;
   instance_id: string | null;
   sender_id: string | null;
+  type?: string; // Added type field
+}
+
+export interface WhatsAppInstance {
+  id: string;
+  name: string;
+  instance_name: string;
+  status: string;
+  qr_code: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WhatsAppChatProps {
@@ -48,7 +60,7 @@ export interface ChatTabProps {
 }
 
 export interface InstancesTabProps {
-  instances: any[];
+  instances: WhatsAppInstance[];
   isLoading: boolean;
   onConnect: (instanceId: string) => Promise<void>;
   onDisconnect: (instanceId: string) => Promise<boolean>;
@@ -58,7 +70,7 @@ export interface InstancesTabProps {
 }
 
 export interface WhatsAppInstanceCardProps {
-  instance: any;
+  instance: WhatsAppInstance;
   onConnect: (instanceId: string) => Promise<void>;
   onDisconnect: (instanceId: string) => Promise<boolean>;
   onDelete: (instanceId: string) => Promise<boolean>;
@@ -87,3 +99,24 @@ export interface CreateInstanceDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   onCreateInstance: (name: string) => Promise<any>;
 }
+
+// Utility function to convert message format
+export const convertMessageFormat = (message: any): WhatsAppMessage => {
+  return {
+    id: message.id || '',
+    message: message.message || message.body || '',
+    direction: message.direction || (message.isFromMe ? 'outgoing' : 'incoming'),
+    is_bot: message.is_bot || false,
+    created_at: message.created_at || message.timestamp || new Date().toISOString(),
+    media_url: message.media_url || null,
+    media_type: message.media_type || null,
+    isFromMe: message.isFromMe || message.direction === 'outgoing',
+    timestamp: message.timestamp || message.created_at,
+    body: message.body || message.message,
+    sent_by: message.sent_by || null,
+    lead_id: message.lead_id || '',
+    instance_id: message.instance_id || null,
+    sender_id: message.sender_id || null,
+    type: message.type || null
+  };
+};

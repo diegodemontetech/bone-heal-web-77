@@ -68,7 +68,7 @@ export const WhatsAppChat = ({
                   alt="Imagem" 
                   className="max-w-full rounded"
                 />
-              ) : message.type === "document" ? (
+              ) : message.media_type === "document" || (message.type && message.type === "document") ? (
                 <a 
                   href={message.media_url} 
                   target="_blank" 
@@ -97,7 +97,7 @@ export const WhatsAppChat = ({
               isFromUser ? "text-primary-foreground/80" : "text-muted-foreground"
             }`}
           >
-            {format(new Date(message.created_at || message.timestamp), "HH:mm", { locale: ptBR })}
+            {format(new Date(message.created_at || message.timestamp || ""), "HH:mm", { locale: ptBR })}
           </div>
         </div>
       </div>
@@ -163,3 +163,5 @@ export const WhatsAppChat = ({
     </Card>
   );
 };
+
+export default WhatsAppChat;

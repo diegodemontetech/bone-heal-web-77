@@ -1,20 +1,17 @@
 
 import React from "react";
-import WhatsAppChat from "@/components/admin/whatsapp/WhatsAppChat";
-import { WhatsAppMessage } from "@/components/admin/whatsapp/types";
-
-interface ChatTabProps {
-  messages: WhatsAppMessage[];
-  messagesLoading: boolean;
-  onSendMessage: (message: string) => Promise<boolean>;
-  selectedInstanceId: string | null;
-}
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChatMessages } from "../dashboard/chat/ChatMessages";
+import { ChatInput } from "../dashboard/chat/ChatInput";
+import { ChatTabProps } from "@/components/admin/whatsapp/types";
+import { WhatsAppChat } from "@/components/admin/whatsapp/WhatsAppChat";
 
 const ChatTab = ({
-  messages,
+  messages, 
+  onSendMessage, 
+  isLoading,
   messagesLoading,
-  onSendMessage,
-  selectedInstanceId,
+  selectedInstanceId
 }: ChatTabProps) => {
   if (!selectedInstanceId) {
     return (
@@ -29,7 +26,7 @@ const ChatTab = ({
   return (
     <WhatsAppChat
       messages={messages}
-      isLoading={messagesLoading}
+      isLoading={messagesLoading || isLoading}
       onSendMessage={onSendMessage}
       selectedLead={null}
     />

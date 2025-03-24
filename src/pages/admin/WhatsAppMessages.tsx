@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import LeadsList from '@/components/admin/whatsapp/LeadsList';
-import WhatsAppChat from '@/components/admin/whatsapp/WhatsAppChat';
+import { WhatsAppChat } from '@/components/admin/whatsapp/WhatsAppChat';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth-context';
 import { toast } from 'sonner';
