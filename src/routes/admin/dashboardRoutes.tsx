@@ -6,7 +6,6 @@ import { UserPermission } from "@/types/auth";
 
 // Admin Dashboard
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
-const AdminVouchers = lazy(() => import("@/pages/admin/Vouchers"));
 const AdminTickets = lazy(() => import("@/pages/admin/Tickets"));
 
 // Loader para componentes com lazy loading
@@ -22,16 +21,6 @@ export const dashboardRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<AdminLoader />}>
         <Dashboard />
-      </Suspense>
-    )
-  },
-  {
-    path: "vouchers",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_PRODUCTS}>
-          <AdminVouchers />
-        </ProtectedRoute>
       </Suspense>
     )
   },
