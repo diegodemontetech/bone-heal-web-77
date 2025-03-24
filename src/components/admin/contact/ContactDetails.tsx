@@ -84,7 +84,7 @@ const ContactDetails: React.FC<ContactDetailsProps> = ({ contact, onSendReply })
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Resposta Enviada</h3>
               <div className="bg-primary/10 p-4 rounded-md">
-                <p className="whitespace-pre-wrap text-primary-foreground">{contact.message}</p>
+                <p className="whitespace-pre-wrap text-primary-foreground">{contact.reply || contact.message}</p>
               </div>
             </div>
           ) : (

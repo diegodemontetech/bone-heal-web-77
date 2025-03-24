@@ -1,7 +1,10 @@
 
-import { RouteObject } from "react-router-dom";
 import { lazy, Suspense } from "react";
+import { RouteObject } from "react-router-dom";
 
+// Lazy-loaded components for better performance
+const Tickets = lazy(() => import("@/pages/admin/Tickets"));
+const TicketDetails = lazy(() => import("@/pages/admin/TicketDetails"));
 const Contacts = lazy(() => import("@/pages/admin/Contacts"));
 const ContactDetails = lazy(() => import("@/pages/admin/ContactDetails"));
 
@@ -12,6 +15,22 @@ const AdminLoader = () => (
 );
 
 export const supportRoutes: RouteObject[] = [
+  {
+    path: "tickets",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <Tickets />
+      </Suspense>
+    ),
+  },
+  {
+    path: "tickets/:id",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <TicketDetails />
+      </Suspense>
+    ),
+  },
   {
     path: "contacts",
     element: (
