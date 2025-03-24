@@ -26,9 +26,8 @@ const AdminContactDetails = () => {
     try {
       setLoading(true);
       
-      // Use the correct table from your database schema
       const { data, error } = await supabase
-        .from('contact_form_submissions')
+        .from('contact_leads')
         .select("*")
         .eq("id", id)
         .single();
@@ -55,14 +54,11 @@ const AdminContactDetails = () => {
         return;
       }
 
-      // Update the contact with valid fields from the database schema
       const { error } = await supabase
-        .from('contact_form_submissions')
+        .from('contact_leads')
         .update({ 
-          replied: true,
-          replied_at: new Date().toISOString(),
-          replied_by: profile.id,
-          response: replyMessage // Use the correct field name in your schema
+          status: 'contacted',
+          message: replyMessage
         })
         .eq("id", id);
 
@@ -75,10 +71,8 @@ const AdminContactDetails = () => {
       // Update the contact object locally
       setContact({
         ...contact,
-        replied: true,
-        replied_at: new Date().toISOString(),
-        replied_by: profile.id,
-        response: replyMessage // Use the correct field name in your schema
+        status: 'contacted',
+        message: replyMessage
       });
     } catch (error) {
       console.error("Erro ao enviar resposta:", error);

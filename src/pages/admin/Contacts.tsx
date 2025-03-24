@@ -20,9 +20,8 @@ const AdminContacts = () => {
   const fetchContacts = async () => {
     try {
       setIsLoading(true);
-      // Use the correct table from your database schema
       const { data, error } = await supabase
-        .from('contact_form_submissions')
+        .from('contact_leads')
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -53,10 +52,10 @@ const AdminContacts = () => {
   };
 
   const filteredContacts = contacts?.filter(contact => {
-    if (activeTab === "pending" && contact.replied) {
+    if (activeTab === "pending" && contact.status !== "new") {
       return false;
     }
-    if (activeTab === "replied" && !contact.replied) {
+    if (activeTab === "replied" && contact.status !== "contacted") {
       return false;
     }
 
@@ -65,7 +64,7 @@ const AdminContacts = () => {
       return (
         contact.name?.toLowerCase().includes(searchLower) ||
         contact.email?.toLowerCase().includes(searchLower) ||
-        contact.subject?.toLowerCase().includes(searchLower) ||
+        contact.reason?.toLowerCase().includes(searchLower) ||
         contact.message?.toLowerCase().includes(searchLower)
       );
     }
