@@ -1,5 +1,5 @@
 
-import { useTickets } from "@/hooks/admin/use-tickets";
+import { useTickets } from "@/hooks/admin/useTickets";
 import CreateTicketDialog from "@/components/admin/tickets/CreateTicketDialog";
 import TicketsContent from "@/components/admin/tickets/TicketsContent";
 
