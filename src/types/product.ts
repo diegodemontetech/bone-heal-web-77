@@ -23,5 +23,4 @@ export interface Product {
   height?: number;
   width?: number;
   length?: number;
-  categories?: string[]; // Mantemos no tipo, mas não enviamos para o banco
 }

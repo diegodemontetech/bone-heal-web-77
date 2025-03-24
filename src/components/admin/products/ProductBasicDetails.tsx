@@ -1,8 +1,6 @@
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const ProductBasicDetails = ({ form }: { form: any }) => {
   return (
@@ -69,59 +67,6 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
                 />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-      
-      <h3 className="text-lg font-medium mt-6">Categorias</h3>
-      <div className="space-y-2">
-        <FormField
-          control={form.control}
-          name="categories"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value?.includes("cicatrizacao-rapida")}
-                  onCheckedChange={(checked) => {
-                    const currentValue = [...field.value || []];
-                    if (checked) {
-                      field.onChange([...currentValue, "cicatrizacao-rapida"]);
-                    } else {
-                      field.onChange(currentValue.filter(v => v !== "cicatrizacao-rapida"));
-                    }
-                  }}
-                />
-              </FormControl>
-              <FormLabel className="font-normal cursor-pointer">
-                Cicatrização Mais Rápida
-              </FormLabel>
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="categories"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value?.includes("cicatrizacao-normal")}
-                  onCheckedChange={(checked) => {
-                    const currentValue = [...field.value || []];
-                    if (checked) {
-                      field.onChange([...currentValue, "cicatrizacao-normal"]);
-                    } else {
-                      field.onChange(currentValue.filter(v => v !== "cicatrizacao-normal"));
-                    }
-                  }}
-                />
-              </FormControl>
-              <FormLabel className="font-normal cursor-pointer">
-                Cicatrização Normal
-              </FormLabel>
             </FormItem>
           )}
         />

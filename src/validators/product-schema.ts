@@ -9,7 +9,6 @@ export const productFormSchema = z.object({
   short_description: z.string().optional(),
   description: z.string().optional(),
   video_url: z.string().optional(),
-  categories: z.array(z.string()).default([]), // Mantemos para o formulário, mas não usamos na API
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;

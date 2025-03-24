@@ -10,7 +10,7 @@ import { ProductGrid } from "@/components/products/ProductGrid";
 import { Loader2 } from "lucide-react";
 
 const initialFilters: FilterValues = {
-  categories: ["todos"],
+  sortBy: undefined,
 };
 
 export default function Products() {
@@ -26,15 +26,6 @@ export default function Products() {
           .from("products")
           .select("*")
           .eq("active", true);
-
-        // Aplicar filtragem por categoria se não for "todos"
-        if (!filters.categories.includes("todos") && filters.categories.length > 0) {
-          // Assumindo que temos uma coluna "categories" no banco de dados
-          // Precisamos verificar se qualquer uma das categorias selecionadas está presente
-          query = query.or(
-            filters.categories.map(cat => `categories.cs.{${cat}}`).join(",")
-          );
-        }
 
         // Aplicar ordenação
         if (filters.sortBy) {

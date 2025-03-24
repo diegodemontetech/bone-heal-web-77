@@ -34,7 +34,6 @@ export const useProductForm = (
       short_description: product?.short_description || "",
       description: product?.description || "",
       video_url: product?.video_url || "",
-      categories: product?.categories || [],
     },
   });
 
