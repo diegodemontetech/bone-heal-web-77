@@ -22,8 +22,8 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
     min_amount: "",
     min_items: "",
     payment_method: "all", // Changed from empty string to "all"
-    region: "",
-    customer_group: "",
+    region: "all", // Changed from empty string to "all"
+    customer_group: "all", // Changed from empty string to "all"
     product_id: "",
     product_category: "all", // Changed from empty string to "all"
     free_shipping: false,
@@ -44,8 +44,8 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         min_amount: existingCondition.min_amount ? existingCondition.min_amount.toString() : "",
         min_items: existingCondition.min_items ? existingCondition.min_items.toString() : "",
         payment_method: existingCondition.payment_method || "all", // Changed from empty string to "all"
-        region: existingCondition.region || "",
-        customer_group: existingCondition.customer_group || "",
+        region: existingCondition.region || "all", // Changed from empty string to "all"
+        customer_group: existingCondition.customer_group || "all", // Changed from empty string to "all"
         product_id: existingCondition.product_id || "",
         product_category: existingCondition.product_category || "all", // Changed from empty string to "all"
         free_shipping: existingCondition.free_shipping || false,
@@ -79,8 +79,8 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         min_amount: formData.min_amount ? parseFloat(formData.min_amount) : null,
         min_items: formData.min_items ? parseInt(formData.min_items, 10) : null,
         payment_method: formData.payment_method === "all" ? null : formData.payment_method, // Handle "all" value
-        region: formData.region || null,
-        customer_group: formData.customer_group || null,
+        region: formData.region === "all" ? null : formData.region, // Handle "all" value
+        customer_group: formData.customer_group === "all" ? null : formData.customer_group, // Handle "all" value
         product_id: formData.product_id || null,
         product_category: formData.product_category === "all" ? null : formData.product_category, // Handle "all" value
         free_shipping: formData.free_shipping,

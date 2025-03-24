@@ -23,7 +23,7 @@ const TargetingSection = ({
 }: TargetingSectionProps) => {
   // Opções de regiões do Brasil
   const regionOptions = [
-    { value: "", label: "Todas as regiões" },
+    { value: "all", label: "Todas as regiões" },
     { value: "north", label: "Norte" },
     { value: "northeast", label: "Nordeste" },
     { value: "midwest", label: "Centro-Oeste" },
@@ -33,7 +33,7 @@ const TargetingSection = ({
   
   // Opções de grupos de clientes
   const customerGroupOptions = [
-    { value: "", label: "Todos os clientes" },
+    { value: "all", label: "Todos os clientes" },
     { value: "new", label: "Novos clientes" },
     { value: "vip", label: "Clientes VIP" },
     { value: "clinic", label: "Clínicas" },
@@ -47,7 +47,7 @@ const TargetingSection = ({
       <div className="space-y-2">
         <Label htmlFor="region">Região</Label>
         <Select
-          value={region || ""}
+          value={region || "all"}
           onValueChange={onRegionChange}
         >
           <SelectTrigger id="region">
@@ -66,7 +66,7 @@ const TargetingSection = ({
       <div className="space-y-2">
         <Label htmlFor="customer_group">Grupo de Clientes</Label>
         <Select
-          value={customerGroup || ""}
+          value={customerGroup || "all"}
           onValueChange={onCustomerGroupChange}
         >
           <SelectTrigger id="customer_group">
