@@ -9,7 +9,9 @@ import { Link } from "react-router-dom";
 
 const CartWidget = () => {
   const { cartItems, total, removeItem, updateQuantity } = useCart();
-  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = cartItems && cartItems.length > 0 
+    ? cartItems.reduce((sum, item) => sum + item.quantity, 0) 
+    : 0;
 
   if (itemCount === 0) return null;
 
@@ -28,7 +30,7 @@ const CartWidget = () => {
           <SheetTitle>Carrinho</SheetTitle>
         </SheetHeader>
         <div className="mt-8 space-y-4">
-          {cartItems.map((item) => (
+          {cartItems && cartItems.map((item) => (
             <div key={item.id} className="flex items-center gap-4">
               <img
                 src={`/products/${item.image}`}
@@ -69,7 +71,7 @@ const CartWidget = () => {
             </div>
           ))}
         </div>
-        {cartItems.length > 0 && (
+        {cartItems && cartItems.length > 0 && (
           <div className="mt-8 space-y-4">
             <div className="flex justify-between text-lg font-bold">
               <span>Total:</span>

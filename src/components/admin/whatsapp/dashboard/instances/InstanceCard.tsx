@@ -90,7 +90,7 @@ export const InstanceCard = ({ instance, onConnect, onDisconnect, onDelete }: Wh
           </div>
         </CardHeader>
         <CardContent>
-          {instance.status === "connecting" && (
+          {(instance.status === "connecting" || instance.status === "awaiting_connection" || instance.qr_code) && (
             <div className="flex justify-center mb-4">
               <Button 
                 variant="outline" 

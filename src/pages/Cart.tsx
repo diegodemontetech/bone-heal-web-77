@@ -1,5 +1,4 @@
 
-// Importe os componentes usando named imports (não default)
 import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";
 import { EmptyCart } from "@/components/cart/EmptyCart";
@@ -14,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 const Cart = () => {
   const navigate = useNavigate();
-  const { cart, isLoading, removeItem, updateQuantity, getTotalPrice, getTotalItems } = useCart();
+  const { cartItems, isLoading, removeItem, updateQuantity, getTotalPrice, getTotalItems } = useCart();
   const { 
     zipCode, 
     setZipCode, 
@@ -26,7 +25,7 @@ const Cart = () => {
     resetShipping,
     handleShippingRateChange
   } = useShipping();
-  const { session, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [shippingCalculated, setShippingCalculated] = useState(false);
 
@@ -69,7 +68,7 @@ const Cart = () => {
     );
   }
 
-  if (cart.length === 0) {
+  if (!cartItems || cartItems.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -94,7 +93,7 @@ const Cart = () => {
               <h2 className="text-lg font-medium mb-4">Itens ({getTotalItems()})</h2>
 
               <div className="divide-y">
-                {cart.map((item) => (
+                {cartItems.map((item) => (
                   <CartItem
                     key={item.id}
                     item={item}

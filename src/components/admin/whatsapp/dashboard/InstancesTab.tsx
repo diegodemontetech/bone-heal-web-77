@@ -36,7 +36,7 @@ const InstancesTab = ({
         <p className="text-muted-foreground mb-4">
           Você ainda não tem nenhuma instância WhatsApp.
         </p>
-        <Button onClick={onCreateDialogOpen}>
+        <Button onClick={() => onCreateDialogOpen && onCreateDialogOpen()}>
           <Plus className="w-4 h-4 mr-2" />
           Criar Primeira Instância
         </Button>
