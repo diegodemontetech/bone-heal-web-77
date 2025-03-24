@@ -5,8 +5,7 @@ export interface Contact {
   stage_id: string;
   pipeline_id?: string;
   email?: string;
-  phone?: string;
-  whatsapp?: string;
+  whatsapp?: string; // Changed from phone to whatsapp to match our database structure
   company?: string;
   position?: string;
   cro?: string;
@@ -25,6 +24,7 @@ export interface Contact {
   updated_at: string;
   last_interaction: string;
   stage?: Stage;
+  orders?: any[]; // Add orders property to match our query results
 }
 
 export interface Stage {

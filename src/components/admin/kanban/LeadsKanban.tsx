@@ -90,6 +90,7 @@ const LeadsKanban = () => {
           <KanbanColumn 
             id="new"
             title="Novos" 
+            color="#3b82f6" // Added the color property
             leads={newLeads} 
             onLeadClick={handleLeadClick}
             onStatusChange={handleStatusChange}
@@ -97,6 +98,7 @@ const LeadsKanban = () => {
           <KanbanColumn 
             id="contacted"
             title="Contatados" 
+            color="#10b981" // Added the color property
             leads={contactedLeads} 
             onLeadClick={handleLeadClick}
             onStatusChange={handleStatusChange}
@@ -104,6 +106,7 @@ const LeadsKanban = () => {
           <KanbanColumn 
             id="closed"
             title="Fechados" 
+            color="#ef4444" // Added the color property
             leads={closedLeads} 
             onLeadClick={handleLeadClick}
             onStatusChange={handleStatusChange}

@@ -18,7 +18,10 @@ export const useContactsQuery = (pipelineId: string | null) => {
               id,
               name,
               color,
-              order_index
+              order_index,
+              pipeline_id,
+              created_at,
+              updated_at
             )
           `)
           .eq("pipeline_id", pipelineId)
@@ -32,7 +35,7 @@ export const useContactsQuery = (pipelineId: string | null) => {
         // Buscar pedidos relacionados separadamente para cada lead
         const contactsWithOrders = await Promise.all(
           (data || []).map(async (contact) => {
-            // Verificar se o contato tem um perfil associado pelo email ou telefone
+            // Verificar se o contato tem um perfil associado pelo email ou whatsapp
             let profileIds: string[] = [];
             
             if (contact.email) {
@@ -46,11 +49,11 @@ export const useContactsQuery = (pipelineId: string | null) => {
               }
             }
 
-            if (contact.phone) {
+            if (contact.whatsapp) {
               const { data: profileData } = await supabase
                 .from("profiles")
                 .select("id")
-                .eq("phone", contact.phone);
+                .eq("phone", contact.whatsapp);
                 
               if (profileData && profileData.length > 0) {
                 profileIds = [...profileIds, ...profileData.map(p => p.id)];
@@ -76,7 +79,8 @@ export const useContactsQuery = (pipelineId: string | null) => {
           })
         );
         
-        return contactsWithOrders as Contact[];
+        // Cast to Contact[] after ensuring the structure matches the expected type
+        return contactsWithOrders as unknown as Contact[];
       } catch (error) {
         console.error("Erro na consulta de contatos:", error);
         throw error;
