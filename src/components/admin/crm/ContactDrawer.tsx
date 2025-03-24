@@ -23,34 +23,7 @@ import { InteractionsList } from "./InteractionsList";
 import { AttachmentsList } from "./AttachmentsList";
 import { Save, Trash, X, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
-
-interface Contact {
-  id?: string;
-  full_name: string;
-  cro?: string;
-  cpf_cnpj?: string;
-  specialty?: string;
-  whatsapp?: string;
-  email?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  clinic_name?: string;
-  client_type?: string;
-  stage_id: string;
-  responsible_id?: string;
-  next_interaction_date?: string;
-  observations?: string;
-  next_steps?: string;
-  [key: string]: any;
-}
-
-interface Stage {
-  id: string;
-  name: string;
-  color: string;
-  pipeline_id: string;
-}
+import { Contact, Stage } from "@/types/crm";
 
 interface ContactDrawerProps {
   contact: Contact | null;
@@ -124,11 +97,16 @@ export const ContactDrawer = ({
       setLoading(true);
 
       if (formData.id) {
-        // Atualizar contato existente
+        // Atualizar contato existente na tabela leads já que crm_contacts não está disponível
         const { error } = await supabase
-          .from('crm_contacts')
+          .from('leads')
           .update({
-            ...formData,
+            name: formData.full_name,
+            email: formData.email,
+            phone: formData.whatsapp,
+            notes: formData.observations,
+            stage_id: formData.stage_id,
+            assigned_to: formData.responsible_id,
             updated_at: new Date().toISOString()
           })
           .eq('id', formData.id);
@@ -136,13 +114,18 @@ export const ContactDrawer = ({
         if (error) throw error;
         toast.success("Contato atualizado com sucesso");
       } else {
-        // Criar novo contato
+        // Criar novo contato na tabela leads
         const { error } = await supabase
-          .from('crm_contacts')
+          .from('leads')
           .insert({
-            ...formData,
+            name: formData.full_name,
+            email: formData.email,
+            phone: formData.whatsapp,
+            notes: formData.observations,
+            stage_id: formData.stage_id,
+            assigned_to: formData.responsible_id,
             created_at: new Date().toISOString(),
-            last_interaction: new Date().toISOString()
+            last_contact: new Date().toISOString()
           });
 
         if (error) throw error;
@@ -164,7 +147,7 @@ export const ContactDrawer = ({
     try {
       setDeleting(true);
       const { error } = await supabase
-        .from('crm_contacts')
+        .from('leads')
         .delete()
         .eq('id', formData.id);
 
@@ -183,26 +166,21 @@ export const ContactDrawer = ({
     if (!formData?.id || !newInteraction.trim()) return;
 
     try {
+      // Como não temos a tabela crm_interactions nos tipos,
+      // vamos atualizar o lead com a última interação
       const { error } = await supabase
-        .from('crm_interactions')
-        .insert({
-          contact_id: formData.id,
-          interaction_type: interactionType,
-          content: newInteraction,
-          interaction_date: new Date().toISOString()
-        });
+        .from('leads')
+        .update({
+          last_contact: new Date().toISOString(),
+          notes: formData.observations 
+            ? `${formData.observations}\n\n${new Date().toLocaleString()}: ${newInteraction}`
+            : `${new Date().toLocaleString()}: ${newInteraction}`
+        })
+        .eq('id', formData.id);
 
       if (error) throw error;
       toast.success("Interação adicionada com sucesso");
       setNewInteraction("");
-      
-      // Atualizar a data da última interação
-      await supabase
-        .from('crm_contacts')
-        .update({
-          last_interaction: new Date().toISOString()
-        })
-        .eq('id', formData.id);
         
     } catch (error: any) {
       console.error('Erro ao adicionar interação:', error);

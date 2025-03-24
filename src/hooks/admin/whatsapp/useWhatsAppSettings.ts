@@ -1,95 +1,96 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { WhatsAppInstance } from '@/components/admin/whatsapp/types';
-import { useAuth } from '@/hooks/use-auth';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth-context";
+import { toast } from "sonner";
+import { WhatsAppInstance } from "@/components/admin/whatsapp/types";
 
 export const useWhatsAppSettings = () => {
-  const { user } = useAuth();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState('');
+  const [qrCodeData, setQrCodeData] = useState<string | null>(null);
   const [qrCodeLoading, setQrCodeLoading] = useState(false);
-  
-  const [evolutionUrl, setEvolutionUrl] = useState('');
-  const [evolutionKey, setEvolutionKey] = useState('');
-  const [zapiInstanceId, setZapiInstanceId] = useState('');
-  const [zapiToken, setZapiToken] = useState('');
-  const [instanceName, setInstanceName] = useState('default');
-  
-  const [webhookUrl, setWebhookUrl] = useState('');
+  const [evolutionUrl, setEvolutionUrl] = useState("");
+  const [evolutionKey, setEvolutionKey] = useState("");
+  const [zapiInstanceId, setZapiInstanceId] = useState("");
+  const [zapiToken, setZapiToken] = useState("");
+  const [instanceName, setInstanceName] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
-  const [instancesLoading, setInstancesLoading] = useState(true);
+  const [instancesLoading, setInstancesLoading] = useState(false);
 
   useEffect(() => {
-    const webhookBaseUrl = window.location.origin.includes('localhost') 
-      ? 'http://localhost:54321/functions/v1'
-      : `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
-    
-    setWebhookUrl(`${webhookBaseUrl}/webhook-whatsapp`);
-    fetchSecrets();
-    fetchInstances();
-  }, []);
+    if (profile) {
+      fetchSettings();
+      fetchInstances();
+      
+      // Definir o webhook URL
+      const baseUrl = window.location.origin;
+      setWebhookUrl(`${baseUrl}/api/webhook/whatsapp`);
+    }
+  }, [profile]);
 
-  const fetchSecrets = async () => {
-    setLoading(true);
+  const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
-        body: { getConfig: true }
-      });
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('check-whatsapp-config');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao verificar configuração:', error);
+        return;
+      }
       
-      if (data?.config) {
-        setEvolutionUrl(data.config.evolutionApiUrl || '');
-        setEvolutionKey(data.config.evolutionApiKey || '');
-        setZapiInstanceId(data.config.zApiInstanceId || '');
-        setZapiToken(data.config.zApiToken || '');
+      if (data) {
+        setEvolutionUrl(data.evolutionUrl || '');
+        setEvolutionKey(data.evolutionKey || '');
+        setZapiInstanceId(data.zapiInstanceId || '');
+        setZapiToken(data.zapiToken || '');
       }
     } catch (error) {
-      console.error('Erro ao buscar configurações:', error);
-      toast.error('Erro ao carregar configurações');
+      console.error('Erro ao verificar configuração:', error);
     } finally {
       setLoading(false);
     }
   };
   
   const fetchInstances = async () => {
-    if (!user) return;
+    if (!profile?.id) return;
     
-    setInstancesLoading(true);
     try {
+      setInstancesLoading(true);
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
+        .eq('user_id', profile.id);
+        
       if (error) throw error;
       
-      setInstances(data || []);
+      // Mapear para o formato esperado
+      const mappedInstances: WhatsAppInstance[] = (data || []).map(instance => ({
+        ...instance,
+        name: instance.instance_name // Usando instance_name como propriedade name
+      }));
+      
+      setInstances(mappedInstances);
     } catch (error) {
       console.error('Erro ao buscar instâncias:', error);
-      toast.error('Erro ao carregar instâncias');
     } finally {
       setInstancesLoading(false);
     }
   };
-  
+
   const saveSecrets = async () => {
-    setSaving(true);
     try {
-      const { data, error } = await supabase.functions.invoke('update-secret', {
-        body: { 
-          secrets: {
-            'EVOLUTION_API_URL': evolutionUrl,
-            'EVOLUTION_API_KEY': evolutionKey,
-            'ZAPI_INSTANCE_ID': zapiInstanceId,
-            'ZAPI_TOKEN': zapiToken
-          }
+      setSaving(true);
+      
+      const { error } = await supabase.functions.invoke('save-whatsapp-config', {
+        body: {
+          evolutionUrl,
+          evolutionKey,
+          zapiInstanceId,
+          zapiToken
         }
       });
       
@@ -107,197 +108,128 @@ export const useWhatsAppSettings = () => {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 3000);
   };
   
+  // Função para criar uma nova instância
   const createInstance = async (newInstanceName: string) => {
-    setQrCodeLoading(true);
+    if (!profile?.id) {
+      toast.error('Você precisa estar logado para criar uma instância');
+      return null;
+    }
+    
     try {
-      if (!evolutionUrl || !evolutionKey) {
-        toast.error('Configure a URL e a chave da API Evolution primeiro');
-        return null;
-      }
-
-      // Verificar se já tem 5 instâncias
-      if (instances.length >= 5) {
-        toast.error('Você já atingiu o limite de 5 instâncias');
-        return null;
-      }
-
-      // Primeiro criar a instância no banco de dados
-      const { data: instanceData, error: instanceError } = await supabase
+      setSaving(true);
+      
+      const { data, error } = await supabase
         .from('whatsapp_instances')
-        .insert([{
+        .insert({
+          user_id: profile.id,
           instance_name: newInstanceName,
-          user_id: user?.id,
-          status: 'pending'
-        }])
+          status: 'disconnected'
+        })
         .select()
         .single();
-      
-      if (instanceError) throw instanceError;
-      
-      // Agora criar a instância na API Evolution
-      const { data, error } = await supabase.functions.invoke('evolution-api', {
-        body: { 
-          action: 'getInstance',
-          instanceName: newInstanceName
-        }
-      });
-      
+        
       if (error) throw error;
       
-      if (data?.success) {
-        // Gerar QR Code automaticamente
-        await generateQRCodeForInstance(newInstanceName);
-        
-        // Atualizar a lista de instâncias
-        await fetchInstances();
-        
-        toast.success('Instância criada com sucesso. Escaneie o QR Code para conectar.');
-        return instanceData;
-      } else {
-        // Se falhar, remover a instância do banco
-        if (instanceData?.id) {
-          await supabase
-            .from('whatsapp_instances')
-            .delete()
-            .eq('id', instanceData.id);
-        }
-        
-        throw new Error(data?.message || 'Erro ao criar instância');
-      }
+      toast.success('Instância criada com sucesso');
+      await fetchInstances();
+      
+      return data;
     } catch (error: any) {
       console.error('Erro ao criar instância:', error);
-      toast.error('Erro ao criar instância: ' + error.message);
+      toast.error(`Erro ao criar instância: ${error.message}`);
       return null;
     } finally {
-      setQrCodeLoading(false);
+      setSaving(false);
     }
   };
   
+  // Gera QR Code para conectar o WhatsApp
   const generateQRCode = async () => {
-    setQrCodeLoading(true);
-    setQrCodeData('');
     try {
-      await generateQRCodeForInstance(instanceName);
-    } catch (error: any) {
+      setQrCodeLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-qrcode');
+      
+      if (error) throw error;
+      
+      if (data?.qrcode) {
+        setQrCodeData(data.qrcode);
+      } else {
+        toast.error('Não foi possível gerar o QR Code');
+      }
+    } catch (error) {
       console.error('Erro ao gerar QR Code:', error);
-      toast.error('Erro ao gerar QR Code: ' + error.message);
+      toast.error('Erro ao gerar QR Code');
     } finally {
       setQrCodeLoading(false);
     }
   };
   
-  const generateQRCodeForInstance = async (instanceNameToUse: string) => {
+  // Verifica o status da conexão
+  const checkConnectionStatus = async () => {
     try {
-      if (!evolutionUrl || !evolutionKey) {
-        toast.error('Configure a URL e a chave da API Evolution primeiro');
-        return null;
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('check-connection');
+      
+      if (error) throw error;
+      
+      if (data?.status === 'connected') {
+        toast.success('WhatsApp conectado com sucesso!');
+      } else {
+        toast.info('WhatsApp não está conectado. Escaneie o QR Code para conectar.');
       }
-
-      const { data, error } = await supabase.functions.invoke('evolution-api', {
-        body: { 
-          action: 'getQRCode',
-          instanceName: instanceNameToUse
-        }
+      
+      return data?.status;
+    } catch (error) {
+      console.error('Erro ao verificar conexão:', error);
+      toast.error('Erro ao verificar conexão');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Atualiza o QR Code para uma instância específica
+  const refreshQrCode = async (instanceId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('refresh-qrcode', {
+        body: { instanceId }
       });
       
       if (error) throw error;
       
-      if (data?.success && data?.qrcode) {
-        if (instanceNameToUse === instanceName) {
-          setQrCodeData(data.qrcode);
-        }
-        return data.qrcode;
-      } else {
-        toast.error(data?.message || 'Erro ao gerar QR Code');
-        return null;
-      }
-    } catch (error: any) {
-      console.error('Erro ao gerar QR Code:', error);
-      throw error;
-    }
-  };
-  
-  const refreshQrCode = async (instanceId: string) => {
-    try {
-      // Buscar o nome da instância
-      const instance = instances.find(i => i.id === instanceId);
-      if (!instance) {
-        toast.error('Instância não encontrada');
-        return null;
-      }
+      await fetchInstances();
       
-      return await generateQRCodeForInstance(instance.instance_name);
-    } catch (error: any) {
+      if (data?.success) {
+        toast.success('QR Code atualizado com sucesso');
+      } else {
+        toast.error('Erro ao atualizar QR Code');
+      }
+    } catch (error) {
       console.error('Erro ao atualizar QR Code:', error);
-      toast.error('Erro ao atualizar QR Code: ' + error.message);
-      return null;
+      toast.error('Erro ao atualizar QR Code');
     }
   };
   
+  // Exclui uma instância
   const deleteInstance = async (instanceId: string) => {
     try {
-      // Buscar o nome da instância
-      const instance = instances.find(i => i.id === instanceId);
-      if (!instance) {
-        toast.error('Instância não encontrada');
-        return false;
-      }
-      
-      // Deletar a instância na API Evolution
-      await supabase.functions.invoke('evolution-api', {
-        body: { 
-          action: 'deleteInstance',
-          instanceName: instance.instance_name
-        }
-      });
-      
-      // Deletar a instância no banco de dados
       const { error } = await supabase
         .from('whatsapp_instances')
         .delete()
         .eq('id', instanceId);
-      
+        
       if (error) throw error;
-      
-      // Atualizar a lista de instâncias
-      await fetchInstances();
       
       toast.success('Instância excluída com sucesso');
-      return true;
-    } catch (error: any) {
+      await fetchInstances();
+    } catch (error) {
       console.error('Erro ao excluir instância:', error);
-      toast.error('Erro ao excluir instância: ' + error.message);
-      return false;
-    }
-  };
-  
-  const checkConnectionStatus = async () => {
-    try {
-      if (!evolutionUrl || !evolutionKey) {
-        toast.error('Configure a URL e a chave da API Evolution primeiro');
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('evolution-api', {
-        body: { 
-          action: 'getConnectionStatus',
-          instanceName: instanceName
-        }
-      });
-      
-      if (error) throw error;
-      
-      if (data?.success) {
-        toast.success(`Status da conexão: ${data.status}`);
-      } else {
-        toast.error(data?.message || 'Erro ao verificar status');
-      }
-    } catch (error: any) {
-      console.error('Erro ao verificar status:', error);
-      toast.error('Erro ao verificar status: ' + error.message);
+      toast.error('Erro ao excluir instância');
     }
   };
 

@@ -1,7 +1,6 @@
 
 import { Edge, Node } from 'reactflow';
 import { Json } from '@/integrations/supabase/types';
-import { WhatsAppMessage as ComponentWhatsAppMessage } from '@/components/admin/whatsapp/types';
 
 export interface AutomationFlow {
   id: string;
@@ -28,17 +27,15 @@ export interface WhatsAppInstance {
 export interface WhatsAppMessage {
   id: string;
   instance_id: string;
-  // Campos como from e to não são mais necessários
-  body: string;
+  message: string;
   type: string;
   timestamp: string;
-  is_sent_by_me: boolean;
-  media_url?: string;
-  media_type?: string;
+  isFromMe: boolean;
+  mediaUrl?: string;
+  mediaType?: string;
   
   // Campos adicionados para compatibilidade com outros componentes
   lead_id?: string;
-  message?: string;
   direction?: string;
   sent_by?: string;
   is_bot?: boolean;
@@ -47,20 +44,19 @@ export interface WhatsAppMessage {
 }
 
 // Converter mensagem entre os dois formatos
-export function convertToComponentMessage(message: WhatsAppMessage): ComponentWhatsAppMessage {
+export function convertToComponentMessage(message: WhatsAppMessage): WhatsAppMessage {
   return {
     id: message.id,
     lead_id: message.lead_id || '',
-    body: message.body,
-    message: message.body, // Mapeamento adicional
+    message: message.message || '', 
     type: message.type,
     timestamp: message.timestamp,
     created_at: message.timestamp, // Mapeamento adicional
-    is_sent_by_me: message.is_sent_by_me,
-    sent_by: message.is_sent_by_me ? 'us' : 'them', // Mapeamento adicional
-    direction: message.is_sent_by_me ? 'outbound' : 'inbound', // Mapeamento adicional
-    media_url: message.media_url,
-    media_type: message.media_type,
+    isFromMe: message.isFromMe,
+    sent_by: message.isFromMe ? 'us' : 'them', // Mapeamento adicional
+    direction: message.isFromMe ? 'outbound' : 'inbound', // Mapeamento adicional
+    mediaUrl: message.mediaUrl,
+    mediaType: message.mediaType,
     instance_id: message.instance_id,
     is_bot: false
   };

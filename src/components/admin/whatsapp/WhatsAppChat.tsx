@@ -66,28 +66,28 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({
                   <div
                     key={msg.id}
                     className={`flex ${
-                      msg.sent_by === "us" || msg.is_sent_by_me ? "justify-end" : "justify-start"
+                      msg.sent_by === "us" || msg.isFromMe ? "justify-end" : "justify-start"
                     }`}
                   >
                     <div
                       className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        msg.sent_by === "us" || msg.is_sent_by_me
+                        msg.sent_by === "us" || msg.isFromMe
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
                       }`}
                     >
-                      {(msg.media_url || msg.media_type) && (
+                      {(msg.mediaUrl || msg.mediaType) && (
                         <div className="mb-2">
-                          {(msg.media_type?.startsWith("image/") || 
-                            (msg.type === "image" && msg.media_url)) ? (
+                          {(msg.mediaType?.startsWith("image/") || 
+                            (msg.type === "image" && msg.mediaUrl)) ? (
                             <img
-                              src={msg.media_url}
+                              src={msg.mediaUrl}
                               alt="Media"
                               className="max-w-full rounded"
                             />
                           ) : (
                             <a
-                              href={msg.media_url}
+                              href={msg.mediaUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-500 underline"
@@ -100,7 +100,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({
                       <p className="break-words">{msg.message || msg.body}</p>
                       <p
                         className={`text-xs mt-1 ${
-                          msg.sent_by === "us" || msg.is_sent_by_me
+                          msg.sent_by === "us" || msg.isFromMe
                             ? "text-primary-foreground/70"
                             : "text-muted-foreground"
                         }`}

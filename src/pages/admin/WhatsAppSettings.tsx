@@ -31,7 +31,7 @@ const AdminWhatsAppSettings = () => {
     setInstanceName,
     saveSecrets,
     copyToClipboard,
-    createInstance,
+    createInstance: createInstanceFn,
     generateQRCode,
     checkConnectionStatus,
     instances,
@@ -41,6 +41,14 @@ const AdminWhatsAppSettings = () => {
   } = useWhatsAppSettings();
 
   const [activeTab, setActiveTab] = useState("evolution");
+
+  // Função wrapper para garantir que createInstance receba um parâmetro
+  const createInstance = async () => {
+    if (!instanceName.trim()) {
+      return;
+    }
+    await createInstanceFn(instanceName);
+  };
 
   return (
     <div className="p-8">
@@ -141,7 +149,7 @@ const AdminWhatsAppSettings = () => {
                 isLoading={instancesLoading}
                 onRefreshQr={refreshQrCode}
                 onDeleteInstance={deleteInstance}
-                onCreateInstance={createInstance}
+                onCreateInstance={createInstanceFn}
               />
             </TabsContent>
           </Tabs>
