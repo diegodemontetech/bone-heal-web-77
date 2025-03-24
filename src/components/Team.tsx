@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 
 const Team = () => {
@@ -43,10 +44,10 @@ const Team = () => {
               de barreiras de polipropileno para Regeneração Óssea Guiada no mercado nacional.
             </p>
             <ul className="space-y-3 text-neutral-600">
-              <li>• Cirurgião-dentista especialista em implantodontia, pacientes especiais e periodontia</li>
+              <li>• Cirurgião-dentista especialista em implantodontia, pacientes com necessidades especiais e periodontia</li>
               <li>• Professor de cirurgia de implantes e do Método ROG-M de Munir Salomão</li>
               <li>• Pesquisador em regeneração óssea guiada pela Faculdade de Medicina da USP</li>
-              <li>• Criador e consultor dos produtos da empresa @boneheal</li>
+              <li>• Criador e consultor dos produtos da empresa Bone Heal</li>
             </ul>
           </motion.div>
         </div>
@@ -65,7 +66,7 @@ const Team = () => {
             pesquisa intensa e sacrifício, noites sem dormir e a frustração dos primeiros testes que não deram certo.
           </p>
           <p>
-            Hoje, com 40 anos de carreira como dentista, ele realizou mais de 3 mil cirurgias de Regeneração 
+            Hoje, com 45 anos de carreira como dentista, ele realizou mais de 3 mil cirurgias de Regeneração 
             Óssea Guiada sem enxerto, utilizando os produtos e o Método ROG-M de Munir Salomão que desenvolveu.
           </p>
           <p>

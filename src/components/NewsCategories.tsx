@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion } from "framer-motion";
 
 interface NewsCategoriesProps {
   categories: string[];
@@ -8,30 +8,37 @@ interface NewsCategoriesProps {
   onCategorySelect: (category: string | null) => void;
 }
 
-const NewsCategories = ({ categories, selectedCategory, onCategorySelect }: NewsCategoriesProps) => {
+const NewsCategories = ({ 
+  categories = ["Odontologia", "Pesquisa", "Inovação", "Eventos", "Tecnologia"], 
+  selectedCategory, 
+  onCategorySelect 
+}: NewsCategoriesProps) => {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-wrap gap-2 justify-center">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex flex-wrap gap-3 mb-10"
+    >
+      <Button
+        variant={selectedCategory === null ? "default" : "outline"}
+        className="rounded-full"
+        onClick={() => onCategorySelect(null)}
+      >
+        Todas
+      </Button>
+      
+      {categories.map((category) => (
         <Button
-          variant={selectedCategory === null ? "default" : "outline"}
-          onClick={() => onCategorySelect(null)}
-          className="mb-2"
+          key={category}
+          variant={selectedCategory === category ? "default" : "outline"}
+          className="rounded-full"
+          onClick={() => onCategorySelect(category)}
         >
-          Todas as Notícias
+          {category}
         </Button>
-        
-        {categories.map((category) => (
-          <Button
-            key={category}
-            variant={selectedCategory === category ? "default" : "outline"}
-            onClick={() => onCategorySelect(category)}
-            className="mb-2"
-          >
-            {category}
-          </Button>
-        ))}
-      </div>
-    </div>
+      ))}
+    </motion.div>
   );
 };
 

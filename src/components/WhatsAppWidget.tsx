@@ -2,7 +2,7 @@
 import { useLocation } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useEffect, useState } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { MessageCircle, X, Send, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const WhatsAppWidget = () => {
@@ -31,12 +31,19 @@ const WhatsAppWidget = () => {
     
     // Abre WhatsApp com a mensagem predefinida
     window.open(
-      `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`,
+      `https://wa.me/5511945122884?text=${encodeURIComponent(message)}`,
       "_blank"
     );
     
     setMessage("");
     setIsExpanded(false);
+  };
+  
+  const handleSalesContact = () => {
+    window.open(
+      `https://wa.me/5511945122884?text=${encodeURIComponent("Olá! Gostaria de informações sobre os produtos BoneHeal.")}`,
+      "_blank"
+    );
   };
 
   return (
@@ -46,8 +53,19 @@ const WhatsAppWidget = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
-          className="fixed bottom-4 right-4 z-50"
+          className="fixed bottom-4 right-4 z-50 flex flex-col gap-3"
         >
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ scale: 1.05 }}
+            onClick={handleSalesContact}
+            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors shadow-lg ml-auto"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            <span>Fale com Vendas</span>
+          </motion.button>
+          
           {isExpanded ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -114,7 +132,7 @@ const WhatsAppWidget = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               onClick={() => setIsExpanded(true)}
-              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition-colors shadow-lg"
+              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition-colors shadow-lg ml-auto"
             >
               <MessageCircle className="w-5 h-5" />
               <span>Fale com Maria</span>

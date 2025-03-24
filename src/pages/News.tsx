@@ -10,10 +10,9 @@ import { Helmet } from "react-helmet-async";
 const News = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  // Lista de categorias disponíveis para notícias
+  // Lista de categorias disponíveis para notícias - removido "Ortopedia"
   const categories = [
     "Odontologia",
-    "Ortopedia",
     "Pesquisa",
     "Inovação",
     "Eventos",

@@ -11,10 +11,12 @@ import Profile from "@/pages/Profile";
 import ProductDetail from "@/pages/ProductDetail";
 import Index from "@/pages/Index"; // Importando a página Index
 import ComoFunciona from "@/pages/ComoFunciona";
+import PoliticaTroca from "@/pages/PoliticaTroca";
 
 // Lazy imports
 const About = lazy(() => import("@/pages/About"));
 const Contact = lazy(() => import("@/pages/Contact"));
+const News = lazy(() => import("@/pages/News"));
 const Orders = lazy(() => import("@/pages/orders/Orders"));
 const OrderDetails = lazy(() => import("@/pages/orders/OrderDetails"));
 const Checkout = lazy(() => import("@/pages/checkout/Checkout"));
@@ -52,6 +54,10 @@ export const publicRoutes: RouteObject[] = [
   {
     path: "/como-funciona",
     element: <ComoFunciona />,
+  },
+  {
+    path: "/politica-troca",
+    element: <PoliticaTroca />,
   },
   {
     path: "/cart",
@@ -94,6 +100,14 @@ export const publicRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<PageLoader />}>
         <Contact />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/news",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <News />
       </Suspense>
     ),
   },

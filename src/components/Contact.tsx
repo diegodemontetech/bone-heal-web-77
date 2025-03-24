@@ -186,16 +186,17 @@ const Contact = () => {
               <CardContent className="space-y-4">
                 <div>
                   <h4 className="font-semibold mb-1">SEGUNDA À QUINTA-FEIRA</h4>
-                  <p>Das 8h00 às 17h30</p>
+                  <p>Das 8h00 às 17h50</p>
                 </div>
                 <div>
                   <h4 className="font-semibold mb-1">SEXTA-FEIRA</h4>
-                  <p>Das 8h00 às 16h30</p>
+                  <p>Das 8h00 às 16h50</p>
                 </div>
                 <div className="pt-2 border-t">
                   <h4 className="font-semibold mb-1">RETIRADA DE ENCOMENDAS</h4>
                   <p>SEGUNDA À SEXTA-FEIRA</p>
                   <p>Das 8h00 às 16h30</p>
+                  <p className="mt-2 text-primary-dark font-medium">Consulte-nos. Não somos loja. É necessário pedir, pagar, faturar, separar e embalar primeiro.</p>
                 </div>
               </CardContent>
             </Card>
