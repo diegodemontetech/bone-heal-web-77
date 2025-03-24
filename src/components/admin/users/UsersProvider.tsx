@@ -19,10 +19,11 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // Buscar todos os perfis de usuários
+      // Buscar todos os perfis de usuários ADMIN
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
+        .eq('is_admin', true)  // Filtrar apenas admins
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -59,6 +60,7 @@ export const UsersProvider: React.FC<UsersProviderProps> = ({ children }) => {
       });
 
       setUsers(mappedUsers);
+      console.log(`[UsersProvider] Encontrados ${mappedUsers.length} usuários admin`);
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err instanceof Error ? err : new Error(String(err)));

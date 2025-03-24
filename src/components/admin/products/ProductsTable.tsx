@@ -70,7 +70,7 @@ const ProductsTable = ({
                 <TableCell>{product.omie_code || "Não sincronizado"}</TableCell>
                 <TableCell>
                   {product.price
-                    ? `R$ ${product.price.toFixed(2)}`
+                    ? `R$ ${Number(product.price).toFixed(2)}`
                     : "Não definido"}
                 </TableCell>
                 <TableCell>
@@ -94,7 +94,7 @@ const ProductsTable = ({
                 </TableCell>
                 <TableCell>
                   <Switch
-                    checked={product.active}
+                    checked={product.active || false}
                     onCheckedChange={() => onToggleActive(product.id, product.active || false)}
                   />
                 </TableCell>

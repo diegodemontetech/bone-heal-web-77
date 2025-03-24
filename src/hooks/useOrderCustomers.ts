@@ -4,9 +4,6 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// ID do cliente de teste que queremos excluir
-const TEST_CLIENT_ID = "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3";
-
 export const useOrderCustomers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
@@ -21,11 +18,11 @@ export const useOrderCustomers = () => {
     queryFn: async () => {
       console.log("[useOrderCustomers] Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
-        // Consulta todos os perfis, exceto o cliente de teste
+        // Consulta todos os perfis que não são administradores
         let query = supabase
           .from("profiles")
           .select("*")
-          .neq('id', TEST_CLIENT_ID);
+          .eq('is_admin', false);
         
         // Aplicar filtro apenas se houver termo de busca
         if (customerSearchTerm && customerSearchTerm.trim() !== "") {

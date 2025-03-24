@@ -39,25 +39,32 @@ export const useAdminProducts = () => {
       }
     },
     retry: 1,
-    initialData: [], // Definir initialData como array vazio para evitar undefined
+    initialData: [], 
     refetchOnWindowFocus: false,
   });
 
   const handleToggleActive = async (id: string, currentActive: boolean) => {
     try {
+      console.log(`Alterando status do produto ${id} de ${currentActive} para ${!currentActive}`);
+      
       const { error } = await supabase
         .from("products")
         .update({ active: !currentActive })
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao atualizar status do produto:", error);
+        throw error;
+      }
 
       toast({
         title: `Produto ${!currentActive ? "ativado" : "desativado"} com sucesso`,
       });
       
-      refetch();
+      // Forçar o refetch para atualizar a lista
+      await refetch();
     } catch (error: any) {
+      console.error("Erro ao alterar status do produto:", error);
       toast({
         title: "Erro ao alterar status do produto",
         description: error.message,

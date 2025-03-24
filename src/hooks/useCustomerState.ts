@@ -16,9 +16,6 @@ export interface Customer {
   omie_sync?: boolean;
 }
 
-// ID do cliente de teste que queremos excluir
-const TEST_CLIENT_ID = "e59a4eb5-3dd5-4f8f-96e5-75f16564bcf3";
-
 export const useCustomerState = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -30,11 +27,11 @@ export const useCustomerState = () => {
       console.log("[useCustomerState] Iniciando busca de clientes com termo:", searchTerm);
       setIsLoadingCustomers(true);
       
-      // Buscar todos os perfis exceto o cliente de teste
+      // Buscar todos os perfis de clientes (não admin)
       let query = supabase
         .from('profiles')
-        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync, created_at') // Selecionando colunas explicitamente
-        .neq('id', TEST_CLIENT_ID);
+        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync, created_at')
+        .eq('is_admin', false);
       
       if (searchTerm && searchTerm.trim() !== "") {
         // Verificar se a busca parece ser um código numérico
