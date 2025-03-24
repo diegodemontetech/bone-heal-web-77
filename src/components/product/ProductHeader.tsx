@@ -1,6 +1,6 @@
 
 import { Badge } from "@/components/ui/badge";
-import { formatPrice } from "@/utils/formatters";
+import { formatCurrency } from "@/utils/formatters";
 import { Product } from "@/types/product";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
@@ -38,7 +38,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
       
       <div className="pt-2">
         <div className="text-3xl font-bold text-primary">
-          {product.price ? formatPrice(product.price) : "Consulte"}
+          {product.price ? formatCurrency(product.price) : "Consulte"}
         </div>
         
         {isOnOrder ? (
