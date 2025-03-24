@@ -14,10 +14,11 @@ export interface LeadDrawerProps {
   onClose: () => void;
   lead: any | null;
   onLeadUpdated: () => void;
-  onStatusChange: (leadId: string, newStatus: string) => Promise<void>;
+  onStatusChange: (leadId: string, newStageId: string) => Promise<void>;
+  stages?: { id: string; name: string }[];
 }
 
-export const LeadDrawer = ({ open, onClose, lead, onLeadUpdated, onStatusChange }: LeadDrawerProps) => {
+export const LeadDrawer = ({ open, onClose, lead, onLeadUpdated, onStatusChange, stages }: LeadDrawerProps) => {
   const [formData, setFormData] = useState<any>({});
   const { users } = useUsersQuery();
   const { updateLead, deleteLead } = useLeadActions();
@@ -39,8 +40,8 @@ export const LeadDrawer = ({ open, onClose, lead, onLeadUpdated, onStatusChange 
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleStatusChange = async (newStatus: string) => {
-    await onStatusChange(lead.id, newStatus);
+  const handleStageChange = async (newStageId: string) => {
+    await onStatusChange(lead.id, newStageId);
   };
 
   const handleSave = async () => {
@@ -74,8 +75,9 @@ export const LeadDrawer = ({ open, onClose, lead, onLeadUpdated, onStatusChange 
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={onClose}
-          onStatusChange={handleStatusChange}
-          currentStatus={lead.status}
+          onStatusChange={handleStageChange}
+          currentStageId={lead.stage_id}
+          stages={stages}
         />
       </SheetContent>
     </Sheet>

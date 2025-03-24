@@ -60,13 +60,18 @@ export const NavigationItems = [
   },
   {
     title: "CRM",
-    href: "/admin/leads",
+    href: "/admin/crm",
     icon: BarChart2,
     permissions: [],
     children: [
       {
-        title: "Leads",
-        href: "/admin/leads",
+        title: "Hunting Ativo",
+        href: "/admin/crm/hunting",
+        permissions: []
+      },
+      {
+        title: "Carteira de Clientes",
+        href: "/admin/crm/carteira",
         permissions: []
       }
     ]

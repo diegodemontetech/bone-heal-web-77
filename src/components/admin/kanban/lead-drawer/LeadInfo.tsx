@@ -13,8 +13,8 @@ export const LeadInfo = ({ lead }: LeadInfoProps) => {
       <Label>Informações do Lead</Label>
       <div className="text-sm space-y-1 text-gray-500">
         <p>Criado em: {format(new Date(lead.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
-        {lead.last_contact && (
-          <p>Último contato: {format(new Date(lead.last_contact), "dd/MM/yyyy", { locale: ptBR })}</p>
+        {lead.last_interaction && (
+          <p>Último contato: {format(new Date(lead.last_interaction), "dd/MM/yyyy", { locale: ptBR })}</p>
         )}
       </div>
     </div>

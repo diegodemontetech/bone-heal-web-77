@@ -8,7 +8,7 @@ export const useLeadActions = () => {
     mutationFn: async ({ leadId, data }: { leadId: string, data: any }) => {
       try {
         const { error } = await supabase
-          .from("contact_leads")
+          .from("crm_contacts")
           .update(data)
           .eq("id", leadId);
 
@@ -32,7 +32,7 @@ export const useLeadActions = () => {
     mutationFn: async (leadId: string) => {
       try {
         const { error } = await supabase
-          .from("contact_leads")
+          .from("crm_contacts")
           .delete()
           .eq("id", leadId);
 

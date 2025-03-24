@@ -22,11 +22,11 @@ const LeadCard = ({ lead, index, onClick }: LeadCardProps) => {
           className="bg-white p-3 rounded-md mb-2 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
           onClick={() => onClick(lead)}
         >
-          <h4 className="font-medium mb-1 truncate">{lead.name}</h4>
+          <h4 className="font-medium mb-1 truncate">{lead.full_name}</h4>
           <p className="text-gray-500 text-sm truncate">{lead.phone}</p>
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
-              {lead.source === "whatsapp_widget" ? "WhatsApp" : "Formulário"}
+              {lead.clinic_name || "Sem clínica"}
             </span>
             <span className="text-xs text-gray-400">
               {new Date(lead.created_at).toLocaleDateString('pt-BR')}
@@ -42,16 +42,23 @@ const LeadCard = ({ lead, index, onClick }: LeadCardProps) => {
 export interface KanbanColumnProps {
   id: string;
   title: string;
+  color: string;
   leads: any[];
   onLeadClick: (lead: any) => void;
-  onStatusChange: (leadId: string, newStatus: string) => Promise<void>;
+  onStatusChange: (leadId: string, newStageId: string) => Promise<void>;
 }
 
-export const KanbanColumn = ({ id, title, leads, onLeadClick, onStatusChange }: KanbanColumnProps) => {
+export const KanbanColumn = ({ id, title, color, leads, onLeadClick, onStatusChange }: KanbanColumnProps) => {
   return (
-    <div className="flex flex-col bg-gray-100 p-3 rounded-lg h-[70vh]">
+    <div className="flex flex-col bg-gray-50 p-3 rounded-lg h-[70vh]">
       <div className="flex justify-between items-center mb-4 px-2">
-        <h3 className="font-medium">{title}</h3>
+        <div className="flex items-center">
+          <div 
+            className="w-3 h-3 rounded-full mr-2" 
+            style={{ backgroundColor: color }}
+          />
+          <h3 className="font-medium">{title}</h3>
+        </div>
         <span className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
           {leads.length}
         </span>
