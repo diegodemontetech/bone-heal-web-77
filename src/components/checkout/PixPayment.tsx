@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Clock, Copy, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
+import { Clock, Copy, AlertTriangle, CheckCircle2, RefreshCw, Loader2, QrCode } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -96,35 +96,56 @@ const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
 
   if (!pixCode) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">
+      <div className="space-y-4 bg-gradient-to-b from-white to-green-50 p-6 rounded-xl border border-green-100">
+        <div className="flex justify-center mb-4">
+          <div className="rounded-full p-4 bg-green-100">
+            <QrCode className="h-8 w-8 text-green-600" />
+          </div>
+        </div>
+        
+        <h3 className="text-lg font-medium text-center text-gray-800">Pagamento via PIX</h3>
+        
+        <p className="text-sm text-gray-600 text-center">
           O pagamento via PIX é rápido, seguro e sem taxas. Após clicar em "Finalizar compra", 
           você receberá um QR code para escanear com seu aplicativo bancário.
         </p>
         
         <Alert className="bg-blue-50 border-blue-200">
           <AlertDescription className="flex items-center space-x-2 text-blue-800">
-            <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
+            <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-blue-600" />
             <span>O pagamento é processado instantaneamente após a confirmação do PIX.</span>
           </AlertDescription>
         </Alert>
+        
+        <div className="flex justify-center">
+          <div className="animate-pulse w-40 h-40 bg-gray-200 rounded-lg flex items-center justify-center">
+            <QrCode className="w-16 h-16 text-gray-300" />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center p-6 border-2 border-primary/20 rounded-xl bg-gradient-to-b from-white to-gray-50">
-      <h3 className="font-medium text-lg mb-2 text-center text-primary">Pagamento PIX gerado!</h3>
-      <p className="text-sm text-gray-600 mb-4 text-center">
-        Escaneie o QR code abaixo ou copie o código PIX:
-      </p>
+    <div className="flex flex-col items-center p-6 border-2 border-green-200 rounded-xl bg-gradient-to-b from-white to-green-50 shadow-sm">
+      <div className="w-full flex justify-center mb-4">
+        <div className="rounded-full p-3 bg-green-100">
+          <QrCode className="h-7 w-7 text-green-600" />
+        </div>
+      </div>
+      
+      <h3 className="font-medium text-xl mb-2 text-center text-gray-800">Pagamento PIX gerado!</h3>
+      
+      <div className="bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-sm font-medium mb-4">
+        Escaneie o QR code ou copie o código
+      </div>
       
       {pixQrCodeImage && (
         <div className="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
           <img 
             src={`data:image/png;base64,${pixQrCodeImage}`}
             alt="QR Code PIX" 
-            className="h-48 w-48 mx-auto"
+            className="h-56 w-56 mx-auto"
           />
         </div>
       )}
@@ -147,36 +168,38 @@ const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
         <Button 
           variant="outline" 
           onClick={handleCopyClick}
-          className="w-full border-primary/30 hover:bg-primary/5"
+          className="w-full border-green-300 bg-white hover:bg-green-50 text-green-700"
         >
           {copied ? "Código copiado!" : "Copiar código PIX"}
         </Button>
       </div>
       
-      <Alert className="bg-amber-50 border-amber-200 mt-2">
-        <AlertDescription className="flex items-center gap-2 text-amber-800">
-          <Clock className="h-5 w-5 flex-shrink-0 text-amber-600" />
-          <span>Este código PIX expira em <strong>30 minutos</strong>. Realize o pagamento dentro deste prazo.</span>
-        </AlertDescription>
-      </Alert>
-      
-      <Alert className="bg-green-50 border-green-200 mt-3">
-        <AlertDescription className="flex items-center gap-2 text-green-800">
-          <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600" />
-          <span>Após o pagamento, você receberá a confirmação e poderá acompanhar o pedido na área "Meus Pedidos".</span>
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-3 w-full">
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertDescription className="flex items-center gap-2 text-amber-800">
+            <Clock className="h-5 w-5 flex-shrink-0 text-amber-600" />
+            <span>Este código PIX expira em <strong>30 minutos</strong>. Realize o pagamento dentro deste prazo.</span>
+          </AlertDescription>
+        </Alert>
+        
+        <Alert className="bg-green-50 border-green-200">
+          <AlertDescription className="flex items-center gap-2 text-green-800">
+            <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-600" />
+            <span>Após o pagamento, você receberá a confirmação e poderá acompanhar o pedido na área "Meus Pedidos".</span>
+          </AlertDescription>
+        </Alert>
+      </div>
 
       <div className="mt-4 w-full">
         <Button 
           variant="outline"
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full flex items-center justify-center gap-2 border-green-300 bg-white hover:bg-green-50 text-green-700"
           onClick={handleManualCheck}
           disabled={isCheckingPayment}
         >
           {isCheckingPayment ? (
             <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Verificando pagamento...
             </>
           ) : (

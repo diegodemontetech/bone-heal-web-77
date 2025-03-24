@@ -1,10 +1,11 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import OrderSummary from "@/components/orders/OrderSummary";
 import { CartItem } from "@/hooks/use-cart";
 import PaymentOptions from "./payment/PaymentOptions";
 import DeliveryInfo from "./payment/DeliveryInfo";
 import CheckoutButton from "./payment/CheckoutButton";
+import { ShoppingBag, Truck, BadgePercent, Receipt } from "lucide-react";
 
 interface OrderTotalProps {
   cartItems: CartItem[];
@@ -46,40 +47,63 @@ const OrderTotal = ({
   };
 
   return (
-    <Card className="bg-white shadow-md">
-      <CardHeader className="bg-gray-50 border-b">
-        <CardTitle className="text-primary">Resumo do Pedido</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <OrderSummary
-          items={cartItems}
-          subtotal={subtotal}
-          shippingFee={shippingFee}
-          discount={discount}
-          total={getFinalAmount(paymentMethod)}
-        />
-
-        <DeliveryInfo deliveryDate={deliveryDate} />
-
-        <div className="mt-6 space-y-4">
-          <PaymentOptions 
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            total={total}
-            checkoutData={checkoutData}
-          />
-
-          <CheckoutButton 
-            isLoggedIn={isLoggedIn}
-            hasZipCode={hasZipCode}
-            loading={loading}
-            amount={getFinalAmount(paymentMethod)}
-            paymentMethod={paymentMethod}
-            onCheckout={onCheckout}
-          />
+    <div className="space-y-6">
+      <Card className="bg-white shadow-md border overflow-hidden">
+        <div className="bg-gradient-to-r from-primary/10 to-white border-b px-4 py-3">
+          <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Resumo do Pedido
+          </h2>
         </div>
-      </CardContent>
-    </Card>
+        
+        <CardContent className="pt-4">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-primary/70 text-sm font-medium pb-2 border-b">
+              <ShoppingBag className="h-4 w-4" />
+              <span>Itens do Carrinho</span>
+            </div>
+            
+            <OrderSummary
+              items={cartItems}
+              subtotal={subtotal}
+              shippingFee={shippingFee}
+              discount={discount}
+              total={getFinalAmount(paymentMethod)}
+            />
+
+            <div className="flex items-center gap-2 text-primary/70 text-sm font-medium pt-2 pb-2 border-b border-t">
+              <Truck className="h-4 w-4" />
+              <span>Entrega</span>
+            </div>
+            
+            <DeliveryInfo deliveryDate={deliveryDate} />
+
+            <div className="flex items-center gap-2 text-primary/70 text-sm font-medium pt-2 pb-2 border-b">
+              <BadgePercent className="h-4 w-4" />
+              <span>Formas de Pagamento</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <PaymentOptions 
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+        total={total}
+        checkoutData={checkoutData}
+      />
+
+      <div className="mt-6">
+        <CheckoutButton 
+          isLoggedIn={isLoggedIn}
+          hasZipCode={hasZipCode}
+          loading={loading}
+          amount={getFinalAmount(paymentMethod)}
+          paymentMethod={paymentMethod}
+          onCheckout={onCheckout}
+        />
+      </div>
+    </div>
   );
 };
 
