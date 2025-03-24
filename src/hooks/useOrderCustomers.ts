@@ -21,10 +21,10 @@ export const useOrderCustomers = () => {
     queryFn: async () => {
       console.log("[useOrderCustomers] Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
-        // Consulta diretamente na tabela profiles, sem filtrar por role/is_admin
+        // Consulta todos os perfis, exceto o cliente de teste
         let query = supabase
           .from("profiles")
-          .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync")
+          .select("*")
           .neq('id', TEST_CLIENT_ID);
         
         // Aplicar filtro apenas se houver termo de busca
@@ -53,7 +53,7 @@ export const useOrderCustomers = () => {
           throw profilesError;
         }
         
-        console.log(`[useOrderCustomers] Encontrados ${profilesData?.length || 0} clientes na busca`);
+        console.log(`[useOrderCustomers] Encontrados ${profilesData?.length || 0} clientes na busca`, profilesData);
         
         // Garantir que todos os clientes tenham os campos necessários
         const formattedCustomers = (profilesData || []).map(profile => ({
