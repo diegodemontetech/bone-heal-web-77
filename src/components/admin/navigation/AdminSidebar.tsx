@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth-context";
-import { NavigationItems } from "./AdminNavigationItems";
+import { adminNavigationItems } from "./AdminNavigationItems";
 import { useState, useEffect } from "react";
 
 interface AdminSidebarProps {
@@ -21,7 +21,7 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
   useEffect(() => {
     const newExpandedItems: Record<string, boolean> = {};
     
-    NavigationItems.forEach(item => {
+    adminNavigationItems.forEach(item => {
       if (item.children) {
         const shouldExpand = pathname.includes(item.href) || 
           item.children.some(child => pathname.includes(child.href));
@@ -71,7 +71,7 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
       </div>
       <ScrollArea className="flex-1 py-2">
         <nav className="grid gap-1 px-2">
-          {NavigationItems.map((item) => (
+          {adminNavigationItems.map((item) => (
             <div key={item.title} className="flex flex-col">
               <div
                 className={cn(

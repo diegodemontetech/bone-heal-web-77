@@ -14,8 +14,6 @@ import { supportRoutes } from "./admin/supportRoutes";
 
 // Admin pages
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
-const Contacts = lazy(() => import("@/pages/admin/Contacts"));
-const ContactDetails = lazy(() => import("@/pages/admin/ContactDetails"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -38,22 +36,6 @@ export const adminRoutes: RouteObject = {
       element: (
         <Suspense fallback={<AdminLoader />}>
           <Dashboard />
-        </Suspense>
-      ),
-    },
-    {
-      path: "contacts",
-      element: (
-        <Suspense fallback={<AdminLoader />}>
-          <Contacts />
-        </Suspense>
-      ),
-    },
-    {
-      path: "contacts/:id",
-      element: (
-        <Suspense fallback={<AdminLoader />}>
-          <ContactDetails />
         </Suspense>
       ),
     },

@@ -79,7 +79,7 @@ const ContactList = ({ contacts, isLoading }: ContactListProps) => {
                   locale: ptBR
                 })}
               </TableCell>
-              <TableCell>{getStatusBadge(contact.replied)}</TableCell>
+              <TableCell>{getStatusBadge(contact.respondido || contact.replied)}</TableCell>
               <TableCell className="text-right">
                 <Button 
                   variant="ghost" 

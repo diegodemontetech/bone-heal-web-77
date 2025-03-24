@@ -26,8 +26,9 @@ const AdminContactDetails = () => {
     try {
       setLoading(true);
       
+      // Use 'contato' table instead of 'contact_messages'
       const { data, error } = await supabase
-        .from("contact_messages")
+        .from('contato')
         .select("*")
         .eq("id", id)
         .single();
@@ -38,8 +39,7 @@ const AdminContactDetails = () => {
     } catch (error) {
       console.error("Erro ao buscar detalhes do contato:", error);
       toast("Erro ao carregar contato", {
-        description: "Ocorreu um erro ao buscar os detalhes do contato",
-        icon: "❌"
+        description: "Ocorreu um erro ao buscar os detalhes do contato"
       });
     } finally {
       setLoading(false);
@@ -50,20 +50,19 @@ const AdminContactDetails = () => {
     try {
       if (!profile?.id) {
         toast("Erro de autenticação", {
-          description: "Você precisa estar logado para enviar respostas",
-          icon: "❌"
+          description: "Você precisa estar logado para enviar respostas"
         });
         return;
       }
 
-      // Atualizar o contato com a resposta
+      // Atualizar o contato com a resposta usando o modelo de dados correto
       const { error } = await supabase
-        .from("contact_messages")
+        .from('contato')
         .update({ 
-          reply: replyMessage,
-          replied: true,
-          replied_at: new Date().toISOString(),
-          replied_by: profile.id
+          resposta: replyMessage,
+          respondido: true,
+          respondido_em: new Date().toISOString(),
+          respondido_por: profile.id
         })
         .eq("id", id);
 
@@ -73,22 +72,21 @@ const AdminContactDetails = () => {
       // usando alguma função do Supabase Edge Functions ou outro serviço
 
       toast("Resposta enviada", {
-        description: "A resposta foi enviada com sucesso",
+        description: "A resposta foi enviada com sucesso"
       });
       
       // Atualizar o objeto de contato localmente
       setContact({
         ...contact,
-        reply: replyMessage,
-        replied: true,
-        replied_at: new Date().toISOString(),
-        replied_by: profile.id
+        resposta: replyMessage,
+        respondido: true,
+        respondido_em: new Date().toISOString(),
+        respondido_por: profile.id
       });
     } catch (error) {
       console.error("Erro ao enviar resposta:", error);
       toast("Erro ao enviar resposta", {
-        description: "Ocorreu um erro ao enviar a resposta",
-        icon: "❌"
+        description: "Ocorreu um erro ao enviar a resposta"
       });
     }
   };

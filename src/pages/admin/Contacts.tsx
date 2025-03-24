@@ -20,8 +20,9 @@ const AdminContacts = () => {
   const fetchContacts = async () => {
     try {
       setIsLoading(true);
+      // Use from('contato') instead of from('contact_messages')
       const { data, error } = await supabase
-        .from("contact_messages")
+        .from('contato')
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -30,8 +31,7 @@ const AdminContacts = () => {
     } catch (error) {
       console.error("Erro ao buscar contatos:", error);
       toast("Erro ao carregar contatos", {
-        description: "Ocorreu um erro ao buscar os contatos",
-        icon: "❌"
+        description: "Ocorreu um erro ao buscar os contatos"
       });
     } finally {
       setIsLoading(false);
