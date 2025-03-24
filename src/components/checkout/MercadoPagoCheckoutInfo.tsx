@@ -1,5 +1,5 @@
 
-import { Shield, CreditCard, Bank } from "lucide-react";
+import { Shield, CreditCard, BanknoteIcon } from "lucide-react";
 
 const MercadoPagoCheckoutInfo = () => {
   return (
@@ -19,7 +19,7 @@ const MercadoPagoCheckoutInfo = () => {
           <span>Cartão de crédito</span>
         </div>
         <div className="flex items-center gap-1 bg-white px-2 py-1 rounded text-xs text-gray-600 border">
-          <Bank className="h-3 w-3" />
+          <BanknoteIcon className="h-3 w-3" />
           <span>Boleto</span>
         </div>
         <div className="flex items-center gap-1 bg-white px-2 py-1 rounded text-xs text-gray-600 border">

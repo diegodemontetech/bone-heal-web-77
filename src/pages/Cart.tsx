@@ -1,4 +1,3 @@
-
 import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";
 import { EmptyCart } from "@/components/cart/EmptyCart";
@@ -32,7 +31,7 @@ const Cart = () => {
     resetShipping,
     handleShippingRateChange
   } = useShipping();
-  const { user, isAuthenticated } = useAuth();
+  const { profile, isAuthenticated } = useAuth();
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [shippingCalculated, setShippingCalculated] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -51,12 +50,12 @@ const Cart = () => {
   // Load user profile data if authenticated
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (isAuthenticated && user?.id) {
+      if (isAuthenticated && profile?.id) {
         try {
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', user.id)
+            .eq('id', profile.id)
             .single();
           
           if (error) throw error;
@@ -74,7 +73,7 @@ const Cart = () => {
     };
     
     fetchUserProfile();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, profile]);
 
   const handleZipCodeSubmit = async (zip: string) => {
     setShippingError(null);
