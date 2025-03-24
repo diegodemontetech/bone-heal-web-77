@@ -1,17 +1,17 @@
 
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, MessageCircle, Settings, Smartphone, AlertTriangle } from 'lucide-react';
-import { useWhatsAppSettings } from '@/hooks/admin/whatsapp/useWhatsAppSettings';
-import { EvolutionApiTab } from '@/components/admin/whatsapp/settings/EvolutionApiTab';
-import { ZapiTab } from '@/components/admin/whatsapp/settings/ZapiTab';
-import { WebhookTab } from '@/components/admin/whatsapp/settings/WebhookTab';
-import { QrCodeTab } from '@/components/admin/whatsapp/settings/QrCodeTab';
-import { InstancesManager } from '@/components/admin/whatsapp/settings/InstancesManager';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MessageCircle, QrCode, Webhook, FileJson } from "lucide-react";
+import { useWhatsAppSettings } from "@/hooks/admin/whatsapp/useWhatsAppSettings";
+import { EvolutionApiTab } from "@/components/admin/whatsapp/settings/EvolutionApiTab";
+import { ZapiTab } from "@/components/admin/whatsapp/settings/ZapiTab";
+import { QrCodeTab } from "@/components/admin/whatsapp/settings/QrCodeTab";
+import { WebhookTab } from "@/components/admin/whatsapp/settings/WebhookTab";
+import { InstancesManager } from "@/components/admin/whatsapp/settings/InstancesManager";
+import { toast } from "sonner";
 
-const AdminWhatsAppSettings = () => {
+const WhatsAppSettings = () => {
   const {
     loading,
     saving,
@@ -31,7 +31,7 @@ const AdminWhatsAppSettings = () => {
     setInstanceName,
     saveSecrets,
     copyToClipboard,
-    createInstance: createInstanceFn,
+    createInstance,
     generateQRCode,
     checkConnectionStatus,
     instances,
@@ -42,121 +42,118 @@ const AdminWhatsAppSettings = () => {
 
   const [activeTab, setActiveTab] = useState("evolution");
 
-  // Função wrapper para garantir que createInstance receba um parâmetro
-  const createInstance = async () => {
-    if (!instanceName.trim()) {
+  const handleCreateInstance = async () => {
+    if (!instanceName) {
+      toast.error("Por favor, informe um nome para a instância");
       return;
     }
-    await createInstanceFn(instanceName);
+    
+    await createInstance(instanceName);
+    return true;
+  };
+
+  const handleRefreshQr = async (instanceId: string) => {
+    await refreshQrCode(instanceId);
+    return true;
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <MessageCircle className="h-6 w-6 text-primary" />
-            Configurações WhatsApp
-          </h1>
-          <p className="text-muted-foreground">Configure a integração com o WhatsApp para atendimento automático</p>
-        </div>
+    <div className="p-8 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <MessageCircle className="h-8 w-8 text-primary" />
+          Configurações do WhatsApp
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Configure suas instâncias e conexões com o WhatsApp
+        </p>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center my-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className="text-amber-800 font-semibold">Atenção!</AlertTitle>
-            <AlertDescription className="text-amber-700">
-              Configure a API Evolution abaixo e depois crie até 5 instâncias do WhatsApp para conectar com diferentes números.
-            </AlertDescription>
-          </Alert>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="evolution" className="flex items-center gap-2">
+            <FileJson className="h-4 w-4" />
+            <span className="hidden sm:inline">Evolution API</span>
+            <span className="sm:hidden">API</span>
+          </TabsTrigger>
+          <TabsTrigger value="zapi" className="flex items-center gap-2">
+            <FileJson className="h-4 w-4" />
+            <span className="hidden sm:inline">Z-API</span>
+            <span className="sm:hidden">Z-API</span>
+          </TabsTrigger>
+          <TabsTrigger value="qrcode" className="flex items-center gap-2">
+            <QrCode className="h-4 w-4" />
+            <span className="hidden sm:inline">QR Code</span>
+            <span className="sm:hidden">QR</span>
+          </TabsTrigger>
+          <TabsTrigger value="webhook" className="flex items-center gap-2">
+            <Webhook className="h-4 w-4" />
+            <span className="hidden sm:inline">Webhook</span>
+            <span className="sm:hidden">Hook</span>
+          </TabsTrigger>
+        </TabsList>
 
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-6 grid grid-cols-2 md:grid-cols-5 w-full">
-              <TabsTrigger value="evolution" className="flex items-center gap-1">
-                <Settings className="h-4 w-4" />
-                <span className="hidden md:inline">Evolution API</span>
-              </TabsTrigger>
-              <TabsTrigger value="zapi" className="flex items-center gap-1">
-                <Settings className="h-4 w-4" />
-                <span className="hidden md:inline">Z-API</span>
-              </TabsTrigger>
-              <TabsTrigger value="webhook" className="flex items-center gap-1">
-                <MessageCircle className="h-4 w-4" />
-                <span className="hidden md:inline">Webhook</span>
-              </TabsTrigger>
-              <TabsTrigger value="qrcode" className="flex items-center gap-1">
-                <Smartphone className="h-4 w-4" />
-                <span className="hidden md:inline">QR Code</span>
-              </TabsTrigger>
-              <TabsTrigger value="instances" className="flex items-center gap-1">
-                <Smartphone className="h-4 w-4" />
-                <span className="hidden md:inline">Instâncias</span>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="evolution">
-              <EvolutionApiTab
-                evolutionUrl={evolutionUrl}
-                evolutionKey={evolutionKey}
-                instanceName={instanceName}
-                saving={saving}
-                qrCodeLoading={qrCodeLoading}
-                onEvolutionUrlChange={setEvolutionUrl}
-                onEvolutionKeyChange={setEvolutionKey}
-                onInstanceNameChange={setInstanceName}
-                onSaveSettings={saveSecrets}
-                onCreateInstance={createInstance}
-                onCheckStatus={checkConnectionStatus}
-              />
-            </TabsContent>
-            
-            <TabsContent value="zapi">
-              <ZapiTab
-                zapiInstanceId={zapiInstanceId}
-                zapiToken={zapiToken}
-                saving={saving}
-                onZapiInstanceIdChange={setZapiInstanceId}
-                onZapiTokenChange={setZapiToken}
-                onSaveSettings={saveSecrets}
-              />
-            </TabsContent>
-            
-            <TabsContent value="webhook">
-              <WebhookTab
-                webhookUrl={webhookUrl}
-                copied={copied}
-                onCopyToClipboard={copyToClipboard}
-              />
-            </TabsContent>
-            
-            <TabsContent value="qrcode">
-              <QrCodeTab
-                qrCodeData={qrCodeData}
-                qrCodeLoading={qrCodeLoading}
-                onGenerateQRCode={generateQRCode}
-              />
-            </TabsContent>
+        <div className="mt-6">
+          <TabsContent value="evolution">
+            <EvolutionApiTab
+              evolutionUrl={evolutionUrl}
+              evolutionKey={evolutionKey}
+              instanceName={instanceName}
+              saving={saving}
+              qrCodeLoading={qrCodeLoading}
+              onEvolutionUrlChange={setEvolutionUrl}
+              onEvolutionKeyChange={setEvolutionKey}
+              onInstanceNameChange={setInstanceName}
+              onSaveSettings={saveSecrets}
+              onCreateInstance={handleCreateInstance}
+              onCheckStatus={checkConnectionStatus}
+            />
+          </TabsContent>
 
-            <TabsContent value="instances">
-              <InstancesManager 
-                instances={instances}
-                isLoading={instancesLoading}
-                onRefreshQr={refreshQrCode}
-                onDeleteInstance={deleteInstance}
-                onCreateInstance={createInstanceFn}
-              />
-            </TabsContent>
-          </Tabs>
+          <TabsContent value="zapi">
+            <ZapiTab
+              zapiInstanceId={zapiInstanceId}
+              zapiToken={zapiToken}
+              saving={saving}
+              onZapiInstanceIdChange={setZapiInstanceId}
+              onZapiTokenChange={setZapiToken}
+              onSaveSettings={saveSecrets}
+            />
+          </TabsContent>
+
+          <TabsContent value="qrcode">
+            <QrCodeTab
+              qrCodeData={qrCodeData || ""}
+              qrCodeLoading={qrCodeLoading}
+              onGenerateQRCode={generateQRCode}
+            />
+          </TabsContent>
+
+          <TabsContent value="webhook">
+            <WebhookTab
+              webhookUrl={webhookUrl}
+              copied={copied}
+              onCopyToClipboard={copyToClipboard}
+            />
+          </TabsContent>
         </div>
-      )}
+      </Tabs>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Instâncias do WhatsApp</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InstancesManager
+            instances={instances}
+            loading={instancesLoading}
+            onRefreshQr={handleRefreshQr}
+            onDeleteInstance={deleteInstance}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default AdminWhatsAppSettings;
+export default WhatsAppSettings;

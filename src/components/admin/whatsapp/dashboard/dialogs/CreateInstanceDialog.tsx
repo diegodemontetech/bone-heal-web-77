@@ -1,53 +1,83 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from "@/components/ui/dialog";
-import { CreateInstanceDialogProps } from "@/components/admin/whatsapp/types";
 import { InstanceNameInput } from "./InstanceNameInput";
 import { DialogActions } from "./DialogActions";
+import { WhatsAppInstance } from "@/components/admin/whatsapp/types";
 
-export const CreateInstanceDialog: React.FC<CreateInstanceDialogProps> = ({
+interface CreateInstanceDialogProps {
+  isOpen: boolean;
+  isCreating: boolean;
+  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
+  onCreateInstance: (instanceName: string) => Promise<WhatsAppInstance | null>;
+}
+
+export const CreateInstanceDialog = ({
   isOpen,
   isCreating,
+  onClose,
   onOpenChange,
   onCreateInstance
-}) => {
+}: CreateInstanceDialogProps) => {
   const [instanceName, setInstanceName] = useState("");
-  
-  const handleConfirm = async () => {
-    await onCreateInstance(instanceName);
-    setInstanceName("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCreateInstance = async () => {
+    if (!instanceName.trim()) {
+      toast.error("Por favor, insira um nome para a instância");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await onCreateInstance(instanceName);
+      if (result) {
+        toast.success("Instância criada com sucesso");
+        setInstanceName("");
+        onClose();
+      }
+    } catch (error) {
+      console.error("Erro ao criar instância:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
+
   const handleCancel = () => {
     setInstanceName("");
-    onOpenChange(false);
+    onClose();
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nova Instância WhatsApp</DialogTitle>
+          <DialogTitle>Nova Instância do WhatsApp</DialogTitle>
           <DialogDescription>
-            Crie uma nova instância para conectar com o WhatsApp
+            Crie uma nova instância para conectar um número do WhatsApp
           </DialogDescription>
         </DialogHeader>
-        
-        <InstanceNameInput 
-          value={instanceName} 
-          onChange={setInstanceName} 
+
+        <InstanceNameInput
+          value={instanceName}
+          onChange={setInstanceName}
+          disabled={isLoading}
         />
-        
-        <DialogActions 
-          onCancel={handleCancel} 
-          onConfirm={handleConfirm}
-          isLoading={isCreating}
+
+        <DialogActions
+          onCancel={handleCancel}
+          onConfirm={handleCreateInstance}
+          isCreating={isCreating}
+          isLoading={isLoading}
+          onClose={onClose}
         />
       </DialogContent>
     </Dialog>

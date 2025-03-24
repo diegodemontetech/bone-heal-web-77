@@ -46,8 +46,8 @@ export function convertMessageFormat(message: any): WhatsAppMessage {
     body: message.message || message.body || '',
     direction: message.direction || (message.is_sent_by_me ? 'outbound' : 'inbound'),
     timestamp: message.created_at || message.timestamp || new Date().toISOString(),
-    isFromMe: message.is_sent_by_me || message.direction === 'outbound',
-    is_sent_by_me: message.is_sent_by_me || message.direction === 'outbound',
+    isFromMe: message.is_sent_by_me || message.isFromMe || message.direction === 'outbound',
+    is_sent_by_me: message.is_sent_by_me || message.isFromMe || message.direction === 'outbound',
     mediaUrl: message.media_url,
     mediaType: message.media_type,
     lead_id: message.lead_id,
@@ -100,12 +100,17 @@ export interface CreateInstanceDialogProps {
 export interface DialogActionsProps {
   isCreating: boolean;
   onClose: () => void;
+  onCancel: () => void;
+  onConfirm: () => Promise<void>;
+  isLoading: boolean;
 }
 
 export interface InstanceNameInputProps {
   instanceName: string;
   setInstanceName: (name: string) => void;
   disabled?: boolean;
+  value: string;
+  onChange: (value: string) => void;
 }
 
 export interface WhatsAppInstanceCardProps {

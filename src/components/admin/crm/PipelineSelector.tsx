@@ -31,14 +31,16 @@ export const PipelineSelector = ({ selectedPipeline, onPipelineChange }: Pipelin
         .from("crm_pipelines")
         .select("*")
         .eq("is_active", true)
-        .order("order_index", { ascending: true });
+        .order("name", { ascending: true });
 
       if (error) throw error;
 
-      // Mapear dados para adicionar a propriedade color que está faltando
+      // Mapear dados para garantir que todos os campos necessários estejam presentes
       const mappedPipelines: Pipeline[] = (data || []).map(pipeline => ({
         ...pipeline,
-        color: pipeline.color || '#3b82f6' // Usar cor padrão se não estiver definida
+        color: pipeline.color || '#3b82f6', // Usar cor padrão se não estiver definida
+        id: pipeline.id,
+        name: pipeline.name
       }));
       
       setPipelines(mappedPipelines);

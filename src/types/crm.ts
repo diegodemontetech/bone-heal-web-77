@@ -8,10 +8,13 @@ export interface Stage {
   order_index: number;
   created_at?: string;
   updated_at?: string;
+  // Campos adicionais do banco de dados
+  department_id?: string;
+  order?: number;
 }
 
 export interface Contact {
-  id?: string;
+  id: string;
   full_name: string;
   stage_id: string;
   cro?: string;
@@ -31,6 +34,17 @@ export interface Contact {
   last_interaction?: string;
   created_at?: string;
   updated_at?: string;
+  // Campos adicionais do banco de dados
+  name?: string;
+  phone?: string;
+  source?: string;
+  assigned_to?: string;
+  notes?: string;
+  status?: string;
+  tags?: string[];
+  stage?: string;
+  last_contact?: string;
+  needs_human?: boolean;
 }
 
 export interface Interaction {
@@ -40,6 +54,7 @@ export interface Interaction {
   interaction_date: string;
   created_at: string;
   user_id?: string;
+  contact_id?: string;
   user?: {
     full_name: string;
   };
@@ -51,6 +66,7 @@ export interface Attachment {
   file_url: string;
   file_type?: string;
   created_at: string;
+  contact_id?: string;
   user_id?: string;
   user?: {
     full_name: string;
@@ -65,4 +81,6 @@ export interface Pipeline {
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  // Campos adicionais do banco de dados
+  form_url?: string;
 }
