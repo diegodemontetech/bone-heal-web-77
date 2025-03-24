@@ -29,7 +29,7 @@ export const salesRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
-          <CreateQuotation />
+          <CreateQuotation onCancel={() => {}} onSuccess={() => {}} />
         </ProtectedRoute>
       </Suspense>
     ),

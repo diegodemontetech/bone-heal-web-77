@@ -20,15 +20,16 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
     }
     
     // Verificar se a imagem já tem o caminho completo ou apenas o nome do arquivo
-    if (!imagePath.includes('/')) {
-      imagePath = `products/${imagePath}`;
-    }
+    const pathParts = imagePath.split('/');
+    const fileName = pathParts[pathParts.length - 1];
+    const storagePath = pathParts.length > 1 ? imagePath : `products/${imagePath}`;
     
     try {
       const { data } = supabase.storage
         .from('products')
-        .getPublicUrl(imagePath);
+        .getPublicUrl(storagePath);
       
+      console.log(`Generated URL for ${imagePath}: ${data.publicUrl}`);
       return data.publicUrl;
     } catch (error) {
       console.error("Erro ao obter URL da imagem:", error);

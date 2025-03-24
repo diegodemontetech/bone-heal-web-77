@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LeadsKanban from "@/pages/admin/LeadsKanban";
-import Layout from "@/components/admin/Layout";
 
 interface CRMKanbanProps {
   defaultPipelineId?: string;
@@ -32,7 +31,7 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
         
         <CardContent className="p-0">
           <TabsContent value="leads" className="mt-0">
-            <LeadsKanban />
+            <LeadsKanban pipelineId={defaultPipelineId} />
           </TabsContent>
           
           <TabsContent value="customers" className="mt-0">
