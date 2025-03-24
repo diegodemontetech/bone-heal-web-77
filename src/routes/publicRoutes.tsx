@@ -22,6 +22,7 @@ const OrderDetails = lazy(() => import("@/pages/orders/OrderDetails"));
 const Checkout = lazy(() => import("@/pages/checkout/Checkout"));
 const CheckoutSuccess = lazy(() => import("@/pages/checkout/Success"));
 const Studies = lazy(() => import("@/pages/Studies"));
+const Leads = lazy(() => import("@/pages/admin/Leads"));
 
 // Loader component para páginas lazy
 const PageLoader = () => (
@@ -132,6 +133,14 @@ export const publicRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<PageLoader />}>
         <OrderDetails />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/admin/leads",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Leads />
       </Suspense>
     ),
   }

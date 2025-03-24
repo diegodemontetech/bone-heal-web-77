@@ -110,6 +110,35 @@ const Contact = () => {
         console.error('Error creating CRM contact:', crmError);
       }
       
+      // Notify the team via email about the new contact
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            to: `consultoria@boneheal.com.br, ${department === 'Comercial' ? 'vendas@boneheal.com.br' : 
+              department === 'Logística' ? 'logistica@boneheal.com.br' : 'sac@boneheal.com.br'}`,
+            subject: `Novo contato via site - ${department}`,
+            text: `
+              Nome: ${name}
+              Telefone: ${phone}
+              Email: ${email || 'Não informado'}
+              Departamento: ${department}
+              Mensagem: ${message || 'Não informada'}
+            `,
+            html: `
+              <h2>Novo contato via site - ${department}</h2>
+              <p><strong>Nome:</strong> ${name}</p>
+              <p><strong>Telefone:</strong> ${phone}</p>
+              <p><strong>Email:</strong> ${email || 'Não informado'}</p>
+              <p><strong>Departamento:</strong> ${department}</p>
+              <p><strong>Mensagem:</strong> ${message || 'Não informada'}</p>
+            `
+          }
+        });
+      } catch (emailError) {
+        console.error('Error sending notification email:', emailError);
+        // Don't fail the submission if email fails
+      }
+      
       toast.success("Mensagem enviada com sucesso!");
       setIsSubmitted(true);
       
@@ -175,7 +204,7 @@ const Contact = () => {
               </CardContent>
             </Card>
 
-            {/* Business Hours */}
+            {/* Business Hours - UPDATED ACCORDING TO REQUIREMENTS */}
             <Card className="bg-white rounded-xl shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
