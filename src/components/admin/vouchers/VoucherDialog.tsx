@@ -7,13 +7,14 @@ import {
 } from "@/components/ui/dialog";
 import { VoucherForm } from "./VoucherForm";
 import { Voucher } from "@/types/voucher";
+import { FormEvent } from "react";
 
 interface VoucherDialogProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   isEditing: boolean;
   currentVoucher: Voucher | null;
-  onSubmit: () => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange?: (name: string, value: string) => void;

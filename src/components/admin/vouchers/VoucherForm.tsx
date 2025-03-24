@@ -4,13 +4,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Voucher } from "@/types/voucher";
+import { FormEvent } from "react";
 
 interface VoucherFormProps {
   formData: any;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange?: (name: string, value: string) => void;
-  onSubmit: () => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
   isEditing: boolean;
 }
@@ -24,7 +24,7 @@ export const VoucherForm = ({
   isEditing,
 }: VoucherFormProps) => {
   return (
-    <div className="space-y-4 py-2 pb-4">
+    <form onSubmit={onSubmit} className="space-y-4 py-2 pb-4">
       <div className="space-y-2">
         <Label htmlFor="code">Código do Cupom</Label>
         <Input
@@ -168,13 +168,13 @@ export const VoucherForm = ({
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
-        <Button variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button onClick={onSubmit}>
+        <Button type="submit">
           {isEditing ? "Atualizar Cupom" : "Criar Cupom"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 };
