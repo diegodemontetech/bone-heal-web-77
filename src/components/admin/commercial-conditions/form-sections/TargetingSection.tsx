@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { states } from "@/utils/states";
 
 interface TargetingSectionProps {
   region: string | null;
@@ -21,23 +22,17 @@ const TargetingSection = ({
   onRegionChange,
   onCustomerGroupChange
 }: TargetingSectionProps) => {
-  // Opções de regiões do Brasil
-  const regionOptions = [
-    { value: "all", label: "Todas as regiões" },
-    { value: "north", label: "Norte" },
-    { value: "northeast", label: "Nordeste" },
-    { value: "midwest", label: "Centro-Oeste" },
-    { value: "southeast", label: "Sudeste" },
-    { value: "south", label: "Sul" }
-  ];
+  // Lista de estados do Brasil obtida do arquivo states.ts
   
-  // Opções de grupos de clientes
+  // Opções de grupos de clientes atualizadas conforme solicitado
   const customerGroupOptions = [
     { value: "all", label: "Todos os clientes" },
-    { value: "new", label: "Novos clientes" },
+    { value: "first_purchase", label: "Primeira Compra" },
     { value: "vip", label: "Clientes VIP" },
     { value: "clinic", label: "Clínicas" },
-    { value: "hospital", label: "Hospitais" }
+    { value: "hospital", label: "Hospitais" },
+    { value: "university", label: "Faculdades" },
+    { value: "network", label: "Redes" }
   ];
   
   return (
@@ -45,18 +40,19 @@ const TargetingSection = ({
       <h3 className="text-base font-medium">Segmentação</h3>
       
       <div className="space-y-2">
-        <Label htmlFor="region">Região</Label>
+        <Label htmlFor="region">Estado (UF)</Label>
         <Select
           value={region || "all"}
           onValueChange={onRegionChange}
         >
           <SelectTrigger id="region">
-            <SelectValue placeholder="Selecione uma região" />
+            <SelectValue placeholder="Selecione um estado" />
           </SelectTrigger>
-          <SelectContent>
-            {regionOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+          <SelectContent className="max-h-[200px] overflow-y-auto">
+            <SelectItem value="all">Todos os estados</SelectItem>
+            {states.map(state => (
+              <SelectItem key={state.sigla} value={state.sigla}>
+                {state.nome} ({state.sigla})
               </SelectItem>
             ))}
           </SelectContent>
@@ -72,7 +68,7 @@ const TargetingSection = ({
           <SelectTrigger id="customer_group">
             <SelectValue placeholder="Selecione um grupo" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="max-h-[200px] overflow-y-auto">
             {customerGroupOptions.map(option => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}

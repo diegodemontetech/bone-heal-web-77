@@ -21,11 +21,11 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
     valid_until: "",
     min_amount: "",
     min_items: "",
-    payment_method: "all", // Changed from empty string to "all"
-    region: "all", // Changed from empty string to "all"
-    customer_group: "all", // Changed from empty string to "all"
+    payment_method: "all", 
+    region: "all", 
+    customer_group: "all", 
     product_id: "",
-    product_category: "all", // Changed from empty string to "all"
+    product_category: "all", 
     free_shipping: false,
     is_cumulative: true
   });
@@ -43,11 +43,11 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         valid_until: existingCondition.valid_until || "",
         min_amount: existingCondition.min_amount ? existingCondition.min_amount.toString() : "",
         min_items: existingCondition.min_items ? existingCondition.min_items.toString() : "",
-        payment_method: existingCondition.payment_method || "all", // Changed from empty string to "all"
-        region: existingCondition.region || "all", // Changed from empty string to "all"
-        customer_group: existingCondition.customer_group || "all", // Changed from empty string to "all"
+        payment_method: existingCondition.payment_method || "all", 
+        region: existingCondition.region || "all", 
+        customer_group: existingCondition.customer_group || "all", 
         product_id: existingCondition.product_id || "",
-        product_category: existingCondition.product_category || "all", // Changed from empty string to "all"
+        product_category: existingCondition.product_category || "all", 
         free_shipping: existingCondition.free_shipping || false,
         is_cumulative: existingCondition.is_cumulative !== undefined ? existingCondition.is_cumulative : true
       });
@@ -78,11 +78,11 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         valid_until: formData.valid_until || null,
         min_amount: formData.min_amount ? parseFloat(formData.min_amount) : null,
         min_items: formData.min_items ? parseInt(formData.min_items, 10) : null,
-        payment_method: formData.payment_method === "all" ? null : formData.payment_method, // Handle "all" value
-        region: formData.region === "all" ? null : formData.region, // Handle "all" value
-        customer_group: formData.customer_group === "all" ? null : formData.customer_group, // Handle "all" value
+        payment_method: formData.payment_method === "all" ? null : formData.payment_method, 
+        region: formData.region === "all" ? null : formData.region,
+        customer_group: formData.customer_group === "all" ? null : formData.customer_group,
         product_id: formData.product_id || null,
-        product_category: formData.product_category === "all" ? null : formData.product_category, // Handle "all" value
+        product_category: formData.product_category === "all" ? null : formData.product_category,
         free_shipping: formData.free_shipping,
         is_cumulative: formData.is_cumulative
       };
