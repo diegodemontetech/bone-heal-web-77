@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { parseJsonArray } from "@/utils/supabaseJsonUtils";
 
 export const usePaymentStatusUpdate = () => {
   /**
@@ -93,15 +94,21 @@ export const usePaymentStatusUpdate = () => {
       if (omieError) {
         console.error("Erro ao sincronizar pedido pago com Omie:", omieError);
         
+        // Obter os erros de sincronização atuais
+        const currentErrors = parseJsonArray(order.omie_sync_errors, []);
+        
         // Registrar erro de sincronização no pedido
         await supabase
           .from("orders")
           .update({
-            omie_sync_errors: [...(order.omie_sync_errors || []), {
-              date: new Date().toISOString(),
-              message: omieError.message || "Erro desconhecido",
-              details: JSON.stringify(omieError)
-            }],
+            omie_sync_errors: [
+              ...currentErrors,
+              {
+                date: new Date().toISOString(),
+                message: omieError.message || "Erro desconhecido",
+                details: JSON.stringify(omieError)
+              }
+            ],
             omie_last_sync_attempt: new Date().toISOString()
           })
           .eq("id", orderId);
@@ -112,14 +119,14 @@ export const usePaymentStatusUpdate = () => {
       // 4. Atualizar pedido com dados retornados do Omie
       if (omieData?.omie_order_id) {
         await supabase
-          .from("orders")
+          .from('orders')
           .update({
             omie_order_id: omieData.omie_order_id,
             omie_status: "faturado",
             omie_last_update: new Date().toISOString(),
             omie_last_sync_attempt: new Date().toISOString()
           })
-          .eq("id", orderId);
+          .eq('id', orderId);
           
         console.log(`Pedido ${orderId} sincronizado com Omie. ID Omie: ${omieData.omie_order_id}`);
       }
