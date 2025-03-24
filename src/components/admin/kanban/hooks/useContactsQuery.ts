@@ -22,6 +22,11 @@ export const useContactsQuery = (pipelineId: string | null) => {
               pipeline_id,
               created_at,
               updated_at
+            ),
+            responsible:responsible_id (
+              id,
+              full_name,
+              email
             )
           `)
           .eq("pipeline_id", pipelineId)
