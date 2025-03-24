@@ -44,9 +44,13 @@ const FlowBuilder = ({ flowId, onCreateFlow }: FlowBuilderProps) => {
   }
 
   const handleSave = async (): Promise<void> => {
+    // Type assertion to properly convert the nodes and edges
+    const flowNodes = nodes as unknown as FlowNode[];
+    const flowEdges = edges as unknown as FlowEdge[];
+    
     await saveFlow({ 
-      nodes: nodes as FlowNode[],
-      edges: edges as FlowEdge[],
+      nodes: flowNodes,
+      edges: flowEdges,
       name: flowName
     });
   };

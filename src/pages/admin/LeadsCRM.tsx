@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Filter, Plus } from 'lucide-react';
-import ContactDrawer from '@/components/admin/crm/ContactDrawer';
+import { ContactDrawer } from '@/components/admin/crm/ContactDrawer';
 
 const LeadsCRM = () => {
   const [activeTab, setActiveTab] = useState("kanban");
@@ -58,7 +58,7 @@ const LeadsCRM = () => {
           </TabsList>
           
           <TabsContent value="kanban" className="mt-0">
-            <CRMKanban onContactSelect={handleContactSelect} />
+            <CRMKanban />
           </TabsContent>
           
           <TabsContent value="list" className="mt-0">

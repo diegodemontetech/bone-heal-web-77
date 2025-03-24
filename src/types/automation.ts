@@ -4,41 +4,52 @@ import { Node, Edge } from 'reactflow';
 
 export type NodeType = 'trigger' | 'action' | 'condition' | 'timer';
 
-export interface ActionNode extends Node<any, string> {
+export interface ActionNode {
   type: 'action';
   actionType: string;
   data: {
     [key: string]: any;
   };
+  id: string;
+  position: { x: number; y: number };
 }
 
-export interface ConditionNode extends Node<any, string> {
+export interface ConditionNode {
   type: 'condition';
   conditionType: string;
   data: {
     [key: string]: any;
   };
+  id: string;
+  position: { x: number; y: number };
 }
 
-export interface TimerNode extends Node<any, string> {
+export interface TimerNode {
   type: 'timer';
   timerType: string;
   data: {
     [key: string]: any;
   };
+  id: string;
+  position: { x: number; y: number };
 }
 
-export interface TriggerNode extends Node<any, string> {
+export interface TriggerNode {
   type: 'trigger';
   triggerType: string;
   data: {
     [key: string]: any;
   };
+  id: string;
+  position: { x: number; y: number };
 }
 
 export type FlowNode = ActionNode | ConditionNode | TimerNode | TriggerNode;
 
-export interface FlowEdge extends Edge<any> {
+export interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
   label?: string;
 }
 

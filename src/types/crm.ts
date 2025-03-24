@@ -3,10 +3,24 @@ export interface Contact {
   id: string;
   full_name: string;
   stage_id: string;
+  pipeline_id?: string;
   email?: string;
   phone?: string;
+  whatsapp?: string;
   company?: string;
   position?: string;
+  cro?: string;
+  cpf_cnpj?: string;
+  specialty?: string;
+  client_type?: string;
+  clinic_name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  observations?: string;
+  next_steps?: string;
+  responsible_id?: string;
+  next_interaction_date?: string;
   created_at: string;
   updated_at: string;
   last_interaction: string;
@@ -26,8 +40,11 @@ export interface Stage {
 export interface Pipeline {
   id: string;
   name: string;
-  department_id: string | null;
+  department_id?: string | null;
   color: string;
+  description?: string;
+  is_active?: boolean;
+  form_url?: string;
   created_at: string;
   updated_at: string;
 }
