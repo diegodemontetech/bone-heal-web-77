@@ -33,7 +33,7 @@ export const useCustomerState = () => {
       // Buscar todos os perfis exceto o cliente de teste
       let query = supabase
         .from('profiles')
-        .select('*') // Selecionar todos os campos
+        .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync, created_at') // Selecionando colunas explicitamente
         .neq('id', TEST_CLIENT_ID);
       
       if (searchTerm && searchTerm.trim() !== "") {

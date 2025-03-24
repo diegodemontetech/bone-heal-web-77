@@ -12,6 +12,28 @@ interface ProductHeaderProps {
 const ProductHeader = ({ product }: ProductHeaderProps) => {
   const [isOnOrder, setIsOnOrder] = useState(false);
 
+  // Function to safely format the price regardless of source
+  const formatProductPrice = (price: number | string | null | undefined) => {
+    // Handle various price formats that might come from Omie
+    if (price === null || price === undefined) return "Consulte";
+    
+    // If price is a string that can be converted to a number
+    if (typeof price === 'string') {
+      const numPrice = parseFloat(price);
+      if (!isNaN(numPrice)) {
+        return formatCurrency(numPrice);
+      }
+      return price; // If it's a non-numeric string, return as is
+    }
+    
+    // If price is a number
+    if (typeof price === 'number') {
+      return formatCurrency(price);
+    }
+    
+    return "Consulte";
+  };
+
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-bold">{product.name}</h1>
@@ -38,7 +60,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
       
       <div className="pt-2">
         <div className="text-3xl font-bold text-primary">
-          {product.price ? formatCurrency(product.price) : "Consulte"}
+          {formatProductPrice(product.price)}
         </div>
         
         {isOnOrder ? (

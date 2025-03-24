@@ -36,6 +36,17 @@ export const useRegistrationFormLogic = (isModal: boolean = false, onSuccess?: (
         // Cadastrar cliente sem fazer login
         const customerData = await handleModalRegistration(data, onSuccess);
         console.log("Cliente cadastrado com sucesso através do modal:", customerData);
+        
+        // Sincroniza com o Omie mesmo no modo modal
+        if (customerData && customerData.id) {
+          try {
+            await syncWithOmie(customerData.id);
+            console.log("Cliente sincronizado com Omie após cadastro via modal");
+          } catch (omieError) {
+            console.error("Erro ao sincronizar com Omie após cadastro via modal:", omieError);
+            // Não falha o fluxo, apenas loga o erro
+          }
+        }
       } else {
         // Fazer cadastro com autenticação (fluxo original)
         const signUpResult = await handleNormalRegistration(data, signUp);
