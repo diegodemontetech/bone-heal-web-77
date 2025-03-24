@@ -75,14 +75,14 @@ export const VoucherForm = ({
       <div className="space-y-2">
         <Label htmlFor="payment_method">Método de Pagamento (opcional)</Label>
         <Select
-          value={formData.payment_method || ""}
+          value={formData.payment_method || "all"}
           onValueChange={(value) => handleSelectChange && handleSelectChange("payment_method", value)}
         >
           <SelectTrigger id="payment_method">
             <SelectValue placeholder="Qualquer método de pagamento" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os métodos</SelectItem>
+            <SelectItem value="all">Todos os métodos</SelectItem>
             <SelectItem value="pix">PIX</SelectItem>
             <SelectItem value="boleto">Boleto</SelectItem>
             <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
