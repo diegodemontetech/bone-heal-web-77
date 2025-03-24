@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,9 +26,9 @@ const AdminContactDetails = () => {
     try {
       setLoading(true);
       
-      // Use 'contact_form_messages' table instead of 'contato'
+      // Use the correct table from your database schema
       const { data, error } = await supabase
-        .from('contact_form_messages')
+        .from('contact_form_submissions')
         .select("*")
         .eq("id", id)
         .single();
@@ -56,12 +57,12 @@ const AdminContactDetails = () => {
 
       // Update the contact with valid fields from the database schema
       const { error } = await supabase
-        .from('contact_form_messages')
+        .from('contact_form_submissions')
         .update({ 
-          reply: replyMessage,
           replied: true,
           replied_at: new Date().toISOString(),
-          replied_by: profile.id
+          replied_by: profile.id,
+          response: replyMessage // Use the correct field name in your schema
         })
         .eq("id", id);
 
@@ -74,10 +75,10 @@ const AdminContactDetails = () => {
       // Update the contact object locally
       setContact({
         ...contact,
-        reply: replyMessage,
         replied: true,
         replied_at: new Date().toISOString(),
-        replied_by: profile.id
+        replied_by: profile.id,
+        response: replyMessage // Use the correct field name in your schema
       });
     } catch (error) {
       console.error("Erro ao enviar resposta:", error);

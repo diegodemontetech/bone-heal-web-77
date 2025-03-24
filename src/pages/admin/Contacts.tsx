@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
@@ -19,8 +20,9 @@ const AdminContacts = () => {
   const fetchContacts = async () => {
     try {
       setIsLoading(true);
+      // Use the correct table from your database schema
       const { data, error } = await supabase
-        .from('contact_form_messages')
+        .from('contact_form_submissions')
         .select("*")
         .order("created_at", { ascending: false });
 

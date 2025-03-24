@@ -116,6 +116,7 @@ export const AdminSidebar = ({ onCloseMobile }: AdminSidebarProps) => {
                           : "hover:bg-muted"
                       )}
                     >
+                      {child.icon && <child.icon className="h-4 w-4" />}
                       {child.title}
                     </Link>
                   ))}
