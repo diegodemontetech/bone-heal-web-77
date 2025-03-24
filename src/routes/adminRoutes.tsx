@@ -10,6 +10,7 @@ import { kanbanRoutes } from "./admin/kanbanRoutes";
 import { marketingRoutes } from "./admin/marketingRoutes";
 import { settingsRoutes } from "./admin/settingsRoutes";
 import { supportRoutes } from "./admin/supportRoutes";
+import { crmRoutes } from "./admin/crmRoutes";
 
 // Admin pages
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
@@ -42,5 +43,6 @@ export const adminRoutes: RouteObject = {
     ...marketingRoutes,
     ...settingsRoutes,
     ...supportRoutes,
+    ...crmRoutes,
   ],
 };
