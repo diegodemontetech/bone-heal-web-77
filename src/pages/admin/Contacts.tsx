@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
@@ -20,9 +19,8 @@ const AdminContacts = () => {
   const fetchContacts = async () => {
     try {
       setIsLoading(true);
-      // Use from('contato') instead of from('contact_messages')
       const { data, error } = await supabase
-        .from('contato')
+        .from('contact_form_messages')
         .select("*")
         .order("created_at", { ascending: false });
 
@@ -52,17 +50,14 @@ const AdminContacts = () => {
     });
   };
 
-  // Filtrar contatos com base na aba ativa e no termo de pesquisa
   const filteredContacts = contacts?.filter(contact => {
-    // Filtrar por status de resposta
-    if (activeTab === "pending" && contact.respondido) {
+    if (activeTab === "pending" && contact.replied) {
       return false;
     }
-    if (activeTab === "replied" && !contact.respondido) {
+    if (activeTab === "replied" && !contact.replied) {
       return false;
     }
 
-    // Filtrar por termo de pesquisa
     if (searchTerm.trim() !== "") {
       const searchLower = searchTerm.toLowerCase();
       return (

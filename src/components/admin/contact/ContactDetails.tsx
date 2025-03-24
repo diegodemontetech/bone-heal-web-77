@@ -17,8 +17,8 @@ const ContactDetails = ({ contact, onSendReply }: ContactDetailsProps) => {
   const [replyMessage, setReplyMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
 
-  const isReplied = contact.respondido || contact.replied;
-  const replyText = contact.resposta || contact.reply;
+  const isReplied = contact.replied;
+  const replyText = contact.reply;
 
   const handleSendReply = async () => {
     if (!replyMessage.trim()) return;
@@ -107,7 +107,7 @@ const ContactDetails = ({ contact, onSendReply }: ContactDetailsProps) => {
               {replyText}
             </div>
             <p className="text-sm text-gray-500 mt-2">
-              Respondido em {formatDate(contact.respondido_em || contact.replied_at)}
+              Respondido em {formatDate(contact.replied_at)}
             </p>
           </CardContent>
         </Card>

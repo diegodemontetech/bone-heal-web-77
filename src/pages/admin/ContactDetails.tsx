@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,9 +25,9 @@ const AdminContactDetails = () => {
     try {
       setLoading(true);
       
-      // Use 'contato' table instead of 'contact_messages'
+      // Use 'contact_form_messages' table instead of 'contato'
       const { data, error } = await supabase
-        .from('contato')
+        .from('contact_form_messages')
         .select("*")
         .eq("id", id)
         .single();
@@ -55,33 +54,30 @@ const AdminContactDetails = () => {
         return;
       }
 
-      // Atualizar o contato com a resposta usando o modelo de dados correto
+      // Update the contact with valid fields from the database schema
       const { error } = await supabase
-        .from('contato')
+        .from('contact_form_messages')
         .update({ 
-          resposta: replyMessage,
-          respondido: true,
-          respondido_em: new Date().toISOString(),
-          respondido_por: profile.id
+          reply: replyMessage,
+          replied: true,
+          replied_at: new Date().toISOString(),
+          replied_by: profile.id
         })
         .eq("id", id);
 
       if (error) throw error;
 
-      // Aqui você pode adicionar uma lógica para enviar um email de resposta
-      // usando alguma função do Supabase Edge Functions ou outro serviço
-
       toast("Resposta enviada", {
         description: "A resposta foi enviada com sucesso"
       });
       
-      // Atualizar o objeto de contato localmente
+      // Update the contact object locally
       setContact({
         ...contact,
-        resposta: replyMessage,
-        respondido: true,
-        respondido_em: new Date().toISOString(),
-        respondido_por: profile.id
+        reply: replyMessage,
+        replied: true,
+        replied_at: new Date().toISOString(),
+        replied_by: profile.id
       });
     } catch (error) {
       console.error("Erro ao enviar resposta:", error);
