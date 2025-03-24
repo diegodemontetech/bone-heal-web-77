@@ -19,8 +19,6 @@ export const CustomerDisplay = ({ customer }: CustomerDisplayProps) => {
     return null;
   }
   
-  console.log("Exibindo detalhes do cliente:", customer);
-  
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Cliente</label>

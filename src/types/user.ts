@@ -12,6 +12,8 @@ export interface UserWithProfile {
     zip_code: string | null;
     is_admin: boolean | null;
     contact_type: string | null;
+    omie_code?: string | null;
+    omie_sync?: boolean | null;
   } | null;
 }
 
@@ -26,5 +28,7 @@ export interface DatabaseProfile {
   is_admin: boolean | null;
   contact_type: string | null;
   created_at: string;
+  omie_code?: string | null;
+  omie_sync?: boolean | null;
   auth_users: { email: string }[] | null;
 }
