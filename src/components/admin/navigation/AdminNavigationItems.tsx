@@ -46,7 +46,7 @@ export const NavigationItems = [
     ]
   },
   {
-    title: "Clientes",
+    title: "Cadastros",
     href: "/admin/users",
     icon: Users,
     permissions: [],
@@ -54,6 +54,11 @@ export const NavigationItems = [
       {
         title: "Usuários",
         href: "/admin/users",
+        permissions: []
+      },
+      {
+        title: "Clientes",
+        href: "/admin/customers",
         permissions: []
       }
     ]
