@@ -30,11 +30,12 @@ export const useCustomerState = () => {
       console.log("[useCustomerState] Iniciando busca de clientes com termo:", searchTerm);
       setIsLoadingCustomers(true);
       
-      // Buscar apenas na tabela profiles, excluindo o cliente de teste
+      // Buscar perfis que são dentistas (clientes)
       let query = supabase
         .from('profiles')
         .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync')
-        .neq('id', TEST_CLIENT_ID);
+        .neq('id', TEST_CLIENT_ID)
+        .or('role.eq.dentist,is_admin.eq.false'); // Buscar dentistas OU perfis que não são admin
       
       if (searchTerm && searchTerm.trim() !== "") {
         // Verificar se a busca parece ser um código numérico
@@ -62,6 +63,8 @@ export const useCustomerState = () => {
         console.error('[useCustomerState] Erro na consulta de perfis:', profilesError);
         throw profilesError;
       }
+
+      console.log(`[useCustomerState] Encontrados ${profilesData?.length || 0} perfis na consulta`);
 
       // Formatar os dados de cliente diretamente dos perfis
       const formattedCustomers = (profilesData || []).map(profile => ({
