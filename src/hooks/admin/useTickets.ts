@@ -24,8 +24,7 @@ export const useTickets = () => {
           queryClient.invalidateQueries({queryKey: ["tickets"]});
           
           // Notificar o usuário sobre novos tickets
-          toast({
-            title: "Atualização de tickets",
+          toast("Atualização de tickets", {
             description: "Novos tickets ou atualizações recebidas",
           });
         }
@@ -119,8 +118,7 @@ export const useTickets = () => {
       });
       
       if (ticketsWithSLAViolation.length > 0) {
-        toast({
-          title: `${ticketsWithSLAViolation.length} tickets com SLA comprometido`,
+        toast(`${ticketsWithSLAViolation.length} tickets com SLA comprometido`, {
           description: "Existem tickets que precisam de atenção urgente.",
           variant: "destructive",
         });
@@ -152,16 +150,14 @@ export const useTickets = () => {
       
       if (error) throw error;
       
-      toast({
-        title: "Ticket atribuído com sucesso",
+      toast("Ticket atribuído com sucesso", {
         description: "O ticket foi atribuído e está em andamento",
       });
       
       refetch();
     } catch (error) {
       console.error("Erro ao atribuir ticket:", error);
-      toast({
-        title: "Erro ao atribuir ticket",
+      toast("Erro ao atribuir ticket", {
         description: "Não foi possível atribuir o ticket",
         variant: "destructive"
       });
@@ -178,16 +174,14 @@ export const useTickets = () => {
       
       if (error) throw error;
       
-      toast({
-        title: "Status atualizado",
+      toast("Status atualizado", {
         description: `O ticket foi atualizado para ${status}`,
       });
       
       refetch();
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
-      toast({
-        title: "Erro ao atualizar status",
+      toast("Erro ao atualizar status", {
         description: "Não foi possível atualizar o status do ticket",
         variant: "destructive"
       });

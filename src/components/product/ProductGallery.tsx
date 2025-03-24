@@ -9,7 +9,7 @@ interface ProductGalleryProps {
 
 const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
   // Imagem de fallback para quando não houver imagem disponível
-  const fallbackImage = "https://images.unsplash.com/photo-1616763355548-1b606f439f86?q=80&w=1470&auto=format&fit=crop";
+  const fallbackImage = "/placeholder.svg";
   
   // Função para obter a URL correta da imagem
   const getImageUrl = (imagePath: string) => {

@@ -1,7 +1,6 @@
 
 import { Link } from "react-router-dom";
 import { Mail, Phone, MapPin, Instagram, Facebook, Youtube, ChevronRight } from "lucide-react";
-import { Logo } from "@/components/navbar/Logo";
 
 const Footer = () => {
   return (
@@ -11,7 +10,7 @@ const Footer = () => {
           {/* Coluna 1 - Logo e Sobre */}
           <div>
             <div className="mb-6">
-              <Logo />
+              <h2 className="text-white text-2xl font-bold">BONEHEAL</h2>
             </div>
             <p className="text-neutral-400 mb-6">
               A Bone Heal é referência em dispositivos médicos implantáveis de polipropileno para Regeneração Óssea Guiada, com reconhecimento internacional.
