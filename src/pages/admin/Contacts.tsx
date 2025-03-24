@@ -55,10 +55,10 @@ const AdminContacts = () => {
   // Filtrar contatos com base na aba ativa e no termo de pesquisa
   const filteredContacts = contacts?.filter(contact => {
     // Filtrar por status de resposta
-    if (activeTab === "pending" && contact.replied) {
+    if (activeTab === "pending" && contact.respondido) {
       return false;
     }
-    if (activeTab === "replied" && !contact.replied) {
+    if (activeTab === "replied" && !contact.respondido) {
       return false;
     }
 
