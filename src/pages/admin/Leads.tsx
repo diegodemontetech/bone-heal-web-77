@@ -32,6 +32,19 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Eye, Phone, Mail } from "lucide-react";
 
+// Define a proper type for the lead object
+interface Lead {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string; // Make email optional
+  reason: string;
+  source: string;
+  status: string;
+  created_at: string;
+  message?: string; // Make message optional
+}
+
 const LeadsPage = () => {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
@@ -60,7 +73,7 @@ const LeadsPage = () => {
         throw error;
       }
       
-      return data;
+      return data as Lead[];
     },
   });
 
@@ -92,7 +105,7 @@ const LeadsPage = () => {
     }
   };
 
-  const convertToCRMContact = async (lead: any) => {
+  const convertToCRMContact = async (lead: Lead) => {
     try {
       // Get the first stage ID of the Hunting pipeline
       const { data: stageData } = await supabase
