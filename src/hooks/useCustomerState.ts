@@ -30,7 +30,7 @@ export const useCustomerState = () => {
       console.log("[useCustomerState] Iniciando busca de clientes com termo:", searchTerm);
       setIsLoadingCustomers(true);
       
-      // Buscar dentistas (clientes) OU perfis que não são admin
+      // Buscar dentistas (clientes) - perfis que são dentistas OU que não são admin
       let query = supabase
         .from('profiles')
         .select('id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync, role, is_admin')
