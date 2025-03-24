@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter } from "@/components/ui/drawer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Stage, Contact, Interaction } from "@/types/crm";
+import { Stage, Contact } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -72,7 +72,8 @@ export const ContactDrawer = ({
           address: formData.address,
           city: formData.city,
           state: formData.state,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          last_interaction: new Date().toISOString()
         })
         .eq("id", contact.id);
         

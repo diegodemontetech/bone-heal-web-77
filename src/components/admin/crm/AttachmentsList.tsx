@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Attachment } from "@/types/crm";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { File, Upload, Trash, Download, FileText, FileImage, FilePdf } from "lucide-react";
+import { File, Upload, Trash, Download, FileText, FileImage, FilePdf as FilePdfIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -35,7 +35,7 @@ export const AttachmentsList = ({ contactId }: AttachmentsListProps) => {
       if (error) throw error;
       
       // Mapear para o formato esperado
-      const formattedAttachments: Attachment[] = (data || []).map(attachment => ({
+      const formattedAttachments: Attachment[] = data?.map(attachment => ({
         id: attachment.id,
         file_name: attachment.file_name,
         file_url: attachment.file_url,
@@ -44,7 +44,7 @@ export const AttachmentsList = ({ contactId }: AttachmentsListProps) => {
         contact_id: attachment.contact_id,
         user_id: attachment.user_id,
         user: attachment.user
-      }));
+      })) || [];
       
       setAttachments(formattedAttachments);
     } catch (error) {
@@ -133,7 +133,7 @@ export const AttachmentsList = ({ contactId }: AttachmentsListProps) => {
     if (fileType.includes('image')) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
     } else if (fileType.includes('pdf')) {
-      return <FilePdf className="h-5 w-5 text-red-500" />;
+      return <FilePdfIcon className="h-5 w-5 text-red-500" />;
     } else if (fileType.includes('text') || fileType.includes('document')) {
       return <FileText className="h-5 w-5 text-green-500" />;
     } else {

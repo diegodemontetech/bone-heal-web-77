@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Stage, Contact, Interaction } from "@/types/crm";
+import { Stage, Contact } from "@/types/crm";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
 import { KanbanColumn } from "./KanbanColumn";
@@ -46,9 +46,14 @@ const CRMKanban = ({ pipelineId, refreshTrigger }: CRMKanbanProps) => {
       
       // Mapear dados para o formato Stage
       const mappedStages: Stage[] = (stagesData || []).map(stage => ({
-        ...stage,
+        id: stage.id,
+        name: stage.name,
+        color: stage.color,
         pipeline_id: stage.pipeline_id || pipelineId,
-        order_index: stage.order_index || stage.order || 0
+        order_index: stage.order_index || stage.order || 0,
+        department_id: stage.department_id,
+        created_at: stage.created_at,
+        updated_at: stage.updated_at
       }));
       
       setStages(mappedStages);
@@ -63,10 +68,27 @@ const CRMKanban = ({ pipelineId, refreshTrigger }: CRMKanbanProps) => {
       
       // Mapear dados para o formato Contact
       const mappedContacts: Contact[] = (contactsData || []).map(contact => ({
-        ...contact,
         id: contact.id,
-        full_name: contact.full_name || contact.name || "",
-        stage_id: contact.stage_id || contact.stage || ""
+        full_name: contact.full_name,
+        stage_id: contact.stage_id,
+        pipeline_id: contact.pipeline_id,
+        cro: contact.cro,
+        cpf_cnpj: contact.cpf_cnpj,
+        specialty: contact.specialty,
+        whatsapp: contact.whatsapp,
+        email: contact.email,
+        address: contact.address,
+        city: contact.city,
+        state: contact.state,
+        clinic_name: contact.clinic_name,
+        client_type: contact.client_type,
+        responsible_id: contact.responsible_id,
+        next_interaction_date: contact.next_interaction_date,
+        observations: contact.observations,
+        next_steps: contact.next_steps,
+        last_interaction: contact.last_interaction,
+        created_at: contact.created_at,
+        updated_at: contact.updated_at
       }));
       
       setContacts(mappedContacts);

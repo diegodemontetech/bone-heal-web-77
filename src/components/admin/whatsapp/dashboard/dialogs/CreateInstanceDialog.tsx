@@ -10,15 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { InstanceNameInput } from "./InstanceNameInput";
 import { DialogActions } from "./DialogActions";
-import { WhatsAppInstance } from "@/components/admin/whatsapp/types";
-
-interface CreateInstanceDialogProps {
-  isOpen: boolean;
-  isCreating: boolean;
-  onClose: () => void;
-  onOpenChange: (open: boolean) => void;
-  onCreateInstance: (instanceName: string) => Promise<WhatsAppInstance | null>;
-}
+import { WhatsAppInstance, CreateInstanceDialogProps } from "@/components/admin/whatsapp/types";
 
 export const CreateInstanceDialog = ({
   isOpen,
@@ -70,6 +62,8 @@ export const CreateInstanceDialog = ({
           value={instanceName}
           onChange={setInstanceName}
           disabled={isLoading}
+          instanceName={instanceName}
+          setInstanceName={setInstanceName}
         />
 
         <DialogActions

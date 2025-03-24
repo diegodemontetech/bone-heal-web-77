@@ -33,7 +33,7 @@ export const InteractionsList = ({ contactId }: InteractionsListProps) => {
       if (error) throw error;
       
       // Mapear para o formato esperado
-      const formattedInteractions: Interaction[] = (data || []).map(interaction => ({
+      const formattedInteractions: Interaction[] = data?.map(interaction => ({
         id: interaction.id,
         interaction_type: interaction.interaction_type,
         content: interaction.content,
@@ -42,7 +42,7 @@ export const InteractionsList = ({ contactId }: InteractionsListProps) => {
         user_id: interaction.user_id,
         contact_id: interaction.contact_id,
         user: interaction.user
-      }));
+      })) || [];
       
       setInteractions(formattedInteractions);
     } catch (error) {

@@ -17,6 +17,7 @@ export interface Contact {
   id: string;
   full_name: string;
   stage_id: string;
+  pipeline_id?: string;
   cro?: string;
   cpf_cnpj?: string;
   specialty?: string;
@@ -34,7 +35,7 @@ export interface Contact {
   last_interaction?: string;
   created_at?: string;
   updated_at?: string;
-  // Campos adicionais do banco de dados
+  // Campos para compatibilidade
   name?: string;
   phone?: string;
   source?: string;
@@ -43,7 +44,6 @@ export interface Contact {
   status?: string;
   tags?: string[];
   stage?: string;
-  last_contact?: string;
   needs_human?: boolean;
 }
 

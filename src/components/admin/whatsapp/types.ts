@@ -1,7 +1,20 @@
 
+export interface WhatsAppMessage {
+  id: string;
+  message: string;
+  direction: 'inbound' | 'outbound';
+  is_bot: boolean;
+  created_at: string;
+  lead_id?: string;
+  media_url?: string | null;
+  media_type?: string | null;
+  sender_id?: string | null;
+  instance_id?: string | null;
+}
+
 export interface WhatsAppInstance {
   id: string;
-  name?: string;
+  name: string;
   instance_name: string;
   status: string;
   qr_code: string;
@@ -10,71 +23,22 @@ export interface WhatsAppInstance {
   updated_at: string;
 }
 
-export interface WhatsAppMessage {
-  id: string;
-  message: string;
-  direction: 'inbound' | 'outbound';
-  timestamp: string;
-  isFromMe: boolean;
-  mediaUrl?: string;
-  mediaType?: string;
-  lead_id?: string;
-  body?: string;
-  type?: string;
-  is_sent_by_me?: boolean;
-  sent_by?: string;
-  created_at?: string;
-  instance_id?: string;
-  is_bot?: boolean;
-  sender_id?: string;
-}
-
-export interface WhatsAppContact {
-  id: string;
-  name: string;
-  number: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-}
-
-// Função para converter mensagens do formato do banco para o formato exibido no componente
-export function convertMessageFormat(message: any): WhatsAppMessage {
-  return {
-    id: message.id,
-    message: message.message || message.body || '',
-    body: message.message || message.body || '',
-    direction: message.direction || (message.is_sent_by_me ? 'outbound' : 'inbound'),
-    timestamp: message.created_at || message.timestamp || new Date().toISOString(),
-    isFromMe: message.is_sent_by_me || message.isFromMe || message.direction === 'outbound',
-    is_sent_by_me: message.is_sent_by_me || message.isFromMe || message.direction === 'outbound',
-    mediaUrl: message.media_url,
-    mediaType: message.media_type,
-    lead_id: message.lead_id,
-    type: message.type || 'text',
-    sent_by: message.is_sent_by_me ? 'us' : 'them',
-    created_at: message.created_at || message.timestamp || new Date().toISOString(),
-    instance_id: message.instance_id || null,
-    sender_id: message.sender_id || null
-  };
-}
-
-// Props para os componentes
 export interface WhatsAppChatProps {
   messages: WhatsAppMessage[];
   isLoading: boolean;
-  onSendMessage: (message: string) => Promise<boolean>;
-  selectedLead?: any;
-  onMessageSent?: () => void;
+  onSendMessage: (message: string, media?: { url: string; type: string }) => Promise<boolean>;
+  selectedLead: any;
+  onMessageSent: () => void;
 }
 
 export interface ChatInputProps {
-  onSendMessage: (message: string) => Promise<boolean>;
-  disabled?: boolean;
+  onSendMessage: (text: string) => Promise<boolean>;
+  isDisabled?: boolean;
 }
 
 export interface ChatMessageProps {
   message: WhatsAppMessage;
+  isUser: boolean;
 }
 
 export interface ChatMessagesProps {
@@ -83,10 +47,10 @@ export interface ChatMessagesProps {
 }
 
 export interface ChatTabProps {
+  instanceId: string;
   messages: WhatsAppMessage[];
-  messagesLoading: boolean;
+  isLoading: boolean;
   onSendMessage: (message: string) => Promise<boolean>;
-  selectedInstanceId: string | null;
 }
 
 export interface CreateInstanceDialogProps {
@@ -94,7 +58,7 @@ export interface CreateInstanceDialogProps {
   isCreating: boolean;
   onClose: () => void;
   onOpenChange: (open: boolean) => void;
-  onCreateInstance: (instanceName: string) => Promise<any>;
+  onCreateInstance: (instanceName: string) => Promise<WhatsAppInstance | null>;
 }
 
 export interface DialogActionsProps {
@@ -106,28 +70,41 @@ export interface DialogActionsProps {
 }
 
 export interface InstanceNameInputProps {
-  instanceName: string;
-  setInstanceName: (name: string) => void;
-  disabled?: boolean;
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
+  instanceName?: string;
+  setInstanceName?: (name: string) => void;
 }
 
 export interface WhatsAppInstanceCardProps {
   instance: WhatsAppInstance;
-  isSelected?: boolean;
-  onSelect: (id: string) => void;
-  onRefreshQr: (id: string) => void;
-  onDelete: (id: string) => void;
+  onSelect: () => void;
+  onRefreshQr: () => Promise<any>;
+  onDelete: () => void;
+  key?: string;
 }
 
 export interface InstancesTabProps {
   instances: WhatsAppInstance[];
   isLoading: boolean;
-  onSelect: (id: string) => void;
-  onRefreshQr: (id: string) => void;
-  onDelete: (id: string) => void;
-  onCreateDialogOpen: () => void;
-  onSelectInstance: (id: string) => void;
-  onDeleteInstance: (id: string) => void;
+  onCreateInstance: () => void;
+  onSelectInstance: (instanceId: string) => void;
+  onRefreshQr: (instanceId: string) => Promise<any>;
+  onDeleteInstance: (instanceId: string) => Promise<boolean>;
 }
+
+export const convertMessageFormat = (message: any): WhatsAppMessage => {
+  return {
+    id: message.id || '',
+    message: message.message || message.body || '',
+    direction: message.direction || (message.is_sent_by_me ? 'outbound' : 'inbound'),
+    is_bot: message.is_bot || false,
+    created_at: message.created_at || message.timestamp || new Date().toISOString(),
+    lead_id: message.lead_id || null,
+    media_url: message.media_url || null,
+    media_type: message.media_type || null,
+    sender_id: message.sender_id || null,
+    instance_id: message.instance_id || null
+  };
+};
