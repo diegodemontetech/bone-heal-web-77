@@ -1,5 +1,4 @@
-
-import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Lock } from "lucide-react";
+import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Lock, QrCode, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CheckoutButtonProps {
