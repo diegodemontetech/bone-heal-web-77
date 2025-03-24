@@ -1,12 +1,12 @@
 
-import { BarChart3, BookOpen, Newspaper, BatteryCharging, Tags, Percent } from "lucide-react";
+import { BarChart3, BookOpen, Newspaper, Tags, Percent } from "lucide-react";
 import { NavItem } from "@/components/admin/navigation/types";
 
 export const marketingItems: NavItem[] = [
   {
     title: "Marketing",
     icon: BarChart3,
-    href: "/admin/marketing",
+    href: "#", // Changed from "/admin/marketing" to "#" to make it not navigable
     segment: "marketing",
     permission: "manage_marketing",
     children: [
@@ -21,12 +21,6 @@ export const marketingItems: NavItem[] = [
         href: "/admin/news",
         segment: "news",
         icon: Newspaper,
-      },
-      {
-        title: "Automações",
-        href: "/admin/automation",
-        segment: "automation",
-        icon: BatteryCharging,
       },
       {
         title: "Cupons",

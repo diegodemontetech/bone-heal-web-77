@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { UserPermission } from "@/types/auth";
 
 const ShippingRatesPage = lazy(() => import("@/pages/admin/ShippingRates"));
+const ShippingPage = lazy(() => import("@/pages/admin/Shipping"));
 
 const AdminLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -13,6 +14,16 @@ const AdminLoader = () => (
 );
 
 export const shippingRoutes: RouteObject[] = [
+  {
+    path: "shipping",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_SETTINGS}>
+          <ShippingPage />
+        </ProtectedRoute>
+      </Suspense>
+    ),
+  },
   {
     path: "shipping/rates",
     element: (

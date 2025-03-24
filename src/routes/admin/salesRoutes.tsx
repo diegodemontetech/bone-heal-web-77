@@ -4,11 +4,9 @@ import { RouteObject } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { UserPermission } from "@/types/auth";
 
-// Order-related pages
-const AdminOrders = lazy(() => import("@/pages/admin/Orders"));
-const AdminQuotations = lazy(() => import("@/pages/admin/Quotations"));
+const Quotations = lazy(() => import("@/pages/admin/Quotations"));
+const CreateQuotation = lazy(() => import("@/components/admin/quotations/CreateQuotation"));
 
-// Loader para componentes com lazy loading
 const AdminLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -17,44 +15,23 @@ const AdminLoader = () => (
 
 export const salesRoutes: RouteObject[] = [
   {
-    path: "vendas",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
-          <AdminOrders />
-        </ProtectedRoute>
-      </Suspense>
-    )
-  },
-  {
-    path: "orders",
-    element: (
-      <Suspense fallback={<AdminLoader />}>
-        <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
-          <AdminOrders />
-        </ProtectedRoute>
-      </Suspense>
-    )
-  },
-  {
     path: "quotations",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
-          <AdminQuotations />
+          <Quotations />
         </ProtectedRoute>
       </Suspense>
-    )
+    ),
   },
   {
-    path: "orcamentos",
+    path: "quotations/new",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_ORDERS}>
-          <AdminQuotations />
+          <CreateQuotation />
         </ProtectedRoute>
       </Suspense>
-    )
+    ),
   }
 ];
-
