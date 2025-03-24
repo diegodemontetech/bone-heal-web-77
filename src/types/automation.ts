@@ -59,4 +59,26 @@ export interface Flow {
   updated_at: string;
 }
 
-export type WhatsAppMessageInAutomation = WhatsAppMessage;
+export interface WhatsAppMessageInAutomation extends WhatsAppMessage {}
+
+export interface WhatsAppInstance {
+  id: string;
+  name: string;
+  instance_name: string;
+  status: string;
+  qr_code: string | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationFlow {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+}

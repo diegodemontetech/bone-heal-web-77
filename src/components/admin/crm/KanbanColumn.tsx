@@ -1,122 +1,98 @@
 
+import { useState } from "react";
+import { Stage, Contact } from "@/types/crm";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
-import { formatDistanceToNow } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MapPin, User, Calendar } from "lucide-react";
-
-interface Contact {
-  id: string;
-  full_name: string;
-  cro?: string;
-  city?: string;
-  state?: string;
-  last_interaction: string;
-  responsible_id?: string;
-  [key: string]: any;
-}
 
 interface KanbanColumnProps {
-  id: string;
-  title: string;
-  color: string;
+  stage: Stage;
   contacts: Contact[];
   onContactClick: (contact: Contact) => void;
 }
 
-export const KanbanColumn = ({ id, title, color, contacts, onContactClick }: KanbanColumnProps) => {
+export const KanbanColumn = ({ stage, contacts, onContactClick }: KanbanColumnProps) => {
   return (
-    <div className="flex flex-col rounded-md shadow-sm bg-gray-50 h-[70vh] border border-gray-200">
-      <div 
-        className="px-4 py-3 font-medium flex justify-between items-center rounded-t-md"
-        style={{ backgroundColor: `${color}20` }}
-      >
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-3 h-3 rounded-full flex-shrink-0" 
-            style={{ backgroundColor: color }}
-          ></div>
-          <span>{title}</span>
-        </div>
-        <span className="bg-white text-xs px-2 py-1 rounded-full text-gray-600 font-medium">
-          {contacts.length}
-        </span>
-      </div>
-      
-      <Droppable droppableId={id}>
-        {(provided) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className="flex-1 overflow-y-auto p-2 space-y-2"
-          >
-            {contacts.map((contact, index) => (
-              <Draggable 
-                key={contact.id} 
-                draggableId={contact.id} 
-                index={index}
-              >
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className="bg-white p-3 rounded-md shadow-sm hover:shadow-md cursor-pointer transition-shadow"
-                    onClick={() => onContactClick(contact)}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium truncate">
-                          {contact.full_name}
-                        </h3>
-                        {contact.cro && (
-                          <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
-                            CRO: {contact.cro}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {(contact.city || contact.state) && (
-                        <div className="flex items-center text-gray-500 text-xs gap-1">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">
-                            {[contact.city, contact.state].filter(Boolean).join(' - ')}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>
-                            {formatDistanceToNow(new Date(contact.last_interaction), { 
-                              addSuffix: true, 
-                              locale: ptBR 
-                            })}
-                          </span>
-                        </div>
-                        
-                        {contact.responsible_id && (
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            <span className="truncate">Resp.</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-            
-            {contacts.length === 0 && (
-              <div className="flex items-center justify-center h-24 border border-dashed border-gray-200 rounded-md">
-                <p className="text-sm text-gray-400">Nenhum contato</p>
-              </div>
-            )}
+    <div className="w-80 flex-shrink-0">
+      <Card className="h-full flex flex-col">
+        <CardHeader className="py-3 px-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <span
+                className="w-3 h-3 rounded-full mr-2"
+                style={{ backgroundColor: stage.color }}
+              ></span>
+              {stage.name}
+            </CardTitle>
+            <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-1">
+              {contacts.length}
+            </span>
           </div>
-        )}
-      </Droppable>
+        </CardHeader>
+        <Droppable droppableId={stage.id}>
+          {(provided) => (
+            <CardContent
+              className="flex-1 p-2 overflow-y-auto"
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+            >
+              {contacts.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground border border-dashed rounded-md">
+                  Sem contatos neste estágio
+                </div>
+              ) : (
+                contacts.map((contact, index) => (
+                  <Draggable
+                    key={contact.id}
+                    draggableId={contact.id}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className="mb-2"
+                      >
+                        <Card
+                          className="p-3 cursor-pointer hover:bg-muted/50"
+                          onClick={() => onContactClick(contact)}
+                        >
+                          <div className="font-medium text-sm">
+                            {contact.full_name}
+                          </div>
+                          {contact.email && (
+                            <div className="text-xs text-muted-foreground mt-1 truncate">
+                              {contact.email}
+                            </div>
+                          )}
+                          {contact.whatsapp && (
+                            <div className="text-xs text-muted-foreground truncate">
+                              {contact.whatsapp}
+                            </div>
+                          )}
+                          {contact.last_interaction && (
+                            <div className="text-xs text-muted-foreground mt-1 flex items-center justify-between">
+                              <span>Última interação:</span>
+                              <span>
+                                {format(new Date(contact.last_interaction), "dd/MM/yyyy", {
+                                  locale: ptBR,
+                                })}
+                              </span>
+                            </div>
+                          )}
+                        </Card>
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              )}
+              {provided.placeholder}
+            </CardContent>
+          )}
+        </Droppable>
+      </Card>
     </div>
   );
 };

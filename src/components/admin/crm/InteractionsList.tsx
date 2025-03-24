@@ -2,38 +2,39 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Interaction } from "@/types/crm";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { User, Phone, Calendar, Mail, MessageCircle, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-interface InteractionsListProps {
-  contactId: string;
-}
-
-export const InteractionsList = ({ contactId }: InteractionsListProps) => {
+export const InteractionsList = ({ contactId }: { contactId: string }) => {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [content, setContent] = useState("");
+  const [interactionType, setInteractionType] = useState("call");
+  const [sending, setSending] = useState(false);
+
   useEffect(() => {
     fetchInteractions();
   }, [contactId]);
-  
+
   const fetchInteractions = async () => {
     try {
       setLoading(true);
-      
       const { data, error } = await supabase
-        .from("crm_interactions")
-        .select("*, user:user_id(full_name)")
-        .eq("contact_id", contactId)
-        .order("created_at", { ascending: false });
-        
-      if (error) throw error;
-      
-      // Mapear para o formato esperado
-      const formattedInteractions: Interaction[] = data?.map(interaction => ({
+        .from('crm_interactions')
+        .select('*, user(*)')
+        .eq('contact_id', contactId)
+        .order('interaction_date', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Mapear os dados para o formato Interaction
+      const formattedInteractions: Interaction[] = data.map((interaction: any) => ({
         id: interaction.id,
         interaction_type: interaction.interaction_type,
         content: interaction.content,
@@ -42,103 +43,137 @@ export const InteractionsList = ({ contactId }: InteractionsListProps) => {
         user_id: interaction.user_id,
         contact_id: interaction.contact_id,
         user: interaction.user
-      })) || [];
-      
+      }));
+
       setInteractions(formattedInteractions);
     } catch (error) {
       console.error("Erro ao buscar interações:", error);
+      toast.error("Não foi possível carregar as interações");
     } finally {
       setLoading(false);
     }
   };
-  
-  const deleteInteraction = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta interação?")) return;
-    
+
+  const handleAddInteraction = async () => {
+    if (!content.trim()) {
+      toast.error("Por favor, adicione um conteúdo para a interação");
+      return;
+    }
+
     try {
-      const { error } = await supabase
-        .from("crm_interactions")
-        .delete()
-        .eq("id", id);
-        
-      if (error) throw error;
+      setSending(true);
+      const { data, error } = await supabase
+        .from('crm_interactions')
+        .insert({
+          interaction_type: interactionType,
+          content,
+          contact_id: contactId,
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Interação registrada com sucesso");
+      setContent("");
+      fetchInteractions();
       
-      setInteractions(prev => prev.filter(interaction => interaction.id !== id));
-      toast.success("Interação excluída com sucesso!");
+      // Atualizar o last_interaction do contato
+      await supabase
+        .from('crm_contacts')
+        .update({ last_interaction: new Date().toISOString() })
+        .eq('id', contactId);
+        
     } catch (error) {
-      console.error("Erro ao excluir interação:", error);
-      toast.error("Erro ao excluir interação");
+      console.error("Erro ao adicionar interação:", error);
+      toast.error("Falha ao registrar interação");
+    } finally {
+      setSending(false);
     }
   };
-  
-  const getInteractionIcon = (type: string) => {
+
+  const getInteractionTypeLabel = (type: string) => {
     switch (type) {
-      case "note":
-        return <User className="h-4 w-4 text-blue-500" />;
-      case "call":
-        return <Phone className="h-4 w-4 text-green-500" />;
-      case "meeting":
-        return <Calendar className="h-4 w-4 text-purple-500" />;
-      case "email":
-        return <Mail className="h-4 w-4 text-orange-500" />;
-      case "whatsapp":
-        return <MessageCircle className="h-4 w-4 text-green-600" />;
-      default:
-        return <User className="h-4 w-4 text-gray-500" />;
+      case 'call': return 'Ligação';
+      case 'email': return 'E-mail';
+      case 'meeting': return 'Reunião';
+      case 'whatsapp': return 'WhatsApp';
+      case 'note': return 'Anotação';
+      default: return 'Outro';
     }
   };
-  
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-muted-foreground">Carregando interações...</p>
-      </div>
-    );
-  }
-  
-  if (interactions.length === 0) {
-    return (
-      <div className="text-center py-8 border rounded-md bg-muted/20">
-        <p className="text-muted-foreground">Nenhuma interação registrada</p>
-      </div>
-    );
-  }
-  
+
   return (
     <div className="space-y-4">
-      {interactions.map(interaction => (
-        <div 
-          key={interaction.id} 
-          className="p-4 border rounded-md bg-card"
-        >
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-              {getInteractionIcon(interaction.interaction_type)}
-              <div>
-                <p className="text-sm font-medium">
-                  {interaction.interaction_type.charAt(0).toUpperCase() + interaction.interaction_type.slice(1)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(interaction.created_at), { addSuffix: true, locale: ptBR })}
-                  {interaction.user?.full_name && ` • ${interaction.user.full_name}`}
-                </p>
-              </div>
-            </div>
-            
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => deleteInteraction(interaction.id)}
+      <div className="space-y-2">
+        <div className="grid grid-cols-12 gap-2">
+          <div className="col-span-4">
+            <Select
+              value={interactionType}
+              onValueChange={setInteractionType}
+              disabled={sending}
             >
-              <Trash className="h-4 w-4 text-muted-foreground" />
-            </Button>
+              <SelectTrigger>
+                <SelectValue placeholder="Tipo de interação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="call">Ligação</SelectItem>
+                <SelectItem value="email">E-mail</SelectItem>
+                <SelectItem value="meeting">Reunião</SelectItem>
+                <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                <SelectItem value="note">Anotação</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
-          <p className="mt-2 text-sm whitespace-pre-wrap">{interaction.content}</p>
+          <div className="col-span-8">
+            <Textarea
+              placeholder="Descreva a interação..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              disabled={sending}
+              rows={2}
+            />
+          </div>
         </div>
-      ))}
+        <Button
+          onClick={handleAddInteraction}
+          disabled={!content.trim() || sending}
+          className="w-full"
+        >
+          {sending ? "Salvando..." : "Adicionar Interação"}
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-4">Carregando interações...</div>
+      ) : interactions.length === 0 ? (
+        <div className="text-center py-4 text-muted-foreground">Nenhuma interação registrada</div>
+      ) : (
+        <div className="space-y-3">
+          {interactions.map((interaction) => (
+            <div 
+              key={interaction.id} 
+              className="p-3 rounded border bg-card"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-2">
+                  <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded">
+                    {getInteractionTypeLabel(interaction.interaction_type)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(interaction.interaction_date), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {interaction.user?.full_name || 'Usuário desconhecido'}
+                </span>
+              </div>
+              <p className="mt-2 text-sm whitespace-pre-wrap">{interaction.content}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

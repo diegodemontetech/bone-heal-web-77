@@ -1,132 +1,160 @@
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Trash, QrCode } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Smartphone, QrCode, X, RefreshCw, Trash2 } from "lucide-react";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { WhatsAppInstance } from "@/components/admin/whatsapp/types";
+import { WhatsAppInstanceCardProps } from "@/components/admin/whatsapp/types";
 
-interface InstanceCardProps {
-  instance: WhatsAppInstance;
-  isSelected?: boolean;
-  onSelect: (id: string) => void;
-  onRefreshQr: (id: string) => void;
-  onDelete: (id: string) => void;
-}
-
-export const InstanceCard = ({
-  instance,
-  isSelected,
-  onSelect,
-  onRefreshQr,
-  onDelete
-}: InstanceCardProps) => {
-  const handleSelect = () => {
-    onSelect(instance.id);
-  };
-
-  const handleRefreshQr = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    onRefreshQr(instance.id);
-  };
-
-  const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    onDelete(instance.id);
-  };
+export const InstanceCard = ({ instance, onConnect, onDisconnect, onDelete }: WhatsAppInstanceCardProps) => {
+  const [loading, setLoading] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch (status) {
       case "connected":
         return "bg-green-500";
-      case "disconnected":
-        return "bg-red-500";
       case "connecting":
         return "bg-yellow-500";
+      case "disconnected":
+        return "bg-red-500";
       default:
         return "bg-gray-500";
     }
   };
 
-  const statusColor = getStatusColor(instance.status);
-  const formattedDate = instance.updated_at
-    ? formatDistanceToNow(new Date(instance.updated_at), {
-        addSuffix: true,
-        locale: ptBR
-      })
-    : "";
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "connected":
+        return "Conectado";
+      case "connecting":
+        return "Conectando";
+      case "disconnected":
+        return "Desconectado";
+      default:
+        return "Desconhecido";
+    }
+  };
+
+  const handleConnectClick = async () => {
+    try {
+      setLoading("connect");
+      await onConnect(instance.id);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleDisconnectClick = async () => {
+    try {
+      setLoading("disconnect");
+      await onDisconnect(instance.id);
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    if (!confirm(`Tem certeza que deseja excluir a instância "${instance.instance_name}"?`)) {
+      return;
+    }
+
+    try {
+      setLoading("delete");
+      await onDelete(instance.id);
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
-    <Card
-      onClick={handleSelect}
-      className={`cursor-pointer transition-all hover:border-primary ${
-        isSelected ? "border-primary ring-2 ring-primary/20" : ""
-      }`}
-    >
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-medium text-lg">
-              {instance.instance_name || "Sem nome"}
-            </h3>
-            <div className="flex items-center mt-1">
-              <span
-                className={`${statusColor} h-2.5 w-2.5 rounded-full mr-2`}
-              ></span>
-              <span className="text-sm capitalize">{instance.status}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Atualizado {formattedDate}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleRefreshQr}
-              title="Atualizar QR Code"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:bg-destructive/10"
-              onClick={handleDelete}
-              title="Excluir instância"
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          </div>
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg">{instance.instance_name}</CardTitle>
+          <Badge 
+            variant="outline" 
+            className={`flex items-center ${
+              instance.status === "connected" ? "text-green-500" : 
+              instance.status === "connecting" ? "text-yellow-500" : 
+              "text-red-500"
+            }`}
+          >
+            <span className={`w-2 h-2 rounded-full mr-1 ${getStatusColor(instance.status)}`}></span>
+            {getStatusText(instance.status)}
+          </Badge>
         </div>
-
-        {instance.status === "disconnected" && instance.qr_code && (
-          <div className="mt-4 flex justify-center">
-            <div className="bg-white p-2 rounded-md">
-              <img
-                src={instance.qr_code}
-                alt="QR Code para WhatsApp"
-                className="h-32 w-32 object-contain"
+      </CardHeader>
+      <CardContent>
+        {instance.status === "connecting" && instance.qr_code && (
+          <div className="flex justify-center mb-4">
+            <div className="p-2 border rounded-md bg-white">
+              <img 
+                src={instance.qr_code} 
+                alt="QR Code" 
+                className="w-40 h-40"
               />
             </div>
           </div>
         )}
-
-        {instance.status === "disconnected" && !instance.qr_code && (
-          <div className="mt-4 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1"
-              onClick={handleRefreshQr}
-            >
-              <QrCode className="h-4 w-4 mr-1" />
-              Gerar QR Code
-            </Button>
+        <div className="text-sm text-muted-foreground space-y-1">
+          <div className="flex justify-between">
+            <span>ID:</span>
+            <span className="font-mono">{instance.id.slice(0, 8)}...</span>
           </div>
-        )}
+          <div className="flex justify-between">
+            <span>Criado em:</span>
+            <span>{format(new Date(instance.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+          </div>
+        </div>
       </CardContent>
+      <CardFooter className="flex justify-between pt-2 border-t">
+        {instance.status === "connected" ? (
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={handleDisconnectClick}
+            disabled={loading !== null}
+          >
+            {loading === "disconnect" ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <X className="h-4 w-4 mr-1" />
+            )}
+            Desconectar
+          </Button>
+        ) : (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleConnectClick}
+            disabled={loading !== null}
+          >
+            {loading === "connect" ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : instance.status === "connecting" ? (
+              <QrCode className="h-4 w-4 mr-1" />
+            ) : (
+              <Smartphone className="h-4 w-4 mr-1" />
+            )}
+            {instance.status === "connecting" ? "Gerar QR" : "Conectar"}
+          </Button>
+        )}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleDeleteClick}
+          disabled={loading !== null}
+          className="text-destructive hover:text-destructive"
+        >
+          {loading === "delete" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2 className="h-4 w-4" />
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

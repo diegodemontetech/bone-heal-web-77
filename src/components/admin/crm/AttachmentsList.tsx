@@ -2,40 +2,38 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Attachment } from "@/types/crm";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { File, Upload, Trash, Download, FileText, FileImage, FilePdf as FilePdfIcon } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { PlusCircle, X, FileText, FileImage, File, Download, Trash2 } from "lucide-react";
 
-interface AttachmentsListProps {
-  contactId: string;
-}
-
-export const AttachmentsList = ({ contactId }: AttachmentsListProps) => {
+export const AttachmentsList = ({ contactId }: { contactId: string }) => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
-  
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     fetchAttachments();
   }, [contactId]);
-  
+
   const fetchAttachments = async () => {
     try {
       setLoading(true);
       
+      // Verificar se a tabela crm_attachments existe
       const { data, error } = await supabase
-        .from("crm_attachments")
-        .select("*, user:user_id(full_name)")
-        .eq("contact_id", contactId)
-        .order("created_at", { ascending: false });
-        
-      if (error) throw error;
-      
-      // Mapear para o formato esperado
-      const formattedAttachments: Attachment[] = data?.map(attachment => ({
+        .from('crm_attachments')
+        .select('*')
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      // Mapear os dados para o formato Attachment
+      const formattedAttachments: Attachment[] = data.map((attachment: any) => ({
         id: attachment.id,
         file_name: attachment.file_name,
         file_url: attachment.file_url,
@@ -44,180 +42,172 @@ export const AttachmentsList = ({ contactId }: AttachmentsListProps) => {
         contact_id: attachment.contact_id,
         user_id: attachment.user_id,
         user: attachment.user
-      })) || [];
-      
+      }));
+
       setAttachments(formattedAttachments);
     } catch (error) {
       console.error("Erro ao buscar anexos:", error);
+      toast.error("Não foi possível carregar os anexos");
     } finally {
       setLoading(false);
     }
   };
-  
-  const uploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    setUploading(true);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      setFile(event.target.files[0]);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error("Por favor, selecione um arquivo para enviar");
+      return;
+    }
+
     try {
-      // Upload do arquivo para o storage
-      const fileExt = file.name.split('.').pop();
-      const filePath = `crm_attachments/${contactId}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+      setUploading(true);
       
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      // Upload do arquivo para o bucket do Supabase
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data: fileData, error: uploadError } = await supabase.storage
         .from('crm_files')
-        .upload(filePath, file);
-        
-      if (uploadError) throw uploadError;
-      
-      // Gerar URL pública
-      const { data: urlData } = supabase.storage
+        .upload(fileName, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Obter a URL pública do arquivo
+      const { data: { publicUrl } } = supabase.storage
         .from('crm_files')
-        .getPublicUrl(filePath);
-        
-      // Registrar no banco de dados
-      const { error: dbError } = await supabase
-        .from("crm_attachments")
+        .getPublicUrl(fileName);
+
+      // Salvar os metadados do arquivo na tabela crm_attachments
+      const { data, error } = await supabase
+        .from('crm_attachments')
         .insert({
-          contact_id: contactId,
           file_name: file.name,
-          file_url: urlData.publicUrl,
+          file_url: publicUrl,
           file_type: file.type,
-          created_at: new Date().toISOString()
+          contact_id: contactId,
+          user_id: (await supabase.auth.getUser()).data.user?.id
         });
-        
-      if (dbError) throw dbError;
-      
-      toast.success("Arquivo enviado com sucesso!");
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Arquivo enviado com sucesso");
+      setFile(null);
       fetchAttachments();
     } catch (error) {
-      console.error("Erro ao enviar arquivo:", error);
-      toast.error("Erro ao enviar arquivo");
+      console.error("Erro ao fazer upload do arquivo:", error);
+      toast.error("Falha ao enviar o arquivo");
     } finally {
       setUploading(false);
-      // Limpar input
-      e.target.value = '';
     }
   };
-  
-  const deleteAttachment = async (id: string, url: string) => {
-    if (!confirm("Tem certeza que deseja excluir este anexo?")) return;
-    
+
+  const handleDelete = async (attachmentId: string, fileUrl: string) => {
+    if (!confirm("Tem certeza que deseja excluir este anexo?")) {
+      return;
+    }
+
     try {
-      // Extrair caminho do storage da URL
-      const pathMatch = url.match(/\/storage\/v1\/object\/public\/crm_files\/(.+)/);
-      if (pathMatch && pathMatch[1]) {
-        // Excluir arquivo do storage
+      // Extrair o nome do arquivo da URL
+      const fileName = fileUrl.split('/').pop();
+      
+      // Excluir o registro do banco de dados
+      const { error } = await supabase
+        .from('crm_attachments')
+        .delete()
+        .eq('id', attachmentId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Tentar excluir o arquivo do Storage (pode falhar se o arquivo não existir)
+      if (fileName) {
         await supabase.storage
           .from('crm_files')
-          .remove([pathMatch[1]]);
+          .remove([fileName]);
       }
-      
-      // Excluir registro do banco
-      const { error } = await supabase
-        .from("crm_attachments")
-        .delete()
-        .eq("id", id);
-        
-      if (error) throw error;
-      
-      setAttachments(prev => prev.filter(att => att.id !== id));
-      toast.success("Anexo excluído com sucesso!");
+
+      toast.success("Anexo excluído com sucesso");
+      fetchAttachments();
     } catch (error) {
       console.error("Erro ao excluir anexo:", error);
-      toast.error("Erro ao excluir anexo");
+      toast.error("Falha ao excluir o anexo");
     }
   };
-  
-  const getFileIcon = (fileType: string = '') => {
+
+  const getFileIcon = (fileType: string) => {
     if (fileType.includes('image')) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
     } else if (fileType.includes('pdf')) {
-      return <FilePdfIcon className="h-5 w-5 text-red-500" />;
-    } else if (fileType.includes('text') || fileType.includes('document')) {
-      return <FileText className="h-5 w-5 text-green-500" />;
+      return <FileText className="h-5 w-5 text-red-500" />;
     } else {
       return <File className="h-5 w-5 text-gray-500" />;
     }
   };
-  
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-        <p className="text-muted-foreground">Carregando anexos...</p>
-      </div>
-    );
-  }
-  
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center">
+      <div className="flex items-center space-x-2">
         <Input
           type="file"
-          id="file-upload"
-          className="hidden"
-          onChange={uploadFile}
+          onChange={handleFileChange}
           disabled={uploading}
+          className="max-w-xs"
         />
-        <label
-          htmlFor="file-upload"
-          className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full cursor-pointer ${
-            uploading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
+        <Button 
+          onClick={handleUpload} 
+          disabled={!file || uploading}
+          size="sm"
         >
-          {uploading ? (
-            <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full mr-2" />
-          ) : (
-            <Upload className="h-4 w-4 mr-2" />
-          )}
-          {uploading ? 'Enviando arquivo...' : 'Enviar arquivo'}
-        </label>
+          <PlusCircle className="h-4 w-4 mr-1" />
+          {uploading ? "Enviando..." : "Enviar"}
+        </Button>
       </div>
-      
-      {attachments.length === 0 && !loading ? (
-        <div className="text-center py-8 border rounded-md bg-muted/20">
-          <p className="text-muted-foreground">Nenhum anexo encontrado</p>
-        </div>
+
+      {loading ? (
+        <div className="text-center py-4">Carregando anexos...</div>
+      ) : attachments.length === 0 ? (
+        <div className="text-center py-4 text-muted-foreground">Nenhum anexo encontrado</div>
       ) : (
         <div className="space-y-2">
-          {attachments.map(attachment => (
+          {attachments.map((attachment) => (
             <div 
               key={attachment.id} 
-              className="p-3 border rounded-md bg-card flex justify-between items-center"
+              className="flex items-center justify-between p-2 rounded border bg-card"
             >
-              <div className="flex items-center gap-2">
-                {getFileIcon(attachment.file_type)}
-                <div>
-                  <p className="text-sm font-medium line-clamp-1">
-                    {attachment.file_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(attachment.created_at), { addSuffix: true, locale: ptBR })}
-                    {attachment.user?.full_name && ` • ${attachment.user.full_name}`}
-                  </p>
-                </div>
+              <div className="flex items-center space-x-2">
+                {getFileIcon(attachment.file_type || "")}
+                <span className="text-sm font-medium truncate max-w-xs">
+                  {attachment.file_name}
+                </span>
               </div>
               
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+              <div className="flex items-center space-x-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
                   asChild
                 >
-                  <a href={attachment.file_url} target="_blank" rel="noopener noreferrer" download>
+                  <a href={attachment.file_url} target="_blank" rel="noopener noreferrer">
                     <Download className="h-4 w-4" />
                   </a>
                 </Button>
                 
-                <Button
-                  variant="ghost"
+                <Button 
+                  variant="ghost" 
                   size="icon"
-                  className="h-8 w-8 text-destructive"
-                  onClick={() => deleteAttachment(attachment.id, attachment.file_url)}
+                  onClick={() => handleDelete(attachment.id, attachment.file_url)}
+                  className="text-destructive hover:text-destructive"
                 >
-                  <Trash className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>

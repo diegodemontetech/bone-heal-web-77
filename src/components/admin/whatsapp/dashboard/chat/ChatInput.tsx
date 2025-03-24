@@ -1,45 +1,55 @@
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Send, Loader2 } from "lucide-react";
 import { ChatInputProps } from "@/components/admin/whatsapp/types";
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false }) => {
+export const ChatInput = ({ onSendMessage, isDisabled }: ChatInputProps) => {
   const [message, setMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || disabled || isSending) return;
-    
-    setIsSending(true);
+  const [sending, setSending] = useState(false);
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || isDisabled) return;
+
     try {
-      const success = await onSendMessage(message);
-      if (success) {
-        setMessage("");
-      }
+      setSending(true);
+      await onSendMessage(message);
+      setMessage("");
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
     } finally {
-      setIsSending(false);
+      setSending(false);
     }
   };
-  
+
   return (
-    <form onSubmit={handleSubmit} className="flex space-x-2">
-      <Input
+    <div className="flex items-end space-x-2 p-4 border-t">
+      <Textarea
+        placeholder="Digite sua mensagem..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="Digite sua mensagem..."
-        disabled={disabled || isSending}
-        className="flex-1"
+        disabled={sending || isDisabled}
+        className="resize-none"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+          }
+        }}
       />
-      <Button 
-        type="submit" 
-        disabled={disabled || !message.trim() || isSending}
+      <Button
+        onClick={handleSendMessage}
+        disabled={!message.trim() || sending || isDisabled}
         size="icon"
+        className="h-10 w-10 shrink-0"
       >
-        <Send className="h-4 w-4" />
+        {sending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Send className="h-4 w-4" />
+        )}
       </Button>
-    </form>
+    </div>
   );
 };

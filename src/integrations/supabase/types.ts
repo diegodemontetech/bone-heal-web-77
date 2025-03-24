@@ -207,6 +207,123 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_attachments: {
+        Row: {
+          contact_id: string
+          created_at: string
+          file_name: string
+          file_type: string | null
+          file_url: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          file_name: string
+          file_type?: string | null
+          file_url: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          file_name?: string
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      crm_contacts: {
+        Row: {
+          address: string | null
+          city: string | null
+          client_type: string | null
+          clinic_name: string | null
+          cpf_cnpj: string | null
+          created_at: string
+          cro: string | null
+          email: string | null
+          full_name: string
+          id: string
+          last_interaction: string | null
+          next_interaction_date: string | null
+          next_steps: string | null
+          observations: string | null
+          pipeline_id: string | null
+          responsible_id: string | null
+          specialty: string | null
+          stage_id: string | null
+          state: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          client_type?: string | null
+          clinic_name?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          cro?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          last_interaction?: string | null
+          next_interaction_date?: string | null
+          next_steps?: string | null
+          observations?: string | null
+          pipeline_id?: string | null
+          responsible_id?: string | null
+          specialty?: string | null
+          stage_id?: string | null
+          state?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          client_type?: string | null
+          clinic_name?: string | null
+          cpf_cnpj?: string | null
+          created_at?: string
+          cro?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          last_interaction?: string | null
+          next_interaction_date?: string | null
+          next_steps?: string | null
+          observations?: string | null
+          pipeline_id?: string | null
+          responsible_id?: string | null
+          specialty?: string | null
+          stage_id?: string | null
+          state?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contacts_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contacts_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_departments: {
         Row: {
           created_at: string
@@ -320,6 +437,36 @@ export type Database = {
           },
         ]
       }
+      crm_interactions: {
+        Row: {
+          contact_id: string
+          content: string
+          created_at: string
+          id: string
+          interaction_date: string
+          interaction_type: string
+          user_id: string | null
+        }
+        Insert: {
+          contact_id: string
+          content: string
+          created_at?: string
+          id?: string
+          interaction_date?: string
+          interaction_type: string
+          user_id?: string | null
+        }
+        Update: {
+          contact_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          interaction_date?: string
+          interaction_type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       crm_pipeline_permissions: {
         Row: {
           created_at: string | null
@@ -354,6 +501,7 @@ export type Database = {
       }
       crm_pipelines: {
         Row: {
+          color: string | null
           created_at: string | null
           description: string | null
           form_url: string | null
@@ -363,6 +511,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
           form_url?: string | null
@@ -372,6 +521,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          color?: string | null
           created_at?: string | null
           description?: string | null
           form_url?: string | null
@@ -426,6 +576,8 @@ export type Database = {
           id: string
           name: string
           order: number
+          order_index: number | null
+          pipeline_id: string | null
           updated_at: string
         }
         Insert: {
@@ -435,6 +587,8 @@ export type Database = {
           id?: string
           name: string
           order?: number
+          order_index?: number | null
+          pipeline_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -444,6 +598,8 @@ export type Database = {
           id?: string
           name?: string
           order?: number
+          order_index?: number | null
+          pipeline_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -452,6 +608,13 @@ export type Database = {
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "crm_departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_stages_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
             referencedColumns: ["id"]
           },
         ]

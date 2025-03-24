@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { InstanceNameInput } from "./InstanceNameInput";
 import { DialogActions } from "./DialogActions";
-import { WhatsAppInstance, CreateInstanceDialogProps } from "@/components/admin/whatsapp/types";
+import { CreateInstanceDialogProps } from "@/components/admin/whatsapp/types";
 
 export const CreateInstanceDialog = ({
   isOpen,
