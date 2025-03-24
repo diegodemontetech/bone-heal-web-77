@@ -164,7 +164,9 @@ export const CRMKanban = () => {
       full_name: "",
       stage_id: stages[0].id,
       pipeline_id: selectedPipeline,
-      last_interaction: new Date().toISOString()
+      last_interaction: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     setSelectedContact(newContact);

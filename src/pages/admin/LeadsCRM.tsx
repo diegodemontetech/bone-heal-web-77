@@ -7,13 +7,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from '@/components/ui/button';
 import { Filter, Plus } from 'lucide-react';
 import { ContactDrawer } from '@/components/admin/crm/ContactDrawer';
+import { Contact } from '@/types/crm';
 
 const LeadsCRM = () => {
   const [activeTab, setActiveTab] = useState("kanban");
-  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  const handleContactSelect = (contact: any) => {
+  const handleContactSelect = (contact: Contact) => {
     setSelectedContact(contact);
     setDrawerOpen(true);
   };
@@ -68,11 +69,15 @@ const LeadsCRM = () => {
           </TabsContent>
         </Tabs>
         
-        <ContactDrawer 
-          open={drawerOpen}
-          onClose={closeDrawer}
-          contactId={selectedContact?.id}
-        />
+        {selectedContact && (
+          <ContactDrawer 
+            open={drawerOpen}
+            onClose={closeDrawer}
+            contact={selectedContact}
+            onUpdate={async () => {}}
+            stages={[]}
+          />
+        )}
       </div>
     </Layout>
   );
