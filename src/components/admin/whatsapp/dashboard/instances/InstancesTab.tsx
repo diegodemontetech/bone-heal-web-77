@@ -16,7 +16,7 @@ export const InstancesTab = ({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={onCreateDialogOpen}>
+        <Button onClick={() => onCreateDialogOpen && onCreateDialogOpen()}>
           <PlusCircle className="h-4 w-4 mr-2" />
           Nova Instância
         </Button>
@@ -33,7 +33,7 @@ export const InstancesTab = ({
           <p className="text-muted-foreground mb-4">
             Crie uma nova instância para começar a usar o WhatsApp
           </p>
-          <Button onClick={onCreateDialogOpen}>
+          <Button onClick={() => onCreateDialogOpen && onCreateDialogOpen()}>
             <PlusCircle className="h-4 w-4 mr-2" />
             Nova Instância
           </Button>

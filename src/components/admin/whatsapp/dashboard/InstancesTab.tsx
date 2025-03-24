@@ -10,7 +10,7 @@ interface InstancesTabProps {
   isLoading: boolean;
   onSelectInstance: (instanceId: string) => void;
   onRefreshQr: (instanceId: string) => Promise<any>;
-  onDeleteInstance: (instanceId: string) => void;
+  onDeleteInstance: (instanceId: string) => Promise<any>;
   onCreateDialogOpen: () => void;
 }
 

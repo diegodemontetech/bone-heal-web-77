@@ -66,7 +66,7 @@ export interface InstancesTabProps {
   onDisconnect: (instanceId: string) => Promise<boolean>;
   onDelete: (instanceId: string) => Promise<boolean>;
   onCreateInstance: (name: string) => Promise<any>;
-  onCreateDialogOpen?: () => void;
+  onCreateDialogOpen?: () => void;  // Made this optional
 }
 
 export interface WhatsAppInstanceCardProps {

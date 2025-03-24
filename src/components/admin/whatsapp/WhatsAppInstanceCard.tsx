@@ -85,7 +85,7 @@ const WhatsAppInstanceCard = ({
             })}
           </div>
           
-          {instance.status === "connecting" && (
+          {(instance.status === "connecting" || instance.status === "awaiting_connection" || instance.qr_code) && (
             <Button
               variant="outline"
               size="sm"
