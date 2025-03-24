@@ -17,6 +17,7 @@ import Support from "@/pages/support/Tickets";
 import TicketDetails from "@/pages/support/TicketDetails"; 
 import { AdminRoute } from "@/routes/admin/adminLoader";
 import Layout from "@/components/admin/Layout";
+import ComoFunciona from "@/pages/ComoFunciona";
 
 // Importação das páginas de perfil
 import ProfilePage from "@/pages/profile/Profile";
@@ -35,6 +36,7 @@ export function Routes() {
         <Route path="/about" element={<About />} />
         <Route path="/products" element={<Products />} />
         <Route path="/products/:slug" element={<ProductDetail />} />
+        <Route path="/como-funciona" element={<ComoFunciona />} />
         <Route path="/studies" element={<Studies />} />
         <Route path="/news" element={<News />} />
         <Route path="/contact" element={<Contact />} />

@@ -1,3 +1,4 @@
+
 import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 
@@ -9,6 +10,7 @@ import Cart from "@/pages/Cart";
 import Profile from "@/pages/Profile";
 import ProductDetail from "@/pages/ProductDetail";
 import Index from "@/pages/Index"; // Importando a página Index
+import ComoFunciona from "@/pages/ComoFunciona";
 
 // Lazy imports
 const About = lazy(() => import("@/pages/About"));
@@ -46,6 +48,10 @@ export const publicRoutes: RouteObject[] = [
   {
     path: "/products/:slug",
     element: <ProductDetail />,
+  },
+  {
+    path: "/como-funciona",
+    element: <ComoFunciona />,
   },
   {
     path: "/cart",

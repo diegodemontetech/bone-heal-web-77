@@ -94,7 +94,7 @@ const Cart = () => {
     setShippingError(null);
   };
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = async () => {
     if (!isAuthenticated) {
       toast.error("É necessário estar logado para finalizar a compra");
       navigate("/login", { state: { from: "/cart" } });
@@ -106,7 +106,12 @@ const Cart = () => {
       return;
     }
     
-    handleCheckout(cartItems, zipCode, shippingCost || 0, 0, null);
+    try {
+      await handleCheckout(cartItems, zipCode, shippingCost || 0, 0, null);
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      toast.error("Ocorreu um erro ao processar o pagamento. Tente novamente.");
+    }
   };
 
   if (isLoading) {
