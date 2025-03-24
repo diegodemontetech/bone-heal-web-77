@@ -120,7 +120,7 @@ export const useTickets = () => {
       if (ticketsWithSLAViolation.length > 0) {
         toast(`${ticketsWithSLAViolation.length} tickets com SLA comprometido`, {
           description: "Existem tickets que precisam de atenção urgente.",
-          variant: "destructive",
+          icon: "🚨"
         });
       }
     }
@@ -159,7 +159,7 @@ export const useTickets = () => {
       console.error("Erro ao atribuir ticket:", error);
       toast("Erro ao atribuir ticket", {
         description: "Não foi possível atribuir o ticket",
-        variant: "destructive"
+        icon: "❌"
       });
     }
   };
@@ -183,7 +183,7 @@ export const useTickets = () => {
       console.error("Erro ao atualizar status:", error);
       toast("Erro ao atualizar status", {
         description: "Não foi possível atualizar o status do ticket",
-        variant: "destructive"
+        icon: "❌"
       });
     }
   };

@@ -1,31 +1,68 @@
 
-import { RouteObject } from "react-router-dom";
-import AdminLayout from "@/components/admin/Layout";
-import { dashboardRoutes } from "./admin/dashboardRoutes";
+import { lazy, Suspense } from "react";
+import { Navigate, Outlet, RouteObject } from "react-router-dom";
+import { AdminRoute } from "./admin/adminLoader";
+import Layout from "@/components/admin/Layout";
+import { UserPermission } from "@/types/auth";
 import { productRoutes } from "./admin/productRoutes";
-import { salesRoutes } from "./admin/salesRoutes";
+import { orderRoutes } from "./admin/orderRoutes";
 import { userRoutes } from "./admin/userRoutes";
-import { contentRoutes } from "./admin/contentRoutes";
-import { configRoutes } from "./admin/configRoutes";
-import { crmRoutes } from "./admin/crmRoutes";
+import { kanbanRoutes } from "./admin/kanbanRoutes";
+import { marketingRoutes } from "./admin/marketingRoutes";
+import { settingsRoutes } from "./admin/settingsRoutes";
 import { supportRoutes } from "./admin/supportRoutes";
-import { whatsappRoutes } from "./admin/whatsappRoutes";
 
-// Garantir que todas as rotas tenham um array válido para evitar o erro de map em undefined
-const allRoutes = [
-  ...dashboardRoutes,
-  ...productRoutes,
-  ...salesRoutes,
-  ...userRoutes,
-  ...contentRoutes,
-  ...configRoutes,
-  ...crmRoutes,
-  ...supportRoutes,
-  ...whatsappRoutes
-].filter(Boolean); // Filtrar qualquer valor undefined ou null
+// Admin pages
+const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
+const Contacts = lazy(() => import("@/pages/admin/Contacts"));
+const ContactDetails = lazy(() => import("@/pages/admin/ContactDetails"));
 
+// Loader para componentes com lazy loading
+const AdminLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Todas as rotas são wrapped com o componente AdminRoute para proteger o acesso
 export const adminRoutes: RouteObject = {
   path: "/admin",
-  element: <AdminLayout />,
-  children: allRoutes
+  element: (
+    <AdminRoute>
+      <Layout />
+    </AdminRoute>
+  ),
+  children: [
+    {
+      index: true,
+      element: (
+        <Suspense fallback={<AdminLoader />}>
+          <Dashboard />
+        </Suspense>
+      ),
+    },
+    {
+      path: "contacts",
+      element: (
+        <Suspense fallback={<AdminLoader />}>
+          <Contacts />
+        </Suspense>
+      ),
+    },
+    {
+      path: "contacts/:id",
+      element: (
+        <Suspense fallback={<AdminLoader />}>
+          <ContactDetails />
+        </Suspense>
+      ),
+    },
+    ...productRoutes,
+    ...orderRoutes,
+    ...userRoutes,
+    ...kanbanRoutes,
+    ...marketingRoutes,
+    ...settingsRoutes,
+    ...supportRoutes,
+  ],
 };

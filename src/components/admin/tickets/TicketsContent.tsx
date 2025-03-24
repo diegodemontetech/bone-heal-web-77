@@ -101,7 +101,7 @@ const TicketsContent = ({
     if (ticketsWithSLAViolation.length > 0) {
       toast(`${ticketsWithSLAViolation.length} tickets com SLA comprometido`, {
         description: "Existem tickets que precisam de atenção urgente.",
-        variant: "destructive",
+        icon: "🚨",
       });
     } else {
       toast("Verificação de SLA concluída", {
