@@ -24,7 +24,7 @@ const ProductTargetingSection = ({
 }: ProductTargetingSectionProps) => {
   // Opções de categorias de produtos
   const categoryOptions = [
-    { value: "", label: "Todas as categorias" },
+    { value: "all", label: "Todas as categorias" },
     { value: "supplements", label: "Suplementos" },
     { value: "equipment", label: "Equipamentos" },
     { value: "accessories", label: "Acessórios" },
@@ -51,7 +51,7 @@ const ProductTargetingSection = ({
       <div className="space-y-2">
         <Label htmlFor="product_category">Categoria de Produto</Label>
         <Select
-          value={productCategory || ""}
+          value={productCategory || "all"}
           onValueChange={onProductCategoryChange}
         >
           <SelectTrigger id="product_category">

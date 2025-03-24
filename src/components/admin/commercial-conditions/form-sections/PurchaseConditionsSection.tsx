@@ -61,14 +61,14 @@ const PurchaseConditionsSection = ({
       <div className="space-y-2">
         <Label htmlFor="payment_method">Método de Pagamento</Label>
         <Select
-          value={paymentMethod || ""}
+          value={paymentMethod || "all"}
           onValueChange={onPaymentMethodChange}
         >
           <SelectTrigger id="payment_method">
             <SelectValue placeholder="Selecione um método de pagamento" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os métodos</SelectItem>
+            <SelectItem value="all">Todos os métodos</SelectItem>
             <SelectItem value="pix">PIX</SelectItem>
             <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
             <SelectItem value="boleto">Boleto</SelectItem>

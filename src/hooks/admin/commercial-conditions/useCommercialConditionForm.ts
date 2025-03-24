@@ -21,11 +21,11 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
     valid_until: "",
     min_amount: "",
     min_items: "",
-    payment_method: "",
+    payment_method: "all", // Changed from empty string to "all"
     region: "",
     customer_group: "",
     product_id: "",
-    product_category: "",
+    product_category: "all", // Changed from empty string to "all"
     free_shipping: false,
     is_cumulative: true
   });
@@ -43,11 +43,11 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         valid_until: existingCondition.valid_until || "",
         min_amount: existingCondition.min_amount ? existingCondition.min_amount.toString() : "",
         min_items: existingCondition.min_items ? existingCondition.min_items.toString() : "",
-        payment_method: existingCondition.payment_method || "",
+        payment_method: existingCondition.payment_method || "all", // Changed from empty string to "all"
         region: existingCondition.region || "",
         customer_group: existingCondition.customer_group || "",
         product_id: existingCondition.product_id || "",
-        product_category: existingCondition.product_category || "",
+        product_category: existingCondition.product_category || "all", // Changed from empty string to "all"
         free_shipping: existingCondition.free_shipping || false,
         is_cumulative: existingCondition.is_cumulative !== undefined ? existingCondition.is_cumulative : true
       });
@@ -78,11 +78,11 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         valid_until: formData.valid_until || null,
         min_amount: formData.min_amount ? parseFloat(formData.min_amount) : null,
         min_items: formData.min_items ? parseInt(formData.min_items, 10) : null,
-        payment_method: formData.payment_method || null,
+        payment_method: formData.payment_method === "all" ? null : formData.payment_method, // Handle "all" value
         region: formData.region || null,
         customer_group: formData.customer_group || null,
         product_id: formData.product_id || null,
-        product_category: formData.product_category || null,
+        product_category: formData.product_category === "all" ? null : formData.product_category, // Handle "all" value
         free_shipping: formData.free_shipping,
         is_cumulative: formData.is_cumulative
       };
