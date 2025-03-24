@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import TicketsList from "./TicketsList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,7 +11,7 @@ import {
   RefreshCw, 
   Settings 
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +51,6 @@ const TicketsContent = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showSLASettings, setShowSLASettings] = useState(false);
   const [slaHours, setSlaHours] = useState(24);
-  const { toast } = useToast();
   const previousTicketsLength = useRef<number | null>(null);
 
   // Configurar um intervalo para atualizar os tickets a cada 3 minutos
@@ -72,8 +72,7 @@ const TicketsContent = ({
   useEffect(() => {
     if (tickets && previousTicketsLength.current !== null) {
       if (tickets.length > previousTicketsLength.current) {
-        toast({
-          title: "Novos tickets recebidos",
+        toast("Novos tickets recebidos", {
           description: `${tickets.length - previousTicketsLength.current} novo(s) ticket(s) adicionado(s)`,
         });
       }
@@ -82,7 +81,7 @@ const TicketsContent = ({
     if (tickets) {
       previousTicketsLength.current = tickets.length;
     }
-  }, [tickets, toast]);
+  }, [tickets]);
   
   // Verificar violações de SLA
   const checkSLAViolations = () => {
@@ -100,14 +99,12 @@ const TicketsContent = ({
     });
     
     if (ticketsWithSLAViolation.length > 0) {
-      toast({
-        title: `${ticketsWithSLAViolation.length} tickets com SLA comprometido`,
+      toast(`${ticketsWithSLAViolation.length} tickets com SLA comprometido`, {
         description: "Existem tickets que precisam de atenção urgente.",
         variant: "destructive",
       });
     } else {
-      toast({
-        title: "Verificação de SLA concluída",
+      toast("Verificação de SLA concluída", {
         description: "Todos os tickets estão dentro do prazo de atendimento.",
       });
     }
@@ -220,8 +217,7 @@ const TicketsContent = ({
                 <Button 
                   type="submit" 
                   onClick={() => {
-                    toast({
-                      title: "Configurações salvas",
+                    toast("Configurações salvas", {
                       description: `SLA definido para ${slaHours} horas`,
                     });
                     setShowSLASettings(false);
