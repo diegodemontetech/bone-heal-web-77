@@ -24,7 +24,8 @@ export const useWhatsAppInstances = () => {
       const { data, error } = await supabase
         .from('whatsapp_instances')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -43,7 +44,7 @@ export const useWhatsAppInstances = () => {
     } catch (err) {
       console.error('Erro ao buscar instâncias:', err);
       setError(err instanceof Error ? err : new Error(String(err)));
-      toast.error('Erro ao carregar instâncias do WhatsApp');
+      toast.error("Erro ao carregar instâncias do WhatsApp");
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +52,13 @@ export const useWhatsAppInstances = () => {
 
   const createInstance = async (instanceName: string): Promise<WhatsAppInstance | null> => {
     if (!user) {
-      toast.error('Você precisa estar logado para criar uma instância');
+      toast.error("Você precisa estar logado para criar uma instância");
+      return null;
+    }
+
+    // Verificar limite de 5 instâncias
+    if (instances.length >= 5) {
+      toast.error("Você já atingiu o limite de 5 instâncias");
       return null;
     }
 
@@ -85,20 +92,20 @@ export const useWhatsAppInstances = () => {
       };
 
       setInstances(prev => [instance, ...prev]);
-      toast.success('Instância criada com sucesso');
+      toast.success("Instância criada com sucesso");
       return instance;
     } catch (err) {
-      console.error('Erro ao criar instância:', err);
-      toast.error('Erro ao criar instância do WhatsApp');
+      console.error("Erro ao criar instância:", err);
+      toast.error("Erro ao criar instância do WhatsApp");
       return null;
     } finally {
       setIsCreating(false);
     }
   };
 
-  const refreshQrCode = async (instanceId: string): Promise<boolean> => {
+  const refreshQrCode = async (instanceId: string): Promise<string | null> => {
     try {
-      const { error } = await supabase.functions.invoke('evolution-api', {
+      const { data, error } = await supabase.functions.invoke('evolution-api', {
         body: {
           action: 'refresh_qr',
           instance_id: instanceId
@@ -107,18 +114,81 @@ export const useWhatsAppInstances = () => {
 
       if (error) throw error;
       
-      toast.success('Solicitação de novo QR Code enviada');
-      setTimeout(fetchInstances, 3000);
+      if (!data?.success) {
+        throw new Error(data?.message || "Erro ao gerar QR code");
+      }
+
+      // Atualizar a lista de instâncias localmente
+      if (data.qrcode) {
+        setInstances(prev => prev.map(instance => 
+          instance.id === instanceId ? 
+          { 
+            ...instance, 
+            qr_code: data.qrcode,
+            status: 'awaiting_connection'
+          } : 
+          instance
+        ));
+      }
+      
+      toast.success("QR Code gerado com sucesso");
+      return data.qrcode || null;
+    } catch (err) {
+      console.error("Erro ao atualizar QR Code:", err);
+      toast.error("Erro ao atualizar QR Code");
+      return null;
+    }
+  };
+
+  const deleteInstance = async (instanceId: string): Promise<boolean> => {
+    try {
+      // Buscar a instância antes de excluir
+      const instanceToDelete = instances.find(i => i.id === instanceId);
+      if (!instanceToDelete) {
+        toast.error("Instância não encontrada");
+        return false;
+      }
+
+      // Excluir a instância na API Evolution
+      const { data: evolutionData, error: evolutionError } = await supabase.functions.invoke('evolution-api', {
+        body: {
+          action: 'deleteInstance',
+          instanceName: instanceToDelete.instance_name
+        }
+      });
+
+      // Mesmo se houver erro na Evolution API, continuamos para excluir do banco
+      if (evolutionError) {
+        console.error("Erro ao excluir instância na Evolution API:", evolutionError);
+      }
+
+      // Excluir do banco de dados
+      const { error } = await supabase
+        .from('whatsapp_instances')
+        .delete()
+        .eq('id', instanceId);
+
+      if (error) throw error;
+
+      // Atualizar lista local
+      setInstances(prev => prev.filter(instance => instance.id !== instanceId));
+      toast.success("Instância excluída com sucesso");
       return true;
     } catch (err) {
-      console.error('Erro ao atualizar QR Code:', err);
-      toast.error('Erro ao atualizar QR Code');
+      console.error("Erro ao excluir instância:", err);
+      toast.error("Erro ao excluir instância");
       return false;
     }
   };
 
+  // Carregar instâncias quando o usuário mudar
   useEffect(() => {
-    fetchInstances();
+    if (user) {
+      fetchInstances();
+    } else {
+      setInstances([]);
+      setIsLoading(false);
+    }
   }, [user]);
 
   return {
@@ -128,6 +198,7 @@ export const useWhatsAppInstances = () => {
     fetchInstances,
     createInstance,
     refreshQrCode,
+    deleteInstance,
     isCreating
   };
 };

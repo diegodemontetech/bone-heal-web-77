@@ -1,27 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { DragDropContext, DropResult } from "@hello-pangea/dnd";
+import { DragDropContext, DropResult, Draggable, Droppable } from "@hello-pangea/dnd";
 import { supabase } from "@/integrations/supabase/client";
-import { PipelineSelector } from "./PipelineSelector";
 import { KanbanColumn } from "./KanbanColumn";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { ContactDrawer } from "./ContactDrawer";
-import { Button } from "@/components/ui/button";
-import { Plus, Filter, RefreshCw } from "lucide-react";
-
-interface Contact {
-  id: string;
-  full_name: string;
-  stage_id: string;
-  whatsapp?: string;
-  email?: string;
-  city?: string;
-  state?: string;
-  cro?: string;
-  last_interaction: string;
-  responsible_id?: string;
-  created_at: string;
-  [key: string]: any; // Para campos adicionais
-}
 
 interface Stage {
   id: string;
@@ -31,230 +15,249 @@ interface Stage {
   order_index: number;
 }
 
-export const CRMKanban = () => {
-  const [selectedPipeline, setSelectedPipeline] = useState<string | null>(null);
+interface Contact {
+  id: string;
+  full_name: string;
+  stage_id: string;
+  cro?: string;
+  city?: string;
+  state?: string;
+  last_interaction: string;
+  responsible_id?: string;
+  [key: string]: any;
+}
+
+interface CRMKanbanProps {
+  pipelineId: string | null;
+  refreshTrigger?: number;
+}
+
+const CRMKanban = ({ pipelineId, refreshTrigger = 0 }: CRMKanbanProps) => {
   const [stages, setStages] = useState<Stage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    if (selectedPipeline) {
+    if (pipelineId) {
       fetchStages();
       fetchContacts();
+    } else {
+      fetchDefaultPipeline();
     }
-  }, [selectedPipeline]);
+  }, [pipelineId, refreshTrigger]);
 
-  const fetchStages = async () => {
-    if (!selectedPipeline) return;
-    
+  const fetchDefaultPipeline = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('crm_stages')
+      // Buscar o primeiro pipeline disponível
+      const { data: pipelines, error } = await supabase
+        .from('crm_pipelines')
         .select('*')
-        .eq('pipeline_id', selectedPipeline)
-        .order('order_index', { ascending: true });
+        .eq('is_active', true)
+        .order('order_index', { ascending: true })
+        .limit(1);
 
       if (error) throw error;
-      setStages(data || []);
+      
+      if (pipelines && pipelines.length > 0) {
+        // Usar o primeiro pipeline como padrão
+        const defaultPipeline = pipelines[0];
+        
+        // Buscar estágios deste pipeline
+        const { data: stagesData, error: stagesError } = await supabase
+          .from('crm_stages')
+          .select('*')
+          .eq('pipeline_id', defaultPipeline.id)
+          .order('order_index', { ascending: true });
+
+        if (stagesError) throw stagesError;
+        
+        setStages(stagesData || []);
+        
+        // Buscar contatos para este pipeline
+        if (stagesData && stagesData.length > 0) {
+          const stageIds = stagesData.map(stage => stage.id);
+          
+          const { data: contactsData, error: contactsError } = await supabase
+            .from('leads')
+            .select('*')
+            .in('stage_id', stageIds);
+
+          if (contactsError) throw contactsError;
+          
+          setContacts(contactsData || []);
+        }
+      }
     } catch (error) {
-      console.error('Erro ao buscar estágios:', error);
+      console.error('Erro ao buscar pipeline padrão:', error);
+      toast.error('Erro ao carregar dados do CRM');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchContacts = async () => {
-    if (!selectedPipeline) return;
+  const fetchStages = async () => {
+    if (!pipelineId) return;
     
     try {
-      // Primeiro buscamos os IDs dos estágios para este pipeline
-      const { data: stageData, error: stageError } = await supabase
-        .from('crm_stages')
-        .select('id')
-        .eq('pipeline_id', selectedPipeline);
-        
-      if (stageError) throw stageError;
-      
-      if (!stageData || stageData.length === 0) {
-        setContacts([]);
-        return;
-      }
-      
-      const stageIds = stageData.map(stage => stage.id);
-      
-      // Depois buscamos os contatos que estão nesses estágios
       const { data, error } = await supabase
-        .from('crm_contacts')
+        .from('crm_stages')
         .select('*')
-        .in('stage_id', stageIds)
-        .order('last_interaction', { ascending: false });
+        .eq('pipeline_id', pipelineId)
+        .order('order_index', { ascending: true });
 
       if (error) throw error;
-      setContacts(data || []);
+      
+      setStages(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar estágios:', error);
+      toast.error('Erro ao carregar estágios');
+    }
+  };
+
+  const fetchContacts = async () => {
+    if (!pipelineId) return;
+    
+    try {
+      // Primeiro buscar os estágios do pipeline
+      const { data: stagesData, error: stagesError } = await supabase
+        .from('crm_stages')
+        .select('id')
+        .eq('pipeline_id', pipelineId);
+
+      if (stagesError) throw stagesError;
+      
+      if (stagesData && stagesData.length > 0) {
+        const stageIds = stagesData.map(stage => stage.id);
+        
+        // Buscar contatos desses estágios
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .in('stage_id', stageIds);
+
+        if (error) throw error;
+        
+        setContacts(data || []);
+      } else {
+        setContacts([]);
+      }
     } catch (error) {
       console.error('Erro ao buscar contatos:', error);
+      toast.error('Erro ao carregar contatos');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDragEnd = async (result: DropResult) => {
-    const { draggableId, destination, source } = result;
+    const { destination, source, draggableId } = result;
 
-    // Se não houver destino ou o item for solto na mesma coluna e posição
+    // Se não houver destino ou o destino for o mesmo que a origem, não fazer nada
     if (!destination || 
         (destination.droppableId === source.droppableId && 
          destination.index === source.index)) {
       return;
     }
 
-    // Atualizar o contato com o novo estágio
-    try {
-      const { error } = await supabase
-        .from('crm_contacts')
-        .update({
-          stage_id: destination.droppableId,
-          last_interaction: new Date().toISOString()
-        })
-        .eq('id', draggableId);
+    // Atualizar localmente para feedback imediato
+    const newContacts = [...contacts];
+    const movedContact = newContacts.find(contact => contact.id === draggableId);
+    
+    if (movedContact) {
+      // Atualizar o stage_id do contato
+      movedContact.stage_id = destination.droppableId;
+      setContacts(newContacts);
+      
+      try {
+        // Registrar interação de mudança de estágio
+        const sourceStage = stages.find(stage => stage.id === source.droppableId);
+        const destStage = stages.find(stage => stage.id === destination.droppableId);
+        
+        // Atualizar no banco de dados
+        const { error } = await supabase
+          .from('leads')
+          .update({ stage_id: destination.droppableId, last_interaction: new Date().toISOString() })
+          .eq('id', draggableId);
 
-      if (error) throw error;
-      
-      // Atualizar o estado local para refletir a mudança
-      const updatedContacts = contacts.map(contact => {
-        if (contact.id === draggableId) {
-          return { ...contact, stage_id: destination.droppableId };
-        }
-        return contact;
-      });
-      
-      setContacts(updatedContacts);
-      
-      // Registrar a interação de mudança de estágio
-      await supabase
-        .from('crm_interactions')
-        .insert({
+        if (error) throw error;
+        
+        // Registrar a mudança como uma interação
+        await supabase.from('crm_interactions').insert({
           contact_id: draggableId,
           interaction_type: 'stage_change',
-          content: `Contato movido para um novo estágio`,
+          content: `Movido de "${sourceStage?.name || 'Estágio anterior'}" para "${destStage?.name || 'Novo estágio'}"`,
           interaction_date: new Date().toISOString()
         });
         
-    } catch (error) {
-      console.error('Erro ao atualizar contato:', error);
+        toast.success('Contato movido com sucesso!');
+      } catch (error) {
+        console.error('Erro ao mover contato:', error);
+        toast.error('Erro ao mover contato');
+        
+        // Reverter a mudança local em caso de erro
+        fetchContacts();
+      }
     }
+  };
+
+  const getContactsByStage = (stageId: string) => {
+    return contacts.filter(contact => contact.stage_id === stageId);
   };
 
   const handleContactClick = (contact: Contact) => {
     setSelectedContact(contact);
-    setDrawerOpen(true);
+    setIsDrawerOpen(true);
   };
 
-  const handleCreateContact = () => {
-    // Definir um contato novo com valores padrão
-    // e o primeiro estágio do pipeline
-    if (stages.length > 0) {
-      const firstStage = stages.reduce((prev, current) => 
-        prev.order_index < current.order_index ? prev : current);
-      
-      const newContact: Partial<Contact> = {
-        stage_id: firstStage.id,
-        full_name: "Novo Contato",
-      };
-      
-      setSelectedContact(newContact as Contact);
-      setDrawerOpen(true);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchContacts();
-    setIsRefreshing(false);
-  };
-
-  const handleContactUpdated = () => {
-    fetchContacts();
-    setDrawerOpen(false);
-    setSelectedContact(null);
-  };
-
-  if (loading && !selectedPipeline) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-gray-500">Carregando pipelines...</p>
+      <div className="h-[70vh] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (stages.length === 0) {
+    return (
+      <div className="h-[70vh] flex items-center justify-center bg-muted/30 rounded-lg border border-dashed">
+        <div className="text-center p-8">
+          <h3 className="text-lg font-medium mb-2">Nenhum estágio encontrado</h3>
+          <p className="text-muted-foreground mb-4">
+            Selecione um pipeline ou verifique se há estágios configurados.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <PipelineSelector 
-            selectedPipeline={selectedPipeline} 
-            onPipelineChange={setSelectedPipeline} 
-          />
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        <Button onClick={handleCreateContact}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Contato
-        </Button>
-      </div>
-      
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 min-h-[70vh]">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-gray-100 rounded-md animate-pulse h-[70vh]"></div>
+    <div className="h-full">
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex space-x-4 overflow-x-auto pb-4 min-h-[70vh]">
+          {stages.map((stage) => (
+            <KanbanColumn
+              key={stage.id}
+              id={stage.id}
+              title={stage.name}
+              color={stage.color}
+              contacts={getContactsByStage(stage.id)}
+              onContactClick={handleContactClick}
+            />
           ))}
         </div>
-      ) : (
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 min-h-[70vh]">
-            {stages.map((stage) => {
-              const stageContacts = contacts.filter(
-                contact => contact.stage_id === stage.id
-              );
-              
-              return (
-                <KanbanColumn
-                  key={stage.id}
-                  id={stage.id}
-                  title={stage.name}
-                  color={stage.color}
-                  contacts={stageContacts}
-                  onContactClick={handleContactClick}
-                />
-              );
-            })}
-          </div>
-        </DragDropContext>
-      )}
-      
+      </DragDropContext>
+
       <ContactDrawer
         contact={selectedContact}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onContactUpdated={handleContactUpdated}
+        open={isDrawerOpen}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedContact(null);
+        }}
+        onUpdate={() => fetchContacts()}
         stages={stages}
       />
     </div>
