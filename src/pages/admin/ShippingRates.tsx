@@ -1,86 +1,105 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Truck, Plus, Download } from "lucide-react";
-import { useShippingRates } from "@/hooks/admin/use-shipping-rates";
-import { ShippingRateForm } from "@/components/admin/shipping/ShippingRateForm";
-import { ShippingRatesTable } from "@/components/admin/shipping/ShippingRatesTable";
-import { ShippingRatesEmptyState } from "@/components/admin/shipping/ShippingRatesEmptyState";
+import { Truck, Plus, FileUp, FileDown } from "lucide-react";
+import Layout from "@/components/admin/Layout";
+import { useShippingRates } from "@/hooks/admin/shipping/useShippingRates";
+import { RatesTable } from "@/components/admin/shipping/RatesTable";
+import { AddRateForm } from "@/components/admin/shipping/AddRateForm";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
-const ShippingRates = () => {
-  const {
-    rates,
-    loading,
-    isDialogOpen,
-    setIsDialogOpen,
-    isEditing,
-    formData,
-    handleInputChange,
-    handleSelectChange,
-    resetForm,
-    openEditDialog,
-    handleCreateRate,
-    handleDeleteRate,
-    exportRates
-  } = useShippingRates();
+const ShippingRatesPage = () => {
+  const [activeTab, setActiveTab] = useState("rates");
+  const [isImporting, setIsImporting] = useState(false);
+  const { shippingRates, isLoading, refetch } = useShippingRates();
+
+  const handleImportStandardRates = async () => {
+    if (window.confirm("Tem certeza que deseja importar as taxas padrão? Isso substituirá todas as taxas existentes.")) {
+      setIsImporting(true);
+      try {
+        // Import standard rates from a service
+        const { error } = await fetch("/api/shipping/import-standard-rates", {
+          method: "POST",
+        }).then(res => res.json());
+
+        if (error) throw new Error(error);
+        
+        toast.success("Taxas de frete padrão importadas com sucesso!");
+        refetch();
+      } catch (error) {
+        console.error("Erro ao importar taxas:", error);
+        toast.error("Erro ao importar taxas de frete padrão");
+      } finally {
+        setIsImporting(false);
+      }
+    }
+  };
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Truck className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Taxas de Envio</h1>
-        </div>
-        
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={exportRates}>
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
+    <Layout>
+      <div className="p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Truck className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold">Taxas de Frete</h1>
+          </div>
           
-          <Button onClick={() => {
-            resetForm();
-            setIsDialogOpen(true);
-          }}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Taxa
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={handleImportStandardRates}
+              disabled={isImporting}
+            >
+              <FileUp className="mr-2 h-4 w-4" />
+              Importar Tabela Padrão
+            </Button>
+            
+            <Button onClick={() => setActiveTab("add")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Taxa
+            </Button>
+          </div>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="rates">Taxas de Frete</TabsTrigger>
+            <TabsTrigger value="add">Adicionar Nova Taxa</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="rates">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gerenciamento de Taxas de Frete</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RatesTable 
+                  shippingRates={shippingRates} 
+                  isLoading={isLoading} 
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="add">
+            <Card>
+              <CardHeader>
+                <CardTitle>Adicionar Nova Taxa de Frete</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <AddRateForm onSuccess={() => {
+                  setActiveTab("rates");
+                  refetch();
+                }} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Gerenciamento de Taxas de Envio</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : rates.length === 0 ? (
-            <ShippingRatesEmptyState onAddRate={() => setIsDialogOpen(true)} />
-          ) : (
-            <ShippingRatesTable 
-              rates={rates}
-              onEdit={openEditDialog}
-              onDelete={handleDeleteRate}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <ShippingRateForm
-        isOpen={isDialogOpen}
-        setIsOpen={setIsDialogOpen}
-        isEditing={isEditing}
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleSelectChange={handleSelectChange}
-        handleCreateRate={handleCreateRate}
-        resetForm={resetForm}
-      />
-    </div>
+    </Layout>
   );
 };
 
-export default ShippingRates;
+export default ShippingRatesPage;

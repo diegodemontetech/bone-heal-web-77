@@ -23,7 +23,6 @@ export const ShippingRateRow = ({ rate }: ShippingRateRowProps) => {
 
   const updateRateMutation = useMutation({
     mutationFn: async (updatedRate: ShippingRate) => {
-      console.log("Atualizando taxa:", updatedRate);
       const { error } = await supabase
         .from("shipping_rates")
         .update({

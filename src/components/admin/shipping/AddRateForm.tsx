@@ -16,7 +16,11 @@ import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 import { brazilianStates, regionTypes, serviceTypes } from "./types";
 
-export const AddRateForm = () => {
+interface AddRateFormProps {
+  onSuccess?: () => void;
+}
+
+export const AddRateForm = ({ onSuccess }: AddRateFormProps) => {
   const [newState, setNewState] = useState("");
   const [newServiceType, setNewServiceType] = useState("");
   const [newRegionType, setNewRegionType] = useState("Capital");
@@ -33,7 +37,6 @@ export const AddRateForm = () => {
       rate: number;
       delivery_days: number;
     }) => {
-      console.log("Adicionando taxa:", newRate);
       const { data, error } = await supabase
         .from("shipping_rates")
         .upsert([newRate], {
@@ -41,25 +44,25 @@ export const AddRateForm = () => {
           ignoreDuplicates: false
         });
 
-      if (error) {
-        console.error("Erro na mutação de adicionar taxa:", error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shipping-rates"] });
-      toast.success("Taxa de frete atualizada com sucesso!");
+      toast.success("Taxa de frete adicionada com sucesso!");
       setNewState("");
       setNewServiceType("");
       setNewRegionType("Capital");
       setNewRate("");
       setNewDeliveryDays("");
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     },
     onError: (error) => {
       console.error("Erro ao adicionar taxa:", error);
-      toast.error("Erro ao atualizar taxa de frete");
+      toast.error("Erro ao adicionar taxa de frete");
     },
   });
 
