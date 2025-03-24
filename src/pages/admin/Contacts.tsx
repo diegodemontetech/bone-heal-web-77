@@ -1,126 +1,105 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth-context";
 import { toast } from "sonner";
-import ContactList from "@/components/admin/contact/ContactList";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search } from "lucide-react";
+import ContactList from "@/components/admin/contact/ContactList";
 
-const AdminContacts = () => {
-  const { profile } = useAuth();
-  const [contacts, setContacts] = useState<any[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const Contacts = () => {
+  const navigate = useNavigate();
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const fetchContacts = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('contact_leads')
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setContacts(data);
-    } catch (error) {
-      console.error("Erro ao buscar contatos:", error);
-      toast("Erro ao carregar contatos", {
-        description: "Ocorreu um erro ao buscar os contatos"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchContacts();
-  }, []);
+  }, [activeTab]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchContacts().finally(() => {
-      setIsRefreshing(false);
-      toast("Contatos atualizados", {
-        description: "Lista de contatos atualizada com sucesso"
-      });
-    });
+  const fetchContacts = async () => {
+    try {
+      setLoading(true);
+      
+      let query = supabase
+        .from('contact_leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (activeTab === 'pending') {
+        query = query.eq('status', 'pending');
+      } else if (activeTab === 'contacted') {
+        query = query.eq('status', 'contacted');
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      setContacts(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar contatos:", error);
+      toast.error("Erro ao carregar contatos");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredContacts = contacts?.filter(contact => {
-    if (activeTab === "pending" && contact.status !== "new") {
-      return false;
-    }
-    if (activeTab === "replied" && contact.status !== "contacted") {
-      return false;
-    }
-
-    if (searchTerm.trim() !== "") {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        contact.name?.toLowerCase().includes(searchLower) ||
-        contact.email?.toLowerCase().includes(searchLower) ||
-        contact.reason?.toLowerCase().includes(searchLower) ||
-        contact.message?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return true;
+  const filteredContacts = contacts.filter(contact => {
+    if (!searchTerm.trim()) return true;
+    
+    const term = searchTerm.toLowerCase();
+    return (
+      contact.name?.toLowerCase().includes(term) ||
+      contact.email?.toLowerCase().includes(term) ||
+      contact.phone?.toLowerCase().includes(term) ||
+      contact.reason?.toLowerCase().includes(term) ||
+      contact.message?.toLowerCase().includes(term)
+    );
   });
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold">Formulários de Contato</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Atualizar
-        </Button>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-          <div className="relative flex-1">
-            <Input
-              placeholder="Pesquisar contatos..."
-              className="pl-10 pr-4 py-2"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          </div>
+        
+        <div className="relative w-full md:w-auto">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Buscar contatos..."
+            className="w-full md:w-[300px] pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="pending">Aguardando</TabsTrigger>
-            <TabsTrigger value="replied">Respondidos</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab}>
-            <ContactList
-              contacts={filteredContacts || []}
-              isLoading={isLoading}
-            />
-          </TabsContent>
-        </Tabs>
       </div>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>
+            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="all">Todos</TabsTrigger>
+                <TabsTrigger value="pending">Aguardando Resposta</TabsTrigger>
+                <TabsTrigger value="contacted">Respondidos</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ContactList 
+            contacts={filteredContacts} 
+            isLoading={loading} 
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default AdminContacts;
+export default Contacts;

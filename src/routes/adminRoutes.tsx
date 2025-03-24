@@ -1,9 +1,8 @@
 
 import { lazy, Suspense } from "react";
 import { Navigate, Outlet, RouteObject } from "react-router-dom";
-import { AdminRoute } from "./admin/adminLoader";
+import { AdminRoute, AdminLoader } from "./admin/adminLoader";
 import Layout from "@/components/admin/Layout";
-import { UserPermission } from "@/types/auth";
 import { productRoutes } from "./admin/productRoutes";
 import { orderRoutes } from "./admin/orderRoutes";
 import { userRoutes } from "./admin/userRoutes";
@@ -14,13 +13,6 @@ import { supportRoutes } from "./admin/supportRoutes";
 
 // Admin pages
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
-
-// Loader para componentes com lazy loading
-const AdminLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
 
 // Todas as rotas são wrapped com o componente AdminRoute para proteger o acesso
 export const adminRoutes: RouteObject = {
@@ -33,6 +25,10 @@ export const adminRoutes: RouteObject = {
   children: [
     {
       index: true,
+      element: <Navigate to="/admin/dashboard" replace />,
+    },
+    {
+      path: "dashboard",
       element: (
         <Suspense fallback={<AdminLoader />}>
           <Dashboard />

@@ -37,9 +37,7 @@ const AdminContactDetails = () => {
       setContact(data);
     } catch (error) {
       console.error("Erro ao buscar detalhes do contato:", error);
-      toast("Erro ao carregar contato", {
-        description: "Ocorreu um erro ao buscar os detalhes do contato"
-      });
+      toast.error("Erro ao carregar contato");
     } finally {
       setLoading(false);
     }
@@ -48,9 +46,7 @@ const AdminContactDetails = () => {
   const sendReply = async (replyMessage: string) => {
     try {
       if (!profile?.id) {
-        toast("Erro de autenticação", {
-          description: "Você precisa estar logado para enviar respostas"
-        });
+        toast.error("Você precisa estar logado para enviar respostas");
         return;
       }
 
@@ -58,27 +54,23 @@ const AdminContactDetails = () => {
         .from('contact_leads')
         .update({ 
           status: 'contacted',
-          message: replyMessage
+          reply: replyMessage
         })
         .eq("id", id);
 
       if (error) throw error;
 
-      toast("Resposta enviada", {
-        description: "A resposta foi enviada com sucesso"
-      });
+      toast.success("Resposta enviada com sucesso");
       
       // Update the contact object locally
       setContact({
         ...contact,
         status: 'contacted',
-        message: replyMessage
+        reply: replyMessage
       });
     } catch (error) {
       console.error("Erro ao enviar resposta:", error);
-      toast("Erro ao enviar resposta", {
-        description: "Ocorreu um erro ao enviar a resposta"
-      });
+      toast.error("Erro ao enviar resposta");
     }
   };
 
