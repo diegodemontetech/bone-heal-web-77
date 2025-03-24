@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Stage, Contact } from "@/types/crm";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

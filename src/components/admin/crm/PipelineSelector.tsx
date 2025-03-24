@@ -39,7 +39,8 @@ export const PipelineSelector = ({
         is_active: pipeline.is_active,
         created_at: pipeline.created_at,
         updated_at: pipeline.updated_at,
-        form_url: pipeline.form_url
+        form_url: pipeline.form_url,
+        department_id: pipeline.department_id
       }));
 
       setPipelines(mappedPipelines);

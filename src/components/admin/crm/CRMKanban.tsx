@@ -8,6 +8,7 @@ import { KanbanColumn } from "./KanbanColumn";
 import { ContactDrawer } from "./ContactDrawer";
 import { PipelineSelector } from "./PipelineSelector";
 import { Loader2, PlusCircle } from "lucide-react";
+import { DragDropContext, DropResult } from "@hello-pangea/dnd";
 
 export const CRMKanban = () => {
   const [stages, setStages] = useState<Stage[]>([]);
@@ -105,7 +106,7 @@ export const CRMKanban = () => {
     }
   };
 
-  const handleDragEnd = async (result: any) => {
+  const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
 
     const { draggableId, destination } = result;
@@ -212,16 +213,18 @@ export const CRMKanban = () => {
           Nenhum estágio encontrado neste pipeline. Cadastre estágios para começar.
         </div>
       ) : (
-        <div className="flex-1 flex space-x-4 overflow-x-auto pb-4">
-          {stages.map((stage) => (
-            <KanbanColumn
-              key={stage.id}
-              stage={stage}
-              contacts={contactsByStage(stage.id)}
-              onContactClick={handleContactClick}
-            />
-          ))}
-        </div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="flex-1 flex space-x-4 overflow-x-auto pb-4">
+            {stages.map((stage) => (
+              <KanbanColumn
+                key={stage.id}
+                stage={stage}
+                contacts={contactsByStage(stage.id)}
+                onContactClick={handleContactClick}
+              />
+            ))}
+          </div>
+        </DragDropContext>
       )}
 
       {selectedContact && (

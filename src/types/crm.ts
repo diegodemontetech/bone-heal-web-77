@@ -35,6 +35,7 @@ export interface Stage {
   order_index: number;
   created_at: string;
   updated_at: string;
+  department_id?: string | null;
 }
 
 export interface Pipeline {
