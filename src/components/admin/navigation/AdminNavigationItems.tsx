@@ -1,4 +1,3 @@
-
 import { Home, Package, ShoppingCart, Users, FileText, Settings, BarChart2, MessageSquare, MessageCircle, Zap, Truck, Tag, Beaker, BookOpen } from "lucide-react";
 import { UserPermission } from "@/types/auth";
 
@@ -72,6 +71,11 @@ export const NavigationItems = [
       {
         title: "Kanban de Leads",
         href: "/admin/leads/kanban",
+        permissions: []
+      },
+      {
+        title: "CRM",
+        href: "/admin/leads/crm",
         permissions: []
       }
     ]
