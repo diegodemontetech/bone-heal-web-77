@@ -41,13 +41,14 @@ const FlowBuilder = ({ flowId, onCreateFlow }: FlowBuilderProps) => {
     return <NoFlowSelected onCreateFlow={onCreateFlow} />;
   }
 
-  // Função handleSave que retorna uma Promise<void>
+  // Corrigimos a função handleSave para não retornar um boolean explicitamente
   const handleSave = async (): Promise<void> => {
-    return saveFlow({ 
+    await saveFlow({ 
       nodes,
       edges,
       name: flowName
     });
+    // Não retorna valor, apenas uma Promise<void>
   };
 
   const handleExecute = () => {
