@@ -32,7 +32,7 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
         
         <CardContent className="p-0">
           <TabsContent value="leads" className="mt-0">
-            <LeadsKanban pipelineId={defaultPipelineId} />
+            <LeadsKanban />
           </TabsContent>
           
           <TabsContent value="customers" className="mt-0">

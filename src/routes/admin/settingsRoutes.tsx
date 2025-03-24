@@ -7,6 +7,8 @@ const Shipping = lazy(() => import("@/pages/admin/Shipping"));
 const Security = lazy(() => import("@/pages/admin/Security"));
 const Sync = lazy(() => import("@/pages/admin/Sync"));
 const NotificationSettings = lazy(() => import("@/pages/admin/NotificationSettings"));
+const ShippingRates = lazy(() => import("@/pages/admin/ShippingRates"));
+const Payments = lazy(() => import("@/pages/admin/Payments"));
 
 const AdminLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -40,10 +42,26 @@ export const settingsRoutes: RouteObject[] = [
     ),
   },
   {
+    path: "settings/payments",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <Payments />
+      </Suspense>
+    ),
+  },
+  {
     path: "shipping",
     element: (
       <Suspense fallback={<AdminLoader />}>
         <Shipping />
+      </Suspense>
+    ),
+  },
+  {
+    path: "shipping/rates",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ShippingRates />
       </Suspense>
     ),
   },

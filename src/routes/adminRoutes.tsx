@@ -11,6 +11,8 @@ import { marketingRoutes } from "./admin/marketingRoutes";
 import { settingsRoutes } from "./admin/settingsRoutes";
 import { supportRoutes } from "./admin/supportRoutes";
 import { crmRoutes } from "./admin/crmRoutes";
+import { salesRoutes } from "./admin/salesRoutes";
+import { shippingRoutes } from "./admin/shippingRoutes";
 
 // Admin pages
 const Dashboard = lazy(() => import("@/pages/admin/Dashboard"));
@@ -38,11 +40,13 @@ export const adminRoutes: RouteObject = {
     },
     ...productRoutes,
     ...orderRoutes,
+    ...salesRoutes,
     ...userRoutes,
     ...kanbanRoutes,
     ...marketingRoutes,
     ...settingsRoutes,
     ...supportRoutes,
     ...crmRoutes,
+    ...shippingRoutes,
   ],
 };
