@@ -7,6 +7,7 @@ import { UserPermission } from "@/types/auth";
 // CRM-related pages
 const AdminLeads = lazy(() => import("@/pages/admin/Leads"));
 const LeadsKanbanPage = lazy(() => import("@/pages/admin/LeadsKanban"));
+const LeadsCRMPage = lazy(() => import("@/pages/admin/LeadsCRM"));
 
 // Loader para componentes com lazy loading
 const AdminLoader = () => (
@@ -32,6 +33,16 @@ export const crmRoutes: RouteObject[] = [
       <Suspense fallback={<AdminLoader />}>
         <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
           <LeadsKanbanPage />
+        </ProtectedRoute>
+      </Suspense>
+    )
+  },
+  {
+    path: "leads/crm",
+    element: (
+      <Suspense fallback={<AdminLoader />}>
+        <ProtectedRoute requiredPermission={UserPermission.MANAGE_CUSTOMERS}>
+          <LeadsCRMPage />
         </ProtectedRoute>
       </Suspense>
     )
