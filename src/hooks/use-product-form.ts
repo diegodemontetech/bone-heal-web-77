@@ -34,6 +34,7 @@ export const useProductForm = (
       short_description: product?.short_description || "",
       description: product?.description || "",
       video_url: product?.video_url || "",
+      on_order: product?.on_order || false,
     },
   });
 
@@ -68,6 +69,7 @@ export const useProductForm = (
         main_image: images[0] || null,
         gallery: images.slice(1),
         technical_details: technicalDetails,
+        on_order: values.on_order,
         active: true,
       };
 

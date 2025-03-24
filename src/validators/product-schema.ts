@@ -9,6 +9,7 @@ export const productFormSchema = z.object({
   short_description: z.string().optional(),
   description: z.string().optional(),
   video_url: z.string().optional(),
+  on_order: z.boolean().default(false),
 });
 
 export type ProductFormValues = z.infer<typeof productFormSchema>;

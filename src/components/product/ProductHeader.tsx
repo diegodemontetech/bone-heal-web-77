@@ -2,16 +2,12 @@
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils/formatters";
 import { Product } from "@/types/product";
-import { Switch } from "@/components/ui/switch";
-import { useState } from "react";
 
 interface ProductHeaderProps {
   product: Product;
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
-  const [isOnOrder, setIsOnOrder] = useState(false);
-
   // Function to safely format the price regardless of source
   const formatProductPrice = (price: number | string | null | undefined) => {
     // Handle various price formats that might come from Omie
@@ -44,14 +40,6 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
             Código: {product.omie_code}
           </Badge>
         )}
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Sob Encomenda:</span>
-          <Switch 
-            checked={isOnOrder} 
-            onCheckedChange={setIsOnOrder} 
-          />
-        </div>
       </div>
       
       {product.short_description && (
@@ -63,7 +51,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
           {formatProductPrice(product.price)}
         </div>
         
-        {isOnOrder ? (
+        {product.on_order ? (
           <div className="mt-2 text-sm text-orange-600 font-medium">
             Prazo de entrega: 5-7 dias úteis após confirmação do pagamento
           </div>

@@ -1,6 +1,7 @@
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 
 const ProductBasicDetails = ({ form }: { form: any }) => {
   return (
@@ -64,6 +65,25 @@ const ProductBasicDetails = ({ form }: { form: any }) => {
                   step="0.01"
                   placeholder="0.2"
                   {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <FormField
+          control={form.control}
+          name="on_order"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center gap-2 space-y-0">
+              <FormLabel>Sob Encomenda</FormLabel>
+              <FormControl>
+                <Switch 
+                  checked={field.value} 
+                  onCheckedChange={field.onChange}
                 />
               </FormControl>
               <FormMessage />

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ShoppingCart, Award, FileCheck, Factory } from "lucide-react";
+import { Check, ShoppingCart, Award, FileCheck, Factory, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
@@ -41,6 +41,49 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
     setAdded(true);
     toast.success("Produto adicionado ao carrinho!");
   };
+
+  const handleSalesContact = () => {
+    window.open(
+      `https://wa.me/5511945122884?text=${encodeURIComponent(`Olá! Estou interessado no produto ${product.name} (Sob Encomenda). Gostaria de mais informações.`)}`,
+      '_blank'
+    );
+  };
+
+  if (product.on_order) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+        <div className="mb-4">
+          <div className="bg-orange-50 border border-orange-100 rounded-md p-4 mb-4">
+            <p className="text-orange-700 font-medium">Este produto é fabricado sob encomenda</p>
+            <p className="text-sm text-orange-600 mt-1">Prazo de entrega: 5-7 dias úteis após confirmação do pagamento</p>
+          </div>
+          
+          <Button
+            className="w-full py-6 text-base bg-green-600 hover:bg-green-700 text-white font-bold"
+            size="lg"
+            onClick={handleSalesContact}
+          >
+            <Phone className="w-5 h-5 mr-2" /> Fale com nosso time Comercial
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
+          <div className="flex flex-col items-center text-center">
+            <Award className="h-5 w-5 text-gray-500 mb-1" />
+            <span className="text-xs text-gray-600">Produto Patenteado</span>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <FileCheck className="h-5 w-5 text-gray-500 mb-1" />
+            <span className="text-xs text-gray-600">Produto Anvisa</span>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <Factory className="h-5 w-5 text-gray-500 mb-1" />
+            <span className="text-xs text-gray-600">Direto da Indústria</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
