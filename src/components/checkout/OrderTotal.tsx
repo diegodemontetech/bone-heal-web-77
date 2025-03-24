@@ -23,6 +23,29 @@ interface OrderTotalProps {
   checkoutData: any;
 }
 
+// Define the type for commercial condition from database
+interface CommercialConditionFromDB {
+  id: string;
+  name: string;
+  description: string | null;
+  discount_type: string;
+  discount_value: number;
+  min_amount: number | null;
+  min_items: number | null;
+  valid_from: string | null;
+  valid_until: string | null;
+  payment_method: string | null;
+  region: string | null;
+  customer_group: string | null;
+  product_id: string | null;
+  product_category: string | null;
+  is_active: boolean | null;
+  free_shipping: boolean | null;
+  created_at: string;
+  updated_at: string;
+  is_cumulative?: boolean; // Make this optional to handle both cases
+}
+
 const OrderTotal = ({
   cartItems,
   shippingFee,
@@ -60,7 +83,7 @@ const OrderTotal = ({
         
         // Filter applicable conditions and calculate discounts
         let totalDiscount = 0;
-        const applicableConditions = conditions.filter(condition => {
+        const applicableConditions = conditions.filter((condition: CommercialConditionFromDB) => {
           // Check region condition (from zip code)
           if (condition.region && checkoutData.address.state && 
               condition.region !== checkoutData.address.state) {
@@ -91,12 +114,13 @@ const OrderTotal = ({
         let cumulativeDiscount = 0;
         let highestNonCumulativeDiscount = 0;
         
-        applicableConditions.forEach(condition => {
+        applicableConditions.forEach((condition: CommercialConditionFromDB) => {
           const discountAmount = condition.discount_type === 'percentage' 
             ? (subtotal * condition.discount_value / 100) 
             : condition.discount_value;
             
-          if (condition.is_cumulative) {
+          // Use optional chaining and nullish coalescing to safely handle is_cumulative
+          if (condition.is_cumulative ?? true) {
             cumulativeDiscount += discountAmount;
           } else if (discountAmount > highestNonCumulativeDiscount) {
             highestNonCumulativeDiscount = discountAmount;
