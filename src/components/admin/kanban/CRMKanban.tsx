@@ -14,6 +14,10 @@ import { LeadDrawer } from "./LeadDrawer";
 import { useContactsQuery } from "./hooks/useContactsQuery";
 import { usePipelineQuery } from "./hooks/usePipelineQuery";
 import { useUpdateLeadStatus } from "./hooks/useUpdateLeadStatus";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { PlusCircle } from "lucide-react";
 
 interface CRMKanbanProps {
   defaultPipelineId?: string;
@@ -55,8 +59,14 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
   };
 
   const handleStageChange = async (leadId: string, newStageId: string) => {
-    await updateLeadStatus(leadId, newStageId);
-    refetchContacts();
+    try {
+      await updateLeadStatus(leadId, newStageId);
+      refetchContacts();
+      toast.success("Contato movido com sucesso!");
+    } catch (error) {
+      console.error("Erro ao mover contato:", error);
+      toast.error("Erro ao mover contato");
+    }
   };
 
   const handleDragEnd = async (result: DropResult) => {
@@ -70,8 +80,37 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
     }
 
     // Atualizar o estágio do lead com base na coluna de destino
-    await updateLeadStatus(draggableId, destination.droppableId);
-    refetchContacts();
+    try {
+      await updateLeadStatus(draggableId, destination.droppableId);
+      refetchContacts();
+      toast.success("Contato movido com sucesso!");
+    } catch (error) {
+      console.error("Erro ao mover contato:", error);
+      toast.error("Erro ao mover contato");
+    }
+  };
+
+  // Adicionar novo contato
+  const handleAddNewContact = () => {
+    if (!selectedPipelineId || stages.length === 0) {
+      toast.error("Selecione um pipeline primeiro");
+      return;
+    }
+    
+    // Criar um contato vazio e abrir o drawer para edição
+    const firstStageId = stages[0].id;
+    const newContact = {
+      id: "",
+      pipeline_id: selectedPipelineId,
+      stage_id: firstStageId,
+      full_name: "",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      stage: stages[0]
+    };
+    
+    setSelectedLead(newContact);
+    setDrawerOpen(true);
   };
 
   // Organizar contacts por estágio
@@ -85,9 +124,9 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
       <div className="p-8">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 overflow-x-auto">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex-1 h-96 bg-gray-200 rounded"></div>
+              <div key={i} className="flex-shrink-0 w-80 h-96 bg-gray-200 rounded"></div>
             ))}
           </div>
         </div>
@@ -103,7 +142,14 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
         </h1>
         
         <div className="flex gap-4">
-          <Button variant="outline">Novo Lead</Button>
+          <Button 
+            variant="default" 
+            onClick={handleAddNewContact}
+            className="flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Novo Contato
+          </Button>
           
           <Select
             value={selectedPipelineId || ""}
@@ -140,7 +186,10 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
       <LeadDrawer 
         lead={selectedLead} 
         open={drawerOpen} 
-        onClose={() => setDrawerOpen(false)}
+        onClose={() => {
+          setDrawerOpen(false);
+          refetchContacts();
+        }}
         onStatusChange={handleStageChange}
         onLeadUpdated={refetchContacts}
         stages={stages}
@@ -150,7 +199,3 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
 };
 
 export default CRMKanban;
-
-// Import useQuery at the top
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";

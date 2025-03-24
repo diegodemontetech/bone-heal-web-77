@@ -19,6 +19,14 @@ const Layout = ({ children }: LayoutProps) => {
     document.documentElement.classList.add("light");
   }, [location.pathname]);
 
+  // Determinar se estamos em uma página que já tem layout
+  const hasNestedLayout = location.pathname.includes('/admin/crm/') && (children === undefined);
+
+  if (hasNestedLayout) {
+    // Apenas renderizar o conteúdo sem adicionar outro layout
+    return <Outlet />;
+  }
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar - Visível apenas em telas médias e maiores */}
