@@ -4,6 +4,7 @@ import AdminSettings from "@/pages/admin/Settings";
 import AdminShipping from "@/pages/admin/Shipping";
 import ShippingRates from "@/pages/admin/ShippingRates";
 import AdminVouchers from "@/pages/admin/Vouchers";
+import CommercialConditions from "@/pages/admin/CommercialConditions";
 
 export const configRoutes: RouteObject[] = [
   {
@@ -21,5 +22,9 @@ export const configRoutes: RouteObject[] = [
   {
     path: "vouchers",
     element: <AdminVouchers />,
+  },
+  {
+    path: "commercial-conditions",
+    element: <CommercialConditions />,
   }
 ];

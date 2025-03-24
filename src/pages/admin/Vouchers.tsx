@@ -5,7 +5,7 @@ import { Ticket, Plus } from "lucide-react";
 import { VoucherDialog } from "@/components/admin/vouchers/VoucherDialog";
 import { VouchersList } from "@/components/admin/vouchers/VouchersList";
 import { useVouchers } from "@/hooks/admin/use-vouchers";
-import { useCallback } from "react";
+import { FormEvent } from "react";
 
 const Vouchers = () => {
   const {
@@ -25,12 +25,9 @@ const Vouchers = () => {
     formatDate
   } = useVouchers();
 
-  const handleSubmit = useCallback(() => {
-    const form = document.getElementById('voucher-form') as HTMLFormElement;
-    if (form) {
-      form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-    }
-  }, []);
+  const handleSubmit = () => {
+    handleCreateVoucher(new Event('submit') as unknown as FormEvent<HTMLFormElement>);
+  };
 
   return (
     <div className="p-8">
