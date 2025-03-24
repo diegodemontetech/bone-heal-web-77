@@ -21,14 +21,11 @@ export const useOrderCustomers = () => {
     queryFn: async () => {
       console.log("[useOrderCustomers] Iniciando busca de clientes com termo:", customerSearchTerm);
       try {
-        // Consulta diretamente na tabela profiles, buscando dentistas OU perfis que não são admin
+        // Consulta diretamente na tabela profiles, sem filtrar por role/is_admin
         let query = supabase
           .from("profiles")
-          .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync, role, is_admin")
+          .select("id, full_name, email, phone, address, city, state, zip_code, omie_code, omie_sync")
           .neq('id', TEST_CLIENT_ID);
-        
-        // Filtrar para pegar apenas os clientes (dentistas ou não-admins)
-        query = query.or('role.eq.dentist,is_admin.eq.false'); 
         
         // Aplicar filtro apenas se houver termo de busca
         if (customerSearchTerm && customerSearchTerm.trim() !== "") {
