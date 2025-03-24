@@ -1,3 +1,4 @@
+
 import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";
 import { EmptyCart } from "@/components/cart/EmptyCart";
@@ -73,7 +74,7 @@ const Cart = () => {
     };
     
     fetchUserProfile();
-  }, [isAuthenticated, profile]);
+  }, [isAuthenticated, profile, zipCode, setZipCode]);
 
   const handleZipCodeSubmit = async (zip: string) => {
     setShippingError(null);

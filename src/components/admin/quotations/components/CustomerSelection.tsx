@@ -63,11 +63,17 @@ const CustomerSelection = ({ selectedCustomer, setSelectedCustomer }: CustomerSe
                   >
                     <p className="font-medium">{customer.full_name || "Sem nome"}</p>
                     <p className="text-sm text-muted-foreground">{customer.email || "Sem email"}</p>
+                    {customer.phone && (
+                      <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                    )}
+                    {customer.omie_code && (
+                      <p className="text-xs text-green-600">Cód. Omie: {customer.omie_code}</p>
+                    )}
                   </div>
                 ))
               ) : (
                 <div className="p-4 text-center text-muted-foreground">
-                  Nenhum cliente encontrado
+                  {customerSearchTerm ? "Nenhum cliente encontrado" : "Digite para buscar clientes"}
                 </div>
               )}
             </div>
