@@ -6,6 +6,8 @@ import PaymentOptions from "./payment/PaymentOptions";
 import DeliveryInfo from "./payment/DeliveryInfo";
 import CheckoutButton from "./payment/CheckoutButton";
 import { ShoppingBag, Truck, BadgePercent, Receipt } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrderTotalProps {
   cartItems: CartItem[];
@@ -34,16 +36,89 @@ const OrderTotal = ({
   setPaymentMethod,
   checkoutData
 }: OrderTotalProps) => {
+  const [commercialDiscounts, setCommercialDiscounts] = useState<number>(0);
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const total = subtotal + shippingFee - discount;
+  
+  // Calculate commercial conditions discounts
+  useEffect(() => {
+    const calculateDiscounts = async () => {
+      if (!checkoutData || !checkoutData.address) return;
+      
+      try {
+        // Get all active commercial conditions
+        const { data: conditions, error } = await supabase
+          .from("commercial_conditions")
+          .select("*")
+          .eq("is_active", true);
+        
+        if (error) {
+          console.error("Error fetching commercial conditions:", error);
+          return;
+        }
+        
+        if (!conditions || conditions.length === 0) return;
+        
+        // Filter applicable conditions and calculate discounts
+        let totalDiscount = 0;
+        const applicableConditions = conditions.filter(condition => {
+          // Check region condition (from zip code)
+          if (condition.region && checkoutData.address.state && 
+              condition.region !== checkoutData.address.state) {
+            return false;
+          }
+          
+          // Check payment method condition
+          if (condition.payment_method && condition.payment_method !== paymentMethod) {
+            return false;
+          }
+          
+          // Check minimum amount
+          if (condition.min_amount && subtotal < condition.min_amount) {
+            return false;
+          }
+          
+          // Check minimum items
+          if (condition.min_items && cartItems.reduce((total, item) => total + item.quantity, 0) < condition.min_items) {
+            return false;
+          }
+          
+          // Add more conditions as needed
+          
+          return true;
+        });
+        
+        // Calculate total discount
+        let cumulativeDiscount = 0;
+        let highestNonCumulativeDiscount = 0;
+        
+        applicableConditions.forEach(condition => {
+          const discountAmount = condition.discount_type === 'percentage' 
+            ? (subtotal * condition.discount_value / 100) 
+            : condition.discount_value;
+            
+          if (condition.is_cumulative) {
+            cumulativeDiscount += discountAmount;
+          } else if (discountAmount > highestNonCumulativeDiscount) {
+            highestNonCumulativeDiscount = discountAmount;
+          }
+        });
+        
+        totalDiscount = cumulativeDiscount + highestNonCumulativeDiscount;
+        setCommercialDiscounts(totalDiscount);
+        
+      } catch (error) {
+        console.error("Error calculating commercial discounts:", error);
+      }
+    };
+    
+    calculateDiscounts();
+  }, [cartItems, checkoutData, paymentMethod, subtotal]);
+  
+  const total = subtotal + shippingFee - discount - commercialDiscounts;
 
   const getFinalAmount = (method: string) => {
-    switch (method) {
-      case 'pix':
-        return total - (total * 0.05); // 5% de desconto no PIX
-      default:
-        return total;
-    }
+    // We already accounted for all discounts, including payment method ones
+    return total;
   };
 
   return (
@@ -67,7 +142,7 @@ const OrderTotal = ({
               items={cartItems}
               subtotal={subtotal}
               shippingFee={shippingFee}
-              discount={discount}
+              discount={discount + commercialDiscounts}
               total={getFinalAmount(paymentMethod)}
             />
 

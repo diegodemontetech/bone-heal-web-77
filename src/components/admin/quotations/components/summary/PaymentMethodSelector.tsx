@@ -41,7 +41,11 @@ const PaymentMethodSelector = ({ paymentMethod, setPaymentMethod }: PaymentMetho
       const newDiscounts = { ...discounts };
       data?.forEach(condition => {
         if (condition.payment_method && condition.discount_value) {
-          newDiscounts[condition.payment_method] = Number(condition.discount_value);
+          // Se já existe um desconto para este método, verificar se o novo desconto é maior
+          if (!newDiscounts[condition.payment_method] || 
+              condition.discount_value > newDiscounts[condition.payment_method]) {
+            newDiscounts[condition.payment_method] = Number(condition.discount_value);
+          }
         }
       });
       

@@ -49,7 +49,7 @@ export const useCommercialConditionForm = ({ onSuccess, existingCondition }: Use
         product_id: existingCondition.product_id || "",
         product_category: existingCondition.product_category || "",
         free_shipping: existingCondition.free_shipping || false,
-        is_cumulative: existingCondition.is_cumulative || true
+        is_cumulative: existingCondition.is_cumulative !== undefined ? existingCondition.is_cumulative : true
       });
     }
   }, [existingCondition]);
