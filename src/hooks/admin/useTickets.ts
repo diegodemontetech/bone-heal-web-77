@@ -1,5 +1,5 @@
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth-context";
@@ -35,7 +35,7 @@ export const useTickets = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [queryClient, toast]);
+  }, [queryClient]);
 
   // Buscar tickets com filtros - sem restrição por usuário para administradores
   const { data: tickets, isLoading, refetch } = useQuery({
@@ -126,7 +126,7 @@ export const useTickets = () => {
         });
       }
     }
-  }, [tickets, toast]);
+  }, [tickets]);
 
   // Buscar agentes (usuários administradores)
   const { data: agents } = useQuery({
