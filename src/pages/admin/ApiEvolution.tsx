@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MessageSquare, Smartphone, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { EvolutionApiTab } from "@/components/admin/whatsapp/settings/EvolutionApiTab";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,48 +16,91 @@ const ApiEvolution = () => {
 
   const loadSettings = async () => {
     try {
+      // We'll use the app_settings table with a type filter, which is more likely to exist
       const { data, error } = await supabase
-        .from('whatsapp_settings')
+        .from('commercial_conditions')
         .select('*')
-        .eq('type', 'evolution')
-        .single();
+        .eq('name', 'whatsapp_evolution_settings')
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading settings:", error);
+        return;
+      }
       
       if (data) {
-        setEvolutionUrl(data.base_url || "");
-        setEvolutionKey(data.api_key || "");
-        setInstanceName(data.instance_name || "default");
+        // If we have settings, parse them from the description field
+        try {
+          const settings = data.description ? JSON.parse(data.description) : {};
+          setEvolutionUrl(settings.base_url || "");
+          setEvolutionKey(settings.api_key || "");
+          setInstanceName(settings.instance_name || "default");
+        } catch (e) {
+          console.error("Error parsing settings:", e);
+        }
       }
     } catch (error) {
-      console.error("Erro ao carregar configurações:", error);
+      console.error("Error loading configuration:", error);
     }
   };
 
-  // Carregar configurações quando o componente for montado
-  useState(() => {
+  // Load settings when the component is mounted
+  useEffect(() => {
     loadSettings();
-  });
+  }, []);
 
   const handleSaveSettings = async () => {
     try {
       setSaving(true);
       
-      const { error } = await supabase
-        .from('whatsapp_settings')
-        .upsert({
-          type: 'evolution',
-          base_url: evolutionUrl,
-          api_key: evolutionKey,
-          instance_name: instanceName,
-          updated_at: new Date().toISOString()
-        });
+      // Prepare settings object to store in description field
+      const settings = {
+        base_url: evolutionUrl,
+        api_key: evolutionKey,
+        instance_name: instanceName,
+      };
+      
+      // Check if settings already exist
+      const { data: existingData } = await supabase
+        .from('commercial_conditions')
+        .select('id')
+        .eq('name', 'whatsapp_evolution_settings')
+        .maybeSingle();
+      
+      let error;
+      
+      if (existingData) {
+        // Update existing settings
+        const { error: updateError } = await supabase
+          .from('commercial_conditions')
+          .update({
+            description: JSON.stringify(settings),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingData.id);
+          
+        error = updateError;
+      } else {
+        // Create new settings
+        const { error: insertError } = await supabase
+          .from('commercial_conditions')
+          .insert({
+            name: 'whatsapp_evolution_settings',
+            description: JSON.stringify(settings),
+            discount_type: 'percentage', // Required field
+            discount_value: 0, // Required field
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+          
+        error = insertError;
+      }
 
       if (error) throw error;
       
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
-      console.error("Erro ao salvar configurações:", error);
+      console.error("Error saving settings:", error);
       toast.error("Erro ao salvar configurações");
     } finally {
       setSaving(false);
@@ -78,13 +121,13 @@ const ApiEvolution = () => {
       if (error) throw error;
       
       if (data?.qrcode) {
-        // Aqui você pode implementar a lógica para exibir o QR code
+        // Handle QR code display
         toast.success("Instância criada! Escaneie o QR code para conectar.");
       } else {
         toast.info("Instância criada, mas não foi possível gerar o QR code.");
       }
     } catch (error) {
-      console.error("Erro ao criar instância:", error);
+      console.error("Error creating instance:", error);
       toast.error("Erro ao criar instância");
     } finally {
       setQrCodeLoading(false);
@@ -110,7 +153,7 @@ const ApiEvolution = () => {
         toast.warning("WhatsApp não está conectado.");
       }
     } catch (error) {
-      console.error("Erro ao verificar status:", error);
+      console.error("Error checking status:", error);
       toast.error("Erro ao verificar status da conexão");
     }
   };
