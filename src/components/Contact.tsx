@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Mail, Phone, MapPin, MessageSquare, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -33,6 +34,11 @@ L.Icon.Default.mergeOptions({
 const Contact = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [department, setDepartment] = useState('');
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatPhone = (value: string) => {
     const numbers = value.replace(/\D/g, '');
@@ -48,16 +54,79 @@ const Contact = () => {
 
   const position: L.LatLngExpression = [-23.5505, -46.6333]; // São Paulo coordinates
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Mensagem enviada com sucesso!");
-    setIsSubmitted(true);
+    
+    if (!name || !phone || !department) {
+      toast.error("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      // Save to contact_leads table for admin management
+      const { error } = await supabase.from('contact_leads').insert({
+        name,
+        phone,
+        reason: department,
+        source: 'contact_form',
+        status: 'new',
+        message: message,
+        email: email || null
+      });
+      
+      if (error) {
+        console.error('Error submitting contact form:', error);
+        throw error;
+      }
+      
+      // Also create a CRM contact in the Hunting pipeline
+      try {
+        // Get the first stage ID of the Hunting pipeline
+        const { data: stageData } = await supabase
+          .from('crm_stages')
+          .select('id')
+          .eq('pipeline_id', 'a1f15c3f-5c88-4a9a-b867-6107e160f045') // Hunting Ativo pipeline ID
+          .order('order_index', { ascending: true })
+          .limit(1);
+        
+        if (stageData && stageData.length > 0) {
+          const stageId = stageData[0].id;
+          
+          // Create CRM contact
+          await supabase.from('crm_contacts').insert({
+            full_name: name,
+            whatsapp: phone,
+            email: email || null,
+            pipeline_id: 'a1f15c3f-5c88-4a9a-b867-6107e160f045', // Hunting Ativo pipeline ID
+            stage_id: stageId,
+            observations: `Contato via formulário do site. Departamento: ${department}. Mensagem: ${message}`,
+            client_type: 'Lead'
+          });
+        }
+      } catch (crmError) {
+        // Log CRM creation error but don't fail the submission
+        console.error('Error creating CRM contact:', crmError);
+      }
+      
+      toast.success("Mensagem enviada com sucesso!");
+      setIsSubmitted(true);
+      
+    } catch (error) {
+      toast.error("Erro ao enviar mensagem. Por favor, tente novamente.");
+      console.error('Contact form submission error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const departments = [
     { id: 1, department: 'Comercial' },
     { id: 2, department: 'Logística' },
     { id: 3, department: 'Administrativo' },
+    { id: 4, department: 'Suporte Técnico' },
+    { id: 5, department: 'Consultoria' },
   ];
 
   return (
@@ -181,8 +250,12 @@ const Contact = () => {
           ) : (
             <form onSubmit={handleSubmit} className="bg-white rounded-xl p-8 shadow-lg space-y-6">
               <div>
-                <label className="block text-sm font-medium mb-2">Departamento</label>
-                <Select>
+                <label className="block text-sm font-medium mb-2">Departamento<span className="text-red-500">*</span></label>
+                <Select 
+                  value={department} 
+                  onValueChange={setDepartment}
+                  required
+                >
                   <SelectTrigger className="w-full bg-white">
                     <SelectValue placeholder="Selecione um departamento" />
                   </SelectTrigger>
@@ -197,11 +270,13 @@ const Contact = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Nome</label>
+                <label className="block text-sm font-medium mb-2">Nome<span className="text-red-500">*</span></label>
                 <Input
                   type="text"
                   className="w-full"
                   placeholder="Seu nome"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   required
                 />
               </div>
@@ -212,12 +287,13 @@ const Contact = () => {
                   type="email"
                   className="w-full"
                   placeholder="seu@email.com"
-                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Telefone</label>
+                <label className="block text-sm font-medium mb-2">Telefone<span className="text-red-500">*</span></label>
                 <Input
                   type="tel"
                   className="w-full"
@@ -233,15 +309,17 @@ const Contact = () => {
                 <textarea
                   className="w-full h-40 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
                   placeholder="Sua mensagem"
-                  required
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                 />
               </div>
               
               <button
                 type="submit"
                 className="w-full px-6 py-3 bg-primary hover:bg-primary-light transition-colors duration-200 rounded-lg text-white font-semibold"
+                disabled={isSubmitting}
               >
-                Enviar Mensagem
+                {isSubmitting ? 'Enviando...' : 'Enviar Mensagem'}
               </button>
             </form>
           )}
