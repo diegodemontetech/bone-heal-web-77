@@ -30,7 +30,7 @@ export const PipelineSelector = ({
 
       if (error) throw error;
 
-      // Mapear para o formato Pipeline e aplicar cor padrão se não tiver
+      // Map to Pipeline type and apply default color if needed
       const mappedPipelines: Pipeline[] = data.map(pipeline => ({
         id: pipeline.id,
         name: pipeline.name,
@@ -40,12 +40,11 @@ export const PipelineSelector = ({
         created_at: pipeline.created_at,
         updated_at: pipeline.updated_at,
         form_url: pipeline.form_url,
-        department_id: pipeline.department_id
       }));
 
       setPipelines(mappedPipelines);
 
-      // Se não houver pipeline selecionado e tiver pipelines disponíveis, seleciona o primeiro
+      // If no pipeline is selected and pipelines are available, select the first one
       if (!selectedPipeline && mappedPipelines.length > 0) {
         onPipelineChange(mappedPipelines[0].id);
       }

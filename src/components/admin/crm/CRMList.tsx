@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Contact } from "@/types/crm";
+import { Contact, Stage } from "@/types/crm";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -30,19 +30,18 @@ export const CRMList = ({ pipelineId, onContactClick }: CRMListProps) => {
       
       const { data, error } = await supabase
         .from("crm_contacts")
-        .select("*, stage:stage_id(name, color)")
+        .select("*, stage:stage_id(id, name, color, pipeline_id, order_index, created_at, updated_at)")
         .eq("pipeline_id", pipelineId);
 
       if (error) throw error;
 
-      // Map to Contact type
+      // Map to Contact type with complete Stage type
       const mappedContacts: Contact[] = data.map(contact => ({
         id: contact.id,
         full_name: contact.full_name,
         stage_id: contact.stage_id,
         pipeline_id: contact.pipeline_id,
         email: contact.email,
-        phone: contact.phone,
         whatsapp: contact.whatsapp,
         cro: contact.cro,
         cpf_cnpj: contact.cpf_cnpj,
@@ -59,7 +58,7 @@ export const CRMList = ({ pipelineId, onContactClick }: CRMListProps) => {
         created_at: contact.created_at,
         updated_at: contact.updated_at,
         last_interaction: contact.last_interaction,
-        stage: contact.stage
+        stage: contact.stage as Stage
       }));
 
       setContacts(mappedContacts);

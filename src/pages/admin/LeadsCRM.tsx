@@ -10,6 +10,7 @@ import { Filter, Plus } from 'lucide-react';
 import { ContactDrawer } from '@/components/admin/crm/ContactDrawer';
 import { Contact, Stage } from '@/types/crm';
 import { PipelineSelector } from '@/components/admin/crm/PipelineSelector';
+import { supabase } from '@/integrations/supabase/client';
 
 const LeadsCRM = () => {
   const [activeTab, setActiveTab] = useState("kanban");
