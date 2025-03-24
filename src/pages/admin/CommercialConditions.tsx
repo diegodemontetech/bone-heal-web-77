@@ -1,35 +1,27 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Tag } from "lucide-react";
 import { useCommercialConditions } from "@/hooks/admin/use-commercial-conditions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { useCommercialConditionForm } from "@/components/admin/commercial-conditions/hooks/useCommercialConditionForm";
+import { toast } from "sonner";
 
 const CommercialConditions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCondition, setEditingCondition] = useState<any>(null);
-  const { conditions, loading, error, fetchConditions } = useCommercialConditions();
+  const { conditions, loading, error } = useCommercialConditions();
   
-  const { formData, handleSubmit, updateField, loading: submitting } = useCommercialConditionForm({
-    onSuccess: () => {
-      setIsDialogOpen(false);
-      setEditingCondition(null);
-      fetchConditions();
-    },
-    existingCondition: editingCondition
-  });
-
   const openCreateDialog = () => {
     setEditingCondition(null);
     setIsDialogOpen(true);
+    toast.info("Funcionalidade em desenvolvimento");
   };
 
   const openEditDialog = (condition: any) => {
     setEditingCondition(condition);
     setIsDialogOpen(true);
+    toast.info("Funcionalidade em desenvolvimento");
   };
 
   const formatDiscountType = (type: string) => {
@@ -78,6 +70,10 @@ const CommercialConditions = () => {
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-500">
+              <p>Erro ao carregar condições comerciais. Por favor, tente novamente.</p>
             </div>
           ) : conditions.length === 0 ? (
             <div className="text-center py-8">
@@ -132,7 +128,7 @@ const CommercialConditions = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-muted-foreground">
-              Esta funcionalidade está em desenvolvimento. Por favor, use o componente completo na próxima versão.
+              Esta funcionalidade está em desenvolvimento. Por favor, utilize o componente completo na próxima versão.
             </p>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>

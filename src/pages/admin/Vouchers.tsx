@@ -25,8 +25,10 @@ const Vouchers = () => {
     formatDate
   } = useVouchers();
 
-  const handleSubmit = () => {
-    handleCreateVoucher(new Event('submit') as unknown as FormEvent<HTMLFormElement>);
+  // Fix the handleSubmit function to properly invoke the voucher creation
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleCreateVoucher(e);
   };
 
   return (

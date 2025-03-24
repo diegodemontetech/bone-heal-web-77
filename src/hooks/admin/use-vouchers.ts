@@ -33,37 +33,9 @@ export const useVouchers = () => {
     
     try {
       if (isEditing && currentVoucher) {
-        // Converter as datas para string se necessário
-        const updatedData = {
-          ...formData,
-          valid_from: typeof formData.valid_from === 'string' 
-            ? formData.valid_from 
-            : formData.valid_from instanceof Date 
-              ? formData.valid_from.toISOString() 
-              : new Date().toISOString(),
-          valid_until: typeof formData.valid_until === 'string' 
-            ? formData.valid_until 
-            : formData.valid_until instanceof Date 
-              ? formData.valid_until.toISOString() 
-              : new Date().toISOString()
-        };
-        await updateVoucher(currentVoucher.id, updatedData);
+        await updateVoucher(currentVoucher.id, formData);
       } else {
-        // Converter as datas para string se necessário
-        const newData = {
-          ...formData,
-          valid_from: typeof formData.valid_from === 'string' 
-            ? formData.valid_from 
-            : formData.valid_from instanceof Date 
-              ? formData.valid_from.toISOString() 
-              : new Date().toISOString(),
-          valid_until: typeof formData.valid_until === 'string' 
-            ? formData.valid_until 
-            : formData.valid_until instanceof Date 
-              ? formData.valid_until.toISOString() 
-              : new Date().toISOString()
-        };
-        await createVoucher(newData);
+        await createVoucher(formData);
       }
       
       setIsDialogOpen(false);
