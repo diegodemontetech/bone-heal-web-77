@@ -2,25 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-export interface CommercialCondition {
-  id: string;
-  name: string;
-  description?: string;
-  discount_type: string;
-  discount_value: number;
-  min_purchase_value?: number;
-  min_purchase_quantity?: number;
-  valid_from?: string;
-  valid_until?: string;
-  payment_method?: string;
-  region?: string;
-  target_customer_group?: string;
-  free_shipping: boolean;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { CommercialCondition } from "@/types/commercial-conditions";
 
 export const useCommercialConditions = () => {
   const [conditions, setConditions] = useState<CommercialCondition[]>([]);
@@ -41,15 +23,7 @@ export const useCommercialConditions = () => {
 
       if (error) throw error;
       
-      // Mapear os dados do banco para o formato correto de CommercialCondition
-      const mappedConditions = data.map(item => ({
-        ...item,
-        min_purchase_value: item.min_amount,
-        min_purchase_quantity: item.min_items,
-        target_customer_group: item.customer_group,
-      })) as CommercialCondition[];
-      
-      setConditions(mappedConditions);
+      setConditions(data as CommercialCondition[]);
     } catch (err) {
       console.error("Erro ao buscar condições comerciais:", err);
       setError(err instanceof Error ? err : new Error(String(err)));
@@ -59,13 +33,46 @@ export const useCommercialConditions = () => {
     }
   };
 
-  // Outros métodos CRUD aqui...
+  const deleteCondition = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('commercial_conditions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success("Condição comercial excluída com sucesso!");
+      await fetchConditions();
+    } catch (error: any) {
+      console.error("Erro ao excluir condição comercial:", error);
+      toast.error("Erro ao excluir condição comercial");
+    }
+  };
+  
+  const toggleConditionStatus = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('commercial_conditions')
+        .update({ is_active: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success(`Condição ${!currentStatus ? 'ativada' : 'desativada'} com sucesso!`);
+      await fetchConditions();
+    } catch (error: any) {
+      console.error("Erro ao alterar status da condição:", error);
+      toast.error("Erro ao alterar status da condição");
+    }
+  };
 
   return {
     conditions,
     loading,
     error,
     fetchConditions,
-    // outros métodos...
+    deleteCondition,
+    toggleConditionStatus
   };
 };

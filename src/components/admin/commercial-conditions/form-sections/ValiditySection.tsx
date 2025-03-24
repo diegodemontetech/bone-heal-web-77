@@ -1,63 +1,44 @@
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface ValiditySectionProps {
-  validUntil: string;
-  paymentMethod: string | null;
+  validFrom: string | null;
+  validUntil: string | null;
+  onValidFromChange: (value: string) => void;
   onValidUntilChange: (value: string) => void;
-  onPaymentMethodChange: (value: string) => void;
 }
 
 const ValiditySection = ({
+  validFrom,
   validUntil,
-  paymentMethod,
-  onValidUntilChange,
-  onPaymentMethodChange
+  onValidFromChange,
+  onValidUntilChange
 }: ValiditySectionProps) => {
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-medium">Validade e Forma de Pagamento</h3>
+      <h3 className="text-base font-medium">Período de Validade</h3>
       
-      <div className="space-y-2">
-        <Label htmlFor="valid_until">Válido até</Label>
-        <Input
-          id="valid_until"
-          type="datetime-local"
-          value={validUntil}
-          onChange={(e) => onValidUntilChange(e.target.value)}
-        />
-        <p className="text-sm text-muted-foreground">
-          Deixe em branco para validade permanente
-        </p>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="payment_method">Método de Pagamento</Label>
-        <Select
-          value={paymentMethod || ""}
-          onValueChange={onPaymentMethodChange}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Qualquer método de pagamento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Qualquer método</SelectItem>
-            <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-            <SelectItem value="boleto">Boleto</SelectItem>
-            <SelectItem value="pix">PIX</SelectItem>
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground">
-          Condicionar desconto a método de pagamento específico
-        </p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="valid_from">Válido a partir de</Label>
+          <Input
+            id="valid_from"
+            type="date"
+            value={validFrom || ""}
+            onChange={(e) => onValidFromChange(e.target.value)}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="valid_until">Válido até</Label>
+          <Input
+            id="valid_until"
+            type="date"
+            value={validUntil || ""}
+            onChange={(e) => onValidUntilChange(e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );

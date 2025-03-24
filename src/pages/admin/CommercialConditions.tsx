@@ -1,51 +1,35 @@
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Tag } from "lucide-react";
 import { useCommercialConditions } from "@/hooks/admin/use-commercial-conditions";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import CommercialConditionDialog from "@/components/admin/commercial-conditions/CommercialConditionDialog";
+import CommercialConditionsList from "@/components/admin/commercial-conditions/CommercialConditionsList";
 
 const CommercialConditions = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCondition, setEditingCondition] = useState<any>(null);
-  const { conditions, loading, error } = useCommercialConditions();
+  const { conditions, loading, error, fetchConditions } = useCommercialConditions();
   
   const openCreateDialog = () => {
     setEditingCondition(null);
     setIsDialogOpen(true);
-    toast.info("Funcionalidade em desenvolvimento");
   };
 
   const openEditDialog = (condition: any) => {
     setEditingCondition(condition);
     setIsDialogOpen(true);
-    toast.info("Funcionalidade em desenvolvimento");
   };
 
-  const formatDiscountType = (type: string) => {
-    switch (type) {
-      case 'percentage':
-        return 'Percentual';
-      case 'fixed':
-        return 'Valor Fixo';
-      case 'shipping':
-        return 'Frete Grátis';
-      default:
-        return type;
-    }
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setEditingCondition(null);
   };
 
-  const formatDiscount = (condition: any) => {
-    if (condition.discount_type === 'percentage') {
-      return `${condition.discount_value}%`;
-    } else if (condition.discount_type === 'fixed') {
-      return `R$ ${condition.discount_value.toFixed(2)}`;
-    } else if (condition.discount_type === 'shipping' || condition.free_shipping) {
-      return 'Frete Grátis';
-    }
-    return `${condition.discount_value}`;
+  const handleSuccess = () => {
+    fetchConditions();
+    handleDialogClose();
   };
 
   return (
@@ -84,63 +68,23 @@ const CommercialConditions = () => {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-2 text-left">Nome</th>
-                    <th className="px-4 py-2 text-left">Tipo</th>
-                    <th className="px-4 py-2 text-left">Desconto</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {conditions.map((condition) => (
-                    <tr key={condition.id} className="border-b hover:bg-slate-50">
-                      <td className="px-4 py-3">{condition.name}</td>
-                      <td className="px-4 py-3">{formatDiscountType(condition.discount_type)}</td>
-                      <td className="px-4 py-3">{formatDiscount(condition)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs ${condition.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                          {condition.is_active ? 'Ativo' : 'Inativo'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(condition)}>
-                          Editar
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <CommercialConditionsList 
+              conditions={conditions} 
+              isLoading={loading} 
+              onDelete={fetchConditions}
+              onToggle={fetchConditions}
+              onEdit={openEditDialog}
+            />
           )}
         </CardContent>
       </Card>
 
-      {/* Dialog for creating/editing condition */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingCondition ? 'Editar Condição Comercial' : 'Nova Condição Comercial'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-muted-foreground">
-              Esta funcionalidade está em desenvolvimento. Por favor, utilize o componente completo na próxima versão.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" onClick={() => setIsDialogOpen(false)}>
-                {editingCondition ? 'Atualizar' : 'Criar'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CommercialConditionDialog
+        open={isDialogOpen}
+        onSuccess={handleSuccess}
+        onCancel={handleDialogClose}
+        condition={editingCondition}
+      />
     </div>
   );
 };

@@ -1,7 +1,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { useCommercialConditionForm } from "./hooks/useCommercialConditionForm";
+import { useCommercialConditionForm } from "@/hooks/admin/commercial-conditions/useCommercialConditionForm";
+import { CommercialCondition } from "@/types/commercial-conditions";
 
 // Importando as seções do formulário
 import BasicInfoSection from "./form-sections/BasicInfoSection";
@@ -10,22 +11,7 @@ import ValiditySection from "./form-sections/ValiditySection";
 import PurchaseConditionsSection from "./form-sections/PurchaseConditionsSection";
 import TargetingSection from "./form-sections/TargetingSection";
 import OptionsSection from "./form-sections/OptionsSection";
-
-interface CommercialCondition {
-  id: string;
-  name: string;
-  description: string;
-  discount_type: string;
-  discount_value: number;
-  is_active: boolean;
-  payment_method: string | null;
-  min_amount: number | null;
-  min_items: number | null;
-  valid_until: string | null;
-  region: string | null;
-  customer_group: string | null;
-  free_shipping: boolean;
-}
+import ProductTargetingSection from "./form-sections/ProductTargetingSection";
 
 interface CommercialConditionFormProps {
   onSuccess: () => void;
@@ -55,17 +41,19 @@ const CommercialConditionForm = ({ onSuccess, existingCondition }: CommercialCon
       />
 
       <ValiditySection
+        validFrom={formData.valid_from}
         validUntil={formData.valid_until}
-        paymentMethod={formData.payment_method}
+        onValidFromChange={(value) => updateField('valid_from', value)}
         onValidUntilChange={(value) => updateField('valid_until', value)}
-        onPaymentMethodChange={(value) => updateField('payment_method', value)}
       />
 
       <PurchaseConditionsSection
         minAmount={formData.min_amount}
         minItems={formData.min_items}
+        paymentMethod={formData.payment_method}
         onMinAmountChange={(value) => updateField('min_amount', value)}
         onMinItemsChange={(value) => updateField('min_items', value)}
+        onPaymentMethodChange={(value) => updateField('payment_method', value)}
       />
 
       <TargetingSection
@@ -75,11 +63,20 @@ const CommercialConditionForm = ({ onSuccess, existingCondition }: CommercialCon
         onCustomerGroupChange={(value) => updateField('customer_group', value)}
       />
 
+      <ProductTargetingSection
+        productId={formData.product_id}
+        productCategory={formData.product_category}
+        onProductIdChange={(value) => updateField('product_id', value)}
+        onProductCategoryChange={(value) => updateField('product_category', value)}
+      />
+
       <OptionsSection
         freeShipping={formData.free_shipping}
         isActive={formData.is_active}
+        isCumulative={formData.is_cumulative}
         onFreeShippingChange={(checked) => updateField('free_shipping', checked)}
         onIsActiveChange={(checked) => updateField('is_active', checked)}
+        onIsCumulativeChange={(checked) => updateField('is_cumulative', checked)}
       />
 
       <Button type="submit" className="w-full" disabled={loading}>

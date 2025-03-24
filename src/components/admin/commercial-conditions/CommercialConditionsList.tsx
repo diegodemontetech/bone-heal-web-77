@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Loader2, Trash2, Copy, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, Trash2, Edit, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -15,40 +15,24 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
-import CommercialConditionDialog from "./CommercialConditionDialog";
-
-interface CommercialCondition {
-  id: string;
-  name: string;
-  description: string;
-  discount_type: string;
-  discount_value: number;
-  is_active: boolean;
-  payment_method: string | null;
-  min_amount: number | null;
-  min_items: number | null;
-  valid_until: string | null;
-  region: string | null;
-  customer_group: string | null;
-  free_shipping: boolean;
-}
+import { CommercialCondition } from "@/types/commercial-conditions";
 
 interface CommercialConditionsListProps {
   conditions: CommercialCondition[] | null;
   isLoading: boolean;
   onDelete: () => void;
   onToggle: () => void;
+  onEdit: (condition: CommercialCondition) => void;
 }
 
 const CommercialConditionsList = ({ 
   conditions, 
   isLoading, 
   onDelete,
-  onToggle
+  onToggle,
+  onEdit
 }: CommercialConditionsListProps) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingCondition, setEditingCondition] = useState<CommercialCondition | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   const handleDelete = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir esta condição comercial?")) {
@@ -87,11 +71,6 @@ const CommercialConditionsList = ({
       console.error("Erro ao alterar status da condição:", error);
       toast.error("Erro ao alterar status da condição");
     }
-  };
-  
-  const handleEdit = (condition: CommercialCondition) => {
-    setEditingCondition(condition);
-    setIsDialogOpen(true);
   };
   
   const formatDiscountValue = (type: string, value: number) => {
@@ -137,156 +116,153 @@ const CommercialConditionsList = ({
     const methods: Record<string, string> = {
       'credit_card': 'Cartão de Crédito',
       'boleto': 'Boleto',
-      'pix': 'PIX'
+      'pix': 'PIX',
+      'bank_transfer': 'Transferência Bancária'
     };
     
     return methods[method] || method;
   };
 
   return (
-    <>
-      <Table>
-        <TableHeader>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Status</TableHead>
+          <TableHead>Nome</TableHead>
+          <TableHead>Desconto</TableHead>
+          <TableHead>Condições</TableHead>
+          <TableHead>Segmentação</TableHead>
+          <TableHead>Acumulável</TableHead>
+          <TableHead>Ações</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {isLoading ? (
           <TableRow>
-            <TableHead>Status</TableHead>
-            <TableHead>Nome</TableHead>
-            <TableHead>Desconto</TableHead>
-            <TableHead>Condições</TableHead>
-            <TableHead>Segmentação</TableHead>
-            <TableHead>Ações</TableHead>
+            <TableCell colSpan={7} className="text-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-              </TableCell>
-            </TableRow>
-          ) : conditions?.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                Nenhuma condição comercial encontrada
-              </TableCell>
-            </TableRow>
-          ) : (
-            conditions?.map((condition) => (
-              <TableRow key={condition.id}>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Switch
-                      checked={condition.is_active}
-                      onCheckedChange={() => handleToggleActive(condition.id, condition.is_active)}
-                      className="mr-2"
-                    />
-                    {condition.is_active ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-gray-400" />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">
-                  <div>
-                    {condition.name}
-                    {condition.description && (
-                      <p className="text-xs text-gray-500 truncate max-w-[200px]">
-                        {condition.description}
-                      </p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={
-                    condition.discount_type === 'percentage' ? 'outline' : 
-                    condition.discount_type === 'fixed' ? 'secondary' : 
-                    'default'
-                  }>
-                    {formatDiscountValue(condition.discount_type, condition.discount_value)}
-                  </Badge>
-                  {condition.free_shipping && (
-                    <Badge variant="outline" className="ml-2 bg-blue-50">
-                      Frete Grátis
-                    </Badge>
+        ) : conditions?.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+              Nenhuma condição comercial encontrada
+            </TableCell>
+          </TableRow>
+        ) : (
+          conditions?.map((condition) => (
+            <TableRow key={condition.id}>
+              <TableCell>
+                <div className="flex items-center">
+                  <Switch
+                    checked={condition.is_active}
+                    onCheckedChange={() => handleToggleActive(condition.id, condition.is_active)}
+                    className="mr-2"
+                  />
+                  {condition.is_active ? (
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-gray-400" />
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1 text-sm">
-                    {condition.payment_method && (
-                      <div>Pagamento: {formatPaymentMethod(condition.payment_method)}</div>
+                </div>
+              </TableCell>
+              <TableCell className="font-medium">
+                <div>
+                  {condition.name}
+                  {condition.description && (
+                    <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                      {condition.description}
+                    </p>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant={
+                  condition.discount_type === 'percentage' ? 'outline' : 
+                  condition.discount_type === 'fixed' ? 'secondary' : 
+                  'default'
+                }>
+                  {formatDiscountValue(condition.discount_type, condition.discount_value)}
+                </Badge>
+                {condition.free_shipping && (
+                  <Badge variant="outline" className="ml-2 bg-blue-50">
+                    Frete Grátis
+                  </Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1 text-sm">
+                  {condition.payment_method && (
+                    <div>Pagamento: {formatPaymentMethod(condition.payment_method)}</div>
+                  )}
+                  {condition.min_amount && (
+                    <div>Valor mínimo: {formatCurrency(condition.min_amount)}</div>
+                  )}
+                  {condition.min_items && (
+                    <div>Itens mínimos: {condition.min_items}</div>
+                  )}
+                  {condition.valid_until && (
+                    <div>Válido até: {new Date(condition.valid_until).toLocaleDateString('pt-BR')}</div>
+                  )}
+                  {!condition.payment_method && !condition.min_amount && !condition.min_items && !condition.valid_until && (
+                    <span className="text-gray-500">Sem condições</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1 text-sm">
+                  {condition.region && (
+                    <div>Região: {formatRegion(condition.region)}</div>
+                  )}
+                  {condition.customer_group && (
+                    <div>Grupo: {formatCustomerGroup(condition.customer_group)}</div>
+                  )}
+                  {condition.product_id && (
+                    <div>Produto específico</div>
+                  )}
+                  {condition.product_category && (
+                    <div>Categoria: {condition.product_category}</div>
+                  )}
+                  {!condition.region && !condition.customer_group && !condition.product_id && !condition.product_category && (
+                    <span className="text-gray-500">Sem segmentação</span>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                {condition.is_cumulative ? (
+                  <Badge variant="outline" className="bg-green-50">Sim</Badge>
+                ) : (
+                  <Badge variant="outline" className="bg-gray-50">Não</Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(condition)}
+                  >
+                    <Edit className="h-4 w-4 text-blue-500" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(condition.id)}
+                    disabled={deletingId === condition.id}
+                  >
+                    {deletingId === condition.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-red-500" />
                     )}
-                    {condition.min_amount && (
-                      <div>Valor mínimo: {formatCurrency(condition.min_amount)}</div>
-                    )}
-                    {condition.min_items && (
-                      <div>Itens mínimos: {condition.min_items}</div>
-                    )}
-                    {condition.valid_until && (
-                      <div>Válido até: {new Date(condition.valid_until).toLocaleDateString('pt-BR')}</div>
-                    )}
-                    {!condition.payment_method && !condition.min_amount && !condition.min_items && !condition.valid_until && (
-                      <span className="text-gray-500">Sem condições</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1 text-sm">
-                    {condition.region && (
-                      <div>Região: {formatRegion(condition.region)}</div>
-                    )}
-                    {condition.customer_group && (
-                      <div>Grupo: {formatCustomerGroup(condition.customer_group)}</div>
-                    )}
-                    {!condition.region && !condition.customer_group && (
-                      <span className="text-gray-500">Sem segmentação</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(condition)}
-                    >
-                      <Copy className="h-4 w-4 text-blue-500" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(condition.id)}
-                      disabled={deletingId === condition.id}
-                    >
-                      {deletingId === condition.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      )}
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-      
-      {editingCondition && (
-        <CommercialConditionDialog
-          condition={editingCondition}
-          open={isDialogOpen}
-          onSuccess={() => {
-            setIsDialogOpen(false);
-            setEditingCondition(null);
-            onToggle();
-          }}
-          onCancel={() => {
-            setIsDialogOpen(false);
-            setEditingCondition(null);
-          }}
-        />
-      )}
-    </>
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
   );
 };
 
