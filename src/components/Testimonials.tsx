@@ -1,27 +1,65 @@
+
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Filtered to only include 5-star reviews
 const testimonials = [
   {
-    name: "Dr. Carlos Silva",
-    role: "Implantodontista",
-    content: "Revolucionou minha prática clínica. Os resultados são impressionantes e consistentes.",
-    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop"
+    name: "Munir S.",
+    role: "Cirurgião-Dentista",
+    content: "Excelente resultados quando corretamente utilizada.",
+    date: "17/02/2017"
   },
   {
-    name: "Dra. Ana Paula",
+    name: "Jamil S.",
+    role: "Cirurgião-Dentista",
+    content: "Produto muito bom, parabéns pela parceria Dental Cremer e Boneheal.",
+    date: "16/02/2017"
+  },
+  {
+    name: "Sandra O.",
     role: "Cirurgiã-Dentista",
-    content: "Simplesmente o melhor sistema que já utilizei. Meus pacientes adoram os resultados.",
-    image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop"
+    content: "Produto excelente! Tive um resultado no paciente acima das expectativas. Fácil manipulação!",
+    date: "16/02/2018"
   },
   {
-    name: "Dr. Ricardo Santos",
-    role: "Periodontista",
-    content: "A regeneração óssea nunca foi tão previsível. Recomendo fortemente.",
-    image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop"
+    name: "Cristiano M.",
+    role: "Cirurgião-Dentista",
+    content: "Revolucionou a exodontia, com regeneração óssea guiada, quando realizada a técnica adequada! Uso e recomendo!",
+    date: "23/08/2017"
   },
+  {
+    name: "Elizeu G.",
+    role: "Cirurgião-Dentista",
+    content: "Excelente produto. Além de usá-lo para preservação alveolar pós-exodontia, utilizo para procedimentos de regeneração óssea, principalmente onde há risco de exposição da membrana ao meio bucal, com excelentes resultados.",
+    date: "13/12/2017"
+  },
+  {
+    name: "Decio M.",
+    role: "Cirurgião-Dentista",
+    content: "Muito bom",
+    date: "07/04/2017"
+  },
+  {
+    name: "Roberto R.",
+    role: "Cirurgião-Dentista", 
+    content: "Excelente produto",
+    date: "13/09/2018"
+  },
+  {
+    name: "Pollyana C.",
+    role: "Cirurgiã-Dentista",
+    content: "Excelente resultado",
+    date: "24/08/2017"
+  },
+  {
+    name: "Cristianode E.",
+    role: "Cirurgião-Dentista",
+    content: "Excelente",
+    date: "08/09/2017"
+  }
 ];
 
 const Testimonials = () => {
@@ -61,15 +99,11 @@ const Testimonials = () => {
                         ))}
                       </div>
                       <p className="text-neutral-600 mb-8 text-lg font-light leading-relaxed">{testimonial.content}</p>
-                      <div className="flex items-center space-x-4">
-                        <img
-                          src={testimonial.image}
-                          alt={testimonial.name}
-                          className="w-14 h-14 rounded-full object-cover"
-                        />
+                      <div className="flex flex-col">
                         <div className="text-left">
                           <h4 className="font-semibold text-lg">{testimonial.name}</h4>
                           <p className="text-sm text-neutral-500">{testimonial.role}</p>
+                          <p className="text-xs text-neutral-400 mt-1">{testimonial.date}</p>
                         </div>
                       </div>
                     </CardContent>
