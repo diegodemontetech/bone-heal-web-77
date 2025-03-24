@@ -21,7 +21,7 @@ const OrderSummaryValues = ({ cartItems, shippingCost }: OrderSummaryValuesProps
       <div className="flex justify-between text-sm">
         <span className="text-gray-600">Frete</span>
         <span className="font-medium">
-          {shippingCost ? formatCurrency(shippingCost) : "Calculando..."}
+          {shippingCost !== null ? formatCurrency(shippingCost) : "Calculando..."}
         </span>
       </div>
       <Separator />

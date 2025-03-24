@@ -4,12 +4,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const PaymentInfoAlert = () => {
   return (
-    <Alert className="mb-6">
+    <Alert className="mb-4">
       <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Informação de Pagamento</AlertTitle>
+      <AlertTitle>Informação de pagamento</AlertTitle>
       <AlertDescription>
-        O pagamento será processado através do MercadoPago. Você será redirecionado para a página
-        de pagamento após clicar em "Finalizar compra".
+        Após confirmar, você será redirecionado para a plataforma de pagamento para concluir sua compra com segurança.
       </AlertDescription>
     </Alert>
   );

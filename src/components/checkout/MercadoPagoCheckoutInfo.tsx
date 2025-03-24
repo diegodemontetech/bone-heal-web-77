@@ -1,24 +1,33 @@
 
+import { Shield, CreditCard, Bank } from "lucide-react";
+
 const MercadoPagoCheckoutInfo = () => {
   return (
-    <div className="p-4 bg-white rounded-md border border-gray-200">
-      <h3 className="text-lg font-medium text-gray-900 mb-3">Checkout MercadoPago</h3>
+    <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+      <div className="flex items-center gap-2 mb-2">
+        <Shield className="h-5 w-5 text-blue-600" />
+        <h3 className="font-medium text-blue-700">Pagamento seguro com Mercado Pago</h3>
+      </div>
       
-      <p className="text-sm text-gray-600 mb-4">
-        Você será redirecionado para a página de pagamento do MercadoPago, onde poderá escolher entre diversas formas de pagamento como:
+      <p className="text-sm text-blue-700 mb-3">
+        Seu pagamento será processado com segurança pelo Mercado Pago, você será redirecionado para concluir a compra.
       </p>
       
-      <ul className="list-disc pl-5 text-sm text-gray-600 mb-4">
-        <li>Cartão de crédito</li>
-        <li>PIX</li>
-        <li>Boleto bancário</li>
-      </ul>
-      
-      <div className="flex items-center p-4 bg-blue-50 text-blue-800 rounded-md text-sm">
-        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Após finalizar o pagamento no MercadoPago, você retornará automaticamente para nossa loja.
+      <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded text-xs text-gray-600 border">
+          <CreditCard className="h-3 w-3" />
+          <span>Cartão de crédito</span>
+        </div>
+        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded text-xs text-gray-600 border">
+          <Bank className="h-3 w-3" />
+          <span>Boleto</span>
+        </div>
+        <div className="flex items-center gap-1 bg-white px-2 py-1 rounded text-xs text-gray-600 border">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 15H9V9H7V15ZM15 9H17V15H15V9ZM17 5V7H7V5H17ZM12 20.17L17.5 14.67V18H19V12H13V13.5H16.33L12 17.83L9 14.83L4.5 19.33L5.55 20.39L9 16.94L12 20.17Z" fill="currentColor"/>
+          </svg>
+          <span>PIX</span>
+        </div>
       </div>
     </div>
   );
