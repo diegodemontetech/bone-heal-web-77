@@ -44,6 +44,7 @@ const CartPage = () => {
     fetchUserProfile();
   }, [isAuthenticated, profile]);
 
+  // Show loading state while cart is being loaded
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -60,6 +61,7 @@ const CartPage = () => {
     );
   }
 
+  // Verify cart has items before continuing
   if (!cartItems || cartItems.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">

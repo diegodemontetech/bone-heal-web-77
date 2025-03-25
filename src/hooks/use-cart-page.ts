@@ -50,6 +50,7 @@ export const useCartPage = () => {
     clearCart: handleClearCart,
     checkout: handleCheckout,
     getTotalPrice,
-    getTotalItems
+    getTotalItems,
+    cartItems
   };
 };

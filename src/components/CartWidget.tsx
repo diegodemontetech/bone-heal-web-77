@@ -30,12 +30,16 @@ const CartWidget = () => {
 
   const handleCheckout = () => {
     setIsOpen(false); // Close the drawer before navigation
-    navigate("/cart");
+    if (cartItems && cartItems.length > 0) {
+      navigate("/cart");
+    } else {
+      navigate("/products");
+    }
   };
 
   if (itemCount === 0) {
     return (
-      <Button variant="ghost" size="icon" className="relative text-primary">
+      <Button variant="ghost" size="icon" className="relative text-primary" onClick={() => navigate("/products")}>
         <ShoppingCart className="h-5 w-5" />
       </Button>
     );
