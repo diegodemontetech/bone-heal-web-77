@@ -18,6 +18,9 @@ import TicketDetails from "@/pages/support/TicketDetails";
 import { AdminRoute } from "@/routes/admin/adminLoader";
 import Layout from "@/components/admin/Layout";
 import ComoFunciona from "@/pages/ComoFunciona";
+import PoliticaTroca from "@/pages/PoliticaTroca";
+import Cart from "@/pages/Cart";
+import Checkout from "@/pages/checkout/Checkout";
 
 // Importação das páginas de perfil
 import ProfilePage from "@/pages/profile/Profile";
@@ -45,6 +48,9 @@ export function Routes() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/orders/:id" element={<OrderDetails />} />
+        <Route path="/politica-troca" element={<PoliticaTroca />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         
         {/* Rotas de perfil */}
         <Route path="/profile" element={<ProfilePage />} />

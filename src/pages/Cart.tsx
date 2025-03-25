@@ -1,4 +1,5 @@
 
+import React from "react";
 import CartPage from "@/components/cart/CartPage";
 import { useCart } from "@/hooks/use-cart";
 import { Loader2 } from "lucide-react";
@@ -10,6 +11,7 @@ import WhatsAppWidget from "@/components/WhatsAppWidget";
 const Cart = () => {
   const { cartItems, isLoading } = useCart();
 
+  // Show loading state while determining cart status
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -26,6 +28,7 @@ const Cart = () => {
     );
   }
 
+  // If cart is empty, show empty cart message
   if (!cartItems || cartItems.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -39,7 +42,17 @@ const Cart = () => {
     );
   }
 
-  return <CartPage />;
+  // If cart has items, show cart page with items
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1">
+        <CartPage />
+      </div>
+      <Footer />
+      <WhatsAppWidget />
+    </div>
+  );
 };
 
 export default Cart;

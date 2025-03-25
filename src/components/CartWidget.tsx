@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
@@ -13,6 +13,7 @@ const CartWidget = () => {
   const { cartItems, total, removeItem, updateQuantity } = useCart();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   
   const itemCount = cartItems && cartItems.length > 0 
     ? cartItems.reduce((sum, item) => sum + item.quantity, 0) 
@@ -26,6 +27,11 @@ const CartWidget = () => {
       return () => clearTimeout(timer);
     }
   }, [itemCount]);
+
+  const handleCheckout = () => {
+    setIsOpen(false); // Close the drawer before navigation
+    navigate("/cart");
+  };
 
   if (itemCount === 0) {
     return (
@@ -69,7 +75,7 @@ const CartWidget = () => {
               </div>
               <h3 className="text-lg font-medium mb-2">Seu carrinho está vazio</h3>
               <p className="text-muted-foreground mb-6">Adicione produtos ao seu carrinho para continuar.</p>
-              <Link to="/produtos">
+              <Link to="/produtos" onClick={() => setIsOpen(false)}>
                 <Button>Explorar Produtos</Button>
               </Link>
             </div>
@@ -139,11 +145,13 @@ const CartWidget = () => {
                 </div>
                 
                 <div className="mt-6 space-y-3">
-                  <Link to="/cart" className="block" onClick={() => setIsOpen(false)}>
-                    <Button className="w-full bg-primary hover:bg-primary/90" size="lg">
-                      Finalizar Compra
-                    </Button>
-                  </Link>
+                  <Button 
+                    className="w-full bg-primary hover:bg-primary/90" 
+                    size="lg"
+                    onClick={handleCheckout}
+                  >
+                    Finalizar Compra
+                  </Button>
                   <div className="text-xs text-center text-muted-foreground">
                     Frete e opções de pagamento na finalização da compra
                   </div>
