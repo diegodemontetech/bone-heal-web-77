@@ -52,8 +52,10 @@ const ContactForm = () => {
 
   if (isSubmitted) {
     return (
-      <div className="bg-white rounded-xl p-8 shadow-lg flex flex-col items-center justify-center text-center">
-        <MessageSquare className="w-16 h-16 text-primary mb-6" />
+      <div className="bg-white rounded-xl p-8 shadow-lg flex flex-col items-center justify-center text-center h-full">
+        <div className="bg-primary/10 p-4 rounded-full mb-6">
+          <MessageSquare className="w-12 h-12 text-primary" />
+        </div>
         <h3 className="text-2xl font-bold text-primary mb-4">Obrigado pelo Contato!</h3>
         <p className="text-lg text-gray-600">
           Recebemos sua mensagem e entraremos em contato o mais breve possível.
@@ -63,9 +65,11 @@ const ContactForm = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl p-8 shadow-lg space-y-6">
+    <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 shadow-lg space-y-5 h-full">
+      <h3 className="text-xl font-bold text-primary mb-4">Envie uma mensagem</h3>
+      
       <div>
-        <label className="block text-sm font-medium mb-2">Departamento<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium mb-1">Departamento<span className="text-red-500">*</span></label>
         <Select 
           value={department} 
           onValueChange={setDepartment}
@@ -85,7 +89,7 @@ const ContactForm = () => {
       </div>
       
       <div>
-        <label className="block text-sm font-medium mb-2">Nome<span className="text-red-500">*</span></label>
+        <label className="block text-sm font-medium mb-1">Nome<span className="text-red-500">*</span></label>
         <Input
           type="text"
           className="w-full"
@@ -96,33 +100,35 @@ const ContactForm = () => {
         />
       </div>
       
-      <div>
-        <label className="block text-sm font-medium mb-2">Email</label>
-        <Input
-          type="email"
-          className="w-full"
-          placeholder="seu@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Email</label>
+          <Input
+            type="email"
+            className="w-full"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">Telefone<span className="text-red-500">*</span></label>
-        <Input
-          type="tel"
-          className="w-full"
-          placeholder="(00) 00000-0000"
-          value={phone}
-          onChange={handlePhoneChange}
-          required
-        />
+        <div>
+          <label className="block text-sm font-medium mb-1">Telefone<span className="text-red-500">*</span></label>
+          <Input
+            type="tel"
+            className="w-full"
+            placeholder="(00) 00000-0000"
+            value={phone}
+            onChange={handlePhoneChange}
+            required
+          />
+        </div>
       </div>
       
-      <div className="flex-grow">
-        <label className="block text-sm font-medium mb-2">Mensagem</label>
+      <div>
+        <label className="block text-sm font-medium mb-1">Mensagem</label>
         <textarea
-          className="w-full h-40 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+          className="w-full h-32 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
           placeholder="Sua mensagem"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
