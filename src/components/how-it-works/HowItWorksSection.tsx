@@ -26,6 +26,16 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
     en: "HOW IT WORKS",
     es: "CÓMO FUNCIONA"
   };
+
+  const buttonText = {
+    pt: "BAIXAR PDF ESTUDOS",
+    en: "DOWNLOAD PDF STUDIES",
+    es: "DESCARGAR PDF ESTUDIOS"
+  };
+  
+  const downloadStudies = () => {
+    window.open('/studies', '_blank');
+  };
   
   return (
     <section className={`section-padding bg-white ${className}`} id={id}>
@@ -43,19 +53,19 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
           </h2>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {steps.map((step, index) => (
             <StepCard key={index} step={step} />
           ))}
         </div>
 
-        <div className="mt-12 flex justify-center">
+        <div className="flex justify-center">
           <Button 
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold uppercase px-8 py-6 text-lg fixed bottom-8"
-            onClick={() => window.open('/studies', '_blank')}
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold uppercase px-8 py-6 text-lg"
+            onClick={downloadStudies}
           >
             <Download className="w-5 h-5 mr-2" />
-            BAIXAR PDF ESTUDOS
+            {buttonText[language]}
           </Button>
         </div>
       </div>

@@ -10,6 +10,7 @@ import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import Testimonials from "@/components/Testimonials";
+import NewsPreview from "@/components/NewsPreview";
 
 const Index = () => {
   return (
@@ -27,6 +28,7 @@ const Index = () => {
         <HowItWorks />
         <ProductsPreview />
         <Recognition />
+        <NewsPreview />
         <Testimonials />
         <CallToAction />
       </main>

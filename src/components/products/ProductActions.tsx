@@ -65,7 +65,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product }) => {
         onClick={handleAddToCart}
       >
         <ShoppingCart className="w-3 h-3 mr-1" />
-        {added ? "Adicionado" : "Carrinho"}
+        {added ? "ADICIONADO" : "CARRINHO"}
       </Button>
       
       <Button
@@ -74,7 +74,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product }) => {
         onClick={handleBuyNow}
       >
         <CreditCard className="w-3 h-3 mr-1" />
-        Comprar
+        COMPRAR
       </Button>
     </div>
   );

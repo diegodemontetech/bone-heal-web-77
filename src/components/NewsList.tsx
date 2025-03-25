@@ -53,7 +53,6 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
       toast.success("Gerando PDF, aguarde...");
       
       // For demonstration purposes, we'll just simulate PDF generation
-      // In a real implementation, you'd generate a PDF and download it
       setTimeout(() => {
         const element = document.createElement('a');
         element.setAttribute('href', 'data:text/plain;charset=utf-8,');
@@ -78,12 +77,12 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
     
     return (
       <div className="text-center p-8">
-        <div className="text-red-600 font-semibold mb-4">
+        <div className="text-red-600 font-semibold mb-4 uppercase">
           ERRO AO CARREGAR NOTÍCIAS
         </div>
         <Button 
           onClick={() => refetch()}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 uppercase"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
           TENTAR NOVAMENTE
@@ -113,7 +112,7 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
   if (displayNews.length === 0) {
     return (
       <div className="text-center p-8">
-        <div className="text-neutral-600 mb-4">
+        <div className="text-neutral-600 mb-4 uppercase">
           NENHUMA NOTÍCIA ENCONTRADA
         </div>
       </div>
@@ -137,7 +136,7 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
                 alt={item.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
-                  e.currentTarget.src = "/placeholder.svg";
+                  (e.currentTarget as HTMLImageElement).src = "/placeholder.svg";
                 }}
               />
               {item.category && (
@@ -148,7 +147,7 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
             </div>
             <CardContent className="p-6 flex flex-col flex-grow">
               <h3 
-                className="text-xl font-semibold mb-4 group-hover:text-primary transition-colors"
+                className="text-xl font-semibold mb-4 group-hover:text-primary transition-colors uppercase"
                 onClick={() => navigate(`/news/${item.slug}`)}
               >
                 {item.title}
@@ -171,7 +170,7 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
                   variant="outline" 
                   size="sm"
                   onClick={() => navigate(`/news/${item.slug}`)}
-                  className="text-primary"
+                  className="text-primary uppercase"
                 >
                   LER MAIS
                 </Button>
@@ -182,7 +181,7 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
                     e.stopPropagation();
                     generatePDF(item);
                   }}
-                  className="text-gray-500 hover:text-primary"
+                  className="text-gray-500 hover:text-primary uppercase"
                 >
                   <Download className="w-4 h-4 mr-1" />
                   PDF

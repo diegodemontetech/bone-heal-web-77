@@ -20,12 +20,12 @@ const CheckoutButton = ({
       {isProcessing ? (
         <>
           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          Processando pagamento...
+          PROCESSANDO PAGAMENTO...
         </>
       ) : (
         <>
           <ShoppingBag className="mr-2 h-5 w-5" />
-          Finalizar Compra
+          FINALIZAR COMPRA
           <ArrowRight className="ml-2 h-4 w-4" />
         </>
       )}
