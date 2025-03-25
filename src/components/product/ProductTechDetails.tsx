@@ -21,6 +21,42 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
     );
   }
 
+  // Helper function to render values properly
+  const renderValue = (value: any): React.ReactNode => {
+    if (value === null || value === undefined) {
+      return "-";
+    }
+    
+    if (typeof value === "object") {
+      return (
+        <div className="space-y-2">
+          {Object.entries(value).map(([subKey, subValue]) => (
+            <div key={subKey} className="border-b pb-1 last:border-0">
+              <span className="font-medium">{subKey}: </span>
+              {typeof subValue === 'string' ? subValue : JSON.stringify(subValue)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    return String(value);
+  };
+
+  const flattenedDetails: Record<string, any> = {};
+  
+  // Flatten the nested structure for display
+  Object.entries(product.technical_details).forEach(([category, details]) => {
+    if (typeof details === 'object' && details !== null) {
+      Object.entries(details).forEach(([key, value]) => {
+        const displayKey = `${category} - ${key}`;
+        flattenedDetails[displayKey] = value;
+      });
+    } else {
+      flattenedDetails[category] = details;
+    }
+  });
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -35,10 +71,10 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Object.entries(product.technical_details).map(([key, value]) => (
+            {Object.entries(flattenedDetails).map(([key, value]) => (
               <TableRow key={key}>
                 <TableCell className="font-medium">{key}</TableCell>
-                <TableCell>{value as string}</TableCell>
+                <TableCell>{renderValue(value)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
