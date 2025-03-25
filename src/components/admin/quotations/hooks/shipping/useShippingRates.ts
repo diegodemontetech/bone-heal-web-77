@@ -9,6 +9,9 @@ interface FetchShippingRatesParams {
   items?: any[];
 }
 
+const MAX_SHIPPING_COST = 60; // Limite máximo de R$ 60,00 para frete
+const PRODUCT_WEIGHT_GRAMS = 200; // Peso padrão de 200g por produto
+
 export const fetchShippingRates = async ({
   zipCode,
   items = []
@@ -18,13 +21,40 @@ export const fetchShippingRates = async ({
   }
 
   try {
+    // Calcular o peso total dos itens (em kg)
+    const totalItems = items.reduce((total, item) => total + (item.quantity || 1), 0);
+    const totalWeightKg = (totalItems * PRODUCT_WEIGHT_GRAMS) / 1000; // Converter de gramas para kg
+    
+    console.log(`Calculando frete para ${totalItems} itens com peso total de ${totalWeightKg}kg`);
+
     // Primeiro, tentar buscar as taxas do banco de dados (Supabase)
     try {
       console.log("Tentando buscar taxas do banco de dados...");
       const supabaseRates = await fetchShippingRatesFromSupabase(zipCode);
       if (supabaseRates.length > 0) {
         console.log("Taxas encontradas no banco de dados:", supabaseRates);
-        return supabaseRates;
+        
+        // Aplicar o peso aos cálculos e o limite máximo
+        const ratesWithLimits = supabaseRates.map(rate => {
+          // Ajustar a taxa baseada no peso (se o rate for por kg)
+          let adjustedRate = rate.rate;
+          if (totalWeightKg > 1 && rate.additional_kg_rate) {
+            const additionalWeight = totalWeightKg - 1; // Peso adicional além de 1kg
+            adjustedRate += additionalWeight * rate.additional_kg_rate;
+          }
+          
+          // Aplicar o limite máximo
+          if (adjustedRate > MAX_SHIPPING_COST) {
+            adjustedRate = MAX_SHIPPING_COST;
+          }
+          
+          return {
+            ...rate,
+            rate: adjustedRate
+          };
+        });
+        
+        return ratesWithLimits;
       }
     } catch (dbError) {
       console.error("Erro ao buscar do banco:", dbError);
@@ -37,7 +67,14 @@ export const fetchShippingRates = async ({
       const apiRates = await fetchShippingRatesFromAPI(zipCode);
       if (apiRates.length > 0) {
         console.log("Taxas encontradas na API:", apiRates);
-        return apiRates;
+        
+        // Aplicar o limite máximo
+        const ratesWithLimits = apiRates.map(rate => ({
+          ...rate,
+          rate: Math.min(rate.rate, MAX_SHIPPING_COST)
+        }));
+        
+        return ratesWithLimits;
       }
     } catch (apiError) {
       console.error("Erro ao buscar da API dos Correios:", apiError);
@@ -46,10 +83,22 @@ export const fetchShippingRates = async ({
     
     // Se chegou aqui, nenhuma opção deu certo, usar os valores padrão baseados na região
     console.log("Usando valores padrão de frete...");
-    return createDefaultShippingRates(zipCode);
+    const defaultRates = createDefaultShippingRates(zipCode);
+    
+    // Aplicar o limite máximo
+    return defaultRates.map(rate => ({
+      ...rate,
+      rate: Math.min(rate.rate, MAX_SHIPPING_COST)
+    }));
   } catch (error) {
     console.error('Erro ao buscar taxas de frete:', error);
-    return createDefaultShippingRates(zipCode);
+    const defaultRates = createDefaultShippingRates(zipCode);
+    
+    // Aplicar o limite máximo mesmo em caso de erro
+    return defaultRates.map(rate => ({
+      ...rate,
+      rate: Math.min(rate.rate, MAX_SHIPPING_COST)
+    }));
   }
 };
 

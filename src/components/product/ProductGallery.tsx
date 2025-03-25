@@ -19,14 +19,14 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
       return imagePath;
     }
     
-    // Verificar se a imagem já tem o caminho completo ou apenas o nome do arquivo
-    const pathParts = imagePath.split('/');
-    const fileName = pathParts[pathParts.length - 1];
-    
     try {
+      // Verificar se a imagem já tem o caminho completo ou apenas o nome do arquivo
+      const pathParts = imagePath.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      
       const { data } = supabase.storage
         .from('products')
-        .getPublicUrl(imagePath);
+        .getPublicUrl(fileName);
       
       console.log(`Generated URL for ${imagePath}: ${data.publicUrl}`);
       return data.publicUrl;

@@ -4,6 +4,7 @@ import { ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CartWidgetProps {
   isOpen: boolean;
@@ -19,6 +20,25 @@ interface CartWidgetProps {
 
 const CartWidget = ({ isOpen, onClose, items }: CartWidgetProps) => {
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const getImageUrl = (imagePath: string) => {
+    if (!imagePath) return "/placeholder.svg";
+    
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    try {
+      const { data } = supabase.storage
+        .from('products')
+        .getPublicUrl(imagePath);
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Erro ao obter URL da imagem:", error);
+      return "/placeholder.svg";
+    }
+  };
 
   return (
     <Drawer open={isOpen} onOpenChange={onClose}>
@@ -44,9 +64,13 @@ const CartWidget = ({ isOpen, onClose, items }: CartWidgetProps) => {
                   className="flex items-center gap-4 bg-neutral-50 p-3 rounded-lg"
                 >
                   <img
-                    src={`/products/${item.image}`}
+                    src={getImageUrl(item.image)}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "/placeholder.svg";
+                    }}
                   />
                   <div className="flex-1">
                     <h3 className="font-medium">{item.name}</h3>

@@ -48,6 +48,13 @@ const ShippingCalculator = ({
     }
     calculateShipping();
   };
+  
+  // Calcular frete automaticamente quando o CEP tiver 8 dígitos
+  useEffect(() => {
+    if (zipCode.length === 8 && !isCalculatingShipping && !shippingCalculated) {
+      calculateShipping();
+    }
+  }, [zipCode, isCalculatingShipping, shippingCalculated]);
 
   return (
     <div>
