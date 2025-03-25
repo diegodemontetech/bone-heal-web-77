@@ -35,7 +35,8 @@ const ContactSection = () => {
                   {...{
                     center: position,
                     zoom: 13,
-                    scrollWheelZoom: false
+                    scrollWheelZoom: false,
+                    style: { background: "#0EA5E9" } // Keeping the blue color for the map
                   } as MapContainerProps}
                 >
                   <TileLayer

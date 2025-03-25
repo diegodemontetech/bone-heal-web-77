@@ -26,12 +26,12 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#0EA5E9", // Bright blue instead of burgundy
-          light: "#38BDF8",
-          dark: "#0369A1",
+          DEFAULT: "#9E1F3C", // Reverted to original burgundy
+          light: "#C13355",
+          dark: "#7A1830",
         },
         accent: {
-          DEFAULT: "#10B981", // Green accent
+          DEFAULT: "#10B981", // Keeping green accent
           light: "#34D399",
           dark: "#059669",
         },
