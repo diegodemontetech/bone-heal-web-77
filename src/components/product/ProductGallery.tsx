@@ -22,12 +22,11 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
     // Verificar se a imagem já tem o caminho completo ou apenas o nome do arquivo
     const pathParts = imagePath.split('/');
     const fileName = pathParts[pathParts.length - 1];
-    const storagePath = pathParts.length > 1 ? imagePath : `products/${imagePath}`;
     
     try {
       const { data } = supabase.storage
         .from('products')
-        .getPublicUrl(storagePath);
+        .getPublicUrl(imagePath);
       
       console.log(`Generated URL for ${imagePath}: ${data.publicUrl}`);
       return data.publicUrl;
@@ -50,6 +49,11 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
     console.log("Imagem principal:", safeMainImage);
     console.log("Galeria de imagens:", safeGallery);
   }, [safeMainImage, safeGallery]);
+
+  // Update selected image if main image changes
+  useEffect(() => {
+    setSelectedImage(safeMainImage);
+  }, [safeMainImage]);
 
   return (
     <div className="space-y-4">

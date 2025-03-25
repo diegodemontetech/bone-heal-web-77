@@ -8,6 +8,30 @@ interface ProductHeaderProps {
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
+  // Format product name to show brand first
+  const formatProductName = (name: string) => {
+    // Check if the name already starts with a brand name
+    if (name.startsWith("Bone Heal") || name.startsWith("Heal Bone")) {
+      return name;
+    }
+    
+    // Extract brand name
+    let brandName = "";
+    if (name.includes("Bone Heal")) {
+      brandName = "Bone Heal";
+    } else if (name.includes("Heal Bone")) {
+      brandName = "Heal Bone";
+    }
+    
+    // If brand found, create new product name with brand first
+    if (brandName) {
+      const productNameWithoutBrand = name.replace(brandName, "").trim();
+      return `${brandName} ${productNameWithoutBrand}`;
+    }
+    
+    return name;
+  };
+  
   // Function to safely format the price regardless of source
   const formatProductPrice = (price: number | string | null | undefined) => {
     // Handle various price formats that might come from Omie
@@ -32,7 +56,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-bold">{product.name}</h1>
+      <h1 className="text-3xl font-bold">{formatProductName(product.name)}</h1>
       
       <div className="flex flex-wrap items-center gap-2">
         {product.omie_code && (
