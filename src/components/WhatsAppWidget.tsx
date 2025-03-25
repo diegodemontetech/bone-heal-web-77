@@ -2,7 +2,7 @@
 import { useLocation } from "react-router-dom";
 import { useSession } from "@supabase/auth-helpers-react";
 import { useEffect, useState } from "react";
-import { Phone } from "lucide-react";
+import { MessageSquareMore } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const WhatsAppWidget = () => {
@@ -45,10 +45,10 @@ const WhatsAppWidget = () => {
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.05 }}
             onClick={handleSalesContact}
-            className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
+            className="flex items-center gap-2 bg-purple-600 text-white px-3 py-2 rounded-full hover:bg-purple-700 transition-colors shadow-lg"
           >
-            <Phone className="w-5 h-5" />
-            <span>Fale com Vendas</span>
+            <MessageSquareMore className="w-4 h-4" />
+            <span className="text-sm font-medium">Fale com Comercial</span>
           </motion.button>
         </motion.div>
       )}
