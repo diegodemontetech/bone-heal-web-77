@@ -49,11 +49,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
       return product.main_image;
     }
     
-    const { data } = supabase.storage
-      .from('products')
-      .getPublicUrl(product.main_image);
-    
-    return data.publicUrl;
+    try {
+      // Extract the filename if it's a full path
+      const pathParts = product.main_image.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      
+      const { data } = supabase.storage
+        .from('products')
+        .getPublicUrl(fileName);
+      
+      console.log(`Generated URL for ${product.main_image}: ${data.publicUrl}`);
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Erro ao obter URL da imagem:", error);
+      return fallbackImage;
+    }
   };
 
   const productImage = getProductImageUrl();

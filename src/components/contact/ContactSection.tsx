@@ -19,30 +19,30 @@ const ContactSection = () => {
   const position: L.LatLngExpression = [-23.5505, -46.6333]; // São Paulo coordinates
 
   return (
-    <section className="bg-gradient-to-r from-primary to-primary-dark" id="contato">
+    <section className="bg-white" id="contato">
       <div className="container mx-auto px-4 py-24">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-primary">
             Central de Atendimento
           </h2>
           
           <div className="grid lg:grid-cols-12 gap-6">
             {/* Map Column - Takes more space */}
             <div className="lg:col-span-7 order-2 lg:order-1">
-              <div className="bg-white rounded-xl overflow-hidden shadow-xl h-full min-h-[600px]">
+              <div className="bg-white rounded-xl overflow-hidden shadow-lg h-full min-h-[600px]">
                 <MapContainer 
                   className="h-full w-full z-10"
                   {...{
                     center: position,
                     zoom: 13,
                     scrollWheelZoom: false,
-                    style: { background: "#0EA5E9" } // Keeping the blue color for the map
+                    style: { background: "#f8f9fa" } // Light gray background for minimalist look
                   } as MapContainerProps}
                 >
                   <TileLayer
                     {...{
-                      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", // Minimalist light theme
+                      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                     }}
                   />
                   <Marker position={position}>
