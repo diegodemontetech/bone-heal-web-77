@@ -1,16 +1,24 @@
-
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Product } from "@/types/product";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useInstallments } from "@/hooks/use-installments";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart, CreditCard } from "lucide-react";
+import { useCart } from "@/hooks/use-cart";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
+  const navigate = useNavigate();
+  const { addItem } = useCart();
+  const [added, setAdded] = useState(false);
+  
   const formattedPrice = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
@@ -22,6 +30,15 @@ const ProductCard = ({ product }: ProductCardProps) => {
     style: "currency",
     currency: "BRL",
   }).format(installmentValue);
+
+  useEffect(() => {
+    if (added) {
+      const timer = setTimeout(() => {
+        setAdded(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [added]);
 
   // Ensure product has a valid name
   const productName = product.name || "Produto sem nome";
@@ -101,6 +118,37 @@ const ProductCard = ({ product }: ProductCardProps) => {
     return name;
   };
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price || 0,
+      image: product.main_image || "/placeholder.svg",
+      quantity: 1
+    });
+    
+    setAdded(true);
+    toast.success("Produto adicionado ao carrinho!");
+  };
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price || 0,
+      image: product.main_image || "/placeholder.svg",
+      quantity: 1
+    });
+    
+    navigate("/cart");
+  };
+
   return (
     <Card className="relative group h-full">
       <FavoriteButton product={product} variant="icon" />
@@ -134,6 +182,27 @@ const ProductCard = ({ product }: ProductCardProps) => {
               <div className="text-xs text-green-600">
                 ou 12x de {formattedInstallment} sem juros
               </div>
+            </div>
+            
+            <div className="flex gap-2 mt-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-1/2 text-xs border-green-600 text-green-700 hover:bg-green-50"
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="w-3 h-3 mr-1" />
+                {added ? "Adicionado" : "Carrinho"}
+              </Button>
+              
+              <Button
+                size="sm"
+                className="w-1/2 text-xs bg-green-600 hover:bg-green-700"
+                onClick={handleBuyNow}
+              >
+                <CreditCard className="w-3 h-3 mr-1" />
+                Comprar
+              </Button>
             </div>
           </div>
         </CardFooter>
