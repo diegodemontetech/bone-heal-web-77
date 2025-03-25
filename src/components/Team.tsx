@@ -25,7 +25,7 @@ const Team = () => {
             className="relative"
           >
             <img
-              src="https://cloud-1de12d.b-cdn.net/media/original/4372c63cef0efffefda27509bc44164e/DrMunirem.png"
+              src="/lovable-uploads/ebdee287-ab95-4a7f-87ec-a6ccd1aa0ead.png"
               alt="Dr. Munir Salomão"
               className="rounded-2xl w-full object-contain"
             />
@@ -44,8 +44,8 @@ const Team = () => {
               de barreiras de polipropileno para Regeneração Óssea Guiada no mercado nacional.
             </p>
             <ul className="space-y-3 text-neutral-600">
-              <li>• Cirurgião-dentista especialista em implantodontia, pacientes com necessidades especiais e periodontia</li>
-              <li>• Professor de cirurgia de implantes e do Método ROG-M de Munir Salomão</li>
+              <li>• Professor e pesquisador em regeneração óssea guiada</li>
+              <li>• Consultor científico e desenvolvedor de metodologias inovadoras</li>
               <li>• Pesquisador em regeneração óssea guiada pela Faculdade de Medicina da USP</li>
               <li>• Criador e consultor dos produtos da empresa Bone Heal</li>
             </ul>
@@ -66,11 +66,11 @@ const Team = () => {
             pesquisa intensa e sacrifício, noites sem dormir e a frustração dos primeiros testes que não deram certo.
           </p>
           <p>
-            Hoje, com 45 anos de carreira como dentista, ele realizou mais de 3 mil cirurgias de Regeneração 
+            Hoje, com 45 anos de carreira, ele realizou mais de 3 mil cirurgias de Regeneração 
             Óssea Guiada sem enxerto, utilizando os produtos e o Método ROG-M de Munir Salomão que desenvolveu.
           </p>
           <p>
-            Ainda apaixonado pelas pessoas e pela odontologia, ele continua a ser a mente criativa por trás dos 
+            Ainda apaixonado pelas pessoas e pela ciência, ele continua a ser a mente criativa por trás dos 
             desenvolvimentos da Bone Heal, permanecendo ativo e mais comprometido do que nunca com seu sonho de 
             ver seus produtos transformando vidas.
           </p>
