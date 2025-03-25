@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 const CartWidget = () => {
   const { cartItems, total, removeItem, updateQuantity } = useCart();
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   
   const itemCount = cartItems && cartItems.length > 0 
     ? cartItems.reduce((sum, item) => sum + item.quantity, 0) 
@@ -35,7 +36,7 @@ const CartWidget = () => {
   }
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-primary">
           <ShoppingCart className="h-5 w-5" />
@@ -138,7 +139,7 @@ const CartWidget = () => {
                 </div>
                 
                 <div className="mt-6 space-y-3">
-                  <Link to="/cart" className="block">
+                  <Link to="/cart" className="block" onClick={() => setIsOpen(false)}>
                     <Button className="w-full bg-primary hover:bg-primary/90" size="lg">
                       Finalizar Compra
                     </Button>
