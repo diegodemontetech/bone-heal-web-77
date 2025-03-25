@@ -4,6 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Product } from "@/types/product";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
 import { supabase } from "@/integrations/supabase/client";
+import { useInstallments } from "@/hooks/use-installments";
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +15,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
     style: "currency",
     currency: "BRL",
   }).format(product.price || 0);
+
+  const { installments } = useInstallments(product.price || 0, 12);
+  const installmentValue = installments.length > 0 ? installments[installments.length - 1].value : 0;
+  const formattedInstallment = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(installmentValue);
 
   // Ensure product has a valid name
   const productName = product.name || "Produto sem nome";
@@ -119,8 +127,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
               {product.short_description || "Sem descrição"}
             </p>
-            <div className="mt-2 font-semibold text-md md:text-lg">
-              {formattedPrice}
+            <div className="mt-2">
+              <div className="font-semibold text-md md:text-lg">
+                {formattedPrice}
+              </div>
+              <div className="text-xs text-green-600">
+                ou 12x de {formattedInstallment} sem juros
+              </div>
             </div>
           </div>
         </CardFooter>
