@@ -1,153 +1,32 @@
-import { Link, useNavigate } from "react-router-dom";
+
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Product } from "@/types/product";
 import { FavoriteButton } from "@/components/products/FavoriteButton";
-import { supabase } from "@/integrations/supabase/client";
-import { useInstallments } from "@/hooks/use-installments";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, CreditCard } from "lucide-react";
-import { useCart } from "@/hooks/use-cart";
-import { toast } from "sonner";
-import { useState, useEffect } from "react";
+import { useProductImage } from "@/hooks/use-product-image";
+import { ProductPricing } from "@/components/products/ProductPricing";
+import { ProductActions } from "@/components/products/ProductActions";
+import { formatProductName, generateCleanSlug } from "@/utils/product-formatters";
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
-  const navigate = useNavigate();
-  const { addItem } = useCart();
-  const [added, setAdded] = useState(false);
+  const { getProductImageUrl } = useProductImage();
   
-  const formattedPrice = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(product.price || 0);
-
-  const { installments } = useInstallments(product.price || 0, 12);
-  const installmentValue = installments.length > 0 ? installments[installments.length - 1].value : 0;
-  const formattedInstallment = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(installmentValue);
-
-  useEffect(() => {
-    if (added) {
-      const timer = setTimeout(() => {
-        setAdded(false);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [added]);
-
   // Ensure product has a valid name
   const productName = product.name || "Produto sem nome";
   
   // Generate a clean slug for the URL
-  const generateCleanSlug = (name: string) => {
-    if (product.slug && product.slug.trim() !== "") {
-      return product.slug;
-    }
-    
-    // Create a clean slug from the name
-    return name
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "") // Remove special characters
-      .replace(/\s+/g, "-")     // Replace spaces with hyphens
-      .replace(/-+/g, "-")      // Remove consecutive hyphens
-      .trim();
-  };
-  
-  const productSlug = generateCleanSlug(productName);
+  const productSlug = generateCleanSlug(productName, product.slug);
   const productUrl = `/products/${encodeURIComponent(productSlug)}`;
 
+  // Get product image URL
+  const productImage = getProductImageUrl(product.main_image, product.default_image_url);
+  
   // Fallback image if none is available
   const fallbackImage = "/placeholder.svg";
-  
-  // Get public URL for product image
-  const getProductImageUrl = () => {
-    if (!product.main_image) {
-      return product.default_image_url || fallbackImage;
-    }
-    
-    if (product.main_image.startsWith('http')) {
-      return product.main_image;
-    }
-    
-    try {
-      // Extract the filename if it's a full path
-      const pathParts = product.main_image.split('/');
-      const fileName = pathParts[pathParts.length - 1];
-      
-      const { data } = supabase.storage
-        .from('products')
-        .getPublicUrl(fileName);
-      
-      console.log(`Generated URL for ${product.main_image}: ${data.publicUrl}`);
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Erro ao obter URL da imagem:", error);
-      return fallbackImage;
-    }
-  };
-
-  const productImage = getProductImageUrl();
-
-  // Format product name to show brand first
-  const formatProductName = (name: string) => {
-    // Check if the name contains "Bone Heal" or "Heal Bone" anywhere
-    if (name.includes("Bone Heal") || name.includes("Heal Bone")) {
-      // If it already starts with a brand name, return as is
-      if (name.startsWith("Bone Heal") || name.startsWith("Heal Bone")) {
-        return name;
-      }
-      
-      // Extract brand name
-      let brandName = "";
-      if (name.includes("Bone Heal")) {
-        brandName = "Bone Heal";
-      } else if (name.includes("Heal Bone")) {
-        brandName = "Heal Bone";
-      }
-      
-      // Create new product name with brand first
-      const productNameWithoutBrand = name.replace(brandName, "").trim();
-      return `${brandName} ${productNameWithoutBrand}`;
-    }
-    
-    return name;
-  };
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price || 0,
-      image: product.main_image || "/placeholder.svg",
-      quantity: 1
-    });
-    
-    setAdded(true);
-    toast.success("Produto adicionado ao carrinho!");
-  };
-
-  const handleBuyNow = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price || 0,
-      image: product.main_image || "/placeholder.svg",
-      quantity: 1
-    });
-    
-    navigate("/cart");
-  };
 
   return (
     <Card className="relative group h-full">
@@ -175,35 +54,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
               {product.short_description || "Sem descrição"}
             </p>
-            <div className="mt-2">
-              <div className="font-semibold text-md md:text-lg">
-                {formattedPrice}
-              </div>
-              <div className="text-xs text-green-600">
-                ou 12x de {formattedInstallment} sem juros
-              </div>
-            </div>
             
-            <div className="flex gap-2 mt-3">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-1/2 text-xs border-green-600 text-green-700 hover:bg-green-50"
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart className="w-3 h-3 mr-1" />
-                {added ? "Adicionado" : "Carrinho"}
-              </Button>
-              
-              <Button
-                size="sm"
-                className="w-1/2 text-xs bg-green-600 hover:bg-green-700"
-                onClick={handleBuyNow}
-              >
-                <CreditCard className="w-3 h-3 mr-1" />
-                Comprar
-              </Button>
-            </div>
+            <ProductPricing price={product.price || 0} />
+            
+            <ProductActions product={product} />
           </div>
         </CardFooter>
       </Link>
