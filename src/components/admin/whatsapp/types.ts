@@ -1,4 +1,3 @@
-
 export interface WhatsAppMessage {
   id: string;
   message: string;
@@ -14,7 +13,11 @@ export interface WhatsAppMessage {
   lead_id: string;
   instance_id: string | null;
   sender_id: string | null;
-  type?: string; // Added type field
+  type?: string;
+  sender?: {
+    full_name?: string;
+    role?: string;
+  };
 }
 
 export interface WhatsAppInstance {

@@ -34,7 +34,7 @@ const MessageInput = ({ ticketStatus, onSendMessage }: MessageInputProps) => {
     <>
       {isClosedOrResolved ? (
         <div className="bg-muted/50 rounded-lg p-4 border border-muted-foreground/20">
-          <Alert variant="warning" className="mb-4">
+          <Alert variant="default" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Este chamado está {ticketStatus === "resolved" ? "resolvido" : "fechado"}. 
