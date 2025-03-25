@@ -6,6 +6,7 @@ import ProductGallery from "./ProductGallery";
 import ProductTechDetails from "./ProductTechDetails";
 import GoogleReviews from "./GoogleReviews";
 import ProductReviews from "./ProductReviews";
+import FloatingActions from "./FloatingActions";
 
 interface ProductDetailContentProps {
   product: Product;
@@ -23,7 +24,9 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
 
         <div className="space-y-6">
           <ProductHeader product={product} />
-          <ProductActions product={product} profile={profile} />
+          <div id="product-actions">
+            <ProductActions product={product} profile={profile} />
+          </div>
           <GoogleReviews />
         </div>
       </div>
@@ -42,6 +45,8 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
           <ProductReviews product={product} />
         </div>
       </div>
+      
+      <FloatingActions product={product} profile={profile} />
     </>
   );
 };

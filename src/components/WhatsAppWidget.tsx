@@ -45,7 +45,7 @@ const WhatsAppWidget = () => {
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ scale: 1.05 }}
             onClick={handleSalesContact}
-            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors shadow-lg"
+            className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full hover:bg-gray-800 transition-colors shadow-lg"
           >
             <Phone className="w-5 h-5" />
             <span>Fale com Vendas</span>

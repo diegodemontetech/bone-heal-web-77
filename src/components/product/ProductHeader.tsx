@@ -8,33 +8,36 @@ interface ProductHeaderProps {
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
-  // Format product name to show brand first
+  // Format product name to show brand first and remove unwanted parentheses
   const formatProductName = (name: string) => {
+    // Remove unwanted parentheses
+    let cleanName = name.replace(/\(\)|\(\s*\)/g, '').trim();
+    
     // Check if the name already starts with a brand name
-    if (name.startsWith("Bone Heal") || name.startsWith("Heal Bone")) {
-      return name;
+    if (cleanName.startsWith("Bone Heal") || cleanName.startsWith("Heal Bone")) {
+      return cleanName;
     }
     
     // Extract brand name
     let brandName = "";
-    if (name.includes("Bone Heal")) {
+    if (cleanName.includes("Bone Heal")) {
       brandName = "Bone Heal";
-    } else if (name.includes("Heal Bone")) {
+    } else if (cleanName.includes("Heal Bone")) {
       brandName = "Heal Bone";
     }
     
     // If brand found, create new product name with brand first
     if (brandName) {
-      const productNameWithoutBrand = name.replace(brandName, "").trim();
+      const productNameWithoutBrand = cleanName.replace(brandName, "").trim();
       return `${brandName} ${productNameWithoutBrand}`;
     }
     
-    return name;
+    return cleanName;
   };
 
   return (
     <div className="space-y-4">
-      <h1 className="text-3xl font-bold">{formatProductName(product.name)}</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{formatProductName(product.name)}</h1>
       
       <div className="flex flex-wrap items-center gap-2">
         {product.omie_code && (
@@ -49,8 +52,6 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
       )}
       
       <div className="pt-2">
-        {/* Removed price display from here to avoid duplication */}
-        
         {product.on_order ? (
           <div className="mt-2 text-sm text-orange-600 font-medium">
             Prazo de entrega: 5-7 dias úteis após confirmação do pagamento

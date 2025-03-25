@@ -43,17 +43,53 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
     return String(value);
   };
 
+  // Localized field names mapping
+  const fieldNameMapping: Record<string, string> = {
+    'weight': 'Peso',
+    'height': 'Altura',
+    'width': 'Largura',
+    'length': 'Comprimento',
+    'material': 'Material predominante',
+    'composition': 'Composição',
+    'indication': 'Indicação',
+    'contraindication': 'Contraindicação',
+    'instructions': 'Instruções de uso',
+    'registration': 'Registro',
+    'classification': 'Classificação',
+    'dimensions': 'Dimensões',
+    'materials': 'Materiais',
+    'usage': 'Uso',
+    'regulatory': 'Regulatório'
+  };
+
+  // Translate key names
+  const translateKey = (key: string): string => {
+    const parts = key.split(' - ');
+    if (parts.length === 2) {
+      const category = fieldNameMapping[parts[0]] || parts[0];
+      const attribute = fieldNameMapping[parts[1]] || parts[1];
+      return `${category} - ${attribute}`;
+    }
+    return fieldNameMapping[key] || key;
+  };
+
   const flattenedDetails: Record<string, any> = {};
   
   // Flatten the nested structure for display
   Object.entries(product.technical_details).forEach(([category, details]) => {
     if (typeof details === 'object' && details !== null) {
       Object.entries(details).forEach(([key, value]) => {
-        const displayKey = `${category} - ${key}`;
+        const displayKey = `${fieldNameMapping[category] || category} - ${fieldNameMapping[key] || key}`;
+        
+        // Remove Omie code from registration if present
+        if (key === 'registration' && typeof value === 'string') {
+          value = value.replace(/\(Código Omie: .*\)/g, '').trim();
+        }
+        
         flattenedDetails[displayKey] = value;
       });
     } else {
-      flattenedDetails[category] = details;
+      flattenedDetails[fieldNameMapping[category] || category] = details;
     }
   });
 
@@ -66,14 +102,14 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-1/3">Característica</TableHead>
+              <TableHead className="w-1/3">Atributos</TableHead>
               <TableHead>Valor</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Object.entries(flattenedDetails).map(([key, value]) => (
               <TableRow key={key}>
-                <TableCell className="font-medium">{key}</TableCell>
+                <TableCell className="font-medium">{translateKey(key)}</TableCell>
                 <TableCell>{renderValue(value)}</TableCell>
               </TableRow>
             ))}
