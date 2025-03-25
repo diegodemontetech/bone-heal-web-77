@@ -22,15 +22,15 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
   const [language, setLanguage] = useState<'pt' | 'en' | 'es'>('en');
   
   const titles = {
-    pt: "COMO FUNCIONA",
-    en: "HOW IT WORKS",
-    es: "CÓMO FUNCIONA"
+    pt: "Como Funciona",
+    en: "How It Works",
+    es: "Cómo Funciona"
   };
 
   const buttonText = {
-    pt: "BAIXAR PDF ESTUDOS",
-    en: "DOWNLOAD PDF STUDIES",
-    es: "DESCARGAR PDF ESTUDIOS"
+    pt: "Baixar PDF Estudos",
+    en: "Download PDF Studies",
+    es: "Descargar PDF Estudios"
   };
   
   const downloadStudies = () => {
@@ -48,7 +48,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
         </div>
         
         <div className="flex items-center justify-center mb-4">
-          <h2 className="text-3xl md:text-4xl text-center mb-8 text-primary uppercase font-bold">
+          <h2 className="text-3xl md:text-4xl text-center mb-8 text-primary font-bold">
             {titles[language]}
           </h2>
         </div>

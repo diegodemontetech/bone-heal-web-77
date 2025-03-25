@@ -42,9 +42,9 @@ const StudiesPreview = () => {
   });
 
   const titles = {
-    pt: "ESTUDOS CIENTÍFICOS",
-    en: "SCIENTIFIC STUDIES",
-    es: "ESTUDIOS CIENTÍFICOS"
+    pt: "Estudos Científicos",
+    en: "Scientific Studies",
+    es: "Estudios Científicos"
   };
 
   const subtitles = {
@@ -72,9 +72,9 @@ const StudiesPreview = () => {
   };
 
   const pdfTexts = {
-    pt: "BAIXAR PDF",
-    en: "DOWNLOAD PDF",
-    es: "DESCARGAR PDF"
+    pt: "Baixar PDF",
+    en: "Download PDF",
+    es: "Descargar PDF"
   };
 
   return (
@@ -95,12 +95,12 @@ const StudiesPreview = () => {
           className="text-center mb-16"
         >
           <div className="flex items-center justify-center mb-4">
-            <h2 className="text-4xl font-bold text-primary mb-4 uppercase">
-              <span className="mr-2">BONE HEAL</span>
+            <h2 className="text-4xl font-bold text-primary mb-4">
+              <span className="mr-2">Bone Heal</span>
               <sup className="text-sm align-super">®</sup>
             </h2>
           </div>
-          <h3 className="text-4xl font-bold text-primary mb-4 uppercase">
+          <h3 className="text-4xl font-bold text-primary mb-4">
             {titles[language]}
           </h3>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">

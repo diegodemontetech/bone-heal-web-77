@@ -14,14 +14,14 @@ const NewsCategories = ({
 }: NewsCategoriesProps) => {
   return (
     <div className="mb-8">
-      <h2 className="text-xl font-bold mb-4 uppercase">CATEGORIAS</h2>
+      <h2 className="text-xl font-bold mb-4">Categorias</h2>
       <div className="flex flex-wrap gap-2">
         <Button
           variant={selectedCategory === null ? "default" : "outline"}
           onClick={() => onCategorySelect(null)}
           className={selectedCategory === null ? "bg-primary text-white font-medium" : ""}
         >
-          TODAS
+          Todas
         </Button>
         
         {categories.map((category) => (
@@ -29,7 +29,7 @@ const NewsCategories = ({
             key={category}
             variant={selectedCategory === category ? "default" : "outline"}
             onClick={() => onCategorySelect(category)}
-            className={selectedCategory === category ? "bg-primary text-white font-medium uppercase" : "uppercase"}
+            className={selectedCategory === category ? "bg-primary text-white font-medium" : ""}
           >
             {category}
           </Button>

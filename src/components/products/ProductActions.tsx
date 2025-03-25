@@ -61,20 +61,20 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product }) => {
       <Button
         size="sm"
         variant="outline"
-        className="w-1/2 text-xs border-green-600 text-green-700 hover:bg-green-50 uppercase"
+        className="w-1/2 text-xs border-green-600 text-green-700 hover:bg-green-50"
         onClick={handleAddToCart}
       >
         <ShoppingCart className="w-3 h-3 mr-1" />
-        {added ? "ADICIONADO" : "CARRINHO"}
+        {added ? "Adicionado" : "Carrinho"}
       </Button>
       
       <Button
         size="sm"
-        className="w-1/2 text-xs bg-green-600 hover:bg-green-700 text-white font-semibold uppercase"
+        className="w-1/2 text-xs bg-green-600 hover:bg-green-700 text-white font-semibold"
         onClick={handleBuyNow}
       >
         <CreditCard className="w-3 h-3 mr-1" />
-        COMPRAR
+        Comprar
       </Button>
     </div>
   );
