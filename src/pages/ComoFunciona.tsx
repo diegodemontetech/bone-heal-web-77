@@ -3,28 +3,29 @@ import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
-import HeroSection from "@/components/como-funciona/HeroSection";
-import RegeneracaoOsseaSection from "@/components/como-funciona/RegeneracaoOsseaSection";
-import ProcessoSection from "@/components/como-funciona/ProcessoSection";
-import BeneficiosSection from "@/components/como-funciona/BeneficiosSection";
-import FaqSection from "@/components/como-funciona/FaqSection";
-import CtaSection from "@/components/como-funciona/CtaSection";
+import BoneHealHero from "@/components/como-funciona/BoneHealHero";
+import ProductsSection from "@/components/como-funciona/ProductsSection";
+import ApplicationTechniqueSection from "@/components/como-funciona/ApplicationTechniqueSection";
+import BenefitsSection from "@/components/como-funciona/BenefitsSection";
+import ContactSection from "@/components/contact/ContactSection";
 
 const ComoFunciona = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <title>Como Funciona a Regeneração Óssea | BoneHeal</title>
-        <meta name="description" content="Entenda como a membrana BoneHeal funciona no processo de regeneração óssea guiada na odontologia." />
+        <title>Barreiras para Regeneração Óssea Guiada | BoneHeal</title>
+        <meta 
+          name="description" 
+          content="Conheça as barreiras Bone Heal® e Heal Bone® para regeneração óssea guiada (ROG) na odontologia. Soluções inovadoras com alta previsibilidade e versatilidade." 
+        />
       </Helmet>
       
       <Navbar />
-      <HeroSection />
-      <RegeneracaoOsseaSection />
-      <ProcessoSection />
-      <BeneficiosSection />
-      <FaqSection />
-      <CtaSection />
+      <BoneHealHero />
+      <ProductsSection />
+      <ApplicationTechniqueSection />
+      <BenefitsSection />
+      <ContactSection />
       <Footer />
       <WhatsAppWidget />
     </div>
