@@ -14,6 +14,14 @@ export interface UserWithProfile {
     contact_type: string | null;
     omie_code?: string | null;
     omie_sync?: boolean | null;
+    pessoa_tipo?: string | null;
+    razao_social?: string | null;
+    nome_fantasia?: string | null;
+    responsavel_tecnico?: string | null;
+    cpf_responsavel?: string | null;
+    cro_responsavel?: string | null;
+    epao?: string | null;
+    is_pessoa_fisica?: boolean | null;
   } | null;
 }
 
@@ -30,5 +38,13 @@ export interface DatabaseProfile {
   created_at: string;
   omie_code?: string | null;
   omie_sync?: boolean | null;
+  pessoa_tipo?: string | null;
+  razao_social?: string | null;
+  nome_fantasia?: string | null;
+  responsavel_tecnico?: string | null;
+  cpf_responsavel?: string | null;
+  cro_responsavel?: string | null;
+  epao?: string | null;
+  is_pessoa_fisica?: boolean | null;
   auth_users: { email: string }[] | null;
 }

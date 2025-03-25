@@ -22,9 +22,18 @@ const phoneRegex = new RegExp(
 );
 
 export const DentistSignUpSchema = z.object({
+  pessoa_tipo: z.string().min(1, {
+    message: "Selecione o tipo de pessoa."
+  }),
   fullName: z.string().min(2, {
     message: "Nome completo deve ter pelo menos 2 caracteres.",
   }),
+  razao_social: z.string().optional(),
+  nome_fantasia: z.string().optional(),
+  responsavel_tecnico: z.string().optional(),
+  cpf_responsavel: z.string().optional(),
+  cro_responsavel: z.string().optional(),
+  epao: z.string().optional(),
   email: z.string().email({
     message: "Por favor, insira um email válido.",
   }),
@@ -60,10 +69,27 @@ export const DentistSignUpSchema = z.object({
     message: "Formato de telefone inválido. Use (XX) XXXXX-XXXX.",
   }),
   cnpj: z.string().optional(),
-  cpf: z.string().min(11, {
-    message: "CPF deve ter 11 dígitos.",
-  }),
+  cpf: z.string().optional(),
   receiveNews: z.boolean().default(false),
+}).refine(data => {
+  // Se for pessoa física, CPF é obrigatório
+  if (data.pessoa_tipo === 'fisica') {
+    return !!data.cpf && data.cpf.length >= 11;
+  }
+  
+  // Se for pessoa jurídica, CNPJ e dados do responsável técnico são obrigatórios
+  if (data.pessoa_tipo === 'juridica') {
+    return !!data.cnpj && 
+           data.cnpj.length >= 14 && 
+           !!data.responsavel_tecnico &&
+           !!data.cpf_responsavel &&
+           !!data.cro_responsavel;
+  }
+  
+  return false;
+}, {
+  message: "Preencha os dados obrigatórios para o tipo de pessoa selecionado",
+  path: ["pessoa_tipo"]
 });
 
 export type FormData = z.infer<typeof DentistSignUpSchema>;
@@ -84,7 +110,14 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const form = useForm<FormData>({
     resolver: zodResolver(DentistSignUpSchema),
     defaultValues: {
+      pessoa_tipo: "fisica",
       fullName: "",
+      razao_social: "",
+      nome_fantasia: "",
+      responsavel_tecnico: "",
+      cpf_responsavel: "",
+      cro_responsavel: "",
+      epao: "",
       email: "",
       password: "",
       cro: "",

@@ -140,6 +140,67 @@ export const PersonalSection = ({ form, specialties }: PersonalSectionProps) => 
               </FormItem>
             )}
           />
+          <FormField
+            control={form.control}
+            name="responsavel_tecnico"
+            rules={{ required: "Nome do Responsável Técnico é obrigatório" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome do Responsável Técnico</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="cpf_responsavel"
+            rules={{ 
+              required: "CPF do Responsável Técnico é obrigatório",
+              pattern: {
+                value: /^\d{11}$/,
+                message: "CPF deve conter 11 dígitos"
+              }
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPF do Responsável Técnico</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="cro_responsavel"
+            rules={{ required: "CRO do Responsável Técnico é obrigatório" }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CRO do Responsável Técnico</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="epao"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>EPAO</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </>
       )}
 

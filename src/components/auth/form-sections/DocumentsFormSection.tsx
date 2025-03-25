@@ -10,34 +10,39 @@ interface DocumentsFormSectionProps {
 }
 
 const DocumentsFormSection: React.FC<DocumentsFormSectionProps> = ({ form }) => {
+  const pessoaTipo = form.watch('pessoa_tipo');
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField
-        control={form.control}
-        name="cpf"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>CPF</FormLabel>
-            <FormControl>
-              <Input placeholder="Seu CPF" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name="cnpj"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>CNPJ (Opcional)</FormLabel>
-            <FormControl>
-              <Input placeholder="Seu CNPJ" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {pessoaTipo === 'fisica' ? (
+        <FormField
+          control={form.control}
+          name="cpf"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CPF</FormLabel>
+              <FormControl>
+                <Input placeholder="Seu CPF" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : (
+        <FormField
+          control={form.control}
+          name="cnpj"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CNPJ</FormLabel>
+              <FormControl>
+                <Input placeholder="CNPJ da empresa" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 };

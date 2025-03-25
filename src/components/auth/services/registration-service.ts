@@ -8,7 +8,19 @@ import { syncCustomerWithOmie } from "./omie-sync-service";
 export const handleNormalRegistration = async (data: FormData, signUp: any) => {
   // Dados do usuário para o cadastro
   const userData = {
-    full_name: data.fullName,
+    full_name: data.pessoa_tipo === 'fisica' ? data.fullName : data.nome_fantasia,
+    pessoa_tipo: data.pessoa_tipo,
+    // Dados pessoa física
+    cpf: data.cpf || "",
+    // Dados pessoa jurídica
+    razao_social: data.razao_social || "",
+    nome_fantasia: data.nome_fantasia || "",
+    cnpj: data.cnpj || "",
+    responsavel_tecnico: data.responsavel_tecnico || "",
+    cpf_responsavel: data.cpf_responsavel || "",
+    cro_responsavel: data.cro_responsavel || "",
+    epao: data.epao || "",
+    // Dados comuns
     cro: data.cro,
     specialty: data.specialty,
     address: data.address,
@@ -17,13 +29,11 @@ export const handleNormalRegistration = async (data: FormData, signUp: any) => {
     neighborhood: data.neighborhood,
     zip_code: data.zipCode,
     phone: data.phone,
-    cnpj: data.cnpj || "",
-    cpf: data.cpf,
     complemento: data.complemento || "",
     endereco_numero: data.endereco_numero,
     receive_news: data.receiveNews,
     role: UserRole.DENTIST,
-    pessoa_fisica: !data.cnpj || data.cnpj.trim() === ""
+    is_pessoa_fisica: data.pessoa_tipo === 'fisica'
   };
   
   console.log("Dados do formulário para cadastro normal:", userData);
