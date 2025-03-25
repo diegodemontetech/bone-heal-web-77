@@ -49,7 +49,7 @@ const googleReviews = [
 const GoogleReviews = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto-scroll a cada 5 segundos
+  // Auto-scroll every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % googleReviews.length);
@@ -58,7 +58,7 @@ const GoogleReviews = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Renderizar estrelas baseado na classificação
+  // Render stars based on rating
   const renderStars = (rating: number) => {
     return Array(5).fill(0).map((_, i) => (
       <Star 

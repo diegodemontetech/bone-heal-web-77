@@ -8,10 +8,10 @@ interface ProductGalleryProps {
 }
 
 const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
-  // Imagem de fallback para quando não houver imagem disponível
+  // Fallback image when no image is available
   const fallbackImage = "/placeholder.svg";
   
-  // Função para obter a URL correta da imagem
+  // Function to get the correct image URL
   const getImageUrl = (imagePath: string) => {
     if (!imagePath) return fallbackImage;
     
@@ -20,7 +20,7 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
     }
     
     try {
-      // Verificar se a imagem já tem o caminho completo ou apenas o nome do arquivo
+      // Extract the filename if it's a full path
       const pathParts = imagePath.split('/');
       const fileName = pathParts[pathParts.length - 1];
       
@@ -39,12 +39,12 @@ const ProductGallery = ({ mainImage, gallery }: ProductGalleryProps) => {
   const safeMainImage = mainImage ? getImageUrl(mainImage) : fallbackImage;
   const [selectedImage, setSelectedImage] = useState(safeMainImage);
 
-  // Garantir que a galeria seja um array válido
+  // Ensure gallery is a valid array
   const safeGallery = Array.isArray(gallery) && gallery.length > 0 
     ? gallery.filter(Boolean).map(img => getImageUrl(img))
     : [];
     
-  // Para debug
+  // For debugging
   useEffect(() => {
     console.log("Imagem principal:", safeMainImage);
     console.log("Galeria de imagens:", safeGallery);

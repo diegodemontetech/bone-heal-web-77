@@ -15,18 +15,31 @@ const ProductCard = ({ product }: ProductCardProps) => {
     currency: "BRL",
   }).format(product.price || 0);
 
-  // Verificar e garantir que o produto tenha um slug válido
-  const slug = product.slug && product.slug.trim() !== "" 
-    ? product.slug 
-    : `produto-${product.id}`;
+  // Ensure product has a valid name
+  const productName = product.name || "Produto sem nome";
   
-  // Garantir que o slug seja codificado corretamente para a URL
-  const productUrl = `/products/${encodeURIComponent(slug)}`;
+  // Generate a clean slug for the URL
+  const generateCleanSlug = (name: string) => {
+    if (product.slug && product.slug.trim() !== "") {
+      return product.slug;
+    }
+    
+    // Create a clean slug from the name
+    return name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "") // Remove special characters
+      .replace(/\s+/g, "-")     // Replace spaces with hyphens
+      .replace(/-+/g, "-")      // Remove consecutive hyphens
+      .trim();
+  };
+  
+  const productSlug = generateCleanSlug(productName);
+  const productUrl = `/products/${encodeURIComponent(productSlug)}`;
 
-  // Garantir que a imagem tenha um fallback válido
+  // Fallback image if none is available
   const fallbackImage = "/placeholder.svg";
   
-  // Obter URL pública da imagem do produto
+  // Get public URL for product image
   const getProductImageUrl = () => {
     if (!product.main_image) {
       return product.default_image_url || fallbackImage;
@@ -78,7 +91,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg overflow-hidden">
             <img
               src={productImage}
-              alt={product.name}
+              alt={productName}
               className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
               onError={(e) => {
                 console.error("Erro ao carregar imagem:", productImage);
@@ -91,7 +104,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <CardFooter className="flex-col items-start flex-grow">
           <div className="w-full">
             <h3 className="font-semibold text-lg line-clamp-2">
-              {formatProductName(product.name || "Produto sem nome")}
+              {formatProductName(productName)}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-2">
               {product.short_description || "Sem descrição"}

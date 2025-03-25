@@ -9,6 +9,11 @@ interface FetchShippingRatesParams {
   items?: any[];
 }
 
+// Extended shipping rate type to include additional kg rate
+interface ExtendedShippingRate extends ShippingCalculationRate {
+  additional_kg_rate?: number;
+}
+
 const MAX_SHIPPING_COST = 60; // Limite máximo de R$ 60,00 para frete
 const PRODUCT_WEIGHT_GRAMS = 200; // Peso padrão de 200g por produto
 
@@ -30,7 +35,7 @@ export const fetchShippingRates = async ({
     // Primeiro, tentar buscar as taxas do banco de dados (Supabase)
     try {
       console.log("Tentando buscar taxas do banco de dados...");
-      const supabaseRates = await fetchShippingRatesFromSupabase(zipCode);
+      const supabaseRates = await fetchShippingRatesFromSupabase(zipCode) as ExtendedShippingRate[];
       if (supabaseRates.length > 0) {
         console.log("Taxas encontradas no banco de dados:", supabaseRates);
         

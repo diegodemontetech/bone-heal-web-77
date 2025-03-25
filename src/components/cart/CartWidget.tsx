@@ -29,9 +29,13 @@ const CartWidget = ({ isOpen, onClose, items }: CartWidgetProps) => {
     }
     
     try {
+      // Extract the filename if it's a full path
+      const pathParts = imagePath.split('/');
+      const fileName = pathParts[pathParts.length - 1];
+      
       const { data } = supabase.storage
         .from('products')
-        .getPublicUrl(imagePath);
+        .getPublicUrl(fileName);
       
       return data.publicUrl;
     } catch (error) {
