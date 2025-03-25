@@ -30,11 +30,11 @@ export const useContactFormSubmit = ({ name, phone, email, department, message, 
       const { error } = await supabase.from('contact_leads').insert({
         name,
         phone,
+        email: email || null,
         reason: department,
         source: 'contact_form',
-        status: 'new',
-        message: message,
-        email: email || null
+        status: 'pending',
+        message: message || null
       });
       
       if (error) {
