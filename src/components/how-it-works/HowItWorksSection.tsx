@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import StepCard from "./StepCard";
 import { HowItWorksStep, howItWorksSteps } from "@/data/how-it-works-steps";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface HowItWorksSectionProps {
   title?: string;
@@ -45,6 +47,16 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
           {steps.map((step, index) => (
             <StepCard key={index} step={step} />
           ))}
+        </div>
+
+        <div className="mt-12 flex justify-center">
+          <Button 
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold uppercase px-8 py-6 text-lg fixed bottom-8"
+            onClick={() => window.open('/studies', '_blank')}
+          >
+            <Download className="w-5 h-5 mr-2" />
+            BAIXAR PDF ESTUDOS
+          </Button>
         </div>
       </div>
     </section>

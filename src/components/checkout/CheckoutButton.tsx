@@ -13,7 +13,7 @@ const CheckoutButton = ({
 }: CheckoutButtonProps) => {
   return (
     <Button
-      className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base flex items-center justify-center font-semibold"
+      className="w-full bg-green-600 hover:bg-green-700 text-white h-12 text-base flex items-center justify-center font-semibold uppercase"
       onClick={onClick}
       disabled={isProcessing}
     >

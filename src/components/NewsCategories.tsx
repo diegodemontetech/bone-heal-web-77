@@ -1,6 +1,5 @@
 
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
 
 interface NewsCategoriesProps {
   categories: string[];
@@ -8,37 +7,35 @@ interface NewsCategoriesProps {
   onCategorySelect: (category: string | null) => void;
 }
 
-const NewsCategories = ({ 
-  categories = ["Odontologia", "Pesquisa", "Inovação", "Eventos", "Tecnologia"], 
-  selectedCategory, 
-  onCategorySelect 
+const NewsCategories = ({
+  categories,
+  selectedCategory,
+  onCategorySelect,
 }: NewsCategoriesProps) => {
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-wrap gap-3 mb-10"
-    >
-      <Button
-        variant={selectedCategory === null ? "default" : "outline"}
-        className="rounded-full"
-        onClick={() => onCategorySelect(null)}
-      >
-        Todas
-      </Button>
-      
-      {categories.map((category) => (
+    <div className="mb-8">
+      <h2 className="text-xl font-bold mb-4">Categorias</h2>
+      <div className="flex flex-wrap gap-2">
         <Button
-          key={category}
-          variant={selectedCategory === category ? "default" : "outline"}
-          className="rounded-full"
-          onClick={() => onCategorySelect(category)}
+          variant={selectedCategory === null ? "default" : "outline"}
+          onClick={() => onCategorySelect(null)}
+          className={selectedCategory === null ? "bg-primary text-white" : ""}
         >
-          {category}
+          Todas
         </Button>
-      ))}
-    </motion.div>
+        
+        {categories.map((category) => (
+          <Button
+            key={category}
+            variant={selectedCategory === category ? "default" : "outline"}
+            onClick={() => onCategorySelect(category)}
+            className={selectedCategory === category ? "bg-primary text-white" : ""}
+          >
+            {category}
+          </Button>
+        ))}
+      </div>
+    </div>
   );
 };
 

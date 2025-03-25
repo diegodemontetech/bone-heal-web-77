@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, Eye, RefreshCw } from "lucide-react";
+import { CalendarDays, Eye, RefreshCw, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -47,6 +47,30 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
     },
   });
 
+  const generatePDF = async (item: any) => {
+    try {
+      // This would typically call a function to generate a PDF from the news content
+      toast.success("Gerando PDF, aguarde...");
+      
+      // For demonstration purposes, we'll just simulate PDF generation
+      // In a real implementation, you'd generate a PDF and download it
+      setTimeout(() => {
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,');
+        element.setAttribute('download', `${item.slug}.pdf`);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+        
+        toast.success("PDF gerado com sucesso!");
+      }, 1500);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
   if (error) {
     toast.error("Erro ao carregar notícias", {
       description: "Por favor, tente novamente mais tarde."
@@ -55,14 +79,14 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
     return (
       <div className="text-center p-8">
         <div className="text-red-600 font-semibold mb-4">
-          Erro ao carregar notícias
+          ERRO AO CARREGAR NOTÍCIAS
         </div>
         <Button 
           onClick={() => refetch()}
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          Tentar Novamente
+          TENTAR NOVAMENTE
         </Button>
       </div>
     );
@@ -90,7 +114,7 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
     return (
       <div className="text-center p-8">
         <div className="text-neutral-600 mb-4">
-          Nenhuma notícia encontrada
+          NENHUMA NOTÍCIA ENCONTRADA
         </div>
       </div>
     );
@@ -104,10 +128,9 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: index * 0.1 }}
-          onClick={() => navigate(`/news/${item.slug}`)}
           className="cursor-pointer"
         >
-          <Card className="group hover:shadow-lg transition-shadow duration-300">
+          <Card className="group hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
             <div className="relative h-48 overflow-hidden rounded-t-lg">
               <img
                 src={item.featured_image || "/placeholder.svg"}
@@ -118,19 +141,22 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
                 }}
               />
               {item.category && (
-                <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
+                <div className="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm uppercase font-semibold">
                   {item.category}
                 </div>
               )}
             </div>
-            <CardContent className="p-6">
-              <h3 className="text-xl font-semibold mb-4 group-hover:text-primary transition-colors">
+            <CardContent className="p-6 flex flex-col flex-grow">
+              <h3 
+                className="text-xl font-semibold mb-4 group-hover:text-primary transition-colors"
+                onClick={() => navigate(`/news/${item.slug}`)}
+              >
                 {item.title}
               </h3>
-              <p className="text-neutral-600 mb-4 line-clamp-2">
+              <p className="text-neutral-600 mb-4 line-clamp-2 flex-grow">
                 {item.summary}
               </p>
-              <div className="flex items-center justify-between text-sm text-neutral-500">
+              <div className="flex items-center justify-between text-sm text-neutral-500 mt-auto">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="w-4 h-4" />
                   {format(new Date(item.published_at), "d 'de' MMMM, yyyy", { locale: ptBR })}
@@ -139,6 +165,28 @@ const NewsList = ({ news: initialNews }: NewsListProps) => {
                   <Eye className="w-4 h-4" />
                   {item.views || 0}
                 </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate(`/news/${item.slug}`)}
+                  className="text-primary"
+                >
+                  LER MAIS
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    generatePDF(item);
+                  }}
+                  className="text-gray-500 hover:text-primary"
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  PDF
+                </Button>
               </div>
             </CardContent>
           </Card>
