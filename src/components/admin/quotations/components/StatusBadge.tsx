@@ -7,11 +7,11 @@ interface StatusBadgeProps {
 
 const StatusBadge = ({ status }: StatusBadgeProps) => {
   const statusStyles: Record<string, string> = {
-    draft: "bg-gray-200 text-gray-800",
-    sent: "bg-blue-200 text-blue-800",
-    accepted: "bg-green-200 text-green-800",
-    rejected: "bg-red-200 text-red-800",
-    expired: "bg-yellow-200 text-yellow-800"
+    draft: "bg-neutral-100 text-neutral-700 border-neutral-200",
+    sent: "bg-blue-50 text-blue-700 border-blue-100",
+    accepted: "bg-green-50 text-green-700 border-green-100",
+    rejected: "bg-red-50 text-red-700 border-red-100",
+    expired: "bg-amber-50 text-amber-700 border-amber-100"
   };
 
   const statusLabels: Record<string, string> = {
@@ -23,7 +23,7 @@ const StatusBadge = ({ status }: StatusBadgeProps) => {
   };
 
   return (
-    <Badge className={statusStyles[status] || "bg-gray-200"}>
+    <Badge className={`${statusStyles[status] || "bg-neutral-100"} font-medium border`}>
       {statusLabels[status] || status}
     </Badge>
   );

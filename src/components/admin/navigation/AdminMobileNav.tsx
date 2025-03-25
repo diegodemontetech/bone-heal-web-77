@@ -15,12 +15,12 @@ export const AdminMobileNav = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute left-4 top-3 z-40"
+            className="absolute left-4 top-3 z-40 text-primary"
           >
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="p-0">
+        <SheetContent side="left" className="p-0 border-r shadow-lg">
           <AdminSidebar onCloseMobile={() => setOpen(false)} />
         </SheetContent>
       </Sheet>

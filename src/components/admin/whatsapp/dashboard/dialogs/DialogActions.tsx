@@ -12,11 +12,20 @@ export interface DialogActionsProps {
 
 export const DialogActions = ({ isCreating, onCancel, onConfirm, isLoading }: DialogActionsProps) => {
   return (
-    <div className="flex justify-end gap-2 mt-4">
-      <Button variant="outline" onClick={onCancel} disabled={isLoading}>
+    <div className="flex justify-end gap-3 mt-6">
+      <Button 
+        variant="outline" 
+        onClick={onCancel} 
+        disabled={isLoading}
+        className="border-neutral-200 text-neutral-700"
+      >
         Cancelar
       </Button>
-      <Button onClick={onConfirm} disabled={isLoading}>
+      <Button 
+        onClick={onConfirm} 
+        disabled={isLoading}
+        className="bg-primary hover:bg-primary-light"
+      >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

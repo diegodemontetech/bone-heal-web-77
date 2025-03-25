@@ -17,12 +17,15 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Kanban de Leads</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Kanban de Leads</h1>
+        <p className="text-neutral-500 mt-1">Visualize e gerencie seus leads</p>
+      </div>
       
-      <Card>
-        <CardHeader>
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
+      <Card className="border-none shadow-sm">
+        <CardHeader className="border-b pb-3">
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-2 w-[200px]">
               <TabsTrigger value="leads">Leads</TabsTrigger>
               <TabsTrigger value="customers">Clientes</TabsTrigger>
             </TabsList>
@@ -35,8 +38,8 @@ const CRMKanban = ({ defaultPipelineId }: CRMKanbanProps) => {
           </TabsContent>
           
           <TabsContent value="customers" className="mt-0">
-            <div className="p-6">
-              <p className="text-muted-foreground">Kanban de clientes em breve.</p>
+            <div className="p-8 flex items-center justify-center">
+              <p className="text-neutral-500">Kanban de clientes em breve.</p>
             </div>
           </TabsContent>
         </CardContent>

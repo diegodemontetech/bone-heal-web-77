@@ -14,22 +14,22 @@ const Layout = ({ children }: LayoutProps) => {
   useEffect(() => {
     console.log("Admin Layout renderizado. Rota atual:", location.pathname);
     
-    // Garantir que o tema e cores estejam aplicados corretamente
+    // Ensure theme and colors are correctly applied
     document.documentElement.classList.remove("dark");
     document.documentElement.classList.add("light");
   }, [location.pathname]);
 
-  // Determinar se estamos em uma página que já tem layout
+  // Determine if we're on a page that already has layout
   const hasNestedLayout = location.pathname.includes('/admin/crm/') && (children === undefined);
 
   if (hasNestedLayout) {
-    // Apenas renderizar o conteúdo sem adicionar outro layout
+    // Only render content without adding another layout
     return <Outlet />;
   }
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      {/* Desktop Sidebar - Visível apenas em telas médias e maiores */}
+    <div className="flex min-h-screen bg-neutral-50 text-foreground">
+      {/* Desktop Sidebar - Only visible on medium screens and up */}
       <div className="hidden md:flex md:w-64 md:flex-shrink-0 md:fixed h-screen z-10">
         <AdminSidebar />
       </div>
@@ -39,7 +39,7 @@ const Layout = ({ children }: LayoutProps) => {
       
       {/* Main Content */}
       <div className="flex-1 md:ml-64">
-        <main className="p-4">
+        <main className="p-6">
           {children || <Outlet />}
         </main>
       </div>
