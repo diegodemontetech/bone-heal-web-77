@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCart } from "@/hooks/use-cart";
@@ -13,6 +12,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth-context";
 import { Card } from "@/components/ui/card";
 import { Loader2, CheckCircle, TruckIcon, CreditCard } from "lucide-react";
+import { EmptyCart } from "@/components/cart/EmptyCart";
 
 interface CartContentProps {
   userProfile: any;
@@ -21,6 +21,12 @@ interface CartContentProps {
 const CartContent = ({ userProfile }: CartContentProps) => {
   const navigate = useNavigate();
   const { cartItems, getTotalPrice, getTotalItems } = useCart();
+  
+  // Check if cart is empty
+  if (!cartItems || cartItems.length === 0) {
+    return <EmptyCart />;
+  }
+  
   const { profile, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("cart");
   const [shippingError, setShippingError] = useState<string | null>(null);
@@ -38,7 +44,6 @@ const CartContent = ({ userProfile }: CartContentProps) => {
     handleShippingRateChange
   } = useShipping();
   
-  // Checkout hooks
   const {
     loading: checkoutLoading,
     paymentMethod,
@@ -48,7 +53,6 @@ const CartContent = ({ userProfile }: CartContentProps) => {
     checkoutData
   } = useCheckout();
 
-  // Pre-fill zip code from user profile
   useEffect(() => {
     if (userProfile?.zip_code && !zipCode) {
       setZipCode(userProfile.zip_code);

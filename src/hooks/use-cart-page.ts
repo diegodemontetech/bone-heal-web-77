@@ -10,7 +10,8 @@ export const useCartPage = () => {
     updateQuantity, 
     clearCart, 
     getTotalPrice, 
-    getTotalItems 
+    getTotalItems,
+    cartItems
   } = useCart();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +34,12 @@ export const useCartPage = () => {
   };
 
   const handleCheckout = () => {
-    navigate("/checkout");
+    // Check if cart is empty before navigating
+    if (cartItems && cartItems.length > 0) {
+      navigate("/checkout");
+    } else {
+      navigate("/products");
+    }
   };
 
   return {
