@@ -113,13 +113,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </CardContent>
         <CardFooter className="flex-col items-start flex-grow">
           <div className="w-full">
-            <h3 className="font-semibold text-lg line-clamp-2">
+            <h3 className="font-semibold text-md md:text-lg line-clamp-2">
               {formatProductName(productName)}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-2">
+            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
               {product.short_description || "Sem descrição"}
             </p>
-            <div className="mt-2 font-semibold text-lg">
+            <div className="mt-2 font-semibold text-md md:text-lg">
               {formattedPrice}
             </div>
           </div>

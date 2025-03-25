@@ -72,7 +72,7 @@ const GoogleReviews = () => {
     <Card className="mt-8">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Avaliações do Google
+          Avaliações dos Clientes
           <span className="text-sm font-normal text-gray-500">(5.0 ⭐)</span>
         </CardTitle>
       </CardHeader>

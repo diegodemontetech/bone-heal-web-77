@@ -31,28 +31,6 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
     
     return name;
   };
-  
-  // Function to safely format the price regardless of source
-  const formatProductPrice = (price: number | string | null | undefined) => {
-    // Handle various price formats that might come from Omie
-    if (price === null || price === undefined) return "Consulte";
-    
-    // If price is a string that can be converted to a number
-    if (typeof price === 'string') {
-      const numPrice = parseFloat(price);
-      if (!isNaN(numPrice)) {
-        return formatCurrency(numPrice);
-      }
-      return price; // If it's a non-numeric string, return as is
-    }
-    
-    // If price is a number
-    if (typeof price === 'number') {
-      return formatCurrency(price);
-    }
-    
-    return "Consulte";
-  };
 
   return (
     <div className="space-y-4">
@@ -71,9 +49,7 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
       )}
       
       <div className="pt-2">
-        <div className="text-3xl font-bold text-primary">
-          {formatProductPrice(product.price)}
-        </div>
+        {/* Removed price display from here to avoid duplication */}
         
         {product.on_order ? (
           <div className="mt-2 text-sm text-orange-600 font-medium">

@@ -59,25 +59,25 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
           </div>
           
           <Button
-            className="w-full py-6 text-base bg-green-600 hover:bg-green-700 text-white font-bold"
+            className="w-full py-5 text-sm md:text-base bg-green-600 hover:bg-green-700 text-white font-bold"
             size="lg"
             onClick={handleSalesContact}
           >
-            <Phone className="w-5 h-5 mr-2" /> Fale com nosso time Comercial
+            <Phone className="w-4 h-4 mr-2" /> Fale com nosso time Comercial
           </Button>
         </div>
         
         <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
           <div className="flex flex-col items-center text-center">
-            <Award className="h-5 w-5 text-gray-500 mb-1" />
+            <Award className="h-4 h-4 text-gray-500 mb-1" />
             <span className="text-xs text-gray-600">Produto Patenteado</span>
           </div>
           <div className="flex flex-col items-center text-center">
-            <FileCheck className="h-5 w-5 text-gray-500 mb-1" />
+            <FileCheck className="h-4 h-4 text-gray-500 mb-1" />
             <span className="text-xs text-gray-600">Produto Anvisa</span>
           </div>
           <div className="flex flex-col items-center text-center">
-            <Factory className="h-5 w-5 text-gray-500 mb-1" />
+            <Factory className="h-4 h-4 text-gray-500 mb-1" />
             <span className="text-xs text-gray-600">Direto da Indústria</span>
           </div>
         </div>
@@ -98,18 +98,18 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
           
           <div className="space-y-4">
             <Button
-              className="w-full py-6 text-base bg-green-600 hover:bg-green-700 text-white font-bold"
+              className="w-full py-5 text-sm md:text-base bg-green-600 hover:bg-green-700 text-white font-bold"
               size="lg"
               onClick={handleAddToCart}
               disabled={added}
             >
               {added ? (
                 <>
-                  <Check className="w-5 h-5 mr-2" /> Adicionado ao carrinho
+                  <Check className="w-4 h-4 mr-2" /> Adicionado ao carrinho
                 </>
               ) : (
                 <>
-                  <ShoppingCart className="w-5 h-5 mr-2" /> Adicionar ao carrinho
+                  <ShoppingCart className="w-4 h-4 mr-2" /> Adicionar ao carrinho
                 </>
               )}
             </Button>
@@ -118,13 +118,13 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
               <Button
                 variant="outline"
                 size="lg"
-                className="py-6 text-base border-black text-black hover:bg-black/5"
+                className="py-4 text-xs md:text-sm border-black text-black hover:bg-black/5"
                 onClick={() => navigate("/products")}
               >
                 Continuar Comprando
               </Button>
               <Button
-                className="py-6 text-base bg-black hover:bg-black/90 text-white font-bold"
+                className="py-4 text-xs md:text-sm bg-black hover:bg-black/90 text-white font-bold"
                 size="lg"
                 onClick={() => navigate("/cart")}
               >
@@ -134,15 +134,15 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
             
             <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
               <div className="flex flex-col items-center text-center">
-                <Award className="h-5 w-5 text-gray-500 mb-1" />
+                <Award className="h-4 w-4 text-gray-500 mb-1" />
                 <span className="text-xs text-gray-600">Produto Patenteado</span>
               </div>
               <div className="flex flex-col items-center text-center">
-                <FileCheck className="h-5 w-5 text-gray-500 mb-1" />
+                <FileCheck className="h-4 w-4 text-gray-500 mb-1" />
                 <span className="text-xs text-gray-600">Produto Anvisa</span>
               </div>
               <div className="flex flex-col items-center text-center">
-                <Factory className="h-5 w-5 text-gray-500 mb-1" />
+                <Factory className="h-4 w-4 text-gray-500 mb-1" />
                 <span className="text-xs text-gray-600">Direto da Indústria</span>
               </div>
             </div>
@@ -157,7 +157,7 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
           </div>
           
           <Button
-            className="w-full py-6 text-base bg-primary hover:bg-primary/90"
+            className="w-full py-5 text-sm md:text-base bg-primary hover:bg-primary/90"
             size="lg"
             onClick={() => navigate("/login")}
           >
@@ -166,15 +166,15 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
           
           <div className="grid grid-cols-3 gap-2 pt-4 border-t border-gray-100">
             <div className="flex flex-col items-center text-center">
-              <Award className="h-5 w-5 text-gray-500 mb-1" />
+              <Award className="h-4 w-4 text-gray-500 mb-1" />
               <span className="text-xs text-gray-600">Produto Patenteado</span>
             </div>
             <div className="flex flex-col items-center text-center">
-              <FileCheck className="h-5 w-5 text-gray-500 mb-1" />
+              <FileCheck className="h-4 w-4 text-gray-500 mb-1" />
               <span className="text-xs text-gray-600">Produto Anvisa</span>
             </div>
             <div className="flex flex-col items-center text-center">
-              <Factory className="h-5 w-5 text-gray-500 mb-1" />
+              <Factory className="h-4 w-4 text-gray-500 mb-1" />
               <span className="text-xs text-gray-600">Direto da Indústria</span>
             </div>
           </div>

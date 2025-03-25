@@ -5,6 +5,7 @@ import ProductActions from "./ProductActions";
 import ProductGallery from "./ProductGallery";
 import ProductTechDetails from "./ProductTechDetails";
 import GoogleReviews from "./GoogleReviews";
+import ProductReviews from "./ProductReviews";
 
 interface ProductDetailContentProps {
   product: Product;
@@ -36,6 +37,10 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
         </div>
         
         <ProductTechDetails product={product} />
+        
+        <div className="mt-8">
+          <ProductReviews product={product} />
+        </div>
       </div>
     </>
   );
