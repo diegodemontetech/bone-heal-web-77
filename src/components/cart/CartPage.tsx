@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCheckout } from "@/hooks/use-checkout";
 import { EmptyCart } from "@/components/cart/EmptyCart";
 import CartContent from "@/components/cart/CartContent";
+import { Loader2 } from "lucide-react";
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -45,8 +46,16 @@ const CartPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex justify-center items-center">
+          <div className="text-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Carregando seu carrinho...</p>
+          </div>
+        </div>
+        <Footer />
+        <WhatsAppWidget />
       </div>
     );
   }
@@ -55,7 +64,7 @@ const CartPage = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex-1 container mx-auto px-4 py-8">
+        <div className="flex-1 container mx-auto px-4 py-12">
           <EmptyCart />
         </div>
         <Footer />
@@ -67,9 +76,12 @@ const CartPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Meu Carrinho</h1>
-        <CartContent userProfile={userProfile} />
+      <div className="flex-1 container mx-auto px-4 py-12">
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
+          <p className="text-muted-foreground mb-8">Complete os dados de entrega e pagamento para finalizar seu pedido.</p>
+          <CartContent userProfile={userProfile} />
+        </div>
       </div>
       <Footer />
       <WhatsAppWidget />

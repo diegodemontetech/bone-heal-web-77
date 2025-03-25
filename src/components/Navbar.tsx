@@ -6,6 +6,7 @@ import { UserMenu } from "./navbar/UserMenu";
 import { MobileMenu } from "./navbar/MobileMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import NotificationsBell from "./navbar/NotificationsBell";
+import CartWidget from "./CartWidget";
 
 export default function Navbar() {
   const session = useSession();
@@ -22,7 +23,8 @@ export default function Navbar() {
           <NavItems />
         </div>
         
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-3">
+          <CartWidget />
           {session && <NotificationsBell />}
           {!isMobile && <UserMenu session={session} />}
           {isMobile && <MobileMenu session={session} />}

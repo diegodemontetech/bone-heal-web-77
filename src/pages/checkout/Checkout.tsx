@@ -1,19 +1,23 @@
 
-import React from 'react';
-import CheckoutLayout from '@/components/checkout/CheckoutLayout';
-import CheckoutContent from '@/components/checkout/CheckoutContent';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
-// Como o arquivo não é usado no projeto, podemos simplificá-lo
 const Checkout = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to the cart page since we've merged cart and checkout
+    navigate('/cart');
+  }, [navigate]);
+
   return (
-    <CheckoutLayout>
-      {/* Neste ponto, removemos a chamada direta ao componente CheckoutContent 
-          porque ele espera props que não estamos fornecendo */}
-      <div className="p-4">
-        <h1 className="text-xl font-bold mb-4">Checkout</h1>
-        <p>Carregando informações do checkout...</p>
+    <div className="h-screen flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <p>Redirecionando para o checkout unificado...</p>
       </div>
-    </CheckoutLayout>
+    </div>
   );
 };
 
