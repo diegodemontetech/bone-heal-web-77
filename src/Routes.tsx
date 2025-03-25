@@ -6,6 +6,7 @@ import Products from "@/pages/Products";
 import ProductDetail from "@/pages/ProductDetail";
 import Studies from "@/pages/Studies";
 import News from "@/pages/News";
+import NewsDetail from "@/pages/NewsDetail";
 import Contact from "@/pages/Contact";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -42,6 +43,7 @@ export function Routes() {
         <Route path="/como-funciona" element={<ComoFunciona />} />
         <Route path="/studies" element={<Studies />} />
         <Route path="/news" element={<News />} />
+        <Route path="/news/:slug" element={<NewsDetail />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
