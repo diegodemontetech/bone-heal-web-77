@@ -31,36 +31,40 @@ const ProductCard = ({ product }: ProductCardProps) => {
   return (
     <Card className="relative group h-full">
       <FavoriteButton product={product} variant="icon" />
-      <Link to={productUrl} className="flex flex-col h-full">
-        <CardContent className="pt-4 flex-shrink-0">
-          <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg overflow-hidden">
-            <img
-              src={productImage}
-              alt={productName}
-              className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
-              onError={(e) => {
-                console.error("Erro ao carregar imagem:", productImage);
-                const target = e.target as HTMLImageElement;
-                target.src = fallbackImage;
-              }}
-            />
-          </div>
-        </CardContent>
+      <div className="flex flex-col h-full">
+        <Link to={productUrl} className="flex-shrink-0">
+          <CardContent className="pt-4">
+            <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg overflow-hidden">
+              <img
+                src={productImage}
+                alt={productName}
+                className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
+                onError={(e) => {
+                  console.error("Erro ao carregar imagem:", productImage);
+                  const target = e.target as HTMLImageElement;
+                  target.src = fallbackImage;
+                }}
+              />
+            </div>
+          </CardContent>
+        </Link>
         <CardFooter className="flex-col items-start flex-grow">
           <div className="w-full">
-            <h3 className="font-semibold text-md md:text-lg line-clamp-2">
-              {formatProductName(productName)}
-            </h3>
-            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
-              {product.short_description || "Sem descrição"}
-            </p>
-            
-            <ProductPricing price={product.price || 0} />
+            <Link to={productUrl}>
+              <h3 className="font-semibold text-md md:text-lg line-clamp-2">
+                {formatProductName(productName)}
+              </h3>
+              <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
+                {product.short_description || "Sem descrição"}
+              </p>
+              
+              <ProductPricing price={product.price || 0} />
+            </Link>
             
             <ProductActions product={product} />
           </div>
         </CardFooter>
-      </Link>
+      </div>
     </Card>
   );
 };

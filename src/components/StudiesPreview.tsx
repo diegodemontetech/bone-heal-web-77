@@ -2,16 +2,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Download, Calendar, AlertCircle, Loader2, Globe } from "lucide-react";
+import { ArrowRight, Download, Calendar, AlertCircle, Loader2, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const StudiesPreview = () => {
-  const [language, setLanguage] = useState<"pt" | "en" | "es">("pt");
+  const [language, setLanguage] = useState<"pt" | "en" | "es">("en");
   
   const { data: studies, isLoading, error } = useQuery({
     queryKey: ["studies-preview"],
@@ -41,9 +42,9 @@ const StudiesPreview = () => {
   });
 
   const titles = {
-    pt: "Estudos científicos",
-    en: "Scientific Studies",
-    es: "Estudios científicos"
+    pt: "ESTUDOS CIENTÍFICOS",
+    en: "SCIENTIFIC STUDIES",
+    es: "ESTUDIOS CIENTÍFICOS"
   };
 
   const subtitles = {
@@ -71,38 +72,19 @@ const StudiesPreview = () => {
   };
 
   const pdfTexts = {
-    pt: "PDF indisponível",
-    en: "PDF unavailable",
-    es: "PDF no disponible"
+    pt: "BAIXAR PDF",
+    en: "DOWNLOAD PDF",
+    es: "DESCARGAR PDF"
   };
 
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-8">
         <div className="flex justify-end mb-4">
-          <div className="flex space-x-2">
-            <button 
-              onClick={() => setLanguage("pt")}
-              className={`flex items-center ${language === "pt" ? "ring-2 ring-primary" : ""} rounded-full overflow-hidden`}
-              title="Português"
-            >
-              <img src="https://flagcdn.com/br.svg" alt="Português" className="w-6 h-6 object-cover" />
-            </button>
-            <button 
-              onClick={() => setLanguage("en")}
-              className={`flex items-center ${language === "en" ? "ring-2 ring-primary" : ""} rounded-full overflow-hidden`}
-              title="English"
-            >
-              <img src="https://flagcdn.com/gb.svg" alt="English" className="w-6 h-6 object-cover" />
-            </button>
-            <button 
-              onClick={() => setLanguage("es")}
-              className={`flex items-center ${language === "es" ? "ring-2 ring-primary" : ""} rounded-full overflow-hidden`}
-              title="Español"
-            >
-              <img src="https://flagcdn.com/es.svg" alt="Español" className="w-6 h-6 object-cover" />
-            </button>
-          </div>
+          <LanguageSwitcher 
+            language={language}
+            onLanguageChange={setLanguage}
+          />
         </div>
         
         <motion.div
@@ -112,9 +94,15 @@ const StudiesPreview = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-bold text-primary mb-4">
+          <div className="flex items-center justify-center mb-4">
+            <h2 className="text-4xl font-bold text-primary mb-4 uppercase">
+              <span className="mr-2">BONE HEAL</span>
+              <sup className="text-sm align-super">®</sup>
+            </h2>
+          </div>
+          <h3 className="text-4xl font-bold text-primary mb-4 uppercase">
             {titles[language]}
-          </h2>
+          </h3>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
             {subtitles[language]}
           </p>
@@ -144,7 +132,7 @@ const StudiesPreview = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 border border-neutral-200"
+                className="bg-white rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl border border-neutral-200"
               >
                 <div className="p-6">
                   <div className="flex items-center text-sm text-neutral-500 mb-3">
@@ -166,19 +154,25 @@ const StudiesPreview = () => {
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
-                    {study.file_url ? (
-                      <a
-                        href={study.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-primary hover:text-primary-dark transition-colors"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        PDF
-                      </a>
-                    ) : (
-                      <span className="text-neutral-400 text-sm">{pdfTexts[language]}</span>
-                    )}
+                    
+                    <div className="absolute bottom-4 right-4">
+                      {study.file_url ? (
+                        <a
+                          href={study.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center bg-primary text-white px-3 py-1 rounded font-semibold text-xs"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          {pdfTexts[language]}
+                        </a>
+                      ) : (
+                        <span className="text-neutral-400 text-xs flex items-center">
+                          <FileText className="w-3 h-3 mr-1" />
+                          {pdfTexts[language]}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -193,7 +187,7 @@ const StudiesPreview = () => {
         <div className="text-center">
           <Link
             to="/studies"
-            className="inline-flex items-center justify-center px-8 py-3 bg-primary text-white rounded-full hover:bg-primary-dark transition-colors"
+            className="inline-flex items-center justify-center px-8 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors font-semibold"
           >
             {buttonTexts[language]}
             <ArrowRight className="ml-2 h-5 w-5" />

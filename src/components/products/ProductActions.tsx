@@ -70,7 +70,7 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product }) => {
       
       <Button
         size="sm"
-        className="w-1/2 text-xs bg-green-600 hover:bg-green-700"
+        className="w-1/2 text-xs bg-green-600 hover:bg-green-700 text-white font-semibold"
         onClick={handleBuyNow}
       >
         <CreditCard className="w-3 h-3 mr-1" />
