@@ -8,6 +8,8 @@ import ProductsSection from "@/components/como-funciona/ProductsSection";
 import ApplicationTechniqueSection from "@/components/como-funciona/ApplicationTechniqueSection";
 import BenefitsSection from "@/components/como-funciona/BenefitsSection";
 import ContactSection from "@/components/contact/ContactSection";
+import HowItWorks from "@/components/HowItWorks";
+import ProcessoSection from "@/components/como-funciona/ProcessoSection";
 
 const ComoFunciona = () => {
   return (
@@ -23,6 +25,8 @@ const ComoFunciona = () => {
       <Navbar />
       <BoneHealHero />
       <ProductsSection />
+      <HowItWorks />
+      <ProcessoSection />
       <ApplicationTechniqueSection />
       <BenefitsSection />
       <ContactSection />

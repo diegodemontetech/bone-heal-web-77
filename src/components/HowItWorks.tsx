@@ -1,3 +1,4 @@
+
 import { CheckCircle } from 'lucide-react';
 
 const HowItWorks = () => {
@@ -26,9 +27,9 @@ const HowItWorks = () => {
 
   return (
     <section className="section-padding bg-white" id="how-it-works">
-      <div className="container mx-auto container-padding">
+      <div className="container mx-auto px-4 py-16">
         <h2 className="text-3xl md:text-4xl text-center mb-12 text-primary">
-          Como Funciona
+          Como funciona
         </h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step, index) => (

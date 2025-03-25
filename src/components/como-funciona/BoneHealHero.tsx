@@ -22,14 +22,14 @@ const BoneHealHero = () => {
         >
           <div className="mb-8">
             <img 
-              src="https://i.ibb.co/mB5fmLB/logo-white.png" 
+              src="/logo-white.png" 
               alt="BoneHeal Logo" 
               className="h-20 md:h-24 mx-auto"
             />
           </div>
           
           <h1 className="text-3xl md:text-5xl font-bold mb-6">
-            Barreiras Premium para Regeneração Óssea Guiada
+            Barreiras premium para regeneração óssea guiada
           </h1>
           
           <p className="text-lg md:text-xl mb-10 text-white/90 max-w-3xl mx-auto">
@@ -43,7 +43,7 @@ const BoneHealHero = () => {
               className="bg-white text-primary hover:bg-white/90"
               onClick={scrollToProducts}
             >
-              Conheça Nossos Produtos
+              Conheça nossos produtos
             </Button>
             
             <Button 
@@ -52,7 +52,7 @@ const BoneHealHero = () => {
               className="border-white text-white hover:bg-white/10"
               asChild
             >
-              <a href="#contato">Fale Conosco</a>
+              <a href="#contato">Fale conosco</a>
             </Button>
           </div>
         </motion.div>
