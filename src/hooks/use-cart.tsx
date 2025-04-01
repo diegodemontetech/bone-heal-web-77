@@ -1,6 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { CartItem } from '@/types/cart';
+import { toast } from 'sonner';
 
 export type { CartItem };
 
@@ -26,14 +27,19 @@ const useCartStore = (): CartStore => {
   useEffect(() => {
     try {
       const storedCart = localStorage.getItem('cart');
+      console.log("Carregando carrinho do localStorage:", storedCart);
+      
       if (storedCart) {
         const parsedCart = JSON.parse(storedCart);
         if (Array.isArray(parsedCart)) {
+          console.log("Carrinho carregado com sucesso, itens:", parsedCart.length);
           setCart(parsedCart);
         } else {
           console.error("Stored cart is not an array:", parsedCart);
           localStorage.removeItem('cart');
         }
+      } else {
+        console.log("Nenhum carrinho encontrado no localStorage");
       }
     } catch (error) {
       console.error("Error loading cart from storage:", error);
@@ -46,6 +52,7 @@ const useCartStore = (): CartStore => {
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     if (!isLoading) {
+      console.log("Salvando carrinho no localStorage, itens:", cart.length);
       localStorage.setItem('cart', JSON.stringify(cart));
     }
   }, [cart, isLoading]);
@@ -57,23 +64,31 @@ const useCartStore = (): CartStore => {
       quantity: item.quantity || 1
     };
     
+    console.log("Adicionando item ao carrinho:", newItem);
+    
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === newItem.id);
       if (existingItem) {
+        console.log("Item já existe no carrinho, atualizando quantidade");
         return prevCart.map(cartItem =>
           cartItem.id === newItem.id ? { ...cartItem, quantity: cartItem.quantity + newItem.quantity } : cartItem
         );
       } else {
+        console.log("Novo item adicionado ao carrinho");
         return [...prevCart, newItem];
       }
     });
+    
+    toast.success("Produto adicionado ao carrinho");
   }, []);
 
   const removeItem = useCallback((id: string) => {
+    console.log("Removendo item do carrinho:", id);
     setCart(prevCart => prevCart.filter(item => item.id !== id));
   }, []);
 
   const updateQuantity = useCallback((id: string, quantity: number) => {
+    console.log("Atualizando quantidade:", id, quantity);
     if (quantity <= 0) {
       removeItem(id);
     } else {
@@ -84,7 +99,9 @@ const useCartStore = (): CartStore => {
   }, [removeItem]);
 
   const clearCart = useCallback(() => {
+    console.log("Limpando carrinho");
     setCart([]);
+    localStorage.removeItem('cart');
   }, []);
 
   const getTotalPrice = useCallback(() => {

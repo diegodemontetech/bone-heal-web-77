@@ -30,6 +30,8 @@ const CartWidget = () => {
 
   const handleCheckout = () => {
     setIsOpen(false); // Close the drawer before navigation
+    console.log("Direcionando para checkout, itens no carrinho:", cartItems.length);
+    
     if (cartItems && cartItems.length > 0) {
       navigate("/cart");
     } else {
@@ -79,7 +81,7 @@ const CartWidget = () => {
               </div>
               <h3 className="text-lg font-medium mb-2">Seu carrinho está vazio</h3>
               <p className="text-muted-foreground mb-6">Adicione produtos ao seu carrinho para continuar.</p>
-              <Link to="/produtos" onClick={() => setIsOpen(false)}>
+              <Link to="/products" onClick={() => setIsOpen(false)}>
                 <Button>Explorar Produtos</Button>
               </Link>
             </div>
@@ -90,9 +92,13 @@ const CartWidget = () => {
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                     <div className="relative h-20 w-20 bg-white rounded-md border overflow-hidden">
                       <img
-                        src={`/products/${item.image}`}
+                        src={item.image.startsWith('/') ? item.image : `https://kurpshcdafxbyqnzxvxu.supabase.co/storage/v1/object/public/products/${item.image}`}
                         alt={item.name}
                         className="h-full w-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/placeholder.svg";
+                        }}
                       />
                     </div>
                     <div className="flex-1 min-w-0">

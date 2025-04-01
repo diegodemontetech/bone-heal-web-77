@@ -3,9 +3,6 @@ import { useCart } from "@/hooks/use-cart";
 import { useShipping } from "@/hooks/use-shipping";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth-context";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import WhatsAppWidget from "@/components/WhatsAppWidget";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +16,8 @@ const CartPage = () => {
   const { cartItems, isLoading } = useCart();
   const { profile, isAuthenticated } = useAuth();
   const [userProfile, setUserProfile] = useState<any>(null);
+  
+  console.log("CartPage renderizando, itens:", cartItems?.length, "isLoading:", isLoading);
   
   // Load user profile data if authenticated
   useEffect(() => {
@@ -44,51 +43,26 @@ const CartPage = () => {
     fetchUserProfile();
   }, [isAuthenticated, profile]);
 
-  // Show loading state while cart is being loaded
+  // Aguardar o carregamento completo antes de verificar itens
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex justify-center items-center">
-          <div className="text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando seu carrinho...</p>
-          </div>
+      <div className="flex-1 flex justify-center items-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando seu carrinho...</p>
         </div>
-        <Footer />
-        <WhatsAppWidget />
       </div>
     );
   }
 
   // Verify cart has items before continuing
   if (!cartItems || cartItems.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-1 container mx-auto px-4 py-12">
-          <EmptyCart />
-        </div>
-        <Footer />
-        <WhatsAppWidget />
-      </div>
-    );
+    console.log("Carrinho vazio, exibindo EmptyCart");
+    return <EmptyCart />;
   }
 
-  return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <div className="flex-1 container mx-auto px-4 py-12">
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl font-bold mb-2">Finalizar Compra</h1>
-          <p className="text-muted-foreground mb-8">Complete os dados de entrega e pagamento para finalizar seu pedido.</p>
-          <CartContent userProfile={userProfile} />
-        </div>
-      </div>
-      <Footer />
-      <WhatsAppWidget />
-    </div>
-  );
+  console.log("Exibindo conteúdo do carrinho, itens:", cartItems.length);
+  return <CartContent userProfile={userProfile} />;
 };
 
 export default CartPage;

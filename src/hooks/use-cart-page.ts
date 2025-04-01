@@ -2,6 +2,7 @@
 import { useCart } from "./use-cart";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const useCartPage = () => {
   const { 
@@ -27,18 +28,30 @@ export const useCartPage = () => {
 
   const handleRemoveItem = (id: string) => {
     removeItem(id);
+    toast.success("Item removido do carrinho");
   };
 
   const handleClearCart = () => {
     clearCart();
+    toast.info("Carrinho esvaziado");
   };
 
   const handleCheckout = () => {
+    console.log("Tentando prosseguir para checkout, itens:", cartItems?.length);
+    
     // Check if cart is empty before navigating
     if (cartItems && cartItems.length > 0) {
-      navigate("/checkout");
+      setIsLoading(true);
+      // Pequeno atraso para garantir que a navegação funcione corretamente
+      setTimeout(() => {
+        navigate("/checkout");
+        setIsLoading(false);
+      }, 100);
     } else {
-      navigate("/products");
+      toast.error("Adicione itens ao carrinho para continuar");
+      setTimeout(() => {
+        navigate("/products");
+      }, 500);
     }
   };
 

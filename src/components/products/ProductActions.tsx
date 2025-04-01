@@ -13,7 +13,7 @@ interface ProductActionsProps {
 
 export const ProductActions: React.FC<ProductActionsProps> = ({ product }) => {
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, cart } = useCart();
   const [added, setAdded] = useState(false);
   
   useEffect(() => {
@@ -29,31 +29,42 @@ export const ProductActions: React.FC<ProductActionsProps> = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    addItem({
+    const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price || 0,
       image: product.main_image || "/placeholder.svg",
-      quantity: 1
-    });
+      quantity: 1,
+      weight: product.weight
+    };
+    
+    console.log("Adicionando ao carrinho:", cartItem);
+    addItem(cartItem);
     
     setAdded(true);
-    toast.success("Produto adicionado ao carrinho!");
   };
 
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    addItem({
+    const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price || 0,
       image: product.main_image || "/placeholder.svg",
-      quantity: 1
-    });
+      quantity: 1,
+      weight: product.weight
+    };
     
-    navigate("/cart");
+    console.log("Comprar agora:", cartItem);
+    addItem(cartItem);
+    
+    // Aguarde um momento para o item ser adicionado antes de navegar
+    setTimeout(() => {
+      console.log("Navegando para o carrinho, itens atuais:", cart.length);
+      navigate("/cart");
+    }, 100);
   };
 
   return (
