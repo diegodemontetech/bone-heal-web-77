@@ -43,7 +43,7 @@ const ProductTechnicalDetails = ({
     indication: "Indicação",
     contraindication: "Contraindicação",
     instructions: "Instruções de Uso",
-    registration: "Registro",
+    registration: "Registro ANVISA",
     classification: "Classificação"
   };
 

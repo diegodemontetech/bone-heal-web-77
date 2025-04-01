@@ -55,8 +55,8 @@ const ProductsSection = () => {
                 </h3>
                 
                 <p className="text-gray-600 mb-6">
-                  A barreira premium para regeneração óssea guiada, feita com polipropileno não absorvível 
-                  de alta qualidade, oferecendo versatilidade e previsibilidade para casos simples e complexos.
+                  A barreira premium de polipropileno não absorvível para regeneração óssea guiada, 
+                  proporcionando excelente formação óssea sem utilização de biomateriais e membranas.
                 </p>
                 
                 <div className="space-y-4 mb-8">
@@ -72,7 +72,7 @@ const ProductsSection = () => {
                     <span className="text-primary mt-1"><Clock size={18} /></span>
                     <div>
                       <p className="font-medium">Tempo de instalação</p>
-                      <p className="text-gray-600">Mais de 30 dias, ideal para casos mais complexos.</p>
+                      <p className="text-gray-600">7 a 10 dias, ideal para casos mais complexos.</p>
                     </div>
                   </div>
                   
@@ -80,15 +80,15 @@ const ProductsSection = () => {
                     <span className="text-primary mt-1"><Sparkles size={18} /></span>
                     <div>
                       <p className="font-medium">Benefícios exclusivos</p>
-                      <p className="text-gray-600">Regeneração simultânea de tecido ósseo e queratinizado, alta previsibilidade, dispensa de enxertos e outros biomateriais.</p>
+                      <p className="text-gray-600">Regeneração óssea guiada sem enxertos e biomateriais, com formação de tecido queratinizado em única fase.</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start gap-3">
                     <span className="text-primary mt-1"><Award size={18} /></span>
                     <div>
-                      <p className="font-medium">Estabilidade e memória</p>
-                      <p className="text-gray-600">Mantém a posição sobre o defeito sem alterações dimensionais.</p>
+                      <p className="font-medium">Indicações</p>
+                      <p className="text-gray-600">Defeitos ósseos horizontais e verticais, preservação alveolar, ROG em implante imediato.</p>
                     </div>
                   </div>
                 </div>
@@ -146,8 +146,8 @@ const ProductsSection = () => {
                 </h3>
                 
                 <p className="text-gray-600 mb-6">
-                  Uma solução acessível e eficaz para regeneração óssea guiada, produzida com polipropileno 
-                  através de processo fabril especial, mantendo a qualidade e eficácia para casos convencionais.
+                  Barreira de polipropileno não absorvível para regeneração óssea guiada, ideal para preservação 
+                  alveolar e defeitos ósseos de pequena e média extensão.
                 </p>
                 
                 <div className="space-y-4 mb-8">
@@ -155,7 +155,7 @@ const ProductsSection = () => {
                     <span className="text-primary mt-1"><Check size={18} /></span>
                     <div>
                       <p className="font-medium">Material</p>
-                      <p className="text-gray-600">Polipropileno produzido através de processo fabril especial.</p>
+                      <p className="text-gray-600">Polipropileno não absorvível.</p>
                     </div>
                   </div>
                   
@@ -163,7 +163,7 @@ const ProductsSection = () => {
                     <span className="text-primary mt-1"><Clock size={18} /></span>
                     <div>
                       <p className="font-medium">Tempo de instalação</p>
-                      <p className="text-gray-600">Até 28 dias, ideal para casos convencionais.</p>
+                      <p className="text-gray-600">7 a 10 dias, ideal para casos convencionais.</p>
                     </div>
                   </div>
                   
@@ -171,7 +171,7 @@ const ProductsSection = () => {
                     <span className="text-primary mt-1"><Sparkles size={18} /></span>
                     <div>
                       <p className="font-medium">Benefícios</p>
-                      <p className="text-gray-600">Acessibilidade, eficácia, simplicidade de manuseio, mesmos resultados do modelo Bone Heal®.</p>
+                      <p className="text-gray-600">Acessibilidade, eficácia, simplicidade de manuseio, regeneração sem enxertos.</p>
                     </div>
                   </div>
                   
@@ -179,7 +179,7 @@ const ProductsSection = () => {
                     <span className="text-primary mt-1"><Award size={18} /></span>
                     <div>
                       <p className="font-medium">Indicação</p>
-                      <p className="text-gray-600">Casos convencionais, exodontias (com ou sem implantes imediatos).</p>
+                      <p className="text-gray-600">Preservação alveolar, correção de defeitos ósseos pequenos e médios.</p>
                     </div>
                   </div>
                 </div>
