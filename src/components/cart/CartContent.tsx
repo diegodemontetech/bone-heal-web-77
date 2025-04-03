@@ -50,16 +50,18 @@ const CartContent = ({ userProfile }: CartContentProps) => {
     checkoutData
   } = useCheckout();
 
-  // Check if cart is empty - after all hooks have been initialized
-  if (!cartItems || cartItems.length === 0) {
-    return <EmptyCart />;
-  }
-
+  // All hooks have been initialized before any conditional logic
+  
   useEffect(() => {
     if (userProfile?.zip_code && !zipCode) {
       setZipCode(userProfile.zip_code);
     }
   }, [userProfile, zipCode, setZipCode]);
+
+  // Check if cart is empty - AFTER all hooks have been initialized
+  if (!cartItems || cartItems.length === 0) {
+    return <EmptyCart />;
+  }
 
   const handleZipCodeSubmit = async (zip: string) => {
     setShippingError(null);
