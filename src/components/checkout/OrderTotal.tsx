@@ -8,7 +8,6 @@ import { CartItem } from "@/hooks/use-cart";
 import { formatCurrency } from "@/lib/utils";
 import { CreditCard, Landmark, QrCode, Loader2 } from "lucide-react";
 import QRCodeDisplay from "./payment/QRCodeDisplay";
-import { useEffect } from 'react';
 
 interface OrderTotalProps {
   cartItems: CartItem[];

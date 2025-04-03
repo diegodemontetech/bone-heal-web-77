@@ -26,6 +26,7 @@ const Checkout = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const hasLoadedProfileRef = useRef(false);
   const [shippingCalculated, setShippingCalculated] = useState(false);
+  const shippingCalculationAttempted = useRef(false);
   
   // Shipping and payment states
   const { paymentMethod, setPaymentMethod, checkoutData, loading, handleCheckout, orderId } = useCheckout();
@@ -70,10 +71,13 @@ const Checkout = () => {
             setZipCode(cleanZipCode);
             console.log('Setting zip code from profile:', cleanZipCode);
             
-            // Always calculate shipping automatically here
-            calculateShipping(cleanZipCode);
-            setShippingCalculated(true);
-            console.log('Auto-calculating shipping with profile zipcode');
+            // Automatically calculate shipping if we have a valid zipcode
+            if (!shippingCalculationAttempted.current) {
+              shippingCalculationAttempted.current = true;
+              calculateShipping(cleanZipCode);
+              setShippingCalculated(true);
+              console.log('Auto-calculating shipping with profile zipcode');
+            }
           }
         }
       } catch (error) {
@@ -101,13 +105,16 @@ const Checkout = () => {
     }
     
     if (!selectedShippingRate) {
-      // Instead of showing an error, automatically calculate shipping
-      if (zipCode && zipCode.length === 8 && !shippingCalculated) {
+      // If we have a valid zip code but haven't calculated shipping yet, do it automatically
+      if (zipCode && zipCode.length === 8 && !shippingCalculated && !shippingCalculationAttempted.current) {
+        shippingCalculationAttempted.current = true;
         calculateShipping(zipCode);
         setShippingCalculated(true);
+        // Show a message to the user
+        toast.info("Calculando frete automaticamente...");
         // Return early to wait for shipping calculation
         return;
-      } else {
+      } else if (!zipCode || zipCode.length !== 8) {
         toast.error("É necessário ter um CEP válido para finalizar a compra");
         return;
       }
