@@ -17,20 +17,21 @@ export const useCheckoutPage = () => {
   const [directSession, setDirectSession] = useState<any>(null);
   const sessionCheckedRef = useRef(false);
   
-  // Verificações adicionais para autenticação - limitada a 3 tentativas
-  const [lastAuthCheck, setLastAuthCheck] = useState(Date.now());
+  // Additional authentication checks - limited to 3 attempts
   const [authCheckCount, setAuthCheckCount] = useState(0);
   const MAX_AUTH_CHECKS = 3;
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Verificar diretamente a sessão do Supabase apenas uma vez
+  // Check Supabase session directly only once
   useEffect(() => {
+    if (sessionCheckedRef.current) return;
+    
     const checkDirectSession = async () => {
-      if (sessionCheckedRef.current) return;
       sessionCheckedRef.current = true;
       
       try {
         const { data } = await supabase.auth.getSession();
-        console.log("[Checkout] Verificando sessão direta:", data?.session?.user?.id);
+        console.log("[Checkout] Direct session check:", data?.session?.user?.id);
         
         if (data?.session) {
           setDirectSession(data.session);
@@ -43,7 +44,7 @@ export const useCheckoutPage = () => {
           setIsInitialized(true);
         }
       } catch (error) {
-        console.error("Erro ao verificar sessão direta:", error);
+        console.error("Error checking direct session:", error);
         setIsAuthChecked(true);
         setIsInitialized(true);
       }
@@ -52,22 +53,22 @@ export const useCheckoutPage = () => {
     checkDirectSession();
   }, []);
 
-  // Verificar a sessão apenas se ainda não temos um valor confirmado
-  // e limitamos o número de tentativas
+  // Check session only if we don't have a confirmed value yet
+  // and limit the number of attempts
   useEffect(() => {
     if (authCheckRef.current || authCheckCount >= MAX_AUTH_CHECKS) return;
     
     const checkAuth = async () => {
-      console.log(`[Checkout] Verificando autenticação (tentativa ${authCheckCount + 1}):`, {
-        sessionHook: !!session?.user?.id,
-        directSession: !!directSession?.user?.id
+      console.log(`[Checkout] Authentication check (attempt ${authCheckCount + 1}):`, {
+        sessionHook: Boolean(session?.user?.id),
+        directSession: Boolean(directSession?.user?.id)
       });
       
       setAuthCheckCount(prev => prev + 1);
       
-      // Se temos sessão por qualquer método, marcamos como autenticado
+      // If we have a session by any method, mark as authenticated
       if (session?.user?.id || directSession?.user?.id) {
-        console.log(`[Checkout] Sessão válida encontrada:`, session?.user?.id || directSession?.user?.id);
+        console.log(`[Checkout] Valid session found:`, session?.user?.id || directSession?.user?.id);
         setHasValidSession(true);
         setIsAuthChecked(true);
         setIsInitialized(true);
@@ -75,21 +76,20 @@ export const useCheckoutPage = () => {
         return;
       }
       
-      // Última verificação direta
+      // Last direct check
       if (authCheckCount < MAX_AUTH_CHECKS - 1) {
-        console.log("[Checkout] Tentando verificar sessão novamente com API direta...");
+        console.log("[Checkout] Attempting to check session again with direct API...");
         
         try {
           const { data } = await supabase.auth.getSession();
-          console.log("[Checkout] Resultado de verificação adicional:", data?.session?.user?.id);
           
           if (data?.session) {
-            console.log("[Checkout] Sessão válida encontrada na verificação adicional");
+            console.log("[Checkout] Valid session found in additional check");
             setDirectSession(data.session);
             setHasValidSession(true);
           }
         } catch (error) {
-          console.error("Erro ao verificar sessão:", error);
+          console.error("Error checking session:", error);
         }
       }
       
@@ -97,19 +97,27 @@ export const useCheckoutPage = () => {
       setIsInitialized(true);
     };
     
-    // Executar com algum atraso entre tentativas
-    const timer = setTimeout(() => {
-      setLastAuthCheck(Date.now());
-      checkAuth();
-    }, 300);
+    // Clear any existing timeout
+    if (authTimeoutRef.current) {
+      clearTimeout(authTimeoutRef.current);
+    }
     
-    return () => clearTimeout(timer);
+    // Execute with some delay between attempts
+    authTimeoutRef.current = setTimeout(() => {
+      checkAuth();
+    }, 300 * (authCheckCount + 1)); // Increasing delay with each attempt
+    
+    return () => {
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+      }
+    };
   }, [session, directSession, authCheckCount]);
 
-  // Verificar carrinho vazio apenas após confirmar que o usuário está autenticado
+  // Check empty cart only after confirming user is authenticated
   useEffect(() => {
     if (isInitialized && cartItems.length === 0) {
-      console.log("[Checkout] Carrinho vazio, redirecionando para /cart");
+      console.log("[Checkout] Empty cart, redirecting to /cart");
       navigate("/cart");
     }
   }, [isInitialized, cartItems.length, navigate]);
@@ -117,7 +125,7 @@ export const useCheckoutPage = () => {
   return {
     isInitialized,
     isAuthChecked,
-    hasValidSession: hasValidSession || !!session?.user,  // Redundância para garantir
+    hasValidSession: hasValidSession || Boolean(session?.user),  // Redundancy for safety
     cartItems,
     session: session || directSession,
     clear

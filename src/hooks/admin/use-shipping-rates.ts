@@ -22,7 +22,7 @@ export const useShippingRates = (): UseShippingRatesReturn => {
   } = useShippingRatesCrud();
   const { exportRates, insertShippingRates: importRatesBase } = useShippingRatesExportImport();
   
-  // Para compatibilidade com o componente que usa este hook
+  // For compatibility with the component using this hook
   const [shippingOptions] = useState<ShippingCalculationRate[]>([]);
   const [zipCode, setZipCode] = useState<string>("");
   const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingCalculationRate | null>(null);
@@ -95,7 +95,6 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     exportRates: handleExportRates,
     insertShippingRates: handleImportRates,
     shippingOptions,
-    // Add these properties explicitly with proper types
     zipCode,
     setZipCode,
     shippingRates: rates,

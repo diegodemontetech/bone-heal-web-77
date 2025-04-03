@@ -8,9 +8,9 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 export const useShipping = () => {
   // Flag to prevent recursive calculations
   const [isProcessingShipping, setIsProcessingShipping] = useState(false);
-  const alreadyCalculatedRef = useRef(false);
+  const calculationAttempted = useRef(false);
   
-  // Dados originais das taxas de envio
+  // Original shipping rates data
   const {
     rates,
     loading,
@@ -36,7 +36,7 @@ export const useShipping = () => {
     setZipCode
   } = useShippingRates();
 
-  // Utilidades para data de entrega
+  // Delivery date utilities
   const { calculateDeliveryDate } = useDeliveryDate();
   const formatDeliveryDate = useCallback((shippingRate: ShippingCalculationRate) => {
     const date = calculateDeliveryDate(shippingRate);
@@ -46,7 +46,7 @@ export const useShipping = () => {
     }).format(date);
   }, [calculateDeliveryDate]);
 
-  // Gerenciamento do CEP do usuário
+  // User zip code management
   const { 
     zipCode: userZipCodeFromHook, 
     setZipCode: setUserZipCodeFromHook, 
@@ -54,32 +54,38 @@ export const useShipping = () => {
     loadUserZipCode 
   } = useUserZipCode();
   
-  // Wrapper para evitar recursão no cálculo de frete
+  // Wrapper to prevent recursive shipping calculations
   const calculateShipping = useCallback((zipCodeParam?: string) => {
     if (isProcessingShipping) {
-      console.log("Cálculo de frete já em andamento, ignorando nova solicitação");
+      console.log("Shipping calculation already in progress, ignoring new request");
       return;
     }
     
-    if (alreadyCalculatedRef.current && selectedShippingRate) {
-      console.log("Frete já calculado e selecionado, ignorando novo cálculo");
+    if (calculationAttempted.current && selectedShippingRate) {
+      console.log("Shipping already calculated and selected, ignoring new calculation");
       return;
     }
     
     setIsProcessingShipping(true);
     const zipToUse = zipCodeParam || zipCode;
     
-    // Adicionar um pequeno atraso para evitar múltiplas chamadas simultâneas
+    if (!zipToUse || zipToUse.length !== 8) {
+      console.log("Invalid ZIP code for calculation:", zipToUse);
+      setIsProcessingShipping(false);
+      return;
+    }
+    
+    // Add a small delay to prevent multiple simultaneous calls
     setTimeout(() => {
-      console.log("Executando cálculo de frete para:", zipToUse);
+      console.log("Executing shipping calculation for:", zipToUse);
       originalCalculateShipping(zipToUse);
-      alreadyCalculatedRef.current = true;
+      calculationAttempted.current = true;
       setIsProcessingShipping(false);
     }, 300);
   }, [isProcessingShipping, selectedShippingRate, zipCode, originalCalculateShipping]);
 
   return {
-    // Propriedades de taxas de envio
+    // Shipping rate properties
     rates,
     loading,
     isDialogOpen,
@@ -95,7 +101,7 @@ export const useShipping = () => {
     exportRates,
     insertShippingRates,
     
-    // Propriedades específicas de envio
+    // Specific shipping properties
     formatDeliveryDate,
     zipCode,
     setZipCode,

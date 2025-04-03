@@ -1,7 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ZipCodeInputProps {
   zipCode: string;
@@ -16,49 +16,45 @@ const ZipCodeInput = ({
   onCalculateShipping,
   autoCalculate = true
 }: ZipCodeInputProps) => {
-  const initialRenderRef = useRef(true);
-  const calculatedOnceRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasCalculated, setHasCalculated] = useState(false);
+  const calculationTimeout = useRef<NodeJS.Timeout | null>(null);
+  const initialMountRef = useRef(true);
 
-  // Limpar timeout ao desmontar
+  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (calculationTimeout.current) {
+        clearTimeout(calculationTimeout.current);
       }
     };
   }, []);
 
-  // Só calcular frete automaticamente após a primeira renderização 
-  // e quando o zipCode mudar (não na montagem inicial)
+  // Only calculate shipping after initial render and when zipCode changes
   useEffect(() => {
-    if (!zipCode || zipCode.length !== 8 || !autoCalculate || !onCalculateShipping) {
+    // Skip if no zipCode, zipCode is not complete, auto-calculate is disabled, 
+    // no calculation function, or we've already calculated
+    if (!zipCode || zipCode.length !== 8 || !autoCalculate || !onCalculateShipping || hasCalculated) {
       return;
     }
     
-    // Pular o cálculo automático na primeira renderização
-    if (initialRenderRef.current) {
-      initialRenderRef.current = false;
+    // Skip calculation on the initial mount
+    if (initialMountRef.current) {
+      initialMountRef.current = false;
       return;
     }
     
-    // Pular se já calculamos uma vez
-    if (calculatedOnceRef.current) {
-      return;
+    // Clear any existing timeout
+    if (calculationTimeout.current) {
+      clearTimeout(calculationTimeout.current);
     }
     
-    // Limpar timeout anterior se existir
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    // Adicionar um pequeno atraso para evitar múltiplas chamadas
-    timeoutRef.current = setTimeout(() => {
+    // Set timeout to prevent multiple rapid calculations
+    calculationTimeout.current = setTimeout(() => {
       onCalculateShipping();
-      calculatedOnceRef.current = true;
+      setHasCalculated(true);
     }, 500);
     
-  }, [zipCode, autoCalculate, onCalculateShipping]);
+  }, [zipCode, autoCalculate, onCalculateShipping, hasCalculated]);
 
   return (
     <div className="mb-6">
@@ -74,7 +70,10 @@ const ZipCodeInput = ({
         />
         {!autoCalculate && onCalculateShipping && (
           <button 
-            onClick={onCalculateShipping}
+            onClick={() => {
+              onCalculateShipping();
+              setHasCalculated(true);
+            }}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
           >
             Calcular
