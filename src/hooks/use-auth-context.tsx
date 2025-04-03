@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { useAuthContext } from './auth/auth-context';
 
 // Re-exportar o hook com o nome antigo para manter compatibilidade

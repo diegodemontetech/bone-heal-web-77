@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserRole, UserPermission, UserProfile } from '@/types/auth';
 import { toast } from 'sonner';
@@ -9,9 +9,11 @@ import { usePermissions } from './use-permissions';
 import { useProfileProcessor } from './use-profile-processor';
 import { useAuthFunctions } from './use-auth-functions';
 
+// Create the context with undefined as initial value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+// Define the AuthProvider as a proper React functional component
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     profile: null,
     session: null,
@@ -19,6 +21,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     permissions: []
   });
 
+  // Use custom hooks inside the component body
   const { hasPermission } = usePermissions();
   const { processUserProfile } = useProfileProcessor();
   const { signIn, signUp, signOut } = useAuthFunctions();
