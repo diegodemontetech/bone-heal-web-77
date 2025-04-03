@@ -1,11 +1,12 @@
 
-import { CreditCard, QrCode, FileText } from "lucide-react";
+import { CreditCard, QrCode, FileText, Copy } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import PixPayment from "@/components/checkout/PixPayment";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface PaymentSectionProps {
   paymentMethod: string;
@@ -32,11 +33,56 @@ const PaymentSection = ({
     if (pixCode) {
       return (
         <div className="space-y-6">
-          <PixPayment 
-            pixCode={pixCode} 
-            pixQrCodeImage={pixQrCodeImage}
-            orderId={orderId}
-          />
+          <div className="p-4 bg-green-50 rounded-lg border border-green-100">
+            <h3 className="font-medium text-lg text-center mb-4">Pagamento PIX</h3>
+            
+            <div className="flex flex-col items-center mb-4">
+              {pixQrCodeImage ? (
+                <div className="bg-white p-4 rounded-lg mb-4">
+                  <img 
+                    src={`data:image/png;base64,${pixQrCodeImage}`} 
+                    alt="QR Code PIX" 
+                    className="w-48 h-48 mx-auto"
+                  />
+                </div>
+              ) : (
+                <div className="w-48 h-48 bg-gray-200 flex items-center justify-center mb-4">
+                  <QrCode className="w-16 h-16 text-gray-400" />
+                </div>
+              )}
+              
+              <p className="text-sm text-center text-gray-600 mb-4">
+                Escaneie o QR Code com o aplicativo do seu banco ou copie e cole o código PIX
+              </p>
+              
+              <div className="flex items-center w-full gap-2 mb-3">
+                <Input 
+                  value={pixCode} 
+                  readOnly 
+                  className="text-xs font-mono flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(pixCode);
+                    toast.success("Código PIX copiado!");
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <p className="text-xs text-center font-medium text-red-500 mt-1">
+                Atenção: Este código PIX expira em 30 minutos
+              </p>
+            </div>
+            
+            <div className="text-sm text-center text-gray-700 mt-4">
+              <p className="font-medium">Pedido #{orderId.substring(0, 8)}</p>
+              <p>Assim que recebermos a confirmação do pagamento, seu pedido será processado</p>
+            </div>
+          </div>
         </div>
       );
     }

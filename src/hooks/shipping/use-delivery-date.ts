@@ -6,8 +6,13 @@ export const useDeliveryDate = () => {
   const calculateDeliveryDate = (shippingRate: ShippingCalculationRate | null) => {
     if (!shippingRate) return null;
     
-    // Default to 7 days if delivery_days is not defined
-    const deliveryDays = shippingRate.delivery_days || 7;
+    // Se não temos delivery_days, usar um valor padrão baseado no tipo de serviço
+    let deliveryDays = shippingRate.delivery_days;
+    
+    if (!deliveryDays) {
+      // Valores padrão por tipo de frete
+      deliveryDays = shippingRate.service_type === "SEDEX" ? 3 : 7;
+    }
     
     const today = new Date();
     const deliveryDate = addBusinessDays(today, deliveryDays);

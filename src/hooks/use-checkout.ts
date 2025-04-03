@@ -76,6 +76,7 @@ export function useCheckout() {
       // Criar a preferência de pagamento no Mercado Pago
       if (paymentMethod === 'pix') {
         try {
+          console.log("Iniciando criação de checkout do Mercado Pago para PIX");
           const mpResponse = await createMercadoPagoCheckout(
             orderId!, 
             cartItems, 
@@ -87,10 +88,19 @@ export function useCheckout() {
           
           if (mpResponse) {
             setCheckoutData(mpResponse);
+            
+            // Verificar se temos os dados do PIX
+            if (mpResponse.point_of_interaction?.transaction_data?.qr_code) {
+              console.log("QR Code PIX gerado com sucesso!");
+            } else {
+              console.error("QR Code PIX não foi gerado corretamente na resposta:", mpResponse);
+              toast.error("Erro ao gerar o código PIX. Detalhes do pagamento estão incompletos.");
+            }
           }
-        } catch (mpError) {
-          console.error("Erro ao criar checkout do Mercado Pago:", mpError);
-          toast.error("Erro ao gerar o código PIX. Tente novamente.");
+        } catch (mpError: any) {
+          console.error("Erro detalhado ao criar checkout do Mercado Pago:", mpError);
+          toast.error("Erro ao gerar o código PIX: " + (mpError.message || "Tente novamente"));
+          // Não redirecionar em caso de erro no PIX, permitir tentar novamente
         }
       }
       

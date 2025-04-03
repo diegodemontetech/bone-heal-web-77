@@ -56,15 +56,21 @@ export const createMercadoPagoCheckout = async (
         payment_method: 'pix',
         payer,
         notification_url: `${window.location.origin}/api/webhooks/mercadopago`,
-        external_reference: orderId
+        external_reference: orderId,
+        // Definir um expiration_date_to para o código PIX (30 minutos a partir de agora)
+        expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString()
       }
     });
     
     console.log("Resposta do checkout MP:", data, error);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Erro no checkout MP:", error);
+      throw error;
+    }
     
     if (!data) {
+      console.error("Resposta vazia do checkout MP");
       throw new Error("Não foi possível gerar o checkout");
     }
     
