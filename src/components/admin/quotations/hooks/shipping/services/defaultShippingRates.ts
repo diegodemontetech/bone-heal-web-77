@@ -1,5 +1,6 @@
 
 import { ShippingCalculationRate } from "@/types/shipping";
+import { getDeliveryTimeByZipCode } from "@/lib/shipping/delivery-times";
 
 export const createDefaultShippingRates = (
   zipCode: string
@@ -11,34 +12,29 @@ export const createDefaultShippingRates = (
   
   let pacRate = 25;
   let sedexRate = 45;
-  let pacDays = 7;
-  let sedexDays = 2;
+  
+  // Obter prazo de entrega baseado no CEP
+  const deliveryDays = getDeliveryTimeByZipCode(cleanZipCode);
+  const pacDays = deliveryDays;
+  const sedexDays = Math.max(1, Math.ceil(deliveryDays / 2)); // SEDEX é mais rápido
   
   // Ajustar valores com base na região
   if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(zipPrefix)) {
     // Grandes centros/capitais
     pacRate = 20;
     sedexRate = 35;
-    pacDays = 5;
-    sedexDays = 2;
-  } else if (zipPrefix >= 1 && zipPrefix <= 399) {
+  } else if (zipPrefix >= 1 && zipPrefix <= 39) {
     // Sudeste/Sul
     pacRate = 28;
     sedexRate = 48;
-    pacDays = 6;
-    sedexDays = 3;
-  } else if (zipPrefix >= 400 && zipPrefix <= 659) {
+  } else if (zipPrefix >= 40 && zipPrefix <= 65) {
     // Centro-Oeste/Nordeste
     pacRate = 35;
     sedexRate = 58;
-    pacDays = 8;
-    sedexDays = 4;
-  } else if (zipPrefix >= 660 && zipPrefix <= 699) {
+  } else if (zipPrefix >= 66 && zipPrefix <= 69) {
     // Norte
     pacRate = 42;
     sedexRate = 68;
-    pacDays = 10;
-    sedexDays = 5;
   }
   
   return [

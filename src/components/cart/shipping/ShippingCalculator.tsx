@@ -18,6 +18,7 @@ interface ShippingCalculatorProps {
   shippingCalculated?: boolean;
   resetShipping?: () => void;
   onZipCodeKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  deliveryDays?: number;
 }
 
 const ShippingCalculator = ({
@@ -29,7 +30,8 @@ const ShippingCalculator = ({
   calculateShipping,
   shippingCalculated = false,
   resetShipping,
-  onZipCodeKeyDown
+  onZipCodeKeyDown,
+  deliveryDays = 7
 }: ShippingCalculatorProps) => {
   const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Permitir apenas números e limitar a 8 dígitos
@@ -115,7 +117,7 @@ const ShippingCalculator = ({
             </Badge>
           </div>
           <p className="text-xs text-gray-600 mt-1">
-            Entrega em até 7 dias úteis
+            Entrega em até {deliveryDays} dias úteis
           </p>
         </div>
       ) : null}

@@ -6,6 +6,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to get estimated delivery days based on zip code
+const getDeliveryDays = (zipCode: string): { standard: number, express: number } => {
+  // Extract the first 2 digits to determine the region
+  const prefix = parseInt(zipCode.substring(0, 2));
+  
+  // Capitais e grandes centros (simplificação)
+  if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
+    return { standard: 2, express: 1 }; // 1-2 dias úteis
+  }
+  
+  // Sul e Sudeste (prefixos de 01 a 39)
+  if (prefix >= 1 && prefix <= 39) {
+    return { standard: 2, express: 1 }; // 1-2 dias úteis
+  }
+  
+  // Nordeste e Centro-Oeste (prefixos de 40 a 65, 70 a 76, 78 a 79)
+  if ((prefix >= 40 && prefix <= 65) || (prefix >= 70 && prefix <= 76) || (prefix >= 78 && prefix <= 79)) {
+    return { standard: 3, express: 1 }; // 1-3 dias úteis
+  }
+  
+  // Norte (prefixos de 66 a 69, 77)
+  if ((prefix >= 66 && prefix <= 69) || prefix === 77) {
+    return { standard: 5, express: 2 }; // 2-5 dias úteis
+  }
+  
+  // Default para outros prefixos
+  return { standard: 7, express: 3 }; // Valor padrão
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -49,29 +78,28 @@ serve(async (req) => {
     console.log(`Peso total calculado: ${totalWeight}kg`);
     
     // Obter o prefixo do CEP para determinar a região
-    const cepPrefix = parseInt(cleanZipCode.substring(0, 3));
+    const cepPrefix = parseInt(cleanZipCode.substring(0, 2));
     
     // Taxa base de frete por região (usando o prefixo do CEP)
     // Esta é uma simulação mais real, baseada em faixas de CEP
     const getBaseRateByRegion = (prefix: number) => {
       // Capitais e grandes centros (simplificação)
-      // Substituição dos valores octais por decimais
       if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
         return 20; // Taxa base para grandes centros
       }
       
       // Sul e Sudeste (prefixos de 01 a 39)
-      if (prefix >= 1 && prefix <= 399) {
+      if (prefix >= 1 && prefix <= 39) {
         return 28;
       }
       
       // Centro-Oeste e Nordeste (prefixos de 40 a 65)
-      if (prefix >= 400 && prefix <= 659) {
+      if (prefix >= 40 && prefix <= 65) {
         return 35;
       }
       
       // Norte (prefixos de 66 a 69)
-      if (prefix >= 660 && prefix <= 699) {
+      if (prefix >= 66 && prefix <= 69) {
         return 42;
       }
       
@@ -90,31 +118,8 @@ serve(async (req) => {
       return Math.max(20, calculatedRate); // Mínimo de R$20
     };
 
-    // Determinar prazo de entrega baseado na região
-    const getDeliveryDaysByRegion = (prefix: number, isExpress: boolean) => {
-      // Capitais e grandes centros - correção dos valores octais
-      if ([10, 11, 12, 13, 20, 21, 22, 30, 40, 50, 60, 70, 80, 90].includes(prefix)) {
-        return isExpress ? 1 : 4;
-      }
-      
-      // Sul e Sudeste 
-      if (prefix >= 1 && prefix <= 399) {
-        return isExpress ? 2 : 5;
-      }
-      
-      // Centro-Oeste e Nordeste
-      if (prefix >= 400 && prefix <= 659) {
-        return isExpress ? 3 : 7;
-      }
-      
-      // Norte
-      if (prefix >= 660 && prefix <= 699) {
-        return isExpress ? 4 : 9;
-      }
-      
-      // Padrão
-      return isExpress ? 3 : 6;
-    };
+    // Obter os prazos de entrega baseados no CEP
+    const deliveryDays = getDeliveryDays(cleanZipCode);
 
     // Sempre retornar duas opções: PAC e SEDEX
     const shippingRates = [
@@ -123,7 +128,7 @@ serve(async (req) => {
         service_type: "PAC",
         name: "PAC (Convencional)",
         rate: calculateShippingRate(baseRate, weightFactor),
-        delivery_days: getDeliveryDaysByRegion(cepPrefix, false),
+        delivery_days: deliveryDays.standard,
         zipCode: cleanZipCode
       },
       {
@@ -131,7 +136,7 @@ serve(async (req) => {
         service_type: "SEDEX",
         name: "SEDEX (Express)",
         rate: calculateShippingRate(baseRate, weightFactor, 1.7), // SEDEX é 70% mais caro que PAC
-        delivery_days: getDeliveryDaysByRegion(cepPrefix, true),
+        delivery_days: deliveryDays.express,
         zipCode: cleanZipCode
       }
     ];
@@ -151,24 +156,33 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro na função correios-shipping:', error);
     
+    // Obter o CEP da requisição, se disponível, para usar com os dados padrão
+    let zipCode = "00000000";
+    try {
+      const body = await req.json();
+      zipCode = (body.zipCode || body.zipCodeDestination || "00000000").replace(/\D/g, '');
+    } catch (e) {
+      // Ignora erros ao tentar ler o corpo novamente
+    }
+    
     // Mesmo em caso de erro, vamos retornar algumas opções padrão
-    // para evitar que a UI mostre "Nenhuma opção de frete disponível"
+    // com prazos de entrega mais realistas
     const defaultRates = [
       {
         id: "pac-default",
         service_type: "PAC",
         name: "PAC (Convencional)",
         rate: 30.00,
-        delivery_days: 7,
-        zipCode: "00000000" // CEP padrão quando há erro
+        delivery_days: 7, // Prazo padrão para PAC
+        zipCode: zipCode
       },
       {
         id: "sedex-default",
         service_type: "SEDEX",
         name: "SEDEX (Express)",
         rate: 55.00,
-        delivery_days: 2,
-        zipCode: "00000000" // CEP padrão quando há erro
+        delivery_days: 3, // Prazo padrão para SEDEX
+        zipCode: zipCode
       }
     ];
     

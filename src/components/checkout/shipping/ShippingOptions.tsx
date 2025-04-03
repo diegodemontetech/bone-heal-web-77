@@ -61,7 +61,7 @@ const ShippingOptions = ({
               <span className="font-medium">R$ {rate.rate.toFixed(2)}</span>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              Entrega em até {rate.delivery_days} dias úteis
+              Entrega em até {rate.delivery_days || 7} dias úteis
             </p>
           </Label>
         </div>
