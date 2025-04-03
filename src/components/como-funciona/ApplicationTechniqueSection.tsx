@@ -1,34 +1,28 @@
 
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
 
 const ApplicationTechniqueSection = () => {
   const steps = [
     {
       id: 1,
       title: "Preparação Inicial",
-      description: "Limpeza e preparação do sítio cirúrgico, garantindo um ambiente propício para a regeneração.",
-      image: "https://i.ibb.co/wMSDFzw/1.webp"
+      description: "Limpeza e preparação do sítio cirúrgico, garantindo um ambiente propício para a regeneração."
     },
     {
       id: 2,
       title: "Aplicação da Barreira",
-      description: "Posicionamento preciso da barreira sobre o defeito ósseo, estabilizando-a para guiar a regeneração.",
-      image: "https://i.ibb.co/n08JPr6/2.webp"
+      description: "Posicionamento preciso da barreira sobre o defeito ósseo, estabilizando-a para guiar a regeneração."
     },
     {
       id: 3,
       title: "Formação Óssea",
-      description: "Durante o período de cicatrização, o coágulo sanguíneo se organiza e inicia-se a formação de novo osso.",
-      image: "https://i.ibb.co/9981rfF/3.webp"
+      description: "Durante o período de cicatrização, o coágulo sanguíneo se organiza e inicia-se a formação de novo osso."
     },
     {
       id: 4,
       title: "Resultado Final",
-      description: "Após a remoção da barreira, observa-se a formação de novo osso de qualidade no local do defeito.",
-      image: "https://i.ibb.co/X277PPz/4.webp"
+      description: "Após a remoção da barreira, observa-se a formação de novo osso de qualidade no local do defeito."
     }
   ];
 
@@ -55,34 +49,17 @@ const ApplicationTechniqueSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: step.id * 0.1 }}
-              className="bg-white rounded-xl shadow-md overflow-hidden"
+              className="bg-white rounded-xl shadow-md p-6"
             >
-              <div className="relative aspect-video">
-                <img 
-                  src={step.image} 
-                  alt={step.title} 
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 left-3 bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
+              <div className="flex items-center mb-4">
+                <div className="bg-primary text-white w-8 h-8 rounded-full flex items-center justify-center font-bold mr-3">
                   {step.id}
                 </div>
+                <h3 className="text-xl font-bold text-primary">{step.title}</h3>
               </div>
-              <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-primary">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-              </div>
+              <p className="text-gray-600">{step.description}</p>
             </motion.div>
           ))}
-        </div>
-        
-        <div className="mt-16 text-center">
-          <Button 
-            size="lg"
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => window.open('https://www.youtube.com/watch?v=pDm0nUQ3pCM', '_blank')}
-          >
-            <Play className="mr-2 h-4 w-4" /> Assistir Vídeo Demonstrativo
-          </Button>
         </div>
       </div>
     </section>
