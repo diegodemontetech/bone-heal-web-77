@@ -17,7 +17,7 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
   className = "",
   id = "how-it-works"
 }) => {
-  const [language, setLanguage] = useState<'pt' | 'en' | 'es'>('en');
+  const [language, setLanguage] = useState<'pt' | 'en' | 'es'>('pt');
   
   const titles = {
     pt: "Como Funciona",
