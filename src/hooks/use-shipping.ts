@@ -42,6 +42,7 @@ export const useShipping = (cartItems: CartItem[] = []) => {
   const cartItemsRef = useRef(cartItems);
   const maxRetries = useRef(3);
   const retryCount = useRef(0);
+  const zipCodeAutoCalculated = useRef(false);
 
   // Atualizar a referência quando cartItems mudar
   useEffect(() => {
@@ -81,7 +82,9 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       // Verificar CEP diretamente no perfil
       if (profile?.zip_code && profile.zip_code.length >= 8) {
         console.log('CEP encontrado no perfil:', profile.zip_code);
-        return profile.zip_code.replace(/\D/g, ''); // Garante que só retorna números
+        const cleanZip = profile.zip_code.replace(/\D/g, ''); // Garante que só retorna números
+        setZipCode(cleanZip);
+        return cleanZip;
       }
       
       // Verificar se o CEP está no campo de endereço
@@ -90,7 +93,9 @@ export const useShipping = (cartItems: CartItem[] = []) => {
         if ('postal_code' in address && address.postal_code) {
           const postalCode = String(address.postal_code);
           console.log('CEP encontrado no endereço:', postalCode);
-          return postalCode.replace(/\D/g, '');
+          const cleanZip = postalCode.replace(/\D/g, '');
+          setZipCode(cleanZip);
+          return cleanZip;
         }
       }
       
@@ -316,62 +321,33 @@ export const useShipping = (cartItems: CartItem[] = []) => {
 
   // Efeito para carregar o CEP do usuário e calcular o frete automaticamente
   useEffect(() => {
-    const loadUserShipping = async () => {
-      if (!session?.user?.id) {
-        console.log("Sem sessão de usuário para carregar CEP");
-        return;
-      }
-      
-      // Forçar nova busca sempre que a sessão mudar
-      setZipCodeFetched(false);
-      
-      console.log("Iniciando carregamento de CEP do usuário");
-      const userZipCode = await fetchUserZipCode();
-      
-      if (userZipCode && userZipCode.length >= 8) {
-        const cleanZipCode = userZipCode.replace(/\D/g, '');
-        console.log("CEP do usuário carregado:", cleanZipCode);
-        setZipCode(cleanZipCode);
-        
-        // Calcular o frete imediatamente quando carregar o CEP do usuário
-        if (cartItemsRef.current.length > 0) {
-          console.log("Calculando frete automaticamente com o CEP do usuário");
-          calculateShipping(cleanZipCode);
-          
-          // Usar valores mockados enquanto aguarda o cálculo real para melhorar UX
-          if (shippingRates.length === 0) {
-            const totalItems = cartItemsRef.current.reduce((total, item) => total + (item.quantity || 1), 0);
-            const totalWeightKg = (totalItems * PRODUCT_WEIGHT_GRAMS) / 1000;
-            
-            const mockRatesWithWeight = MOCK_SHIPPING_RATES.map(rate => {
-              // Ajustar a taxa baseada no peso
-              let adjustedRate = rate.rate;
-              if (totalWeightKg > 0.5) {
-                const additionalWeight = totalWeightKg - 0.5;
-                adjustedRate += additionalWeight * 10;
-              }
-              
-              // Aplicar o limite máximo
-              adjustedRate = Math.min(adjustedRate, MAX_SHIPPING_COST);
-              
-              return {
-                ...rate,
-                rate: adjustedRate,
-                zipCode: cleanZipCode
-              };
-            });
-            
-            setShippingRates(mockRatesWithWeight);
-            setSelectedShippingRate(mockRatesWithWeight[0]);
-          }
+    if (!zipCodeAutoCalculated.current) {
+      const loadUserShipping = async () => {
+        if (!session?.user?.id) {
+          console.log("Sem sessão de usuário para carregar CEP");
+          return;
         }
-      } else {
-        console.log("Nenhum CEP válido encontrado no perfil do usuário");
-      }
-    };
+        
+        console.log("Iniciando carregamento de CEP do usuário");
+        const userZipCode = await fetchUserZipCode();
+        
+        if (userZipCode && userZipCode.length >= 8) {
+          console.log("CEP do usuário carregado:", userZipCode);
+          
+          // Calcular o frete imediatamente quando carregar o CEP do usuário
+          if (cartItemsRef.current.length > 0) {
+            console.log("Calculando frete automaticamente com o CEP do usuário");
+            calculateShipping(userZipCode);
+            zipCodeAutoCalculated.current = true;
+          }
+        } else {
+          console.log("Nenhum CEP válido encontrado no perfil do usuário");
+        }
+      };
 
-    loadUserShipping();
-  }, [session?.user?.id]); // Remove zipCodeFetched para recarregar sempre que a sessão mudar
+      loadUserShipping();
+    }
+  }, [session?.user?.id, cartItems.length]); 
 
   // Efeito para calcular o frete quando o CEP for definido e tiver o formato correto
   useEffect(() => {

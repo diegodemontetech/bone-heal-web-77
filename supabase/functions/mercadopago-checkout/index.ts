@@ -81,56 +81,37 @@ serve(async (req) => {
     // Configuração para checkout padrão do MercadoPago
     const app_url = Deno.env.get('APP_URL') || 'https://workshop.lovable.dev';
     
+    // Configurar dados padrão para o pagamento
+    const currentDate = new Date();
+    const thirtyMinutesFromNow = new Date(currentDate.getTime() + 30 * 60 * 1000);
+    const expirationDate = expiration_date_to || thirtyMinutesFromNow.toISOString();
+    
     let config: any = {
-      items: preferenceItems,
+      transaction_amount: total,
+      description: `Pedido #${orderId.substring(0, 8)}`,
+      payment_method_id: "pix",
       payer: payer || {
         email: "cliente@example.com",
-        name: 'Cliente',
+        first_name: 'Cliente',
         identification: {
           type: "CPF",
           number: "00000000000"
         }
       },
       external_reference: external_reference || orderId,
-      statement_descriptor: "BONEHEAL",
-      notification_url: notification_url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
-      back_urls: {
-        success: `${app_url}/checkout/success?order_id=${orderId}`,
-        failure: `${app_url}/checkout/failure?order_id=${orderId}`,
-        pending: `${app_url}/checkout/pending?order_id=${orderId}`
-      },
-      auto_return: "approved",
-      expires: false
+      notification_url: notification_url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`
     };
 
-    // Se o método de pagamento for PIX, adicionar configurações específicas
-    if (payment_method === 'pix') {
-      config = {
-        ...config,
-        payment_methods: {
-          default_payment_method_id: "pix",
-          excluded_payment_methods: [
-            { id: "credit_card" },
-            { id: "debit_card" },
-            { id: "bank_transfer" },
-            { id: "ticket" }
-          ],
-          default_payment_type_id: "pix"
-        },
-        date_of_expiration: expiration_date_to
-      };
-    }
+    console.log("Configuração a ser enviada:", JSON.stringify(config, null, 2));
 
-    console.log("Preferência a ser enviada:", JSON.stringify(config, null, 2));
-
-    // Chama a API do MercadoPago para criar a preferência
+    // Para PIX, usamos a API de pagamentos em vez da API de preferências
     const response = await fetch(
-      "https://api.mercadopago.com/checkout/preferences",
+      "https://api.mercadopago.com/v1/payments",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${access_token}`
+          "Authorization": `Bearer ${access_token}`
         },
         body: JSON.stringify(config)
       }

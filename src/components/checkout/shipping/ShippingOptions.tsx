@@ -42,7 +42,7 @@ const ShippingOptions = ({
 
   return (
     <RadioGroup 
-      value={selectedShippingRate?.service_type}
+      value={selectedShippingRate?.service_type || ""}
       onValueChange={(value) => {
         const rate = shippingRates.find(r => r.service_type === value);
         if (rate) onShippingRateChange(rate);
@@ -55,18 +55,24 @@ const ShippingOptions = ({
           (rate.service_type === "SEDEX" ? 3 : 7); // Valores padrão por tipo
         
         return (
-          <div key={rate.service_type} className="flex items-center space-x-2 p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
-            <RadioGroupItem value={rate.service_type} id={rate.service_type} />
-            <Label htmlFor={rate.service_type} className="flex-1 cursor-pointer">
+          <div key={rate.service_type || rate.id} className="flex items-center space-x-2 p-3 rounded-lg border cursor-pointer hover:bg-gray-50">
+            <RadioGroupItem 
+              value={rate.service_type || rate.id} 
+              id={rate.service_type || rate.id} 
+            />
+            <Label 
+              htmlFor={rate.service_type || rate.id} 
+              className="flex-1 cursor-pointer"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Truck className="h-4 w-4 text-primary" />
-                  <span>{rate.name}</span>
+                  <span>{rate.name || rate.service_type}</span>
                 </div>
                 <span className="font-medium">R$ {rate.rate.toFixed(2)}</span>
               </div>
               <p className="text-sm text-gray-600 mt-1">
-                Entrega em até {deliveryDays} dias úteis
+                Entrega em até {deliveryDays} {deliveryDays === 1 ? 'dia útil' : 'dias úteis'}
               </p>
             </Label>
           </div>

@@ -39,12 +39,15 @@ export const createMercadoPagoCheckout = async (
     
     const payer = {
       email: userSession.user.email,
-      name: profileData?.full_name || userSession.user.user_metadata?.name || "Cliente",
+      first_name: profileData?.full_name || userSession.user.user_metadata?.name || "Cliente",
       identification: {
         type: "CPF",
         number: profileData?.cpf || "00000000000"
       }
     };
+    
+    // Set an expiration date for the PIX code (30 minutes from now)
+    const expirationDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     
     // Call the Mercado Pago edge function to generate checkout
     const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
@@ -57,8 +60,8 @@ export const createMercadoPagoCheckout = async (
         payer,
         notification_url: `${window.location.origin}/api/webhooks/mercadopago`,
         external_reference: orderId,
-        // Set an expiration date for the PIX code (30 minutes from now)
-        expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString()
+        expiration_date_to: expirationDate,
+        transaction_amount: total
       }
     });
     

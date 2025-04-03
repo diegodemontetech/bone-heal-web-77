@@ -39,7 +39,7 @@ const CartContent = ({ userProfile }: CartContentProps) => {
     calculateShipping,
     resetShipping,
     handleShippingRateChange
-  } = useShipping();
+  } = useShipping(cartItems);
   
   const {
     loading: checkoutLoading,
@@ -50,13 +50,12 @@ const CartContent = ({ userProfile }: CartContentProps) => {
     checkoutData
   } = useCheckout();
 
-  // All hooks have been initialized before any conditional logic
-  
+  // Effect to set shipping as calculated when we have rates
   useEffect(() => {
-    if (userProfile?.zip_code && !zipCode) {
-      setZipCode(userProfile.zip_code);
+    if (shippingRates && shippingRates.length > 0 && selectedShippingRate) {
+      setShippingCalculated(true);
     }
-  }, [userProfile, zipCode, setZipCode]);
+  }, [shippingRates, selectedShippingRate]);
 
   // Check if cart is empty - AFTER all hooks have been initialized
   if (!cartItems || cartItems.length === 0) {
@@ -211,11 +210,11 @@ const CartContent = ({ userProfile }: CartContentProps) => {
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
               <TruckIcon className="h-5 w-5 text-blue-500 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-blue-800">{selectedShippingRate.label}</p>
+                <p className="text-sm font-medium text-blue-800">{selectedShippingRate.name || selectedShippingRate.service_type}</p>
                 <p className="text-xs text-blue-600">
-                  Entrega em {selectedShippingRate.days_min === selectedShippingRate.days_max 
-                    ? `${selectedShippingRate.days_min} dia(s)` 
-                    : `${selectedShippingRate.days_min}-${selectedShippingRate.days_max} dias`}
+                  Entrega em {selectedShippingRate.delivery_days ? 
+                    `${selectedShippingRate.delivery_days} dia(s) úteis` : 
+                    (selectedShippingRate.service_type === 'SEDEX' ? '2-3 dias úteis' : '5-7 dias úteis')}
                 </p>
               </div>
             </div>

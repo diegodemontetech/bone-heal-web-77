@@ -70,9 +70,23 @@ export function useCheckout() {
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
       try {
-        // Salvar o pedido no banco de dados
-        await saveOrder(orderId!, cartItems, shippingFee, discount, zipCode, paymentMethod, appliedVoucher);
-        console.log("Pedido salvo com sucesso no banco de dados");
+        // Verificar se o pedido já existe
+        const { data: existingOrder, error: checkError } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('id', orderId!)
+          .single();
+          
+        let orderExists = false;
+        
+        if (!checkError && existingOrder) {
+          console.log("Pedido já existe, continuando com o pagamento");
+          orderExists = true;
+        } else {
+          // Salvar o pedido no banco de dados
+          await saveOrder(orderId!, cartItems, shippingFee, discount, zipCode, paymentMethod, appliedVoucher);
+          console.log("Pedido salvo com sucesso no banco de dados");
+        }
         
         // Criar a preferência de pagamento no Mercado Pago
         if (paymentMethod === 'pix') {
@@ -116,15 +130,14 @@ export function useCheckout() {
           });
         }
       } catch (error: any) {
-        // Se o erro for de chave duplicada, ignore o erro de salvar o pedido
-        // mas continue com o processo de pagamento
+        // Se o erro for de chave duplicada, ignore o erro e continue com o processo
         if (error && error.code === "23505") {
           console.log("Pedido já existe, continuando com o processo de pagamento");
           
           // Criar a preferência de pagamento no Mercado Pago para PIX
           if (paymentMethod === 'pix') {
             try {
-              console.log("Iniciando criação de checkout do Mercado Pago para PIX");
+              console.log("Iniciando criação de checkout do Mercado Pago para PIX (após erro de duplicação)");
               const mpResponse = await createMercadoPagoCheckout(
                 orderId!, 
                 cartItems, 
