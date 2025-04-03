@@ -26,7 +26,9 @@ export const useShipping = () => {
     selectedShippingRate,
     calculateShipping,
     handleShippingRateChange,
-    resetShipping
+    resetShipping,
+    zipCode,
+    setZipCode
   } = useShippingRates();
 
   // Utilidades para data de entrega
@@ -41,8 +43,8 @@ export const useShipping = () => {
 
   // Gerenciamento do CEP do usuário
   const { 
-    zipCode: userZipCode, 
-    setZipCode: setUserZipCode, 
+    zipCode: userZipCodeFromHook, 
+    setZipCode: setUserZipCodeFromHook, 
     zipCodeFetched, 
     loadUserZipCode 
   } = useUserZipCode();
@@ -66,8 +68,8 @@ export const useShipping = () => {
     
     // Propriedades específicas de envio
     formatDeliveryDate,
-    userZipCode,
-    setUserZipCode,
+    zipCode,
+    setZipCode,
     zipCodeFetched,
     loadUserZipCode,
     shippingRates,
@@ -75,6 +77,8 @@ export const useShipping = () => {
     selectedShippingRate,
     calculateShipping,
     handleShippingRateChange,
-    resetShipping
+    resetShipping,
+    shippingFee: selectedShippingRate ? selectedShippingRate.rate : 0,
+    deliveryDate: selectedShippingRate ? (selectedShippingRate.delivery_days ? new Date(Date.now() + selectedShippingRate.delivery_days * 24 * 60 * 60 * 1000) : null) : null
   };
 };

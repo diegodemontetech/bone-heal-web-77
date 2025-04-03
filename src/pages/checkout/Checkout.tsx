@@ -30,12 +30,12 @@ const Checkout = () => {
   const { 
     shippingRates, 
     selectedShippingRate, 
-    setUserZipCode, 
+    setZipCode, 
     calculateShipping, 
     shippingFee, 
     deliveryDate, 
     handleShippingRateChange,
-    userZipCode
+    zipCode
   } = useShipping();
 
   // Fetch user profile and address information only once
@@ -62,12 +62,12 @@ const Checkout = () => {
           // Configurar o CEP do usuário e calcular frete automaticamente
           if (data?.zip_code) {
             const cleanZipCode = data.zip_code.replace(/\D/g, '');
-            setUserZipCode(cleanZipCode);
+            setZipCode(cleanZipCode);
             
             // Calcular frete automaticamente apenas uma vez
             if (cleanZipCode.length === 8 && !selectedShippingRate) {
               console.log('Calculando frete automaticamente com o CEP do usuário:', cleanZipCode);
-              calculateShipping();
+              calculateShipping(cleanZipCode);
             }
           }
         }
@@ -84,7 +84,7 @@ const Checkout = () => {
     return () => {
       isMounted = false;
     };
-  }, [session?.user?.id, setUserZipCode, calculateShipping, selectedShippingRate]);
+  }, [session?.user?.id, setZipCode, calculateShipping, selectedShippingRate]);
 
   // Redirecionar para o carrinho se o carrinho estiver vazio
   useEffect(() => {
@@ -107,7 +107,7 @@ const Checkout = () => {
     
     handleCheckout(
       cartItems,
-      userZipCode,
+      zipCode,
       shippingFee,
       discount,
       appliedVoucher
@@ -152,7 +152,7 @@ const Checkout = () => {
                   discount={discount}
                   loading={loading}
                   isLoggedIn={hasValidSession}
-                  hasZipCode={Boolean(userZipCode && userZipCode.length === 8)}
+                  hasZipCode={Boolean(zipCode && zipCode.length === 8)}
                   onCheckout={handleProcessPayment}
                   deliveryDate={deliveryDate}
                   paymentMethod={paymentMethod}
