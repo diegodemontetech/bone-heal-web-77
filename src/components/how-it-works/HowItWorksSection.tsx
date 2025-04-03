@@ -3,8 +3,6 @@ import React, { useState } from "react";
 import StepCard from "./StepCard";
 import { HowItWorksStep, howItWorksSteps } from "@/data/how-it-works-steps";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 interface HowItWorksSectionProps {
   title?: string;
@@ -26,16 +24,6 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
     en: "How It Works",
     es: "Cómo Funciona"
   };
-
-  const buttonText = {
-    pt: "Baixar PDF Estudos",
-    en: "Download PDF Studies",
-    es: "Descargar PDF Estudios"
-  };
-  
-  const downloadStudies = () => {
-    window.open('/studies', '_blank');
-  };
   
   return (
     <section className={`section-padding bg-white ${className}`} id={id}>
@@ -53,20 +41,10 @@ const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({
           </h2>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step, index) => (
             <StepCard key={index} step={step} />
           ))}
-        </div>
-
-        <div className="flex justify-center">
-          <Button 
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold uppercase px-8 py-6 text-lg"
-            onClick={downloadStudies}
-          >
-            <Download className="w-5 h-5 mr-2" />
-            {buttonText[language]}
-          </Button>
         </div>
       </div>
     </section>
