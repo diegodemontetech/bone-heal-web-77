@@ -12,7 +12,7 @@ export const useUserZipCode = () => {
   // Função para buscar o CEP do usuário
   const loadUserZipCode = async () => {
     if (!session?.user?.id) {
-      toast.error("Você precisa estar logado para carregar seu CEP");
+      console.log("Não há sessão ativa para buscar CEP");
       return null;
     }
     
@@ -25,22 +25,23 @@ export const useUserZipCode = () => {
       
       if (error) {
         console.error('Erro ao buscar CEP do usuário:', error);
-        toast.error("Erro ao buscar seu CEP");
         return null;
       }
       
       // Marcar que já buscamos o CEP para evitar buscas repetidas
       setZipCodeFetched(true);
       
-      if (profile?.zip_code && profile.zip_code.length === 8) {
-        setZipCode(profile.zip_code);
-        return profile.zip_code;
+      if (profile?.zip_code && profile.zip_code.length >= 8) {
+        const cleanZipCode = profile.zip_code.replace(/\D/g, '');
+        console.log("CEP encontrado no perfil:", cleanZipCode);
+        setZipCode(cleanZipCode);
+        return cleanZipCode;
       }
       
+      console.log("Nenhum CEP válido encontrado no perfil");
       return null;
     } catch (error) {
       console.error('Erro inesperado ao buscar CEP:', error);
-      toast.error("Erro ao buscar seu CEP");
       return null;
     }
   };

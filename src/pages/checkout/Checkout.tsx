@@ -14,6 +14,7 @@ import OrderTotal from '@/components/checkout/OrderTotal';
 import { useShipping } from '@/hooks/use-shipping';
 import { ShippingCalculationRate } from "@/types/shipping";
 import { useDeliveryDate } from '@/hooks/shipping/use-delivery-date';
+import { toast } from 'sonner';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -26,9 +27,17 @@ const Checkout = () => {
   
   // Shipping and payment states
   const { paymentMethod, setPaymentMethod, checkoutData, loading, handleCheckout, orderId } = useCheckout();
-  const { shippingRates, selectedShippingRate, setZipCode, calculateShipping, shippingFee, deliveryDate, handleShippingRateChange } = useShipping(cartItems);
+  const { 
+    shippingRates, 
+    selectedShippingRate, 
+    setZipCode, 
+    calculateShipping, 
+    shippingFee, 
+    deliveryDate, 
+    handleShippingRateChange 
+  } = useShipping(cartItems);
 
-  // Fetch user profile and address information
+  // Fetch user profile and address information and automatically calculate shipping
   useEffect(() => {
     const loadUserProfile = async () => {
       if (!session?.user?.id) return;
@@ -50,7 +59,18 @@ const Checkout = () => {
           const cleanZipCode = data.zip_code.replace(/\D/g, '');
           console.log("Usando CEP do perfil do usuário:", cleanZipCode);
           setZipCode(cleanZipCode);
-          calculateShipping(cleanZipCode);
+          
+          // Automatic shipping calculation
+          try {
+            await calculateShipping(cleanZipCode);
+            console.log("Frete calculado automaticamente com o CEP do usuário:", cleanZipCode);
+          } catch (calcError) {
+            console.error("Erro ao calcular frete automaticamente:", calcError);
+            toast.error("Não foi possível calcular o frete automaticamente. Por favor, verifique seu CEP.");
+          }
+        } else {
+          console.log("Usuário não tem CEP cadastrado no perfil");
+          toast.error("Por favor, atualize seu perfil com o CEP para cálculo automático de frete");
         }
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
@@ -70,6 +90,7 @@ const Checkout = () => {
     }
     
     if (!selectedShippingRate || !selectedShippingRate.zipCode) {
+      toast.error("É necessário calcular o frete antes de finalizar a compra");
       return;
     }
     
