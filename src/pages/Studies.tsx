@@ -60,15 +60,17 @@ const Studies = () => {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Extract unique years for the year filter
+  // Extract unique years for the year filter - safely handle undefined years
   const availableYears = studies 
-    ? [...new Set(studies.map(study => study.year))]
+    ? [...new Set(studies
+        .filter(study => study.year !== undefined && study.year !== null)
+        .map(study => study.year))]
         .sort((a, b) => b - a)
     : [];
 
-  // Apply filters
+  // Apply filters - safely handle undefined properties
   const filteredStudies = studies?.filter(study => {
-    // Year filter
+    // Year filter - handle undefined year
     if (yearFilter !== "all" && study.year !== parseInt(yearFilter)) {
       return false;
     }
@@ -78,13 +80,13 @@ const Studies = () => {
       return false;
     }
     
-    // Search query filter
+    // Search query filter - safely handle optional fields
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
-        study.title.toLowerCase().includes(query) ||
-        study.authors.toLowerCase().includes(query) ||
-        study.journal.toLowerCase().includes(query) ||
+        (study.title?.toLowerCase().includes(query) || false) ||
+        (study.authors?.toLowerCase().includes(query) || false) ||
+        (study.journal?.toLowerCase().includes(query) || false) ||
         (study.description?.toLowerCase().includes(query) || false) ||
         (study.abstract?.toLowerCase().includes(query) || false)
       );
@@ -254,7 +256,7 @@ const Studies = () => {
               <SelectContent>
                 <SelectItem value="all">{yearLabels[language]}</SelectItem>
                 {availableYears.map(year => (
-                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                  <SelectItem key={year} value={year?.toString() || ""}>{year}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -307,7 +309,7 @@ const Studies = () => {
                     </p>
                     
                     <p className="text-sm text-neutral-500 mb-4 italic">
-                      {study.journal}, {study.year}
+                      {study.journal}{study.year ? `, ${study.year}` : ''}
                     </p>
                     
                     <p className="text-neutral-600 mb-6 line-clamp-4">
