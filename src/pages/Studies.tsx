@@ -256,7 +256,9 @@ const Studies = () => {
               <SelectContent>
                 <SelectItem value="all">{yearLabels[language]}</SelectItem>
                 {availableYears.map(year => (
-                  <SelectItem key={year} value={year?.toString() || ""}>{year}</SelectItem>
+                  <SelectItem key={year} value={year !== null && year !== undefined ? year.toString() : ""}>
+                    {year}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -309,7 +311,8 @@ const Studies = () => {
                     </p>
                     
                     <p className="text-sm text-neutral-500 mb-4 italic">
-                      {study.journal}{study.year ? `, ${study.year}` : ''}
+                      {study.journal}
+                      {study.year !== null && study.year !== undefined ? `, ${study.year}` : ''}
                     </p>
                     
                     <p className="text-neutral-600 mb-6 line-clamp-4">
