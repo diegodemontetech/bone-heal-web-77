@@ -36,6 +36,9 @@ export function useCheckout() {
       return;
     }
 
+    // Log shipping fee to debug
+    console.log("Shipping fee at checkout:", shippingFee);
+
     // Verificação de autenticação
     try {
       // Verificar sessão diretamente para garantir
@@ -76,6 +79,7 @@ export function useCheckout() {
       // Criar a preferência de pagamento no Mercado Pago
       if (paymentMethod === 'pix') {
         try {
+          // Primeiro tenta o Mercado Pago
           const mpResponse = await createMercadoPagoCheckout(
             orderId!, 
             cartItems, 
@@ -90,7 +94,34 @@ export function useCheckout() {
           }
         } catch (mpError) {
           console.error("Erro ao criar checkout do Mercado Pago:", mpError);
-          toast.error("Erro ao gerar o código PIX. Tente novamente.");
+          
+          // Fallback para a função Omie PIX se o Mercado Pago falhar
+          try {
+            console.log("Tentando gerar PIX pelo Omie...");
+            const { data: omiePix, error: omieError } = await supabase.functions.invoke("omie-pix", {
+              body: { orderId: orderId }
+            });
+            
+            if (omieError) {
+              console.error("Erro ao gerar PIX pelo Omie:", omieError);
+              toast.error("Erro ao gerar o código PIX. Tente novamente.");
+              return;
+            }
+            
+            if (omiePix && (omiePix.pixCode || omiePix.pixLink)) {
+              console.log("PIX gerado pelo Omie:", omiePix);
+              // Formatar os dados de acordo com o formato esperado pelo QRCodeDisplay
+              setCheckoutData({
+                qr_code: omiePix.pixQrCodeImage || "",
+                qr_code_text: omiePix.pixCode || ""
+              });
+            } else {
+              toast.error("Erro ao gerar o código PIX. Tente novamente.");
+            }
+          } catch (omieError) {
+            console.error("Erro completo ao gerar PIX pelo Omie:", omieError);
+            toast.error("Erro ao gerar o código PIX. Tente novamente.");
+          }
         }
       }
       

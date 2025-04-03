@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
@@ -6,11 +5,9 @@ import { toast } from "sonner";
 import { addDays } from "date-fns";
 import { CartItem } from "@/hooks/use-cart";
 
-// Configurações
-const MAX_SHIPPING_COST = 60; // Limite máximo de R$ 60,00 para frete
-const PRODUCT_WEIGHT_GRAMS = 200; // Peso padrão de 200g por produto
+const MAX_SHIPPING_COST = 60;
+const PRODUCT_WEIGHT_GRAMS = 200;
 
-// Dados de frete mockados para garantir que a aplicação nunca quebra
 const MOCK_SHIPPING_RATES = [
   {
     id: 'sedex',
@@ -43,18 +40,13 @@ export const useShipping = (cartItems: CartItem[] = []) => {
   const initialLoadRef = useRef(true);
   const calculationCount = useRef(0);
   
-  // Limitar o número de cálculos em um curto período
   const MAX_CALCULATIONS = 3;
   const calculationTimer = useRef<any>(null);
 
-  // Atualizar a referência quando cartItems mudar
   useEffect(() => {
     cartItemsRef.current = cartItems;
     
-    // Se já temos um zipCode e cartItems mudou, mas só calcular se for realmente necessário
     if (zipCode && zipCode.length === 8 && cartItems.length > 0 && initialLoadRef.current === false) {
-      // Apenas recalcular se o frete ainda não foi calculado para este CEP
-      // ou se os itens mudaram significativamente (quantidade, etc)
       if (lastCalculatedZipCode.current !== zipCode || 
           (shippingRates.length === 0 && selectedShippingRate === null)) {
         calculateShipping(zipCode);
@@ -62,7 +54,6 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     }
   }, [cartItems]);
 
-  // Função para buscar o CEP do usuário
   const fetchUserZipCode = async () => {
     if (!session?.user?.id) {
       console.log('Sessão não disponível para busca de CEP');
@@ -84,16 +75,13 @@ export const useShipping = (cartItems: CartItem[] = []) => {
         return null;
       }
       
-      // Marcar que já buscamos o CEP para evitar buscas repetidas
       setZipCodeFetched(true);
       
-      // Verificar CEP diretamente no perfil
       if (profile?.zip_code && profile.zip_code.length >= 8) {
         console.log('CEP encontrado no perfil:', profile.zip_code);
-        return profile.zip_code.replace(/\D/g, ''); // Garante que só retorna números
+        return profile.zip_code.replace(/\D/g, '');
       }
       
-      // Verificar se o CEP está no campo de endereço
       if (profile && profile.address && typeof profile.address === 'object') {
         const address = profile.address as Record<string, any>;
         if ('postal_code' in address && address.postal_code) {
@@ -111,15 +99,12 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     }
   };
 
-  // Função para calcular o frete usando a Edge Function
   const calculateShipping = async (zipCodeInput: string) => {
-    // Verificar parâmetros de entrada
     if (!zipCodeInput) {
       console.log("CEP não fornecido para cálculo");
       return;
     }
     
-    // Limpar o CEP para ter apenas números
     const cleanZipCode = zipCodeInput.replace(/\D/g, '');
     
     if (cleanZipCode.length !== 8) {
@@ -127,22 +112,18 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       return;
     }
     
-    // Evitar recálculos para o mesmo CEP em um curto período
-    if (lastCalculatedZipCode.current === cleanZipCode && shippingRates.length > 0) {
+    if (lastCalculatedZipCode.current === cleanZipCode && shippingRates.length > 0 && selectedShippingRate) {
       console.log("Usando taxas de frete já calculadas para o CEP:", cleanZipCode);
       return;
     }
     
-    // Evitar cálculos simultâneos
     if (calculationInProgress.current) {
       console.log("Cálculo de frete já em andamento, ignorando nova solicitação");
       return;
     }
     
-    // Limitar o número de cálculos em rápida sucessão
     calculationCount.current += 1;
     if (calculationCount.current > MAX_CALCULATIONS) {
-      // Resetar o contador após um tempo
       if (calculationTimer.current) {
         clearTimeout(calculationTimer.current);
       }
@@ -160,34 +141,29 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     try {
       console.log(`Calculando frete para CEP: ${cleanZipCode} com ${cartItemsRef.current.length} itens`);
       
-      // Calcular o peso total dos itens (em kg)
       const totalItems = cartItemsRef.current.reduce((total, item) => total + (item.quantity || 1), 0);
-      const totalWeightKg = (totalItems * PRODUCT_WEIGHT_GRAMS) / 1000; // Converter de gramas para kg
+      const totalWeightKg = (totalItems * PRODUCT_WEIGHT_GRAMS) / 1000;
       
       console.log(`Peso total dos itens: ${totalWeightKg}kg`);
       
-      // Preparar itens para envio (incluindo peso)
       const itemsWithWeight = cartItemsRef.current.map(item => ({
         ...item,
-        weight: (PRODUCT_WEIGHT_GRAMS / 1000) // Peso em kg
+        weight: (PRODUCT_WEIGHT_GRAMS / 1000)
       }));
       
-      // Chamada para a Edge Function do Supabase
       let data;
       let error;
       
       try {
-        // Verificar se estamos em ambiente de desenvolvimento
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
           console.log('Ambiente de desenvolvimento: simulando cálculo de frete');
           
-          // Criar dados simulados, mas com o CEP correto
           data = [
             {
               id: 'sedex',
               service_type: 'SEDEX',
               name: 'SEDEX - Entrega expressa',
-              rate: Math.min(35.90 + totalWeightKg * 5 + parseFloat((Math.random() * 20).toFixed(2)), MAX_SHIPPING_COST), // Valor baseado no peso
+              rate: Math.min(35.90 + totalWeightKg * 5 + parseFloat((Math.random() * 20).toFixed(2)), MAX_SHIPPING_COST),
               delivery_days: 2,
               zipCode: cleanZipCode,
               estimatedDelivery: addDays(new Date(), 2).toISOString().split('T')[0]
@@ -204,7 +180,6 @@ export const useShipping = (cartItems: CartItem[] = []) => {
           ];
           error = null;
         } else {
-          // Em produção, fazer a chamada real
           const result = await supabase.functions.invoke('correios-shipping', {
             body: {
               zipCode: cleanZipCode,
@@ -222,16 +197,14 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       
       if (error) {
         console.error("Erro na API de frete:", error.message);
-        // Em vez de lançar erro, vamos usar dados mockados
+        
         const mockRatesWithWeight = MOCK_SHIPPING_RATES.map(rate => {
-          // Ajustar a taxa baseada no peso
           let adjustedRate = rate.rate;
           if (totalWeightKg > 0.5) {
-            const additionalWeight = totalWeightKg - 0.5; // Peso adicional além de 500g
-            adjustedRate += additionalWeight * 10; // R$ 10 por kg adicional
+            const additionalWeight = totalWeightKg - 0.5;
+            adjustedRate += additionalWeight * 10;
           }
           
-          // Aplicar o limite máximo
           adjustedRate = Math.min(adjustedRate, MAX_SHIPPING_COST);
           
           return {
@@ -247,21 +220,19 @@ export const useShipping = (cartItems: CartItem[] = []) => {
         lastCalculatedZipCode.current = cleanZipCode;
         return;
       }
-    
+      
       console.log("Resposta da API de frete:", data);
       
       if (!data || !Array.isArray(data) || data.length === 0) {
         console.warn("Resposta vazia da API de frete, usando dados mockados");
         
         const mockRatesWithWeight = MOCK_SHIPPING_RATES.map(rate => {
-          // Ajustar a taxa baseada no peso
           let adjustedRate = rate.rate;
           if (totalWeightKg > 0.5) {
-            const additionalWeight = totalWeightKg - 0.5; // Peso adicional além de 500g
-            adjustedRate += additionalWeight * 10; // R$ 10 por kg adicional
+            const additionalWeight = totalWeightKg - 0.5;
+            adjustedRate += additionalWeight * 10;
           }
           
-          // Aplicar o limite máximo
           adjustedRate = Math.min(adjustedRate, MAX_SHIPPING_COST);
           
           return {
@@ -273,49 +244,44 @@ export const useShipping = (cartItems: CartItem[] = []) => {
         
         setShippingRates(mockRatesWithWeight);
         setSelectedShippingRate(mockRatesWithWeight[0]);
+        console.log("Default shipping rate set:", mockRatesWithWeight[0]);
         lastCalculatedZipCode.current = cleanZipCode;
         return;
       }
       
-      // Guarda o CEP calculado para evitar recálculos
       lastCalculatedZipCode.current = cleanZipCode;
       
-      // Aplicar o limite máximo às taxas retornadas
       const ratesWithLimits = data.map(rate => ({
         ...rate,
-        rate: Math.min(rate.rate, MAX_SHIPPING_COST)
+        rate: Math.min(parseFloat(rate.rate) || 0, MAX_SHIPPING_COST)
       }));
       
-      // Atualizar estado com as taxas recebidas (com limite aplicado)
       setShippingRates(ratesWithLimits);
       
-      // Seleciona a opção mais barata por padrão
       if (ratesWithLimits && ratesWithLimits.length > 0) {
         const cheapestRate = ratesWithLimits.reduce((prev, curr) => 
           prev.rate < curr.rate ? prev : curr
         );
         setSelectedShippingRate(cheapestRate);
+        console.log("Selected shipping rate:", cheapestRate);
       }
     } catch (error) {
       console.error('Erro ao calcular frete:', error);
       
-      // Usar imediatamente os dados mockados para evitar tela quebrada
       console.log('Usando dados mockados para o frete devido ao erro');
       
       const mockRatesWithWeight = MOCK_SHIPPING_RATES.map(rate => {
-        // Ajustar a taxa baseada no peso
         let adjustedRate = rate.rate;
         if (cartItemsRef.current.length > 0) {
           const totalItems = cartItemsRef.current.reduce((total, item) => total + (item.quantity || 1), 0);
           const totalWeightKg = (totalItems * PRODUCT_WEIGHT_GRAMS) / 1000;
           
           if (totalWeightKg > 0.5) {
-            const additionalWeight = totalWeightKg - 0.5; // Peso adicional além de 500g
-            adjustedRate += additionalWeight * 10; // R$ 10 por kg adicional
+            const additionalWeight = totalWeightKg - 0.5;
+            adjustedRate += additionalWeight * 10;
           }
         }
         
-        // Aplicar o limite máximo
         adjustedRate = Math.min(adjustedRate, MAX_SHIPPING_COST);
         
         return {
@@ -327,9 +293,9 @@ export const useShipping = (cartItems: CartItem[] = []) => {
       
       setShippingRates(mockRatesWithWeight);
       setSelectedShippingRate(mockRatesWithWeight[0]);
+      console.log("Default shipping rate set due to error:", mockRatesWithWeight[0]);
       lastCalculatedZipCode.current = cleanZipCode;
       
-      // Mostrar toast de erro, mas garantir que a UI funcione
       toast.error("Não foi possível calcular o frete exato. Usando estimativa padrão.");
     } finally {
       setLoading(false);
@@ -338,9 +304,7 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     }
   };
 
-  // Efeito para carregar o CEP do usuário e calcular o frete automaticamente
   useEffect(() => {
-    // Carregar CEP apenas uma vez no mount inicial
     if (initialLoadRef.current) {
       const loadUserShipping = async () => {
         if (!session?.user?.id) {
@@ -349,7 +313,6 @@ export const useShipping = (cartItems: CartItem[] = []) => {
           return;
         }
         
-        // Forçar nova busca sempre que a sessão mudar
         setZipCodeFetched(false);
         
         console.log("Iniciando carregamento de CEP do usuário");
@@ -360,7 +323,6 @@ export const useShipping = (cartItems: CartItem[] = []) => {
           console.log("CEP do usuário carregado:", cleanZipCode);
           setZipCode(cleanZipCode);
           
-          // Calcular o frete imediatamente quando carregar o CEP do usuário
           if (cartItemsRef.current.length > 0) {
             console.log("Calculando frete automaticamente com o CEP do usuário");
             await calculateShipping(cleanZipCode);
@@ -375,22 +337,17 @@ export const useShipping = (cartItems: CartItem[] = []) => {
 
       loadUserShipping();
     }
-  }, [session?.user?.id]); // Dependências reduzidas para evitar múltiplas chamadas
+  }, [session?.user?.id]);
 
-  // Efeito para calcular o frete quando o CEP for definido manualmente
-  // (não executa durante o carregamento inicial automático)
   useEffect(() => {
     const cleanZipCode = zipCode?.replace(/\D/g, '') || '';
     
-    // Só calcula se tiver CEP válido, não estiver já calculando, for diferente do último,
-    // o carrinho tiver itens, e NÃO for o carregamento inicial (que já é tratado no outro useEffect)
     if (cleanZipCode.length === 8 && 
         !calculationInProgress.current && 
         cleanZipCode !== lastCalculatedZipCode.current && 
         cartItemsRef.current.length > 0 && 
         !initialLoadRef.current) {
       
-      // Adicionamos um debounce para evitar múltiplos cálculos durante digitação
       const timer = setTimeout(() => {
         calculateShipping(cleanZipCode);
       }, 300);
@@ -399,19 +356,17 @@ export const useShipping = (cartItems: CartItem[] = []) => {
     }
   }, [zipCode, cartItems.length]);
 
-  // Função para mudar a opção de frete selecionada
   const handleShippingRateChange = (rate) => {
     setSelectedShippingRate(rate);
   };
 
-  // Função para limpar/resetar o cálculo
   const resetShipping = () => {
     lastCalculatedZipCode.current = "";
     setShippingRates([]);
     setSelectedShippingRate(null);
   };
 
-  const shippingFee = selectedShippingRate ? selectedShippingRate.rate : 0;
+  const shippingFee = selectedShippingRate ? parseFloat(selectedShippingRate.rate) || 0 : 0;
   const deliveryDate = selectedShippingRate ? addDays(new Date(), selectedShippingRate.delivery_days) : null;
 
   return {

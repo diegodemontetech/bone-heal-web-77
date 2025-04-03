@@ -41,6 +41,8 @@ const Checkout = () => {
     zipCode
   } = useShipping();
 
+  console.log("Current shipping fee:", shippingFee, "Selected rate:", selectedShippingRate);
+
   // Fetch user profile once when session is available
   useEffect(() => {
     // If we've already loaded or are currently loading the profile, or don't have a session, exit
@@ -103,6 +105,8 @@ const Checkout = () => {
       navigate('/login', { state: { from: '/checkout' } });
       return;
     }
+    
+    console.log("Processing payment with shipping fee:", shippingFee);
     
     if (!selectedShippingRate) {
       // If we have a valid zip code but haven't calculated shipping yet, do it automatically

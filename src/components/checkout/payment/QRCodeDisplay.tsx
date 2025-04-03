@@ -6,12 +6,17 @@ import { Copy } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
-  pixData: string;
+  pixData?: string;
   pixCode: string;
 }
 
 const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
   const copyToClipboard = () => {
+    if (!pixCode) {
+      toast.error("Código PIX não disponível");
+      return;
+    }
+    
     navigator.clipboard.writeText(pixCode);
     toast.success("Código PIX copiado para a área de transferência!");
   };

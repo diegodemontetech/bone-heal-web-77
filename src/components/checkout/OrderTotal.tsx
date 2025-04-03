@@ -43,7 +43,12 @@ const OrderTotal = ({
   useEffect(() => {
     const newSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     setSubtotal(newSubtotal);
-    setTotal(newSubtotal + shippingFee - discount);
+    
+    // Ensure shippingFee is a number
+    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : 0;
+    console.log('Shipping fee in OrderTotal:', numericShippingFee);
+    
+    setTotal(newSubtotal + numericShippingFee - discount);
   }, [cartItems, shippingFee, discount]);
   
   // Format delivery date if available
