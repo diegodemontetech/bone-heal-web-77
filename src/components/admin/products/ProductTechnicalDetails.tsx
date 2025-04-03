@@ -110,6 +110,17 @@ const ProductTechnicalDetails = ({
     onChange(updatedDetails);
   };
 
+  // Helper function to safely get field value as string
+  const getFieldValue = (section: string, field: string): string => {
+    const sectionData = technicalDetails?.[section] || {};
+    const value = sectionData[field];
+    
+    // Ensure we return a string, not an object
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -157,7 +168,7 @@ const ProductTechnicalDetails = ({
                       <input
                         type="text"
                         className="w-full p-2 border border-slate-300 rounded-md text-sm focus:ring-1 focus:ring-primary focus:border-primary"
-                        value={technicalDetails?.[sectionKey]?.[field] || ""}
+                        value={getFieldValue(sectionKey, field)}
                         onChange={(e) => updateField(sectionKey, field, e.target.value)}
                         placeholder={`Informe ${fieldLabels[field] || field}...`}
                       />
