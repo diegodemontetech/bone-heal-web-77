@@ -51,8 +51,8 @@ const ProductsSection = () => {
                 transition={{ duration: 0.6 }}
               >
                 <img 
-                  src="https://i.ibb.co/5rhwywJ/6.webp" 
-                  alt="Bone Heal" 
+                  src="/lovable-uploads/377e397a-d449-46aa-b4c2-c93a775ce41a.png" 
+                  alt="Estrutura das Barreiras Bone Heal" 
                   className="rounded-xl shadow-lg"
                 />
               </motion.div>
@@ -142,7 +142,7 @@ const ProductsSection = () => {
                 transition={{ duration: 0.6 }}
               >
                 <img 
-                  src="https://i.ibb.co/X277PPz/4.webp" 
+                  src="/lovable-uploads/3560528f-b93c-40cc-a1b8-5856d4017aec.png" 
                   alt="Heal Bone" 
                   className="rounded-xl shadow-lg"
                 />
