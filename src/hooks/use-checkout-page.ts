@@ -13,23 +13,24 @@ export const useCheckoutPage = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [hasValidSession, setHasValidSession] = useState(false);
-  const authCheckRef = useRef(false);
+  // Use a ref to track if we've already performed initial checks to avoid duplicates
+  const authCheckCompletedRef = useRef(false);
   const [directSession, setDirectSession] = useState<any>(null);
-  const sessionCheckedRef = useRef(false);
   
-  // Additional authentication checks - limited to 3 attempts
+  // Set a maximum number of auth check attempts and track them
+  const MAX_AUTH_CHECKS = 1;
   const [authCheckCount, setAuthCheckCount] = useState(0);
-  const MAX_AUTH_CHECKS = 3;
-  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check Supabase session directly only once
+  // Check Supabase session directly only once on component mount
   useEffect(() => {
-    if (sessionCheckedRef.current) return;
+    // If we've already completed auth checks, don't do anything
+    if (authCheckCompletedRef.current) return;
     
     const checkDirectSession = async () => {
-      sessionCheckedRef.current = true;
-      
       try {
+        // Mark that we've begun checking authentication
+        authCheckCompletedRef.current = true;
+        
         const { data } = await supabase.auth.getSession();
         console.log("[Checkout] Direct session check:", data?.session?.user?.id);
         
@@ -38,7 +39,6 @@ export const useCheckoutPage = () => {
           setHasValidSession(true);
           setIsAuthChecked(true);
           setIsInitialized(true);
-          authCheckRef.current = true;
         } else {
           setIsAuthChecked(true);
           setIsInitialized(true);
@@ -53,68 +53,31 @@ export const useCheckoutPage = () => {
     checkDirectSession();
   }, []);
 
-  // Check session only if we don't have a confirmed value yet
-  // and limit the number of attempts
+  // Check session hook only if direct check didn't find a valid session
   useEffect(() => {
-    if (authCheckRef.current || authCheckCount >= MAX_AUTH_CHECKS) return;
+    // If we already have a valid session or we've reached max attempts, don't continue
+    if (hasValidSession || authCheckCount >= MAX_AUTH_CHECKS) return;
     
-    const checkAuth = async () => {
-      console.log(`[Checkout] Authentication check (attempt ${authCheckCount + 1}):`, {
-        sessionHook: Boolean(session?.user?.id),
-        directSession: Boolean(directSession?.user?.id)
-      });
-      
-      setAuthCheckCount(prev => prev + 1);
-      
-      // If we have a session by any method, mark as authenticated
-      if (session?.user?.id || directSession?.user?.id) {
-        console.log(`[Checkout] Valid session found:`, session?.user?.id || directSession?.user?.id);
-        setHasValidSession(true);
-        setIsAuthChecked(true);
-        setIsInitialized(true);
-        authCheckRef.current = true;
-        return;
-      }
-      
-      // Last direct check
-      if (authCheckCount < MAX_AUTH_CHECKS - 1) {
-        console.log("[Checkout] Attempting to check session again with direct API...");
-        
-        try {
-          const { data } = await supabase.auth.getSession();
-          
-          if (data?.session) {
-            console.log("[Checkout] Valid session found in additional check");
-            setDirectSession(data.session);
-            setHasValidSession(true);
-          }
-        } catch (error) {
-          console.error("Error checking session:", error);
-        }
-      }
-      
+    // If session from hook is available, use it
+    if (session?.user?.id) {
+      console.log("[Checkout] Session from hook:", session.user.id);
+      setHasValidSession(true);
       setIsAuthChecked(true);
       setIsInitialized(true);
-    };
-    
-    // Clear any existing timeout
-    if (authTimeoutRef.current) {
-      clearTimeout(authTimeoutRef.current);
+      return;
     }
     
-    // Execute with some delay between attempts
-    authTimeoutRef.current = setTimeout(() => {
-      checkAuth();
-    }, 300 * (authCheckCount + 1)); // Increasing delay with each attempt
+    // If we've done both checks and still don't have a session
+    if (authCheckCount === MAX_AUTH_CHECKS - 1 && !hasValidSession) {
+      console.log("[Checkout] No valid session found after all checks");
+      setIsAuthChecked(true);
+      setIsInitialized(true);
+    }
     
-    return () => {
-      if (authTimeoutRef.current) {
-        clearTimeout(authTimeoutRef.current);
-      }
-    };
-  }, [session, directSession, authCheckCount]);
+    setAuthCheckCount(prev => prev + 1);
+  }, [session, directSession, hasValidSession, authCheckCount]);
 
-  // Check empty cart only after confirming user is authenticated
+  // Check empty cart only after confirming user authentication status
   useEffect(() => {
     if (isInitialized && cartItems.length === 0) {
       console.log("[Checkout] Empty cart, redirecting to /cart");
@@ -125,7 +88,7 @@ export const useCheckoutPage = () => {
   return {
     isInitialized,
     isAuthChecked,
-    hasValidSession: hasValidSession || Boolean(session?.user),  // Redundancy for safety
+    hasValidSession: hasValidSession || Boolean(session?.user),
     cartItems,
     session: session || directSession,
     clear

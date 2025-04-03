@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
@@ -11,7 +11,7 @@ import { useCheckoutPage } from '@/hooks/use-checkout-page';
 import { useCheckout } from '@/hooks/use-checkout';
 import DeliveryInformation from '@/components/checkout/DeliveryInformation';
 import OrderTotal from '@/components/checkout/OrderTotal';
-import { useShipping } from '@/hooks/use-shipping';
+import { useShipping } from '@/hooks/shipping';
 import { ShippingCalculationRate } from "@/types/shipping";
 import { useDeliveryDate } from '@/hooks/shipping/use-delivery-date';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ const Checkout = () => {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const hasLoadedProfileRef = useRef(false);
   
   // Shipping and payment states
   const { paymentMethod, setPaymentMethod, checkoutData, loading, handleCheckout, orderId } = useCheckout();
@@ -38,15 +39,17 @@ const Checkout = () => {
     zipCode
   } = useShipping();
 
-  // Fetch user profile and address information only once
+  // Fetch user profile once when session is available
   useEffect(() => {
-    let isMounted = true;
+    // If we've already loaded or are currently loading the profile, or don't have a session, exit
+    if (hasLoadedProfileRef.current || !session?.user?.id) return;
     
     const loadUserProfile = async () => {
-      if (!session?.user?.id) return;
+      // Mark that we've attempted to load the profile
+      hasLoadedProfileRef.current = true;
       
       try {
-        if (isMounted) setIsLoadingProfile(true);
+        setIsLoadingProfile(true);
         
         const { data, error } = await supabase
           .from('profiles')
@@ -56,44 +59,41 @@ const Checkout = () => {
           
         if (error) throw error;
         
-        if (isMounted) {
-          setUserProfile(data);
+        setUserProfile(data);
           
-          // Configurar o CEP do usuário e calcular frete automaticamente
-          if (data?.zip_code) {
-            const cleanZipCode = data.zip_code.replace(/\D/g, '');
+        // Set zip code and calculate shipping if available
+        if (data?.zip_code) {
+          const cleanZipCode = data.zip_code.replace(/\D/g, '');
+          
+          if (cleanZipCode.length === 8) {
             setZipCode(cleanZipCode);
+            console.log('Setting zip code from profile:', cleanZipCode);
             
-            // Calcular frete automaticamente apenas uma vez
-            if (cleanZipCode.length === 8 && !selectedShippingRate) {
-              console.log('Calculando frete automaticamente com o CEP do usuário:', cleanZipCode);
+            // Only calculate if no shipping rate is selected yet
+            if (!selectedShippingRate) {
+              console.log('Calculating shipping with zip code from profile');
               calculateShipping(cleanZipCode);
             }
           }
         }
-        
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
       } finally {
-        if (isMounted) setIsLoadingProfile(false);
+        setIsLoadingProfile(false);
       }
     };
     
     loadUserProfile();
-    
-    return () => {
-      isMounted = false;
-    };
   }, [session?.user?.id, setZipCode, calculateShipping, selectedShippingRate]);
 
-  // Redirecionar para o carrinho se o carrinho estiver vazio
+  // Redirect to cart if cart is empty, but only after initialization
   useEffect(() => {
-    if (isInitialized && (!cartItems || cartItems.length === 0)) {
+    if (isInitialized && cartItems.length === 0) {
       navigate('/cart');
     }
   }, [isInitialized, cartItems, navigate]);
 
-  // Process checkout
+  // Process checkout handler
   const handleProcessPayment = () => {
     if (!hasValidSession) {
       navigate('/login', { state: { from: '/checkout' } });

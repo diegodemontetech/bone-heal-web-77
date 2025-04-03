@@ -19,7 +19,7 @@ const ZipCodeInput = ({
   const [hasCalculated, setHasCalculated] = useState(false);
   const calculationTimeout = useRef<NodeJS.Timeout | null>(null);
   const initialMountRef = useRef(true);
-
+  
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -33,11 +33,11 @@ const ZipCodeInput = ({
   useEffect(() => {
     // Skip if no zipCode, zipCode is not complete, auto-calculate is disabled, 
     // no calculation function, or we've already calculated
-    if (!zipCode || zipCode.length !== 8 || !autoCalculate || !onCalculateShipping || hasCalculated) {
+    if (!zipCode || zipCode.length !== 8 || !autoCalculate || !onCalculateShipping) {
       return;
     }
     
-    // Skip calculation on the initial mount
+    // Skip calculation on the initial mount unless explicitly told not to
     if (initialMountRef.current) {
       initialMountRef.current = false;
       return;
@@ -50,8 +50,10 @@ const ZipCodeInput = ({
     
     // Set timeout to prevent multiple rapid calculations
     calculationTimeout.current = setTimeout(() => {
-      onCalculateShipping();
-      setHasCalculated(true);
+      if (!hasCalculated) {
+        onCalculateShipping();
+        setHasCalculated(true);
+      }
     }, 500);
     
   }, [zipCode, autoCalculate, onCalculateShipping, hasCalculated]);
@@ -71,8 +73,10 @@ const ZipCodeInput = ({
         {!autoCalculate && onCalculateShipping && (
           <button 
             onClick={() => {
-              onCalculateShipping();
-              setHasCalculated(true);
+              if (!hasCalculated) {
+                onCalculateShipping();
+                setHasCalculated(true);
+              }
             }}
             className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
           >

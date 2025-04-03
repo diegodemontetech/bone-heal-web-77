@@ -9,6 +9,7 @@ export const useShipping = () => {
   // Flag to prevent recursive calculations
   const [isProcessingShipping, setIsProcessingShipping] = useState(false);
   const calculationAttempted = useRef(false);
+  const calculationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Original shipping rates data
   const {
@@ -46,7 +47,7 @@ export const useShipping = () => {
     }).format(date);
   }, [calculateDeliveryDate]);
 
-  // User zip code management
+  // User zip code management with the preventInitialFetch flag to prevent auto-loading
   const { 
     zipCode: userZipCodeFromHook, 
     setZipCode: setUserZipCodeFromHook, 
@@ -54,16 +55,32 @@ export const useShipping = () => {
     loadUserZipCode 
   } = useUserZipCode();
   
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (calculationTimeoutRef.current) {
+        clearTimeout(calculationTimeoutRef.current);
+      }
+    };
+  }, []);
+  
   // Wrapper to prevent recursive shipping calculations
   const calculateShipping = useCallback((zipCodeParam?: string) => {
+    // Prevent calculation if already in progress
     if (isProcessingShipping) {
       console.log("Shipping calculation already in progress, ignoring new request");
       return;
     }
     
+    // If we already have a selected rate and have attempted calculation, don't recalculate
     if (calculationAttempted.current && selectedShippingRate) {
       console.log("Shipping already calculated and selected, ignoring new calculation");
       return;
+    }
+    
+    // Clear any existing calculation timeout
+    if (calculationTimeoutRef.current) {
+      clearTimeout(calculationTimeoutRef.current);
     }
     
     setIsProcessingShipping(true);
@@ -75,13 +92,19 @@ export const useShipping = () => {
       return;
     }
     
-    // Add a small delay to prevent multiple simultaneous calls
-    setTimeout(() => {
-      console.log("Executing shipping calculation for:", zipToUse);
-      originalCalculateShipping(zipToUse);
-      calculationAttempted.current = true;
-      setIsProcessingShipping(false);
+    // Delay to debounce and prevent multiple calls
+    calculationTimeoutRef.current = setTimeout(() => {
+      try {
+        console.log("Executing shipping calculation for:", zipToUse);
+        originalCalculateShipping(zipToUse);
+        calculationAttempted.current = true;
+      } catch (error) {
+        console.error("Error in shipping calculation:", error);
+      } finally {
+        setIsProcessingShipping(false);
+      }
     }, 300);
+    
   }, [isProcessingShipping, selectedShippingRate, zipCode, originalCalculateShipping]);
 
   return {
