@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCart } from "@/hooks/use-cart";
@@ -21,13 +22,9 @@ interface CartContentProps {
 const CartContent = ({ userProfile }: CartContentProps) => {
   const navigate = useNavigate();
   const { cartItems, getTotalPrice, getTotalItems } = useCart();
-  
-  // Check if cart is empty
-  if (!cartItems || cartItems.length === 0) {
-    return <EmptyCart />;
-  }
-  
   const { profile, isAuthenticated } = useAuth();
+  
+  // Always initialize hooks at the top level, regardless of conditions
   const [activeTab, setActiveTab] = useState("cart");
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [shippingCalculated, setShippingCalculated] = useState(false);
@@ -52,6 +49,11 @@ const CartContent = ({ userProfile }: CartContentProps) => {
     orderId,
     checkoutData
   } = useCheckout();
+
+  // Check if cart is empty - after all hooks have been initialized
+  if (!cartItems || cartItems.length === 0) {
+    return <EmptyCart />;
+  }
 
   useEffect(() => {
     if (userProfile?.zip_code && !zipCode) {
