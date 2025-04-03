@@ -14,7 +14,8 @@ const navItems = [
   { path: "/products", label: "Produtos" },
   { path: "/como-funciona", label: "Como Funciona" },
   { path: "/studies", label: "Estudos" },
-  { path: "/news", label: "Notícias" },
+  // News item temporarily disabled as requested
+  // { path: "/news", label: "Notícias" },
   { path: "/contact", label: "Contato" },
 ];
 
