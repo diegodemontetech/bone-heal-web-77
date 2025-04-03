@@ -11,17 +11,19 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Loader2, FileText, Link2, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScientificStudy } from "@/types/scientific-study";
 
 interface StudiesTableProps {
-  onEdit: (study: any) => void;
+  onEdit: (study: ScientificStudy) => void;
 }
 
 export const StudiesTable = ({ onEdit }: StudiesTableProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: studies, isLoading, error, refetch } = useQuery({
+  const { data: studies, isLoading, error } = useQuery({
     queryKey: ["admin-studies"],
     queryFn: async () => {
       try {
@@ -37,7 +39,7 @@ export const StudiesTable = ({ onEdit }: StudiesTableProps) => {
         }
         
         console.log("Estudos científicos recuperados:", data);
-        return data;
+        return data as ScientificStudy[];
       } catch (error) {
         console.error("Falha ao buscar estudos:", error);
         throw error;
@@ -79,6 +81,36 @@ export const StudiesTable = ({ onEdit }: StudiesTableProps) => {
     }
   };
 
+  const getCategoryLabel = (category?: string) => {
+    switch (category) {
+      case "clinical-case":
+        return "Caso Clínico";
+      case "systematic-review":
+        return "Revisão Sistemática";
+      case "randomized-trial":
+        return "Ensaio Clínico";
+      case "laboratory-study":
+        return "Estudo Laboratorial";
+      default:
+        return "Outro";
+    }
+  };
+
+  const getCategoryColor = (category?: string) => {
+    switch (category) {
+      case "clinical-case":
+        return "bg-blue-100 text-blue-800";
+      case "systematic-review":
+        return "bg-purple-100 text-purple-800";
+      case "randomized-trial":
+        return "bg-green-100 text-green-800";
+      case "laboratory-study":
+        return "bg-amber-100 text-amber-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -109,31 +141,61 @@ export const StudiesTable = ({ onEdit }: StudiesTableProps) => {
       <TableHeader>
         <TableRow>
           <TableHead>Título</TableHead>
-          <TableHead>Data de Publicação</TableHead>
-          <TableHead>Arquivo</TableHead>
+          <TableHead>Autores</TableHead>
+          <TableHead>Periódico</TableHead>
+          <TableHead>Ano</TableHead>
+          <TableHead>Categoria</TableHead>
+          <TableHead>Recursos</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {studies.map((study) => (
           <TableRow key={study.id}>
-            <TableCell>{study.title}</TableCell>
+            <TableCell className="font-medium">{study.title}</TableCell>
+            <TableCell>{study.authors}</TableCell>
+            <TableCell>{study.journal}</TableCell>
+            <TableCell>{study.year}</TableCell>
             <TableCell>
-              {new Date(study.published_date).toLocaleDateString()}
+              {study.category && (
+                <Badge className={getCategoryColor(study.category)}>
+                  {getCategoryLabel(study.category)}
+                </Badge>
+              )}
             </TableCell>
             <TableCell>
-              {study.file_url ? (
-                <a
-                  href={study.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:text-primary-dark"
-                >
-                  Ver PDF
-                </a>
-              ) : (
-                <span className="text-neutral-400">Sem arquivo</span>
-              )}
+              <div className="flex space-x-2">
+                {study.file_url && (
+                  <a
+                    href={study.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-primary hover:text-primary-dark"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </a>
+                )}
+                {study.url && (
+                  <a
+                    href={study.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-primary hover:text-primary-dark"
+                  >
+                    <Link2 className="w-4 h-4" />
+                  </a>
+                )}
+                {study.doi && (
+                  <a
+                    href={`https://doi.org/${study.doi}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-primary hover:text-primary-dark"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
             </TableCell>
             <TableCell className="text-right space-x-2">
               <Button

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { ScientificStudy, StudyCategory } from "@/types/scientific-study";
 
 interface StudiesFormProps {
-  editingStudy: any | null;
+  editingStudy: ScientificStudy | null;
   handleCloseForm: () => void;
   refetchStudies: () => void;
 }
+
+const categoryOptions: { value: StudyCategory; label: string }[] = [
+  { value: "clinical-case", label: "Caso Clínico" },
+  { value: "systematic-review", label: "Revisão Sistemática" },
+  { value: "randomized-trial", label: "Ensaio Clínico Randomizado" },
+  { value: "laboratory-study", label: "Estudo Laboratorial" },
+  { value: "other", label: "Outro" }
+];
 
 export const StudiesForm = ({ 
   editingStudy, 
@@ -25,13 +41,22 @@ export const StudiesForm = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: editingStudy?.title || "",
-    description: editingStudy?.description || "",
+    authors: editingStudy?.authors || "",
+    journal: editingStudy?.journal || "",
+    year: editingStudy?.year?.toString() || new Date().getFullYear().toString(),
     published_date: editingStudy?.published_date || "",
+    description: editingStudy?.description || "",
+    abstract: editingStudy?.abstract || "",
+    doi: editingStudy?.doi || "",
+    url: editingStudy?.url || "",
     file_url: editingStudy?.file_url || "",
+    citation: editingStudy?.citation || "",
+    category: editingStudy?.category || "clinical-case",
+    tags: editingStudy?.tags?.join(", ") || "",
   });
 
   const createStudyMutation = useMutation({
-    mutationFn: async (studyData: typeof formData & { file_url: string }) => {
+    mutationFn: async (studyData: any) => {
       console.log("Criando novo estudo:", studyData);
       const { error } = await supabase
         .from("scientific_studies")
@@ -59,17 +84,13 @@ export const StudiesForm = ({
   });
 
   const updateStudyMutation = useMutation({
-    mutationFn: async (studyData: typeof formData & { id: string }) => {
+    mutationFn: async (studyData: any) => {
       console.log("Atualizando estudo:", studyData);
+      const { id, ...updateData } = studyData;
       const { error } = await supabase
         .from("scientific_studies")
-        .update({
-          title: studyData.title,
-          description: studyData.description,
-          published_date: studyData.published_date,
-          file_url: studyData.file_url,
-        })
-        .eq("id", studyData.id);
+        .update(updateData)
+        .eq("id", id);
 
       if (error) {
         console.error("Erro ao atualizar estudo:", error);
@@ -159,9 +180,16 @@ export const StudiesForm = ({
         fileUrl = await uploadFile(selectedFile);
       }
 
+      // Process tags from comma-separated string to array
+      const tagsArray = formData.tags
+        ? formData.tags.split(',').map(tag => tag.trim())
+        : [];
+      
       const studyData = { 
-        ...formData, 
-        file_url: fileUrl 
+        ...formData,
+        file_url: fileUrl,
+        year: parseInt(formData.year),
+        tags: tagsArray
       };
 
       if (editingStudy) {
@@ -179,63 +207,175 @@ export const StudiesForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="title">Título</Label>
-        <Input
-          id="title"
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="description">Descrição</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="published_date">Data de Publicação</Label>
-        <Input
-          id="published_date"
-          type="date"
-          value={formData.published_date}
-          onChange={(e) => setFormData({ ...formData, published_date: e.target.value })}
-          required
-        />
-      </div>
-      <div>
-        <Label htmlFor="file">Arquivo PDF</Label>
-        <div className="flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="col-span-2">
+          <Label htmlFor="title">Título</Label>
           <Input
-            id="file"
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            className="flex-1"
-            required={!editingStudy || !formData.file_url}
+            id="title"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            required
           />
-          {isUploading && (
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        </div>
+        
+        <div>
+          <Label htmlFor="authors">Autores</Label>
+          <Input
+            id="authors"
+            value={formData.authors}
+            onChange={(e) => setFormData({ ...formData, authors: e.target.value })}
+            required
+            placeholder="Separados por vírgula"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="journal">Periódico/Revista</Label>
+          <Input
+            id="journal"
+            value={formData.journal}
+            onChange={(e) => setFormData({ ...formData, journal: e.target.value })}
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="year">Ano</Label>
+          <Input
+            id="year"
+            type="number"
+            value={formData.year}
+            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+            required
+            min="1900"
+            max={new Date().getFullYear().toString()}
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="published_date">Data de Publicação</Label>
+          <Input
+            id="published_date"
+            type="date"
+            value={formData.published_date}
+            onChange={(e) => setFormData({ ...formData, published_date: e.target.value })}
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="category">Categoria</Label>
+          <Select 
+            value={formData.category} 
+            onValueChange={(value) => setFormData({ ...formData, category: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              {categoryOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <Label htmlFor="tags">Tags</Label>
+          <Input
+            id="tags"
+            value={formData.tags}
+            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+            placeholder="Separadas por vírgula"
+          />
+        </div>
+        
+        <div className="col-span-2">
+          <Label htmlFor="description">Descrição</Label>
+          <Textarea
+            id="description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            required
+            className="h-24"
+          />
+        </div>
+        
+        <div className="col-span-2">
+          <Label htmlFor="abstract">Resumo/Abstract</Label>
+          <Textarea
+            id="abstract"
+            value={formData.abstract}
+            onChange={(e) => setFormData({ ...formData, abstract: e.target.value })}
+            className="h-32"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="doi">DOI</Label>
+          <Input
+            id="doi"
+            value={formData.doi}
+            onChange={(e) => setFormData({ ...formData, doi: e.target.value })}
+            placeholder="ex: 10.1016/j.joms.2021.03.005"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="url">URL</Label>
+          <Input
+            id="url"
+            type="url"
+            value={formData.url}
+            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+            placeholder="Link externo para o artigo"
+          />
+        </div>
+        
+        <div className="col-span-2">
+          <Label htmlFor="citation">Citação Completa</Label>
+          <Textarea
+            id="citation"
+            value={formData.citation}
+            onChange={(e) => setFormData({ ...formData, citation: e.target.value })}
+            placeholder="Formato ABNT, APA ou similar"
+            className="h-20"
+          />
+        </div>
+        
+        <div className="col-span-2">
+          <Label htmlFor="file">Arquivo PDF</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="file"
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              className="flex-1"
+              required={!editingStudy || !formData.file_url}
+            />
+            {isUploading && (
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            )}
+          </div>
+          {formData.file_url && (
+            <div className="mt-2">
+              <a 
+                href={formData.file_url}
+                target="_blank"
+                rel="noopener noreferrer" 
+                className="text-sm text-primary hover:text-primary-dark"
+              >
+                Arquivo atual
+              </a>
+            </div>
           )}
         </div>
-        {formData.file_url && (
-          <div className="mt-2">
-            <a 
-              href={formData.file_url}
-              target="_blank"
-              rel="noopener noreferrer" 
-              className="text-sm text-primary hover:text-primary-dark"
-            >
-              Arquivo atual
-            </a>
-          </div>
-        )}
       </div>
+      
       <Button type="submit" className="w-full" disabled={isUploading}>
         {isUploading ? (
           <>
