@@ -9,6 +9,7 @@ import ApplicationTechniqueSection from "@/components/como-funciona/ApplicationT
 import BenefitsSection from "@/components/como-funciona/BenefitsSection";
 import ContactSection from "@/components/contact/ContactSection";
 import ProcessoSection from "@/components/como-funciona/ProcessoSection";
+import FaqSection from "@/components/como-funciona/FaqSection";
 
 const ComoFunciona = () => {
   return (
@@ -27,6 +28,7 @@ const ComoFunciona = () => {
       <ProcessoSection />
       <ApplicationTechniqueSection />
       <BenefitsSection />
+      <FaqSection />
       <ContactSection />
       <Footer />
       <WhatsAppWidget />
