@@ -43,6 +43,13 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
     return "Consulte a embalagem para indicações específicas.";
   };
 
+  // Helper function to safely render a value as string
+  const renderValue = (value: any): string => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
   const renderBoneHealDetails = () => (
     <div className="space-y-6">
       <h2 className="text-xl font-bold mb-4">Detalhes Técnicos</h2>
@@ -230,7 +237,7 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
               {Object.entries(product.technical_details).map(([key, value]) => (
                 <TableRow key={key}>
                   <TableCell className="font-medium">{key}</TableCell>
-                  <TableCell>{value as string}</TableCell>
+                  <TableCell>{renderValue(value)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
