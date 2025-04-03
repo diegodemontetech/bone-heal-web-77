@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Check, Clock, Sparkles, Award } from "lucide-react";
+import { Check, Clock, Sparkles, Award, Star } from "lucide-react";
 
 const ProductsSection = () => {
   return (
@@ -21,6 +21,19 @@ const ProductsSection = () => {
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             Soluções desenvolvidas com tecnologia exclusiva para regeneração óssea guiada com resultados superiores
           </p>
+          
+          <div className="flex items-center justify-center mt-6">
+            <div className="flex mr-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star 
+                  key={star} 
+                  className="h-6 w-6 text-yellow-400 fill-yellow-400" 
+                />
+              ))}
+            </div>
+            <span className="text-lg font-medium">5.0</span>
+            <span className="text-gray-500 ml-2">(+90 avaliações de clientes)</span>
+          </div>
         </div>
         
         <Tabs defaultValue="bone-heal" className="max-w-5xl mx-auto">

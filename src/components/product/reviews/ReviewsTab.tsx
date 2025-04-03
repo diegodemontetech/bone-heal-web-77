@@ -48,8 +48,19 @@ const ReviewsTab = ({ productId }: ReviewsTabProps) => {
     });
   };
 
+  // Add a note about Google reviews
+  const googleReviewsNote = (
+    <div className="bg-blue-50 p-4 rounded-md mb-6 border border-blue-100">
+      <p className="text-sm text-blue-700">
+        Veja também as mais de 90 avaliações verificadas de clientes reais na seção acima.
+      </p>
+    </div>
+  );
+
   return (
     <>
+      {googleReviewsNote}
+      
       {session && (
         <ReviewForm
           userRating={userRating}

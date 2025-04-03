@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/utils/formatters";
 import { Product } from "@/types/product";
+import { Star } from "lucide-react";
 
 interface ProductHeaderProps {
   product: Product;
@@ -47,6 +48,13 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
         )}
         <Badge variant="outline" className="font-normal bg-primary/10">
           Registro ANVISA: 81197590000
+        </Badge>
+        <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200">
+          <div className="flex items-center">
+            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 mr-1" />
+            <span>5.0</span>
+            <span className="ml-1 text-xs text-green-600">(90+ avaliações)</span>
+          </div>
         </Badge>
       </div>
       
