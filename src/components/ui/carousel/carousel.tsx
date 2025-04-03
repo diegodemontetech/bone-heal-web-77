@@ -1,6 +1,6 @@
 
 import * as React from "react"
-import useEmblaCarousel from "embla-carousel-react"
+import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react"
 import { cn } from "@/lib/utils"
 import { CarouselContext } from "./carousel-context"
 import { CarouselApi, CarouselProps } from "./types"
@@ -83,10 +83,20 @@ const Carousel = React.forwardRef<
       }
     }, [api, onSelect])
 
+    // Create a React ref object that can be passed to the context
+    const emblaRefAsRef = React.useRef<HTMLDivElement | null>(null)
+    
+    // Update the ref when carouselRef changes
+    React.useEffect(() => {
+      if (carouselRef) {
+        emblaRefAsRef.current = carouselRef.current
+      }
+    }, [carouselRef])
+
     return (
       <CarouselContext.Provider
         value={{
-          carouselRef,
+          carouselRef: emblaRefAsRef,
           api: api,
           opts,
           orientation:
