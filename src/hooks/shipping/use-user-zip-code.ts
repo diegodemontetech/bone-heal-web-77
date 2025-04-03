@@ -6,15 +6,17 @@ export const useUserZipCode = () => {
   const [zipCode, setZipCode] = useState<string>("");
   const [zipCodeFetched, setZipCodeFetched] = useState<boolean>(false);
   const fetchAttemptedRef = useRef(false);
+  const fetchingInProgressRef = useRef(false);
 
   // Load user's zipcode from profile only once
   const loadUserZipCode = async () => {
-    // If already fetched or attempted, don't try again
-    if (zipCodeFetched || fetchAttemptedRef.current) {
-      return;
+    // If already fetched or attempted or currently fetching, don't try again
+    if (zipCodeFetched || fetchAttemptedRef.current || fetchingInProgressRef.current) {
+      return zipCode;
     }
     
     fetchAttemptedRef.current = true;
+    fetchingInProgressRef.current = true;
     
     try {
       // Check if we have a session
@@ -22,7 +24,8 @@ export const useUserZipCode = () => {
       
       if (!sessionData.session) {
         console.log("Sem sessão de usuário para carregar CEP");
-        return;
+        fetchingInProgressRef.current = false;
+        return null;
       }
       
       const userId = sessionData.session.user.id;
@@ -36,7 +39,8 @@ export const useUserZipCode = () => {
         
       if (error) {
         console.error("Erro ao buscar CEP do usuário:", error);
-        return;
+        fetchingInProgressRef.current = false;
+        return null;
       }
       
       if (profile && profile.zip_code) {
@@ -44,10 +48,15 @@ export const useUserZipCode = () => {
         const cleanZipCode = profile.zip_code.replace(/\D/g, "");
         setZipCode(cleanZipCode);
         setZipCodeFetched(true);
+        fetchingInProgressRef.current = false;
+        return cleanZipCode;
       }
     } catch (error) {
       console.error("Erro ao carregar CEP do usuário:", error);
     }
+    
+    fetchingInProgressRef.current = false;
+    return null;
   };
 
   return {

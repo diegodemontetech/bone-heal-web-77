@@ -25,6 +25,7 @@ const Checkout = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const hasLoadedProfileRef = useRef(false);
+  const [shippingCalculated, setShippingCalculated] = useState(false);
   
   // Shipping and payment states
   const { paymentMethod, setPaymentMethod, checkoutData, loading, handleCheckout, orderId } = useCheckout();
@@ -69,11 +70,10 @@ const Checkout = () => {
             setZipCode(cleanZipCode);
             console.log('Setting zip code from profile:', cleanZipCode);
             
-            // Only calculate if no shipping rate is selected yet
-            if (!selectedShippingRate) {
-              console.log('Calculating shipping with zip code from profile');
-              calculateShipping(cleanZipCode);
-            }
+            // Always calculate shipping automatically here
+            calculateShipping(cleanZipCode);
+            setShippingCalculated(true);
+            console.log('Auto-calculating shipping with profile zipcode');
           }
         }
       } catch (error) {
@@ -84,7 +84,7 @@ const Checkout = () => {
     };
     
     loadUserProfile();
-  }, [session?.user?.id, setZipCode, calculateShipping, selectedShippingRate]);
+  }, [session?.user?.id, setZipCode, calculateShipping]);
 
   // Redirect to cart if cart is empty, but only after initialization
   useEffect(() => {
@@ -101,8 +101,16 @@ const Checkout = () => {
     }
     
     if (!selectedShippingRate) {
-      toast.error("É necessário calcular o frete antes de finalizar a compra");
-      return;
+      // Instead of showing an error, automatically calculate shipping
+      if (zipCode && zipCode.length === 8 && !shippingCalculated) {
+        calculateShipping(zipCode);
+        setShippingCalculated(true);
+        // Return early to wait for shipping calculation
+        return;
+      } else {
+        toast.error("É necessário ter um CEP válido para finalizar a compra");
+        return;
+      }
     }
     
     handleCheckout(

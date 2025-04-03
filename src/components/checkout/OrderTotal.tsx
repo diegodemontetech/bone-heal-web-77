@@ -1,13 +1,14 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import OrderSummary from "@/components/orders/OrderSummary";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { CartItem } from "@/hooks/use-cart";
-import PaymentOptions from "./payment/PaymentOptions";
-import DeliveryInfo from "./payment/DeliveryInfo";
-import CheckoutButton from "./payment/CheckoutButton";
-import { ShoppingBag, Truck, BadgePercent, Receipt } from "lucide-react";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { formatCurrency } from "@/lib/utils";
+import { CreditCard, Landmark, QrCode, Loader2 } from "lucide-react";
+import QRCodeDisplay from "./payment/QRCodeDisplay";
+import { useEffect } from 'react';
 
 interface OrderTotalProps {
   cartItems: CartItem[];
@@ -23,29 +24,6 @@ interface OrderTotalProps {
   checkoutData: any;
 }
 
-// Define the type for commercial condition from database
-interface CommercialConditionFromDB {
-  id: string;
-  name: string;
-  description: string | null;
-  discount_type: string;
-  discount_value: number;
-  min_amount: number | null;
-  min_items: number | null;
-  valid_from: string | null;
-  valid_until: string | null;
-  payment_method: string | null;
-  region: string | null;
-  customer_group: string | null;
-  product_id: string | null;
-  product_category: string | null;
-  is_active: boolean | null;
-  free_shipping: boolean | null;
-  created_at: string;
-  updated_at: string;
-  is_cumulative?: boolean; // Make this optional to handle both cases
-}
-
 const OrderTotal = ({
   cartItems,
   shippingFee,
@@ -59,150 +37,132 @@ const OrderTotal = ({
   setPaymentMethod,
   checkoutData
 }: OrderTotalProps) => {
-  const [commercialDiscounts, setCommercialDiscounts] = useState<number>(0);
-  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const [subtotal, setSubtotal] = useState(0);
+  const [total, setTotal] = useState(0);
   
-  // Calculate commercial conditions discounts
+  // Calculate totals whenever inputs change
   useEffect(() => {
-    const calculateDiscounts = async () => {
-      if (!checkoutData || !checkoutData.address) return;
-      
-      try {
-        // Get all active commercial conditions
-        const { data: conditions, error } = await supabase
-          .from("commercial_conditions")
-          .select("*")
-          .eq("is_active", true);
-        
-        if (error) {
-          console.error("Error fetching commercial conditions:", error);
-          return;
-        }
-        
-        if (!conditions || conditions.length === 0) return;
-        
-        // Filter applicable conditions and calculate discounts
-        let totalDiscount = 0;
-        const applicableConditions = conditions.filter((condition: CommercialConditionFromDB) => {
-          // Check region condition (from zip code)
-          if (condition.region && checkoutData.address.state && 
-              condition.region !== checkoutData.address.state) {
-            return false;
-          }
-          
-          // Check payment method condition
-          if (condition.payment_method && condition.payment_method !== paymentMethod) {
-            return false;
-          }
-          
-          // Check minimum amount
-          if (condition.min_amount && subtotal < condition.min_amount) {
-            return false;
-          }
-          
-          // Check minimum items
-          if (condition.min_items && cartItems.reduce((total, item) => total + item.quantity, 0) < condition.min_items) {
-            return false;
-          }
-          
-          // Add more conditions as needed
-          
-          return true;
-        });
-        
-        // Calculate total discount
-        let cumulativeDiscount = 0;
-        let highestNonCumulativeDiscount = 0;
-        
-        applicableConditions.forEach((condition: CommercialConditionFromDB) => {
-          const discountAmount = condition.discount_type === 'percentage' 
-            ? (subtotal * condition.discount_value / 100) 
-            : condition.discount_value;
-            
-          // Use optional chaining and nullish coalescing to safely handle is_cumulative
-          if (condition.is_cumulative ?? true) {
-            cumulativeDiscount += discountAmount;
-          } else if (discountAmount > highestNonCumulativeDiscount) {
-            highestNonCumulativeDiscount = discountAmount;
-          }
-        });
-        
-        totalDiscount = cumulativeDiscount + highestNonCumulativeDiscount;
-        setCommercialDiscounts(totalDiscount);
-        
-      } catch (error) {
-        console.error("Error calculating commercial discounts:", error);
-      }
-    };
-    
-    calculateDiscounts();
-  }, [cartItems, checkoutData, paymentMethod, subtotal]);
+    const newSubtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    setSubtotal(newSubtotal);
+    setTotal(newSubtotal + shippingFee - discount);
+  }, [cartItems, shippingFee, discount]);
   
-  const total = subtotal + shippingFee - discount - commercialDiscounts;
-
-  const getFinalAmount = (method: string) => {
-    // We already accounted for all discounts, including payment method ones
-    return total;
-  };
+  // Format delivery date if available
+  const formattedDeliveryDate = deliveryDate
+    ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' }).format(deliveryDate)
+    : null;
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-white shadow-md border overflow-hidden">
-        <div className="bg-gradient-to-r from-primary/10 to-white border-b px-4 py-3">
-          <h2 className="text-lg font-semibold text-primary flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Resumo do Pedido
-          </h2>
-        </div>
-        
-        <CardContent className="pt-4">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-primary/70 text-sm font-medium pb-2 border-b">
-              <ShoppingBag className="h-4 w-4" />
-              <span>Itens do Carrinho</span>
+    <Card>
+      <CardHeader>
+        <CardTitle>Resumo do Pedido</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Order summary section */}
+        <div className="space-y-2">
+          {cartItems.map(item => (
+            <div key={item.id} className="flex justify-between text-sm">
+              <span>{item.name} x{item.quantity}</span>
+              <span>{formatCurrency(item.price * item.quantity)}</span>
+            </div>
+          ))}
+          
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between text-sm">
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             
-            <OrderSummary
-              items={cartItems}
-              subtotal={subtotal}
-              shippingFee={shippingFee}
-              discount={discount + commercialDiscounts}
-              total={getFinalAmount(paymentMethod)}
-            />
-
-            <div className="flex items-center gap-2 text-primary/70 text-sm font-medium pt-2 pb-2 border-b border-t">
-              <Truck className="h-4 w-4" />
-              <span>Entrega</span>
+            <div className="flex justify-between text-sm">
+              <span>Frete</span>
+              <span>{hasZipCode ? formatCurrency(shippingFee) : "Calcular"}</span>
             </div>
             
-            <DeliveryInfo deliveryDate={deliveryDate} />
-
-            <div className="flex items-center gap-2 text-primary/70 text-sm font-medium pt-2 pb-2 border-b">
-              <BadgePercent className="h-4 w-4" />
-              <span>Formas de Pagamento</span>
+            {discount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Desconto</span>
+                <span>-{formatCurrency(discount)}</span>
+              </div>
+            )}
+            
+            <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+              <span>Total</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <PaymentOptions 
-        paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod}
-        total={total}
-        checkoutData={checkoutData}
-      />
-
-      <div className="mt-6">
-        <CheckoutButton 
-          isLoggedIn={isLoggedIn}
-          hasZipCode={hasZipCode}
-          loading={loading}
-          amount={getFinalAmount(paymentMethod)}
-          paymentMethod={paymentMethod}
-          onCheckout={onCheckout}
-        />
-      </div>
-    </div>
+        </div>
+        
+        {/* Delivery info */}
+        {hasZipCode && formattedDeliveryDate && (
+          <div className="p-3 bg-primary/10 rounded-lg text-sm">
+            <p>Previsão de entrega: até <strong>{formattedDeliveryDate}</strong></p>
+          </div>
+        )}
+        
+        {/* Payment method selection */}
+        <div>
+          <h3 className="font-medium mb-3">Forma de Pagamento</h3>
+          <RadioGroup 
+            value={paymentMethod} 
+            onValueChange={setPaymentMethod}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2 border p-3 rounded-md">
+              <RadioGroupItem value="pix" id="pix" />
+              <Label htmlFor="pix" className="flex items-center cursor-pointer">
+                <QrCode className="h-4 w-4 mr-2" />
+                <span>PIX</span>
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 border p-3 rounded-md">
+              <RadioGroupItem value="card" id="card" />
+              <Label htmlFor="card" className="flex items-center cursor-pointer">
+                <CreditCard className="h-4 w-4 mr-2" />
+                <span>Cartão de Crédito</span>
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 border p-3 rounded-md">
+              <RadioGroupItem value="bank" id="bank" />
+              <Label htmlFor="bank" className="flex items-center cursor-pointer">
+                <Landmark className="h-4 w-4 mr-2" />
+                <span>Transferência Bancária</span>
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+        
+        {/* Checkout button */}
+        {!checkoutData ? (
+          <Button 
+            className="w-full" 
+            onClick={onCheckout}
+            disabled={loading || !isLoggedIn || !hasZipCode}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Processando...
+              </>
+            ) : (
+              'Finalizar Compra'
+            )}
+          </Button>
+        ) : (
+          <QRCodeDisplay 
+            pixData={checkoutData.qr_code} 
+            pixCode={checkoutData.qr_code_text}
+          />
+        )}
+        
+        {!isLoggedIn && (
+          <p className="text-sm text-red-500">
+            É necessário estar logado para finalizar a compra.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

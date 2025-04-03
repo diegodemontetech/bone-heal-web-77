@@ -10,6 +10,7 @@ export const useShipping = () => {
   const [isProcessingShipping, setIsProcessingShipping] = useState(false);
   const calculationAttempted = useRef(false);
   const calculationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCalculatedZipCode = useRef<string>("");
   
   // Original shipping rates data
   const {
@@ -72,9 +73,10 @@ export const useShipping = () => {
       return;
     }
     
-    // If we already have a selected rate and have attempted calculation, don't recalculate
-    if (calculationAttempted.current && selectedShippingRate) {
-      console.log("Shipping already calculated and selected, ignoring new calculation");
+    // Skip calculation if we've already calculated for this zip code
+    const zipToUse = zipCodeParam || zipCode;
+    if (lastCalculatedZipCode.current === zipToUse && selectedShippingRate) {
+      console.log("Shipping already calculated for this zip code, reusing result");
       return;
     }
     
@@ -84,7 +86,6 @@ export const useShipping = () => {
     }
     
     setIsProcessingShipping(true);
-    const zipToUse = zipCodeParam || zipCode;
     
     if (!zipToUse || zipToUse.length !== 8) {
       console.log("Invalid ZIP code for calculation:", zipToUse);
@@ -98,6 +99,7 @@ export const useShipping = () => {
         console.log("Executing shipping calculation for:", zipToUse);
         originalCalculateShipping(zipToUse);
         calculationAttempted.current = true;
+        lastCalculatedZipCode.current = zipToUse;
       } catch (error) {
         console.error("Error in shipping calculation:", error);
       } finally {
