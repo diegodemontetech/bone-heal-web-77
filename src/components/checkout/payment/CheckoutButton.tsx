@@ -1,3 +1,4 @@
+
 import { Loader2, ArrowRight, ShoppingCart, AlertTriangle, Lock, QrCode, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +21,7 @@ const CheckoutButton = ({
 }: CheckoutButtonProps) => {
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
-      case 'credit':
+      case 'credit_card':
         return 'com Cartão';
       case 'pix':
         return 'via PIX';
@@ -66,7 +67,7 @@ const CheckoutButton = ({
     switch (paymentMethod) {
       case 'pix':
         return "bg-green-600 hover:bg-green-700";
-      case 'credit':
+      case 'credit_card':
         return "bg-blue-600 hover:bg-blue-700";
       case 'boleto':
         return "bg-orange-600 hover:bg-orange-700";
@@ -81,7 +82,7 @@ const CheckoutButton = ({
         className={`w-full text-white h-12 text-base flex items-center justify-center transition-all shadow-sm ${getButtonStyles()}`}
         size="lg"
         onClick={onCheckout}
-        disabled={loading || !hasZipCode || amount <= 0 || !isLoggedIn || !paymentMethod}
+        disabled={loading || !isLoggedIn || !paymentMethod}
       >
         {loading ? (
           <>
@@ -90,7 +91,7 @@ const CheckoutButton = ({
           </>
         ) : (
           <>
-            {paymentMethod === 'credit' && <Lock className="mr-2 h-5 w-5" />}
+            {paymentMethod === 'credit_card' && <Lock className="mr-2 h-5 w-5" />}
             {paymentMethod === 'pix' && <QrCode className="mr-2 h-5 w-5" />}
             {paymentMethod === 'boleto' && <FileText className="mr-2 h-5 w-5" />}
             {!paymentMethod && <ShoppingCart className="mr-2 h-5 w-5" />}
@@ -108,14 +109,7 @@ const CheckoutButton = ({
         </div>
       )}
       
-      {isLoggedIn && !hasZipCode && (
-        <div className="flex items-center gap-2 bg-amber-50 text-amber-600 text-sm p-2 rounded-lg border border-amber-100">
-          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-          <p>Informe seu CEP e selecione uma opção de frete</p>
-        </div>
-      )}
-      
-      {isLoggedIn && hasZipCode && !paymentMethod && (
+      {isLoggedIn && !paymentMethod && (
         <div className="flex items-center gap-2 bg-blue-50 text-blue-600 text-sm p-2 rounded-lg border border-blue-100">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <p>Selecione um método de pagamento para continuar</p>

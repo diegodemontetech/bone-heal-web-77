@@ -3,7 +3,7 @@ import { CreditCard, QrCode, FileText } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import PixPayment from "@/components/checkout/PixPayment";
 
@@ -24,6 +24,13 @@ const PaymentSection = ({
   checkoutData,
   orderId
 }: PaymentSectionProps) => {
+  // Defina o método de pagamento como "pix" por padrão se nenhum estiver selecionado
+  useEffect(() => {
+    if (!paymentMethod) {
+      setPaymentMethod('pix');
+    }
+  }, [paymentMethod, setPaymentMethod]);
+
   // If we already have payment data (QR code for PIX, etc.), show the corresponding section
   if (checkoutData && paymentMethod === 'pix' && orderId) {
     const pixCode = checkoutData?.point_of_interaction?.transaction_data?.qr_code;

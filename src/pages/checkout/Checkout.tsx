@@ -30,13 +30,13 @@ const Checkout = () => {
   const { 
     shippingRates, 
     selectedShippingRate, 
-    setZipCode, 
+    setUserZipCode, 
     calculateShipping, 
     shippingFee, 
     deliveryDate, 
     handleShippingRateChange,
-    zipCode
-  } = useShipping(cartItems);
+    userZipCode
+  } = useShipping();
 
   // Fetch user profile and address information only once
   useEffect(() => {
@@ -58,6 +58,18 @@ const Checkout = () => {
         
         if (isMounted) {
           setUserProfile(data);
+          
+          // Configurar o CEP do usuário e calcular frete automaticamente
+          if (data?.zip_code) {
+            const cleanZipCode = data.zip_code.replace(/\D/g, '');
+            setUserZipCode(cleanZipCode);
+            
+            // Calcular frete automaticamente apenas uma vez
+            if (cleanZipCode.length === 8 && !selectedShippingRate) {
+              console.log('Calculando frete automaticamente com o CEP do usuário:', cleanZipCode);
+              calculateShipping();
+            }
+          }
         }
         
       } catch (error) {
@@ -72,7 +84,14 @@ const Checkout = () => {
     return () => {
       isMounted = false;
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, setUserZipCode, calculateShipping, selectedShippingRate]);
+
+  // Redirecionar para o carrinho se o carrinho estiver vazio
+  useEffect(() => {
+    if (isInitialized && (!cartItems || cartItems.length === 0)) {
+      navigate('/cart');
+    }
+  }, [isInitialized, cartItems, navigate]);
 
   // Process checkout
   const handleProcessPayment = () => {
@@ -81,14 +100,14 @@ const Checkout = () => {
       return;
     }
     
-    if (!selectedShippingRate || !selectedShippingRate.zipCode) {
+    if (!selectedShippingRate) {
       toast.error("É necessário calcular o frete antes de finalizar a compra");
       return;
     }
     
     handleCheckout(
       cartItems,
-      selectedShippingRate.zipCode,
+      userZipCode,
       shippingFee,
       discount,
       appliedVoucher
@@ -133,7 +152,7 @@ const Checkout = () => {
                   discount={discount}
                   loading={loading}
                   isLoggedIn={hasValidSession}
-                  hasZipCode={Boolean(zipCode && zipCode.length === 8)}
+                  hasZipCode={Boolean(userZipCode && userZipCode.length === 8)}
                   onCheckout={handleProcessPayment}
                   deliveryDate={deliveryDate}
                   paymentMethod={paymentMethod}

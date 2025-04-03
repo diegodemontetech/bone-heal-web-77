@@ -3,6 +3,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Truck, Loader2 } from "lucide-react";
 import { ShippingCalculationRate } from "@/types/shipping";
+import { useEffect } from "react";
 
 interface ShippingOptionsProps {
   shippingRates: ShippingCalculationRate[];
@@ -17,6 +18,13 @@ const ShippingOptions = ({
   onShippingRateChange,
   shippingLoading = false
 }: ShippingOptionsProps) => {
+  // Selecionar automaticamente a primeira opção disponível
+  useEffect(() => {
+    if (shippingRates?.length > 0 && !selectedShippingRate) {
+      onShippingRateChange(shippingRates[0]);
+    }
+  }, [shippingRates, selectedShippingRate, onShippingRateChange]);
+
   if (shippingLoading) {
     return (
       <div className="flex justify-center items-center py-8">

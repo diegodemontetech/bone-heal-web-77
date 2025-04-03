@@ -17,11 +17,12 @@ const ZipCodeInput = ({
   autoCalculate = true
 }: ZipCodeInputProps) => {
   const initialRenderRef = useRef(true);
+  const calculatedOnceRef = useRef(false);
 
   // Só calcular frete automaticamente após a primeira renderização 
   // e quando o zipCode mudar (não na montagem inicial)
   useEffect(() => {
-    if (autoCalculate && zipCode && zipCode.length === 8 && onCalculateShipping) {
+    if (autoCalculate && zipCode && zipCode.length === 8 && onCalculateShipping && !calculatedOnceRef.current) {
       // Pular o cálculo automático na primeira renderização
       if (initialRenderRef.current) {
         initialRenderRef.current = false;
@@ -31,6 +32,7 @@ const ZipCodeInput = ({
       // Adicionando um pequeno atraso para evitar múltiplas chamadas
       const timer = setTimeout(() => {
         onCalculateShipping();
+        calculatedOnceRef.current = true;
       }, 300);
       
       return () => clearTimeout(timer);
