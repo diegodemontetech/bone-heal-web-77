@@ -24,6 +24,8 @@ export const useShippingRates = (): UseShippingRatesReturn => {
   
   // Para compatibilidade com o componente que usa este hook
   const [shippingOptions] = useState<ShippingCalculationRate[]>([]);
+  const [zipCode, setZipCode] = useState<string>("");
+  const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingCalculationRate | null>(null);
 
   const handleExportRates = () => {
     exportRates(rates);
@@ -53,6 +55,20 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     return success;
   };
 
+  const calculateShipping = (zipCode?: string) => {
+    console.log("Calculating shipping for zipCode:", zipCode);
+    // Implementation would go here
+  };
+
+  const handleShippingRateChange = (rate: ShippingCalculationRate) => {
+    setSelectedShippingRate(rate);
+  };
+
+  const resetShipping = () => {
+    setSelectedShippingRate(null);
+    setZipCode("");
+  };
+
   return {
     rates,
     loading,
@@ -69,11 +85,13 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     exportRates: handleExportRates,
     insertShippingRates: handleImportRates,
     shippingOptions,
-    // Adicionando propriedades para compatibilidade
+    // Add these properties explicitly
+    zipCode,
+    setZipCode,
     shippingRates: rates,
-    selectedShippingRate: null,
-    calculateShipping: () => {},
-    handleShippingRateChange: () => {},
-    resetShipping: () => {}
+    selectedShippingRate,
+    calculateShipping,
+    handleShippingRateChange,
+    resetShipping
   };
 };
