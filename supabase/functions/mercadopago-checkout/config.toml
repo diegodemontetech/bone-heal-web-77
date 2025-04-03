@@ -4,4 +4,3 @@ project_id = "kurpshcdafxbyqnzxvxu"
 [global.config]
 APP_URL = "https://workshop.lovable.dev"
 MERCADOPAGO_ACCESS_TOKEN = "TEST-6427795566827637-102412-11d0f0ebbe34ed63d7707c12dd29adc0-1594222712"
-

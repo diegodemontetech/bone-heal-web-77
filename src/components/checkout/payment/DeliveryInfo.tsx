@@ -8,8 +8,8 @@ interface DeliveryInfoProps {
 }
 
 const DeliveryInfo = ({ deliveryDate, deliveryDays }: DeliveryInfoProps) => {
-  // Se não temos uma data de entrega mas temos o número de dias,
-  // calcular a data de entrega a partir de hoje
+  // If we don't have a delivery date but have the number of days,
+  // calculate the delivery date from today
   const actualDeliveryDate = deliveryDate || 
     (deliveryDays ? addBusinessDays(new Date(), deliveryDays) : null);
   

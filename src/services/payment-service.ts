@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
-// Função para criar checkout do Mercado Pago
+// Function to create Mercado Pago checkout
 export const createMercadoPagoCheckout = async (
   orderId: string,
   cartItems: CartItem[],
@@ -13,16 +13,16 @@ export const createMercadoPagoCheckout = async (
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const total = Math.max(0, subtotal + shippingFee - discount);
     
-    // Verificar autenticação
+    // Verify authentication
     const { data: sessionData } = await supabase.auth.getSession();
     const userSession = sessionData?.session;
     
     if (!userSession?.user) {
-      console.error("Usuário não autenticado ao criar checkout");
-      throw new Error("Usuário não está autenticado");
+      console.error("User not authenticated when creating checkout");
+      throw new Error("User is not authenticated");
     }
     
-    console.log("Criando checkout do Mercado Pago para ordem:", orderId);
+    console.log("Creating Mercado Pago checkout for order:", orderId);
     
     const items = cartItems.map(item => ({
       title: item.name,
@@ -30,7 +30,7 @@ export const createMercadoPagoCheckout = async (
       unit_price: item.price
     }));
     
-    // Obter dados do perfil do usuário para o pagamento
+    // Get user profile data for payment
     const { data: profileData } = await supabase
       .from('profiles')
       .select('full_name, phone, cpf, address, zip_code')
@@ -46,7 +46,7 @@ export const createMercadoPagoCheckout = async (
       }
     };
     
-    // Chamar a edge function do Mercado Pago para gerar o checkout
+    // Call the Mercado Pago edge function to generate checkout
     const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
       body: {
         orderId,
@@ -57,26 +57,26 @@ export const createMercadoPagoCheckout = async (
         payer,
         notification_url: `${window.location.origin}/api/webhooks/mercadopago`,
         external_reference: orderId,
-        // Definir um expiration_date_to para o código PIX (30 minutos a partir de agora)
+        // Set an expiration date for the PIX code (30 minutes from now)
         expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString()
       }
     });
     
-    console.log("Resposta do checkout MP:", data, error);
+    console.log("MP checkout response:", data, error);
     
     if (error) {
-      console.error("Erro no checkout MP:", error);
+      console.error("Error in MP checkout:", error);
       throw error;
     }
     
     if (!data) {
-      console.error("Resposta vazia do checkout MP");
-      throw new Error("Não foi possível gerar o checkout");
+      console.error("Empty response from MP checkout");
+      throw new Error("Could not generate checkout");
     }
     
     return data;
   } catch (error) {
-    console.error("Erro ao criar checkout do Mercado Pago:", error);
+    console.error("Error creating Mercado Pago checkout:", error);
     throw error;
   }
 };
