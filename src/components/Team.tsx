@@ -25,7 +25,7 @@ const Team = () => {
             className="relative"
           >
             <img
-              src="https://i.ibb.co/8nfFz6Bd/Design-sem-nome-3.png"
+              src="/lovable-uploads/34ca17d7-092d-4deb-abd2-d6ea28c743c4.png"
               alt="Dr. Munir Salomão"
               className="rounded-2xl w-full object-contain"
             />
