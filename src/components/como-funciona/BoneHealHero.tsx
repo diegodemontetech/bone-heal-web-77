@@ -20,13 +20,7 @@ const BoneHealHero = () => {
           transition={{ duration: 0.6 }}
           className="max-w-4xl mx-auto"
         >
-          <div className="mb-8">
-            <img 
-              src="/logo-white.png" 
-              alt="BoneHeal Logo" 
-              className="h-20 md:h-24 mx-auto"
-            />
-          </div>
+          {/* Removendo a div da imagem com falha */}
           
           <h1 className="text-3xl md:text-5xl font-bold mb-6">
             Barreiras premium para regeneração óssea guiada
@@ -49,7 +43,7 @@ const BoneHealHero = () => {
             <Button 
               size="lg" 
               variant="outline" 
-              className="border-white text-white hover:bg-white/10"
+              className="border border-dashed border-white text-white bg-transparent hover:bg-white/10"
               asChild
             >
               <a href="#contato">Fale conosco</a>

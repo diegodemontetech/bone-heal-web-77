@@ -23,7 +23,7 @@ const CtaSection = () => {
           <Button 
             size="lg" 
             variant="outline" 
-            className="border-white text-white hover:bg-white/10"
+            className="border border-dashed border-white text-white bg-transparent hover:bg-white/10"
             asChild
           >
             <Link to="/products">Ver Produtos</Link>

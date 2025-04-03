@@ -11,10 +11,10 @@ const HeroSection = () => {
         <p className="text-lg md:text-xl max-w-3xl mx-auto mb-10 text-white/90">
           Descubra como a inovadora membrana BoneHeal revoluciona o processo de regeneração óssea na odontologia
         </p>
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4 flex-col sm:flex-row">
           <Button 
             size="lg" 
-            className="bg-white text-primary hover:bg-white/90 mr-4"
+            className="bg-white text-primary hover:bg-white/90"
             asChild
           >
             <Link to="/contact">Fale com um Especialista</Link>
@@ -22,7 +22,7 @@ const HeroSection = () => {
           <Button 
             size="lg" 
             variant="outline" 
-            className="border-white text-white hover:bg-white/10"
+            className="border border-dashed border-white text-white bg-transparent hover:bg-white/10"
             asChild
           >
             <a href="#processo">Ver o Processo</a>

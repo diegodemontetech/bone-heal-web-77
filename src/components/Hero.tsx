@@ -77,10 +77,9 @@ const Hero = () => {
               </motion.a>
               <motion.a
                 href="/register"
-                className="inline-flex items-center justify-center px-8 py-4 bg-primary-light hover:bg-primary border border-white/20 transition-all duration-300 rounded-full text-white font-semibold text-lg group shadow-lg hover:shadow-xl backdrop-blur-sm"
+                className="inline-flex items-center justify-center px-8 py-4 bg-transparent border border-dashed border-white transition-all duration-300 rounded-full text-white font-semibold text-lg group shadow-lg hover:shadow-xl hover:bg-white/10"
                 whileHover={{ 
                   scale: 1.05,
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                 }}
                 whileTap={{ scale: 0.95 }}
