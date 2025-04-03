@@ -18,25 +18,46 @@ const ZipCodeInput = ({
 }: ZipCodeInputProps) => {
   const initialRenderRef = useRef(true);
   const calculatedOnceRef = useRef(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpar timeout ao desmontar
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Só calcular frete automaticamente após a primeira renderização 
   // e quando o zipCode mudar (não na montagem inicial)
   useEffect(() => {
-    if (autoCalculate && zipCode && zipCode.length === 8 && onCalculateShipping && !calculatedOnceRef.current) {
-      // Pular o cálculo automático na primeira renderização
-      if (initialRenderRef.current) {
-        initialRenderRef.current = false;
-        return;
-      }
-      
-      // Adicionando um pequeno atraso para evitar múltiplas chamadas
-      const timer = setTimeout(() => {
-        onCalculateShipping();
-        calculatedOnceRef.current = true;
-      }, 300);
-      
-      return () => clearTimeout(timer);
+    if (!zipCode || zipCode.length !== 8 || !autoCalculate || !onCalculateShipping) {
+      return;
     }
+    
+    // Pular o cálculo automático na primeira renderização
+    if (initialRenderRef.current) {
+      initialRenderRef.current = false;
+      return;
+    }
+    
+    // Pular se já calculamos uma vez
+    if (calculatedOnceRef.current) {
+      return;
+    }
+    
+    // Limpar timeout anterior se existir
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Adicionar um pequeno atraso para evitar múltiplas chamadas
+    timeoutRef.current = setTimeout(() => {
+      onCalculateShipping();
+      calculatedOnceRef.current = true;
+    }, 500);
+    
   }, [zipCode, autoCalculate, onCalculateShipping]);
 
   return (

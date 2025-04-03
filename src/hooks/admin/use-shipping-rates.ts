@@ -4,7 +4,7 @@ import { useShippingRatesCrud } from "./shipping/use-shipping-rates-crud";
 import { useShippingRatesExportImport } from "./shipping/use-shipping-rates-export-import";
 import { UseShippingRatesReturn } from "./shipping/types";
 import { ShippingCalculationRate } from "@/types/shipping";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export const useShippingRates = (): UseShippingRatesReturn => {
   const { rates, loading, fetchRates, setRates } = useShippingRatesData();
@@ -26,6 +26,7 @@ export const useShippingRates = (): UseShippingRatesReturn => {
   const [shippingOptions] = useState<ShippingCalculationRate[]>([]);
   const [zipCode, setZipCode] = useState<string>("");
   const [selectedShippingRate, setSelectedShippingRate] = useState<ShippingCalculationRate | null>(null);
+  const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
   const handleExportRates = () => {
     exportRates(rates);
@@ -55,19 +56,28 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     return success;
   };
 
-  const calculateShipping = (zipCode?: string) => {
-    console.log("Calculating shipping for zipCode:", zipCode);
+  // Use useCallback to prevent infinite renders
+  const calculateShipping = useCallback((zipCode?: string) => {
+    if (isCalculating) return; // Prevent multiple simultaneous calculations
+    
+    setIsCalculating(true);
+    console.log("Calculating shipping for zipCode:", zipCode || "");
+    
+    // Add a small delay to prevent rapid recalculation
+    setTimeout(() => {
+      setIsCalculating(false);
+    }, 500);
     // Implementation would go here
-  };
+  }, [isCalculating]);
 
-  const handleShippingRateChange = (rate: ShippingCalculationRate) => {
+  const handleShippingRateChange = useCallback((rate: ShippingCalculationRate) => {
     setSelectedShippingRate(rate);
-  };
+  }, []);
 
-  const resetShipping = () => {
+  const resetShipping = useCallback(() => {
     setSelectedShippingRate(null);
     setZipCode("");
-  };
+  }, []);
 
   return {
     rates,
@@ -85,7 +95,7 @@ export const useShippingRates = (): UseShippingRatesReturn => {
     exportRates: handleExportRates,
     insertShippingRates: handleImportRates,
     shippingOptions,
-    // Add these properties explicitly
+    // Add these properties explicitly with proper types
     zipCode,
     setZipCode,
     shippingRates: rates,
