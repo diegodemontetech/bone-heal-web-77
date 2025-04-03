@@ -12,22 +12,24 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer })
+    const reqData = await req.json();
+    const { orderId, items, shipping_cost, discount, payment_method, payer, notification_url, external_reference, expiration_date_to } = reqData;
+    
+    console.log("Dados recebidos:", reqData);
 
-    const access_token = Deno.env.get('MP_ACCESS_TOKEN')
+    const access_token = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
     if (!access_token) {
-      throw new Error("Token do Mercado Pago não configurado")
+      throw new Error("Token do Mercado Pago não configurado");
     }
 
     // Validar e formatar os itens
-    const preferenceItems = items.map(item => {
+    const preferenceItems = items.map((item: any) => {
       // Garantir que os valores sejam números válidos
-      const price = parseFloat(Number(item.price).toFixed(2))
-      const quantity = Math.max(1, parseInt(String(item.quantity)))
+      const price = parseFloat(Number(item.unit_price || item.price).toFixed(2));
+      const quantity = Math.max(1, parseInt(String(item.quantity)));
 
       if (isNaN(price) || price <= 0) {
-        throw new Error(`Preço inválido para o item: ${item.title}`)
+        throw new Error(`Preço inválido para o item: ${item.title || item.name}`);
       }
 
       return {
@@ -39,11 +41,11 @@ serve(async (req) => {
     });
 
     // Validar e adicionar frete
-    let shippingAmount = 0
+    let shippingAmount = 0;
     if (shipping_cost > 0) {
-      shippingAmount = parseFloat(Number(shipping_cost).toFixed(2))
+      shippingAmount = parseFloat(Number(shipping_cost).toFixed(2));
       if (isNaN(shippingAmount)) {
-        throw new Error("Valor de frete inválido")
+        throw new Error("Valor de frete inválido");
       }
 
       preferenceItems.push({
@@ -54,31 +56,44 @@ serve(async (req) => {
       });
     }
 
+    // Aplicar desconto se necessário
+    if (discount && discount > 0) {
+      const discountAmount = parseFloat(Number(discount).toFixed(2));
+      if (!isNaN(discountAmount) && discountAmount > 0) {
+        preferenceItems.push({
+          title: "Desconto",
+          unit_price: -discountAmount, // Valor negativo para desconto
+          quantity: 1,
+          currency_id: "BRL"
+        });
+      }
+    }
+
     // Calcular valor total para validação
-    const total = preferenceItems.reduce((sum, item) => 
+    const total = preferenceItems.reduce((sum: number, item: any) => 
       sum + (item.unit_price * item.quantity), 0
-    )
+    );
 
     if (total <= 0) {
-      throw new Error("O valor total do pedido deve ser maior que zero")
+      throw new Error("O valor total do pedido deve ser maior que zero");
     }
 
     // Configuração para checkout padrão do MercadoPago
-    const app_url = Deno.env.get('APP_URL') || 'https://workshop.lovable.dev'
+    const app_url = Deno.env.get('APP_URL') || 'https://workshop.lovable.dev';
     
-    const config = {
+    let config: any = {
       items: preferenceItems,
-      payer: {
-        email: buyer.email || "cliente@example.com",
-        name: buyer.name || 'Cliente',
-        identification: buyer.identification || {
+      payer: payer || {
+        email: "cliente@example.com",
+        name: 'Cliente',
+        identification: {
           type: "CPF",
           number: "00000000000"
         }
       },
-      external_reference: orderId,
+      external_reference: external_reference || orderId,
       statement_descriptor: "BONEHEAL",
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      notification_url: notification_url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       back_urls: {
         success: `${app_url}/checkout/success?order_id=${orderId}`,
         failure: `${app_url}/checkout/failure?order_id=${orderId}`,
@@ -88,7 +103,25 @@ serve(async (req) => {
       expires: false
     };
 
-    console.log("Preferência a ser enviada:", JSON.stringify(config, null, 2))
+    // Se o método de pagamento for PIX, adicionar configurações específicas
+    if (payment_method === 'pix') {
+      config = {
+        ...config,
+        payment_methods: {
+          default_payment_method_id: "pix",
+          excluded_payment_methods: [
+            { id: "credit_card" },
+            { id: "debit_card" },
+            { id: "bank_transfer" },
+            { id: "ticket" }
+          ],
+          default_payment_type_id: "pix"
+        },
+        date_of_expiration: expiration_date_to
+      };
+    }
+
+    console.log("Preferência a ser enviada:", JSON.stringify(config, null, 2));
 
     // Chama a API do MercadoPago para criar a preferência
     const response = await fetch(
@@ -101,18 +134,18 @@ serve(async (req) => {
         },
         body: JSON.stringify(config)
       }
-    )
+    );
 
-    const data = await response.json()
-    console.log("Resposta MP:", JSON.stringify(data, null, 2))
+    const data = await response.json();
+    console.log("Resposta MP:", JSON.stringify(data, null, 2));
 
     if (!response.ok) {
       console.error("Erro detalhado MP:", {
         status: response.status,
         statusText: response.statusText,
         data
-      })
-      throw new Error(`Erro do Mercado Pago: ${JSON.stringify(data)}`)
+      });
+      throw new Error(`Erro do Mercado Pago: ${JSON.stringify(data)}`);
     }
 
     return new Response(
@@ -123,12 +156,12 @@ serve(async (req) => {
           'Content-Type': 'application/json' 
         }
       }
-    )
+    );
   } catch (error) {
     console.error("Erro detalhado:", {
       message: error.message,
       stack: error.stack
-    })
+    });
     
     return new Response(
       JSON.stringify({ 
@@ -142,6 +175,6 @@ serve(async (req) => {
           'Content-Type': 'application/json' 
         }
       }
-    )
+    );
   }
-})
+});

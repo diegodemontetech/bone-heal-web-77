@@ -69,50 +69,89 @@ export function useCheckout() {
       setLoading(true);
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
-      // Salvar o pedido no banco de dados
-      await saveOrder(orderId!, cartItems, shippingFee, discount, zipCode, paymentMethod, appliedVoucher);
-      console.log("Pedido salvo com sucesso no banco de dados");
-      
-      // Criar a preferência de pagamento no Mercado Pago
-      if (paymentMethod === 'pix') {
-        try {
-          console.log("Iniciando criação de checkout do Mercado Pago para PIX");
-          const mpResponse = await createMercadoPagoCheckout(
-            orderId!, 
-            cartItems, 
-            shippingFee, 
-            discount
-          );
-          
-          console.log("Resposta do Mercado Pago:", mpResponse);
-          
-          if (mpResponse) {
-            setCheckoutData(mpResponse);
+      try {
+        // Salvar o pedido no banco de dados
+        await saveOrder(orderId!, cartItems, shippingFee, discount, zipCode, paymentMethod, appliedVoucher);
+        console.log("Pedido salvo com sucesso no banco de dados");
+        
+        // Criar a preferência de pagamento no Mercado Pago
+        if (paymentMethod === 'pix') {
+          try {
+            console.log("Iniciando criação de checkout do Mercado Pago para PIX");
+            const mpResponse = await createMercadoPagoCheckout(
+              orderId!, 
+              cartItems, 
+              shippingFee, 
+              discount
+            );
             
-            // Verificar se temos os dados do PIX
-            if (mpResponse.point_of_interaction?.transaction_data?.qr_code) {
-              console.log("QR Code PIX gerado com sucesso!");
-            } else {
-              console.error("QR Code PIX não foi gerado corretamente na resposta:", mpResponse);
-              toast.error("Erro ao gerar o código PIX. Detalhes do pagamento estão incompletos.");
+            console.log("Resposta do Mercado Pago:", mpResponse);
+            
+            if (mpResponse) {
+              setCheckoutData(mpResponse);
+              
+              // Verificar se temos os dados do PIX
+              if (mpResponse.point_of_interaction?.transaction_data?.qr_code) {
+                console.log("QR Code PIX gerado com sucesso!");
+              } else {
+                console.error("QR Code PIX não foi gerado corretamente na resposta:", mpResponse);
+                toast.error("Erro ao gerar o código PIX. Detalhes do pagamento estão incompletos.");
+              }
+            }
+          } catch (mpError: any) {
+            console.error("Erro detalhado ao criar checkout do Mercado Pago:", mpError);
+            toast.error("Erro ao gerar o código PIX: " + (mpError.message || "Tente novamente"));
+            // Não redirecionar em caso de erro no PIX, permitir tentar novamente
+          }
+        }
+        
+        // Redirecionar para a página de sucesso para métodos não-PIX
+        if (paymentMethod !== 'pix') {
+          localStorage.removeItem('cart');
+          navigate("/checkout/success", { 
+            state: { 
+              orderId: orderId,
+              paymentMethod
+            }
+          });
+        }
+      } catch (error: any) {
+        // Se o erro for de chave duplicada, ignore o erro de salvar o pedido
+        // mas continue com o processo de pagamento
+        if (error && error.code === "23505") {
+          console.log("Pedido já existe, continuando com o processo de pagamento");
+          
+          // Criar a preferência de pagamento no Mercado Pago para PIX
+          if (paymentMethod === 'pix') {
+            try {
+              console.log("Iniciando criação de checkout do Mercado Pago para PIX");
+              const mpResponse = await createMercadoPagoCheckout(
+                orderId!, 
+                cartItems, 
+                shippingFee, 
+                discount
+              );
+              
+              console.log("Resposta do Mercado Pago:", mpResponse);
+              
+              if (mpResponse) {
+                setCheckoutData(mpResponse);
+                
+                if (mpResponse.point_of_interaction?.transaction_data?.qr_code) {
+                  console.log("QR Code PIX gerado com sucesso!");
+                } else {
+                  console.error("QR Code PIX não foi gerado corretamente na resposta:", mpResponse);
+                  toast.error("Erro ao gerar o código PIX. Detalhes do pagamento estão incompletos.");
+                }
+              }
+            } catch (mpError: any) {
+              console.error("Erro detalhado ao criar checkout do Mercado Pago:", mpError);
+              toast.error("Erro ao gerar o código PIX: " + (mpError.message || "Tente novamente"));
             }
           }
-        } catch (mpError: any) {
-          console.error("Erro detalhado ao criar checkout do Mercado Pago:", mpError);
-          toast.error("Erro ao gerar o código PIX: " + (mpError.message || "Tente novamente"));
-          // Não redirecionar em caso de erro no PIX, permitir tentar novamente
+        } else {
+          throw error; // Repasse outros erros
         }
-      }
-      
-      // Redirecionar para a página de sucesso para métodos não-PIX
-      if (paymentMethod !== 'pix') {
-        localStorage.removeItem('cart');
-        navigate("/checkout/success", { 
-          state: { 
-            orderId: orderId,
-            paymentMethod
-          }
-        });
       }
       
     } catch (error: any) {

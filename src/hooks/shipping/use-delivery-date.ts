@@ -9,7 +9,7 @@ export const useDeliveryDate = () => {
     // Get delivery_days from the shipping rate or use fallback values
     let deliveryDays = shippingRate.delivery_days;
     
-    if (!deliveryDays) {
+    if (!deliveryDays || isNaN(deliveryDays)) {
       // Default values based on shipping type
       deliveryDays = shippingRate.service_type === "SEDEX" ? 3 : 7;
     }

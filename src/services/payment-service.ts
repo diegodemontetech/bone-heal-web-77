@@ -25,9 +25,9 @@ export const createMercadoPagoCheckout = async (
     console.log("Creating Mercado Pago checkout for order:", orderId);
     
     const items = cartItems.map(item => ({
-      title: item.name,
+      name: item.name,
       quantity: item.quantity,
-      unit_price: item.price
+      price: item.price
     }));
     
     // Get user profile data for payment

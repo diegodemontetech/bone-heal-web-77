@@ -11,7 +11,7 @@ const DeliveryInfo = ({ deliveryDate, deliveryDays }: DeliveryInfoProps) => {
   // If we don't have a delivery date but have the number of days,
   // calculate the delivery date from today
   const actualDeliveryDate = deliveryDate || 
-    (deliveryDays ? addBusinessDays(new Date(), deliveryDays) : null);
+    (deliveryDays && !isNaN(deliveryDays) ? addBusinessDays(new Date(), deliveryDays) : null);
   
   if (!actualDeliveryDate) return null;
   
