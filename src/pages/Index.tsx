@@ -3,12 +3,14 @@ import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Features from "@/components/Features";
+import HowItWorks from "@/components/HowItWorks";
 import ProductsPreview from "@/components/ProductsPreview";
 import Recognition from "@/components/Recognition";
 import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import Testimonials from "@/components/Testimonials";
+import NewsPreview from "@/components/NewsPreview";
 import StudiesPreview from "@/components/StudiesPreview";
 
 const Index = () => {
@@ -24,9 +26,11 @@ const Index = () => {
       <main className="flex-grow">
         <Hero />
         <Features />
+        <HowItWorks />
         <ProductsPreview />
         <Recognition />
         <StudiesPreview />
+        <NewsPreview />
         <Testimonials />
         <CallToAction />
       </main>

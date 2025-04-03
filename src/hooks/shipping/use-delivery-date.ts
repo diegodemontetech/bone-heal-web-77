@@ -6,13 +6,8 @@ export const useDeliveryDate = () => {
   const calculateDeliveryDate = (shippingRate: ShippingCalculationRate | null) => {
     if (!shippingRate) return null;
     
-    // Get delivery_days from the shipping rate or use fallback values
-    let deliveryDays = shippingRate.delivery_days;
-    
-    if (!deliveryDays || isNaN(deliveryDays)) {
-      // Default values based on shipping type
-      deliveryDays = shippingRate.service_type === "SEDEX" ? 3 : 7;
-    }
+    // Default to 7 days if delivery_days is not defined
+    const deliveryDays = shippingRate.delivery_days || 7;
     
     const today = new Date();
     const deliveryDate = addBusinessDays(today, deliveryDays);

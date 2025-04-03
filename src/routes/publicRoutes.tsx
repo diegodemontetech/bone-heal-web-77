@@ -16,6 +16,7 @@ import PoliticaTroca from "@/pages/PoliticaTroca";
 // Lazy imports
 const About = lazy(() => import("@/pages/About"));
 const Contact = lazy(() => import("@/pages/Contact"));
+const News = lazy(() => import("@/pages/News"));
 const Orders = lazy(() => import("@/pages/orders/Orders"));
 const OrderDetails = lazy(() => import("@/pages/orders/OrderDetails"));
 const Checkout = lazy(() => import("@/pages/checkout/Checkout"));
@@ -100,6 +101,14 @@ export const publicRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={<PageLoader />}>
         <Contact />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/news",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <News />
       </Suspense>
     ),
   },
