@@ -1,7 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 interface ZipCodeInputProps {
   zipCode: string;
@@ -16,10 +16,24 @@ const ZipCodeInput = ({
   onCalculateShipping,
   autoCalculate = true
 }: ZipCodeInputProps) => {
-  // Automatically calculate shipping when zipCode changes and has 8 digits
+  const initialRenderRef = useRef(true);
+
+  // Só calcular frete automaticamente após a primeira renderização 
+  // e quando o zipCode mudar (não na montagem inicial)
   useEffect(() => {
     if (autoCalculate && zipCode && zipCode.length === 8 && onCalculateShipping) {
-      onCalculateShipping();
+      // Pular o cálculo automático na primeira renderização
+      if (initialRenderRef.current) {
+        initialRenderRef.current = false;
+        return;
+      }
+      
+      // Adicionando um pequeno atraso para evitar múltiplas chamadas
+      const timer = setTimeout(() => {
+        onCalculateShipping();
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [zipCode, autoCalculate, onCalculateShipping]);
 

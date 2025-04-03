@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@supabase/auth-helpers-react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ export const useUserZipCode = () => {
   const [zipCode, setZipCode] = useState<string>("");
   const [zipCodeFetched, setZipCodeFetched] = useState<boolean>(false);
   const session = useSession();
+  const loadAttempted = useRef(false);
 
   // Função para buscar o CEP do usuário
   const loadUserZipCode = async () => {
@@ -15,6 +16,14 @@ export const useUserZipCode = () => {
       console.log("Não há sessão ativa para buscar CEP");
       return null;
     }
+    
+    // Evitar múltiplas chamadas desnecessárias
+    if (loadAttempted.current) {
+      console.log("Já tentamos carregar o CEP anteriormente, usando valor em cache:", zipCode);
+      return zipCode || null;
+    }
+    
+    loadAttempted.current = true;
     
     try {
       const { data: profile, error } = await supabase
@@ -47,8 +56,9 @@ export const useUserZipCode = () => {
   };
 
   // Efeito para carregar o CEP do usuário quando o componente monta
+  // Carregamos apenas uma vez quando a sessão estiver disponível
   useEffect(() => {
-    if (session?.user?.id && !zipCodeFetched) {
+    if (session?.user?.id && !zipCodeFetched && !loadAttempted.current) {
       loadUserZipCode();
     }
   }, [session?.user?.id, zipCodeFetched]);

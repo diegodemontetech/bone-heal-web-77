@@ -34,16 +34,20 @@ const Checkout = () => {
     calculateShipping, 
     shippingFee, 
     deliveryDate, 
-    handleShippingRateChange 
+    handleShippingRateChange,
+    zipCode
   } = useShipping(cartItems);
 
-  // Fetch user profile and address information and automatically calculate shipping
+  // Fetch user profile and address information only once
   useEffect(() => {
+    let isMounted = true;
+    
     const loadUserProfile = async () => {
       if (!session?.user?.id) return;
       
       try {
-        setIsLoadingProfile(true);
+        if (isMounted) setIsLoadingProfile(true);
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -52,35 +56,23 @@ const Checkout = () => {
           
         if (error) throw error;
         
-        setUserProfile(data);
-        
-        // Automatically set ZIP code and calculate shipping if profile has zip_code
-        if (data?.zip_code) {
-          const cleanZipCode = data.zip_code.replace(/\D/g, '');
-          console.log("Usando CEP do perfil do usuário:", cleanZipCode);
-          setZipCode(cleanZipCode);
-          
-          // Automatic shipping calculation
-          try {
-            await calculateShipping(cleanZipCode);
-            console.log("Frete calculado automaticamente com o CEP do usuário:", cleanZipCode);
-          } catch (calcError) {
-            console.error("Erro ao calcular frete automaticamente:", calcError);
-            toast.error("Não foi possível calcular o frete automaticamente. Por favor, verifique seu CEP.");
-          }
-        } else {
-          console.log("Usuário não tem CEP cadastrado no perfil");
-          toast.error("Por favor, atualize seu perfil com o CEP para cálculo automático de frete");
+        if (isMounted) {
+          setUserProfile(data);
         }
+        
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
       } finally {
-        setIsLoadingProfile(false);
+        if (isMounted) setIsLoadingProfile(false);
       }
     };
     
     loadUserProfile();
-  }, [session?.user?.id, setZipCode, calculateShipping]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user?.id]);
 
   // Process checkout
   const handleProcessPayment = () => {
@@ -141,7 +133,7 @@ const Checkout = () => {
                   discount={discount}
                   loading={loading}
                   isLoggedIn={hasValidSession}
-                  hasZipCode={Boolean(selectedShippingRate?.zipCode)}
+                  hasZipCode={Boolean(zipCode && zipCode.length === 8)}
                   onCheckout={handleProcessPayment}
                   deliveryDate={deliveryDate}
                   paymentMethod={paymentMethod}
