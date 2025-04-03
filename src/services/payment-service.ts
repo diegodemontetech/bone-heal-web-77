@@ -27,20 +27,36 @@ export const createMercadoPagoCheckout = async (
     const items = cartItems.map(item => ({
       title: item.name,
       quantity: item.quantity,
-      price: item.price,
       unit_price: item.price
     }));
     
+    // Obter dados do perfil do usuário para o pagamento
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('full_name, phone, cpf, address, zip_code')
+      .eq('id', userSession.user.id)
+      .single();
+    
+    const payer = {
+      email: userSession.user.email,
+      name: profileData?.full_name || userSession.user.user_metadata?.name || "Cliente",
+      identification: {
+        type: "CPF",
+        number: profileData?.cpf || "00000000000"
+      }
+    };
+    
+    // Chamar a edge function do Mercado Pago para gerar o checkout
     const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
       body: {
         orderId,
         items,
         shipping_cost: shippingFee,
-        buyer: {
-          email: userSession.user.email,
-          name: userSession.user.user_metadata?.name || "Cliente"
-        },
-        paymentType: 'transparent'
+        discount: discount,
+        payment_method: 'pix',
+        payer,
+        notification_url: `${window.location.origin}/api/webhooks/mercadopago`,
+        external_reference: orderId
       }
     });
     

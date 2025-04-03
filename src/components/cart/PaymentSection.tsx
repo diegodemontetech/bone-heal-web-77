@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import PixPayment from "@/components/checkout/PixPayment";
 
 interface PaymentSectionProps {
   paymentMethod: string;
@@ -24,43 +25,21 @@ const PaymentSection = ({
   orderId
 }: PaymentSectionProps) => {
   // If we already have payment data (QR code for PIX, etc.), show the corresponding section
-  if (checkoutData && paymentMethod === 'pix' && checkoutData.point_of_interaction?.transaction_data?.qr_code) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center space-y-4">
-          <div className="bg-gray-50 p-6 rounded-lg inline-block mx-auto">
-            <img 
-              src={`data:image/png;base64,${checkoutData.point_of_interaction.transaction_data.qr_code_base64}`} 
-              alt="QR Code PIX" 
-              className="mx-auto w-48 h-48"
-            />
-          </div>
-          <div>
-            <h3 className="font-medium text-lg mb-2">Pagamento via PIX</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Escaneie o QR code acima com o aplicativo do seu banco ou copie o código abaixo
-            </p>
-            <div className="relative">
-              <textarea 
-                readOnly 
-                className="w-full h-20 p-3 text-xs bg-gray-50 border rounded-md"
-                value={checkoutData.point_of_interaction.transaction_data.qr_code}
-              />
-              <Button
-                size="sm"
-                className="absolute right-2 top-2"
-                onClick={() => {
-                  navigator.clipboard.writeText(checkoutData.point_of_interaction.transaction_data.qr_code);
-                  // You could add a toast here
-                }}
-              >
-                Copiar
-              </Button>
-            </div>
-          </div>
+  if (checkoutData && paymentMethod === 'pix' && orderId) {
+    const pixCode = checkoutData?.point_of_interaction?.transaction_data?.qr_code;
+    const pixQrCodeImage = checkoutData?.point_of_interaction?.transaction_data?.qr_code_base64;
+    
+    if (pixCode) {
+      return (
+        <div className="space-y-6">
+          <PixPayment 
+            pixCode={pixCode} 
+            pixQrCodeImage={pixQrCodeImage}
+            orderId={orderId}
+          />
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   // Default payment method selection

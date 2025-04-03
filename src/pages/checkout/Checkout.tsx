@@ -1,25 +1,89 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
+import { supabase } from "@/integrations/supabase/client";
+import { useCheckoutPage } from '@/hooks/use-checkout-page';
+import { useCheckout } from '@/hooks/use-checkout';
+import DeliveryInformation from '@/components/checkout/DeliveryInformation';
+import OrderTotal from '@/components/checkout/OrderTotal';
+import { useShipping } from '@/hooks/use-shipping';
+import { ShippingCalculationRate } from "@/types/shipping";
+import { useDeliveryDate } from '@/hooks/shipping/use-delivery-date';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cartItems, isLoading } = useCart();
+  const { isInitialized, hasValidSession, cartItems, session } = useCheckoutPage();
+  const { calculateDeliveryDate } = useDeliveryDate();
+  const [discount, setDiscount] = useState(0);
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  
+  // Shipping and payment states
+  const { paymentMethod, setPaymentMethod, checkoutData, loading, handleCheckout, orderId } = useCheckout();
+  const { shippingRates, selectedShippingRate, setZipCode, calculateShipping, shippingFee, deliveryDate, handleShippingRateChange } = useShipping(cartItems);
 
+  // Fetch user profile and address information
   useEffect(() => {
-    // Only redirect if the cart is empty and not still loading
-    if (!isLoading && (!cartItems || cartItems.length === 0)) {
-      navigate('/cart');
+    const loadUserProfile = async () => {
+      if (!session?.user?.id) return;
+      
+      try {
+        setIsLoadingProfile(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        setUserProfile(data);
+        
+        // Automatically set ZIP code and calculate shipping if profile has zip_code
+        if (data?.zip_code) {
+          const cleanZipCode = data.zip_code.replace(/\D/g, '');
+          console.log("Usando CEP do perfil do usuário:", cleanZipCode);
+          setZipCode(cleanZipCode);
+          calculateShipping(cleanZipCode);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    
+    loadUserProfile();
+  }, [session?.user?.id, setZipCode, calculateShipping]);
+
+  // Process checkout
+  const handleProcessPayment = () => {
+    if (!hasValidSession) {
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
     }
-  }, [navigate, cartItems, isLoading]);
+    
+    if (!selectedShippingRate || !selectedShippingRate.zipCode) {
+      return;
+    }
+    
+    handleCheckout(
+      cartItems,
+      selectedShippingRate.zipCode,
+      shippingFee,
+      discount,
+      appliedVoucher
+    );
+  };
 
   // Show loading state while determining cart status
-  if (isLoading) {
+  if (!isInitialized || isLoadingProfile) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -35,21 +99,35 @@ const Checkout = () => {
     );
   }
 
-  // If cart has items, we'll stay on this page
+  // If cart has items, display the checkout page
   if (cartItems && cartItems.length > 0) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <div className="flex-1 container mx-auto px-4 py-12">
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <h1 className="text-3xl font-bold mb-6">Finalizar Compra</h1>
-            <p className="text-muted-foreground mb-8">
-              Esta página está em construção. Em breve você poderá finalizar sua compra aqui.
-            </p>
             
-            <div className="py-12 text-center">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-              <p>Implementando métodos de pagamento...</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <DeliveryInformation />
+              </div>
+              
+              <div className="lg:col-span-1">
+                <OrderTotal 
+                  cartItems={cartItems}
+                  shippingFee={shippingFee}
+                  discount={discount}
+                  loading={loading}
+                  isLoggedIn={hasValidSession}
+                  hasZipCode={Boolean(selectedShippingRate?.zipCode)}
+                  onCheckout={handleProcessPayment}
+                  deliveryDate={deliveryDate}
+                  paymentMethod={paymentMethod}
+                  setPaymentMethod={setPaymentMethod}
+                  checkoutData={checkoutData}
+                />
+              </div>
             </div>
           </div>
         </div>
