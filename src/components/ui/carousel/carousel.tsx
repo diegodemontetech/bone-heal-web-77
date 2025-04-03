@@ -89,7 +89,7 @@ const Carousel = React.forwardRef<
     // Update the ref when carouselRef changes
     React.useEffect(() => {
       if (carouselRef) {
-        emblaRefAsRef.current = carouselRef
+        emblaRefAsRef.current = carouselRef as unknown as HTMLDivElement;
       }
     }, [carouselRef])
 

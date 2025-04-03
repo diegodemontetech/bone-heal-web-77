@@ -2,7 +2,7 @@
 import type { UseEmblaCarouselType } from "embla-carousel-react"
 
 export type CarouselApi = UseEmblaCarouselType[1]
-export type UseCarouselParameters = Parameters<typeof UseEmblaCarouselType[0]>
+export type UseCarouselParameters = Parameters<typeof useEmblaCarousel>
 export type CarouselOptions = UseCarouselParameters[0]
 export type CarouselPlugin = UseCarouselParameters[1]
 
@@ -21,3 +21,6 @@ export type CarouselContextProps = {
   canScrollPrev: boolean
   canScrollNext: boolean
 } & CarouselProps
+
+// Import this in the file for TypeScript to recognize it
+import useEmblaCarousel from "embla-carousel-react"
