@@ -45,6 +45,9 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
             Código: {product.omie_code}
           </Badge>
         )}
+        <Badge variant="outline" className="font-normal bg-primary/10">
+          Registro ANVISA: 81197590000
+        </Badge>
       </div>
       
       {product.short_description && (

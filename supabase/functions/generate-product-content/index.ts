@@ -7,73 +7,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Dados técnicos pré-definidos para categorias de produtos - usando valores fixos e precisos
+// Dados técnicos pré-definidos para categorias de produtos
 const technicalDetailsTemplates = {
-  // Template para membranas regenerativas
-  membrane: {
-    dimensions: {
-      weight: "0.5g",
-      height: "0.3mm",
-      width: "15mm",
-      length: "20mm"
-    },
-    materials: {
-      material: "PTFE",
-      composition: "Polímero de politetrafluoroetileno"
-    },
-    usage: {
-      indication: "Regeneração tecidual guiada",
-      contraindication: "Pacientes com infecções ativas",
-      instructions: "Hidratar antes do uso"
-    },
-    regulatory: {
-      registration: "ANVISA 80123456",
-      classification: "Classe III"
-    }
+  // Template para Bone Heal
+  boneHeal: {
+    material: "100% polipropileno, impermeável",
+    composição: "Filme de polipropileno",
+    características: "Não adere aos tecidos, reduz a morbidade, aumenta o conforto pós-operatório",
+    compatibilidade: "Compatível com todos os sistemas de implantes, imediatos ou mediatos",
+    indicações: "Exodontias unitárias ou múltiplas, dependendo do tamanho",
+    técnica: "Simples, sendo removida sem necessidade de anestesia e segunda cirurgia",
+    registro_anvisa: "81197590000"
   },
-  // Template para biomateriais de enxerto
-  graft: {
-    dimensions: {
-      weight: "0.5g",
-      height: "N/A",
-      width: "N/A",
-      length: "N/A"
-    },
-    materials: {
-      material: "Osso bovino",
-      composition: "Hidroxiapatita"
-    },
-    usage: {
-      indication: "Preenchimento de defeitos ósseos",
-      contraindication: "Pacientes com processos infecciosos",
-      instructions: "Hidratar com sangue do paciente"
-    },
-    regulatory: {
-      registration: "ANVISA 80234567",
-      classification: "Classe III"
-    }
+  // Template para Heal Bone
+  healBone: {
+    material: "100% polipropileno, biocompatível, não-reabsorvível, impermeável",
+    composição: "Película de polipropileno sem porosidade",
+    características: "Elimina problemas de deiscência, reduz morbidade, aumenta conforto pós-operatório",
+    indicações: "Todos os casos pós-exodontias, perda de parede alveolar, implantes imediatos e correção de fenestrações ósseas",
+    técnica: "Simples, segura e previsível",
+    vantagens: "Elimina a necessidade de outros biomateriais, reduz a necessidade de liberação de grandes retalhos",
+    registro_anvisa: "81197590000"
   },
   // Template padrão para outros produtos
   default: {
-    dimensions: {
-      weight: "Consultar documentação técnica",
-      height: "Consultar documentação técnica",
-      width: "Consultar documentação técnica",
-      length: "Consultar documentação técnica"
-    },
-    materials: {
-      material: "Consultar documentação técnica",
-      composition: "Consultar documentação técnica"
-    },
-    usage: {
-      indication: "Conforme indicação do fabricante",
-      contraindication: "Consultar documentação técnica",
-      instructions: "Consultar documentação técnica"
-    },
-    regulatory: {
-      registration: "Consultar embalagem",
-      classification: "Consultar embalagem"
-    }
+    material: "Consultar documentação técnica",
+    composição: "Consultar documentação técnica",
+    indicações: "Consultar documentação técnica",
+    registro_anvisa: "81197590000"
   }
 };
 
@@ -81,10 +42,10 @@ const technicalDetailsTemplates = {
 function classifyProduct(productName) {
   const lowerName = productName?.toLowerCase() || '';
   
-  if (lowerName.includes('membrana') || lowerName.includes('bone heal') || lowerName.includes('heal bone')) {
-    return 'membrane';
-  } else if (lowerName.includes('enxerto') || lowerName.includes('graft') || lowerName.includes('xenoenxerto')) {
-    return 'graft';
+  if (lowerName.includes('bone heal')) {
+    return 'boneHeal';
+  } else if (lowerName.includes('heal bone')) {
+    return 'healBone';
   }
   
   return 'default';
@@ -98,28 +59,45 @@ function generateShortDescription(productName, omieCode) {
   const dimensionsMatch = productName.match(/(\d+)[xX](\d+)(?:mm)?/);
   const dimensions = dimensionsMatch ? `${dimensionsMatch[1]}x${dimensionsMatch[2]}mm` : '';
   
-  // Categoria básica do produto
-  let category = '';
-  if (productName.toLowerCase().includes('membrana')) {
-    category = 'Membrana';
-  } else if (productName.toLowerCase().includes('enxerto')) {
-    category = 'Biomaterial';
-  } else if (productName.toLowerCase().includes('implante')) {
-    category = 'Implante';
-  } else {
-    category = 'Material cirúrgico';
+  // Determinar tipo de produto
+  let description = '';
+  
+  if (productName.toLowerCase().includes('bone heal')) {
+    description = `Barreira Bone Heal® de polipropileno`;
+    if (dimensions) {
+      description += ` ${dimensions}`;
+      
+      if (dimensions.includes('15x40')) {
+        description += ` - Indicada para exodontia unitária`;
+      } else if (dimensions.includes('20x30')) {
+        description += ` - Indicada para até 2 elementos contíguos`;
+      } else if (dimensions.includes('30x40')) {
+        description += ` - Indicada para até 3 elementos contíguos`;
+      }
+    }
+  } 
+  else if (productName.toLowerCase().includes('heal bone')) {
+    description = `Barreira Heal Bone® de polipropileno`;
+    if (dimensions) {
+      description += ` ${dimensions}`;
+      
+      if (dimensions.includes('15x40')) {
+        description += ` - Indicada para exodontia unitária`;
+      } else if (dimensions.includes('20x30')) {
+        description += ` - Indicada para até 2 elementos contíguos`;
+      } else if (dimensions.includes('30x40')) {
+        description += ` - Indicada para até 3 elementos contíguos`;
+      }
+    }
+  }
+  else {
+    description = productName;
   }
   
-  // Montar descrição curta factual
-  let shortDescription = category;
+  // Adicionar código
+  description += ` | Código: ${omieCode}`;
   
-  if (dimensions) {
-    shortDescription += ` ${dimensions}`;
-  }
-  
-  shortDescription += ` - Código Omie: ${omieCode}`;
-  
-  return shortDescription;
+  return description;
 }
 
 // Função para gerar uma descrição longa
@@ -127,37 +105,73 @@ function generateLongDescription(productName, omieCode) {
   if (!productName) return `Produto código Omie: ${omieCode}. Entre em contato para mais informações.`;
   
   const productType = classifyProduct(productName);
-  let description = '';
   
-  if (productType === 'membrane') {
-    description = `Membrana para regeneração tecidual guiada com código Omie ${omieCode}.
-    
-    Produto para uso em procedimentos odontológicos de regeneração tecidual. Atua como barreira para impedir a migração de células epiteliais para a área de formação óssea.
-    
-    Características:
-    - Material biocompatível
-    - Resistente à degradação
-    - Maleável e adaptável
-    
-    Para mais informações técnicas detalhadas, consulte a documentação oficial do produto ou entre em contato com nossa equipe.`;
-  } else if (productType === 'graft') {
-    description = `Biomaterial para enxertia óssea com código Omie ${omieCode}.
-    
-    Produto desenvolvido para procedimentos de regeneração óssea em odontologia. Apresenta matriz mineral com estrutura e composição semelhantes à do osso humano.
-    
-    Características:
-    - Osteocondutivo
-    - Biocompatível
-    - Alta pureza
-    
-    Para mais informações técnicas detalhadas, consulte a documentação oficial do produto ou entre em contato com nossa equipe.`;
-  } else {
-    description = `Produto código Omie: ${omieCode}.
-    
-    Este produto faz parte da linha de materiais odontológicos da Boneheal. Para informações detalhadas sobre especificações técnicas, indicações de uso e contraindicações, consulte a documentação oficial do produto ou entre em contato com nossa equipe técnica.`;
+  // Determinar dimensões para personalizar descrição
+  const dimensionsMatch = productName.match(/(\d+)[xX](\d+)(?:mm)?/);
+  const dimensions = dimensionsMatch ? `${dimensionsMatch[1]}x${dimensionsMatch[2]}mm` : '';
+  
+  let dimensionText = "";
+  if (dimensions.includes('15x40')) {
+    dimensionText = "Tamanho do produto: 15mm x 40mm, indicado para defeitos correspondentes a exodontia unitária.";
+  } else if (dimensions.includes('20x30')) {
+    dimensionText = "Tamanho do produto: 20mm x 30mm, indicado para defeitos correspondentes a exodontia de 2 elementos contíguos.";
+  } else if (dimensions.includes('30x40')) {
+    dimensionText = "Tamanho do produto: 30mm x 40mm, indicado para defeitos correspondentes a exodontia de 3 a 4 elementos contíguos.";
   }
   
-  return description;
+  if (productType === 'boneHeal') {
+    return `Bone Heal® - 100% impermeável.
+    
+Compatível com todos os sistemas de implantes, imediatos ou mediatos.
+
+Dispensa o uso de enxertos e/ou biomateriais. Todavia, fica a critério do Cirurgião o uso desses materiais, alterando o tempo mínimo de remoção para 30 dias.
+
+Dispensa o uso de parafusos, tachinhas ou qualquer artefato de fixação, podendo ser usado com qualquer fio de sutura.
+
+Por ser exposta ao meio bucal, as suturas não exercem pressão sobre a barreira, portanto, elimina os problemas decorrentes das deiscências de suturas.
+
+Técnica cirúrgica simples de ser executada, sendo removida sem necessidade de anestesia e segunda cirurgia.
+
+Não adere aos tecidos.
+
+Reduz a morbidade.
+
+Aumenta o conforto pós-operatório.
+
+${dimensionText}
+
+Registro ANVISA: 81197590000`;
+  } 
+  else if (productType === 'healBone') {
+    return `Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. Projetada para permanecer exposta intencionalmente ao meio bucal, não apresenta porosidade em sua superfície, o que lhe confere total impermeabilidade dificultando o acúmulo de detritos, restos alimentares e micro organismos em sua superfície.
+
+A barreira Heal Bone utiliza apenas o coágulo sanguíneo, sem adição de enxertos ou implante de biomateriais de qualquer natureza, é possível solucionar problemas complexos através de uma técnica cirúrgica simples, segura e previsível, objetivando a regeneração simultânea tanto do tecido ósseo quanto dos tecidos moles.
+
+Mais Vantagens:
+
+– Elimina os problemas decorrentes das deiscências de suturas
+– Elimina a necessidade de outros biomateriais
+– Reduz a morbidade, aumenta o conforto pós-operatório
+– Reduz a necessidade de liberação de grandes retalhos
+– Elimina o risco das infecções decorrentes de enxertos
+– Promove o aumento do volume de tecido ósseo para inserção do implante
+– Regeneração tanto do tecido ósseo quanto do tecido mole.
+
+Indicações:
+
+A barreira não-reabsorvível Heal Bone é indicada em todos os casos pós–exodontias, independentemente da causa, principalmente quando houver perda de parede alveolar, nos casos de implantes imediatos e na correção de fenestrações ósseas.
+
+${dimensionText}
+
+Registro ANVISA: 81197590000`;
+  } 
+  else {
+    return `Produto código Omie: ${omieCode}.
+    
+Este produto faz parte da linha de materiais odontológicos da Boneheal. Para informações detalhadas sobre especificações técnicas, indicações de uso e contraindicações, consulte a documentação oficial do produto ou entre em contato com nossa equipe técnica.
+
+Registro ANVISA: 81197590000`;
+  }
 }
 
 serve(async (req) => {
@@ -185,17 +199,28 @@ serve(async (req) => {
       // Personalizar alguns campos do template com base no nome do produto
       const customizedTemplate = JSON.parse(JSON.stringify(template));
       
-      // Tentar extrair dimensões se presentes no nome - usando valores exatos
+      // Extrair dimensões se presentes no nome
       const dimensionsMatch = productName?.match(/(\d+)\s*[xX]\s*(\d+)\s*(?:mm)?/);
       if (dimensionsMatch && dimensionsMatch.length >= 3) {
         const width = dimensionsMatch[1];
         const length = dimensionsMatch[2];
-        customizedTemplate.dimensions.width = `${width}mm`;
-        customizedTemplate.dimensions.length = `${length}mm`;
+        
+        // Adicionar dimensões e indicação conforme o tamanho
+        let indicação = "";
+        if (width === "15" && length === "40") {
+          indicação = "Exodontia unitária";
+        } else if (width === "20" && length === "30") {
+          indicação = "Até 2 elementos contíguos";
+        } else if (width === "30" && length === "40") {
+          indicação = "Até 3 elementos contíguos";
+        }
+        
+        customizedTemplate.dimensões = `${width}mm x ${length}mm`;
+        customizedTemplate.indicação = indicação;
       }
       
       // Adicionar código ao registro regulatório
-      customizedTemplate.regulatory.registration += ` (Código Omie: ${omieCode})`;
+      customizedTemplate.código_produto = omieCode;
       
       responseData = {
         technical_details: customizedTemplate

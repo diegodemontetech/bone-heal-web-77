@@ -55,7 +55,7 @@ const CartPage = () => {
     );
   }
 
-  // Verify cart has items before continuing
+  // Verify cart has items
   if (!cartItems || cartItems.length === 0) {
     console.log("Carrinho vazio, exibindo EmptyCart");
     return <EmptyCart />;
