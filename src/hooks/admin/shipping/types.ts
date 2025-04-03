@@ -30,10 +30,12 @@ export interface UseShippingRatesReturn {
   exportRates: () => void;
   insertShippingRates: (rates: any[]) => Promise<boolean>;
   shippingOptions: ShippingCalculationRate[];
-  // Propriedades para compatibilidade
+  // Properties for shipping compatibility
   shippingRates: any[];
-  selectedShippingRate: any;
-  calculateShipping: () => void;
-  handleShippingRateChange: () => void;
+  selectedShippingRate: ShippingCalculationRate | null;
+  calculateShipping: (zipCode?: string) => void;
+  handleShippingRateChange: (rate: ShippingCalculationRate) => void;
   resetShipping: () => void;
+  zipCode: string;
+  setZipCode: React.Dispatch<React.SetStateAction<string>>;
 }
