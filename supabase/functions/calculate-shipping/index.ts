@@ -1,11 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  // Handle CORS preflight request first
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    return corsResponse;
   }
 
   try {
@@ -47,7 +48,14 @@ serve(async (req) => {
     console.error('Erro na função calculate-shipping:', error);
     
     // Gerar taxas de frete padrão em caso de erro
-    const zipCode = await getZipCodeFromRequest(req);
+    let zipCode;
+    try {
+      const bodyData = await req.json();
+      zipCode = (bodyData.zipCode || bodyData.zipCodeDestination || "00000000").replace(/\D/g, '');
+    } catch {
+      zipCode = "00000000";
+    }
+    
     const fallbackRates = generateFallbackRates(zipCode);
     
     return new Response(
@@ -61,7 +69,8 @@ serve(async (req) => {
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json'
-        }
+        },
+        status: 200
       }
     );
   }
@@ -89,16 +98,7 @@ async function callCorreiosShipping(zipCode: string, items: any[] = []): Promise
     return { data };
   } catch (error) {
     console.error('Erro ao chamar correios-shipping:', error);
-    return { error };
-  }
-}
-
-async function getZipCodeFromRequest(req: Request): Promise<string> {
-  try {
-    const body = await req.json();
-    return (body.zipCode || body.zipCodeDestination || '00000000').replace(/\D/g, '');
-  } catch {
-    return '00000000';
+    return { error: new Error(error.message || "Erro ao chamar correios-shipping") };
   }
 }
 

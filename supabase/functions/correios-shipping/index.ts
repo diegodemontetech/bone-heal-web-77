@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
 
 // Helper function to get estimated delivery days based on zip code
 const getDeliveryDays = (zipCode: string): { standard: number, express: number } => {
@@ -32,9 +32,10 @@ const getDeliveryDays = (zipCode: string): { standard: number, express: number }
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  // Handle CORS preflight request first
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    return corsResponse;
   }
 
   try {
@@ -188,7 +189,8 @@ serve(async (req) => {
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json'
-        }
+        },
+        status: 200
       }
     );
   }
