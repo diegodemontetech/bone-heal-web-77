@@ -15,14 +15,16 @@ export function useCheckout() {
   const [checkoutData, setCheckoutData] = useState<any>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  // Gerar ID único para o pedido ao iniciar
+  // Generate a UUID for the order ID on initialization
   useEffect(() => {
     if (!orderId) {
-      setOrderId(crypto.randomUUID());
+      const uuid = crypto.randomUUID();
+      setOrderId(uuid);
+      console.log("Generated new order UUID:", uuid);
     }
   }, [orderId]);
 
-  // Função principal para processar o checkout
+  // Main checkout function
   const handleCheckout = async (
     cartItems: CartItem[],
     zipCode: string,
@@ -36,13 +38,12 @@ export function useCheckout() {
       return;
     }
 
-    // Ensure shippingFee is a number and log it for debugging
+    // Ensure shippingFee is a number
     const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
     console.log("Shipping fee at checkout (numeric):", numericShippingFee);
 
-    // Verificação de autenticação
     try {
-      // Verificar sessão diretamente para garantir
+      // Verify user authentication
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
       
@@ -73,86 +74,81 @@ export function useCheckout() {
       setLoading(true);
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
-      // Salvar o pedido no banco de dados com o valor correto do frete
-      const savedOrderId = await saveOrder(orderId, cartItems, numericShippingFee, discount, zipCode, paymentMethod, appliedVoucher);
-      console.log("Pedido salvo com sucesso no banco de dados com ID:", savedOrderId);
-      
-      // Atualizar o ID do pedido se foi gerado um novo
-      if (savedOrderId !== orderId) {
-        setOrderId(savedOrderId);
-      }
-      
-      // Criar a preferência de pagamento no Mercado Pago
-      if (paymentMethod === 'pix') {
-        let pixGenerated = false;
+      // Save order to database with the correct shipping fee
+      try {
+        const savedOrderId = await saveOrder(orderId, cartItems, numericShippingFee, discount, zipCode, paymentMethod, appliedVoucher);
+        console.log("Pedido salvo com sucesso no banco de dados com ID:", savedOrderId);
         
-        try {
-          // Primeiro tenta o Mercado Pago
-          const mpResponse = await createMercadoPagoCheckout(
-            savedOrderId, 
-            cartItems, 
-            numericShippingFee, 
-            discount
-          );
-          
-          console.log("Resposta do Mercado Pago:", mpResponse);
-          
-          if (mpResponse) {
-            setCheckoutData(mpResponse);
-            pixGenerated = true;
-          }
-        } catch (mpError) {
-          console.error("Erro ao criar checkout do Mercado Pago:", mpError);
-          // Falha do Mercado Pago - continuamos para o fallback Omie
+        // Update order ID if a new one was generated
+        if (savedOrderId !== orderId) {
+          setOrderId(savedOrderId);
         }
         
-        // Se o MP falhou, tentamos o Omie PIX
-        if (!pixGenerated) {
+        // Process payment based on selected method
+        if (paymentMethod === 'pix') {
+          // Try Mercado Pago first
           try {
-            console.log("Tentando gerar PIX pelo Omie...");
-            const { data: omiePix, error: omieError } = await supabase.functions.invoke("omie-pix", {
-              body: { 
-                orderId: savedOrderId,
-                amount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + numericShippingFee - discount
-              }
-            });
+            const mpResponse = await createMercadoPagoCheckout(
+              savedOrderId, 
+              cartItems, 
+              numericShippingFee, 
+              discount
+            );
             
-            if (omieError) {
-              console.error("Erro ao gerar PIX pelo Omie:", omieError);
-              toast.error("Erro ao gerar o código PIX. Tente novamente.");
+            console.log("Resposta do Mercado Pago:", mpResponse);
+            
+            if (mpResponse) {
+              setCheckoutData(mpResponse);
               return;
             }
+          } catch (mpError) {
+            console.error("Erro ao criar checkout do Mercado Pago:", mpError);
             
-            if (omiePix && (omiePix.pixCode || omiePix.pixLink)) {
-              console.log("PIX gerado pelo Omie:", omiePix);
-              // Formatar os dados de acordo com o formato esperado pelo QRCodeDisplay
-              setCheckoutData({
-                qr_code: omiePix.pixQrCodeImage || "",
-                qr_code_text: omiePix.pixCode || ""
+            // Fall back to Omie PIX if Mercado Pago fails
+            try {
+              console.log("Tentando gerar PIX pelo Omie...");
+              const { data: omiePix, error: omieError } = await supabase.functions.invoke("omie-pix", {
+                body: { 
+                  orderId: savedOrderId,
+                  amount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + numericShippingFee - discount
+                }
               });
-              pixGenerated = true;
+              
+              if (omieError) {
+                console.error("Erro ao gerar PIX pelo Omie:", omieError);
+                toast.error("Erro ao gerar o código PIX. Tente novamente.");
+                return;
+              }
+              
+              if (omiePix && (omiePix.pixCode || omiePix.pixLink)) {
+                console.log("PIX gerado pelo Omie:", omiePix);
+                setCheckoutData({
+                  qr_code: omiePix.pixQrCodeImage || "",
+                  qr_code_text: omiePix.pixCode || ""
+                });
+                return;
+              }
+            } catch (omieError) {
+              console.error("Erro completo ao gerar PIX pelo Omie:", omieError);
+              toast.error("Erro ao gerar o código PIX. Tente novamente.");
             }
-          } catch (omieError) {
-            console.error("Erro completo ao gerar PIX pelo Omie:", omieError);
-            toast.error("Erro ao gerar o código PIX. Tente novamente.");
           }
-        }
-
-        // Se ambos os métodos falharam, exibir erro
-        if (!pixGenerated) {
+          
+          // If both payment methods failed
           toast.error("Não foi possível gerar o código PIX. Por favor, tente novamente mais tarde ou escolha outra forma de pagamento.");
+        } else {
+          // For non-PIX payment methods, redirect to success page
+          localStorage.removeItem('cart');
+          navigate("/checkout/success", { 
+            state: { 
+              orderId: savedOrderId,
+              paymentMethod
+            }
+          });
         }
-      }
-      
-      // Redirecionar para a página de sucesso para métodos não-PIX
-      if (paymentMethod !== 'pix') {
-        localStorage.removeItem('cart');
-        navigate("/checkout/success", { 
-          state: { 
-            orderId: savedOrderId,
-            paymentMethod
-          }
-        });
+      } catch (saveError) {
+        console.error("Erro ao salvar o pedido:", saveError);
+        toast.error("Erro ao salvar o pedido. Por favor, tente novamente.");
       }
       
     } catch (error: any) {

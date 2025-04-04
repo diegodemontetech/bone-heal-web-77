@@ -2,172 +2,99 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
-// Função para criar checkout do Mercado Pago
+/**
+ * Creates a Mercado Pago checkout for the given order
+ */
 export const createMercadoPagoCheckout = async (
-  orderId: string,
-  cartItems: CartItem[],
+  orderId: string, 
+  cartItems: CartItem[], 
   shippingFee: number,
   discount: number
 ) => {
   try {
-    // Ensure shippingFee is numeric
-    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
-    console.log("Mercado Pago checkout - shipping fee:", numericShippingFee);
-    
-    if (isNaN(numericShippingFee)) {
-      console.error("Valor de frete inválido:", shippingFee);
-      throw new Error("Valor de frete inválido. Por favor, recalcule o frete.");
-    }
-    
-    const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const total = Math.max(0, subtotal + numericShippingFee - discount);
-    
-    // Verificar autenticação
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userSession = sessionData?.session;
-    
-    if (!userSession?.user) {
-      console.error("Usuário não autenticado ao criar checkout");
-      throw new Error("Usuário não está autenticado");
-    }
-    
-    console.log("Criando checkout do Mercado Pago para ordem:", orderId);
-    
+    console.log("Creating Mercado Pago checkout for order:", orderId);
+    console.log("Cart items:", cartItems.length);
+    console.log("Shipping fee:", shippingFee);
+    console.log("Discount:", discount);
+
+    // Format the items for Mercado Pago
     const items = cartItems.map(item => ({
+      id: item.id,
       title: item.name,
       quantity: item.quantity,
-      // Ensure price is a number
-      price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price))
+      unit_price: Number(item.price),
+      picture_url: item.image ? `${window.location.origin}/images/${item.image}` : undefined
     }));
-    
-    // Obter dados do perfil do usuário para o pagamento
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('full_name, phone, cpf, address, zip_code')
-      .eq('id', userSession.user.id)
-      .single();
-    
-    const payer = {
-      email: userSession.user.email,
-      name: profileData?.full_name || userSession.user.user_metadata?.name || "Cliente",
-      identification: {
-        type: "CPF",
-        number: profileData?.cpf || "00000000000"
-      }
-    };
-    
-    // Chamar a edge function do Mercado Pago para gerar o checkout
-    const { data, error } = await supabase.functions.invoke("mercadopago-checkout", {
+
+    // Call the Edge Function to create the checkout
+    const { data, error } = await supabase.functions.invoke('mercadopago-checkout', {
       body: {
-        orderId,
+        order_id: orderId,
         items,
-        shipping_cost: numericShippingFee,
-        discount: discount,
-        payment_method: 'pix',
-        payer,
-        notification_url: `${window.location.origin}/api/webhooks/mercadopago`,
-        external_reference: orderId
+        shipping_cost: Number(shippingFee),
+        discount: Number(discount)
       }
     });
-    
-    console.log("Resposta do checkout MP:", data, error);
-    
+
     if (error) {
-      console.error("Erro do Mercado Pago:", error);
-      throw error;
+      console.error("Error calling Mercado Pago checkout function:", error);
+      throw new Error(`Error creating Mercado Pago checkout: ${error.message}`);
     }
-    
-    if (!data) {
-      console.error("Dados do Mercado Pago não retornados");
-      throw new Error("Não foi possível gerar o checkout");
-    }
-    
+
+    console.log("Mercado Pago checkout response:", data);
     return data;
   } catch (error) {
-    console.error("Erro ao criar checkout do Mercado Pago:", error);
-    
-    // Tente gerar PIX via Omie como fallback
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userSession = sessionData?.session;
-      
-      if (!userSession?.user) {
-        throw new Error("Usuário não está autenticado");
-      }
-      
-      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-      const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
-      const total = Math.max(0, subtotal + numericShippingFee - discount);
-      
-      console.log("Tentando fallback via Omie PIX devido a falha no Mercado Pago");
-      const { data: pixData, error: pixError } = await supabase.functions.invoke("omie-pix", {
-        body: { 
-          orderId: orderId,
-          amount: total
-        }
-      });
-      
-      if (pixError) {
-        console.error("Erro no fallback Omie:", pixError);
-        throw pixError;
-      }
-      
-      if (!pixData) {
-        throw new Error("Dados do PIX não retornados");
-      }
-      
-      // Formatar resposta para compatibilidade com o formato do Mercado Pago
-      return {
-        point_of_interaction: {
-          transaction_data: {
-            qr_code: pixData.pixCode,
-            qr_code_base64: pixData.pixQrCodeImage
-          }
-        }
-      };
-    } catch (fallbackError) {
-      console.error("Erro também no fallback Omie:", fallbackError);
-      throw error; // Lançar o erro original do Mercado Pago
-    }
+    console.error("Error in createMercadoPagoCheckout:", error);
+    throw error;
   }
 };
 
-// Função para gerar PIX via Omie
-export const generateOmiePix = async (
-  orderId: string,
-  total: number
-) => {
+/**
+ * Process a payment via PIX
+ */
+export const processPixPayment = async (orderId: string, amount: number) => {
   try {
-    if (!orderId || !total || total <= 0) {
-      throw new Error("Parâmetros inválidos para geração de PIX");
-    }
-    
-    console.log("Gerando PIX via Omie para ordem:", orderId, "valor:", total);
-    
-    const { data, error } = await supabase.functions.invoke("omie-pix", {
+    const { data, error } = await supabase.functions.invoke('omie-pix', {
       body: { 
-        orderId: orderId,
-        amount: total
+        orderId,
+        amount
       }
     });
-    
+
     if (error) {
-      console.error("Erro ao gerar PIX via Omie:", error);
-      throw error;
+      throw new Error(`Error processing PIX payment: ${error.message}`);
     }
-    
-    if (!data || (!data.pixCode && !data.pixLink)) {
-      console.error("Dados do Omie PIX não retornados ou inválidos");
-      throw new Error("Não foi possível gerar o código PIX");
-    }
-    
-    return {
-      qr_code: data.pixCode || "",
-      qr_code_text: data.pixCode || "",
-      qr_code_base64: data.pixQrCodeImage || ""
-    };
+
+    return data;
   } catch (error) {
-    console.error("Erro ao gerar PIX via Omie:", error);
+    console.error("Error in processPixPayment:", error);
+    throw error;
+  }
+};
+
+/**
+ * Update the payment status of an order
+ */
+export const updatePaymentStatus = async (orderId: string, status: string, details?: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({
+        payment_status: status,
+        status: status === 'paid' ? 'processing' : status === 'failed' ? 'cancelled' : 'pending',
+        updated_at: new Date().toISOString(),
+        payment_details: details
+      })
+      .eq('id', orderId)
+      .select();
+
+    if (error) {
+      throw new Error(`Error updating payment status: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Error in updatePaymentStatus:", error);
     throw error;
   }
 };
