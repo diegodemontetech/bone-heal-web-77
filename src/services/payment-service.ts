@@ -28,9 +28,9 @@ export const createMercadoPagoCheckout = async (
   discount: number
 ): Promise<PaymentResponse> => {
   try {
-    console.log("Criando checkout Mercado Pago para o pedido:", orderId);
+    console.log("Creating Mercado Pago checkout for order:", orderId);
     
-    // Preparar itens para o Mercado Pago
+    // Prepare items for Mercado Pago
     const items = cartItems.map(item => ({
       title: item.name,
       quantity: item.quantity,
@@ -39,7 +39,7 @@ export const createMercadoPagoCheckout = async (
     
     const totalAmount = calculateTotal(cartItems, shippingFee, discount);
     
-    // Chamar API do Edge Function
+    // Call Edge Function API
     const { data, error } = await supabase.functions.invoke('mercadopago-checkout', {
       body: {
         orderId,
@@ -52,30 +52,38 @@ export const createMercadoPagoCheckout = async (
     });
     
     if (error) {
-      console.error("Erro na chamada para mercadopago-checkout:", error);
+      console.error("Error in mercadopago-checkout call:", error);
       throw error;
     }
     
     if (data) {
-      console.log("Resposta da API do Mercado Pago:", data);
+      console.log("Mercado Pago API response:", data);
       
-      // Se a API retornar dados do QR code
+      // If API returns QR code data
       if (data.point_of_interaction?.transaction_data?.qr_code) {
+        // Create an actual QR code URL using Google Charts API
+        const qrCodeBase64 = generateGoogleQRCode(data.point_of_interaction.transaction_data.qr_code);
+        
         return {
           pixCode: data.point_of_interaction.transaction_data.qr_code,
           qr_code_text: data.point_of_interaction.transaction_data.qr_code,
           order_id: orderId,
           amount: totalAmount.toString(),
-          point_of_interaction: data.point_of_interaction
+          point_of_interaction: {
+            transaction_data: {
+              qr_code: data.point_of_interaction.transaction_data.qr_code,
+              qr_code_base64: qrCodeBase64
+            }
+          }
         };
       }
     }
     
-    // Se não conseguir dados do Mercado Pago, gerar um PIX local
+    // If unable to get Mercado Pago data, generate a local PIX
     return generateFallbackPixData(orderId, totalAmount);
   } catch (error) {
-    console.error("Erro em createMercadoPagoCheckout:", error);
-    // Retornar PIX de fallback em caso de erro
+    console.error("Error in createMercadoPagoCheckout:", error);
+    // Return fallback PIX in case of error
     return generateFallbackPixData(orderId, calculateTotal(cartItems, shippingFee, discount));
   }
 };
@@ -86,6 +94,14 @@ export const createMercadoPagoCheckout = async (
 const calculateTotal = (cartItems: CartItem[], shippingFee: number, discount: number): number => {
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   return subtotal + shippingFee - discount;
+};
+
+/**
+ * Helper to generate a Google Charts API URL for a QR code
+ */
+const generateGoogleQRCode = (content: string): string => {
+  const encodedContent = encodeURIComponent(content);
+  return `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0`;
 };
 
 /**
@@ -101,8 +117,10 @@ export const generateFallbackPixData = (orderId: string, amount: number = 0): Pa
   const txId = `${dateStr}${orderId.substring(0, 8).replace(/-/g, '')}`;
   
   // Create a simple PIX code for demo/test purposes that follows the standard pattern
-  // Format: 00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-426655440000520400005303986540510.005802BR5913Teste do PIX6008BRASILIA62070503***63046AD2
   const pixCode = `00020126330014BR.GOV.BCB.PIX01111234567890202${String(finalAmount).length}${finalAmount}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
+  
+  // Generate QR code URL using Google Charts API
+  const qrCodeUrl = generateGoogleQRCode(pixCode);
   
   // Return a standardized response object with all required fields
   return {
@@ -112,7 +130,8 @@ export const generateFallbackPixData = (orderId: string, amount: number = 0): Pa
     amount: finalAmount.toFixed(2),
     point_of_interaction: {
       transaction_data: {
-        qr_code: pixCode
+        qr_code: pixCode,
+        qr_code_base64: qrCodeUrl
       }
     }
   };
@@ -123,9 +142,9 @@ export const generateFallbackPixData = (orderId: string, amount: number = 0): Pa
  */
 export const processPixPayment = async (orderId: string, amount: number): Promise<PaymentResponse> => {
   try {
-    console.log("Processando pagamento PIX para o pedido:", orderId, "valor:", amount);
+    console.log("Processing PIX payment for order:", orderId, "amount:", amount);
     
-    // Tentar gerar PIX pelo Omie
+    // Try to generate PIX through Omie
     const { data, error } = await supabase.functions.invoke('omie-pix', {
       body: {
         orderId,
@@ -134,12 +153,16 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
     });
     
     if (error) {
-      console.error("Erro ao gerar PIX pelo Omie:", error);
+      console.error("Error generating PIX through Omie:", error);
       throw error;
     }
     
     if (data && data.pixCode) {
-      console.log("PIX gerado com sucesso pelo Omie");
+      console.log("PIX successfully generated through Omie");
+      
+      // Generate QR code URL using Google Charts API
+      const qrCodeUrl = generateGoogleQRCode(data.pixCode);
+      
       return {
         pixCode: data.pixCode,
         qr_code_text: data.pixCode,
@@ -147,17 +170,18 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
         amount: amount.toString(),
         point_of_interaction: {
           transaction_data: {
-            qr_code: data.pixCode
+            qr_code: data.pixCode,
+            qr_code_base64: qrCodeUrl
           }
         }
       };
     }
     
-    // Fallback para geração local
-    console.log("Fallback: Gerando PIX localmente");
+    // Fallback to local generation
+    console.log("Fallback: Generating PIX locally");
     return generateFallbackPixData(orderId, amount);
   } catch (error) {
-    console.error("Erro em processPixPayment:", error);
+    console.error("Error in processPixPayment:", error);
     
     // Return a valid PIX code as fallback
     return generateFallbackPixData(orderId, amount);
