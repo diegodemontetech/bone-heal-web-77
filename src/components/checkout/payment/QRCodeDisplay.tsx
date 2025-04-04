@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -21,43 +21,65 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [copied, setCopied] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [qrError, setQrError] = useState<boolean>(false);
-  const [refreshKey, setRefreshKey] = useState<number>(0); // For forcing re-render on retry
+  const [refreshKey, setRefreshKey] = useState<number>(0);
   
-  // Ensure PIX code is valid and clean
-  const cleanPixCode = pixCode?.trim() || '';
-  const isValidPixCode = cleanPixCode.length > 10; // Basic validation - PIX codes are typically long
+  // Clean the PIX code - removing any potential whitespace or invalid characters
+  const cleanPixCode = (pixCode || '').trim().replace(/\s+/g, '');
   
-  // Generate QR code using Google's API with error handling
-  useEffect(() => {
+  // Basic validation - PIX codes are typically long
+  const isValidPixCode = cleanPixCode.length > 10;
+
+  // Generate QR code using a reliable method
+  const generateQRCode = useCallback(() => {
     if (!isValidPixCode) {
       setQrError(true);
-      console.error("Invalid or empty PIX code provided", { pixCodeLength: cleanPixCode.length });
+      console.error("Invalid or empty PIX code provided", { 
+        pixCodeLength: cleanPixCode.length,
+        pixCodeFirstChars: cleanPixCode.substring(0, 10) + "..."
+      });
       return;
     }
     
     try {
-      // Use provided QR code base64 if available
-      if (qrCodeBase64 && qrCodeBase64.startsWith('http')) {
-        setQrCodeUrl(qrCodeBase64);
-        setQrError(false);
-        return;
+      // If a base64 or URL is directly provided, use it
+      if (qrCodeBase64) {
+        if (qrCodeBase64.startsWith('data:') || qrCodeBase64.startsWith('http')) {
+          setQrCodeUrl(qrCodeBase64);
+          setQrError(false);
+          return;
+        }
+        
+        // Handle case where it's a raw base64 string without the data URI prefix
+        if (!qrCodeBase64.includes('data:') && !qrCodeBase64.startsWith('http')) {
+          setQrCodeUrl(`data:image/png;base64,${qrCodeBase64}`);
+          setQrError(false);
+          return;
+        }
       }
       
-      // Generate QR code using Google's Chart API with cache-busting
+      // Fallback to Google Charts API with cache-busting
+      const timestamp = new Date().getTime();
       const encodedContent = encodeURIComponent(cleanPixCode);
-      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0&t=${new Date().getTime()}-${refreshKey}`;
+      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0&t=${timestamp}-${refreshKey}`;
+      
       setQrCodeUrl(googleChartUrl);
       setQrError(false);
       
-      console.log("QR Code generated with Google Charts API:", { 
-        urlGenerated: true,
-        pixCodeFirstChars: cleanPixCode.substring(0, 20) + "..." 
+      console.log("QR Code generated successfully", { 
+        method: "Google Charts API",
+        timestamp,
+        refreshKey
       });
     } catch (error) {
       console.error("Error generating QR code:", error);
       setQrError(true);
     }
-  }, [cleanPixCode, qrCodeBase64, refreshKey]);
+  }, [cleanPixCode, isValidPixCode, qrCodeBase64, refreshKey]);
+
+  // Generate QR code on mount and when dependencies change
+  useEffect(() => {
+    generateQRCode();
+  }, [generateQRCode]);
 
   const copyToClipboard = () => {
     if (!isValidPixCode) {
@@ -81,6 +103,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     setRefreshKey(prev => prev + 1); // Force a refresh of the QR code
     setQrError(false);
     toast.info("Gerando novo QR code...");
+    setTimeout(generateQRCode, 100); // Small delay to ensure state is updated
   };
 
   if (isLoading) {
@@ -112,6 +135,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
           
           {qrCodeUrl && !qrError ? (
             <div className="border border-gray-200 p-4 rounded-md bg-white">
+              {/* Add error handling to the image */}
               <img 
                 src={qrCodeUrl} 
                 alt="QR Code PIX" 
