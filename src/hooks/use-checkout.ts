@@ -12,8 +12,8 @@ import {
 } from "@/services/payment-service";
 
 // Define a consistent type for checkout data
-interface CheckoutData extends PaymentResponse {
-  // Add any additional properties needed
+export interface CheckoutData extends PaymentResponse {
+  // Propriedades extras podem ser adicionadas aqui
 }
 
 export function useCheckout() {
@@ -119,7 +119,7 @@ export function useCheckout() {
             
             console.log("Resposta do Mercado Pago:", mpResponse);
             
-            if (mpResponse) {
+            if (mpResponse && mpResponse.pixCode) {
               setCheckoutData(mpResponse);
               return;
             }
@@ -132,7 +132,7 @@ export function useCheckout() {
               const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + numericShippingFee - discount;
               const pixResponse = await processPixPayment(savedOrderId, totalAmount);
               
-              if (pixResponse) {
+              if (pixResponse && pixResponse.pixCode) {
                 console.log("PIX gerado pelo Omie:", pixResponse);
                 setCheckoutData(pixResponse);
                 return;
@@ -142,13 +142,12 @@ export function useCheckout() {
             }
           }
           
-          // If both payment methods failed, show a generic PIX code with mock data
+          // If both payment methods failed, use a fallback PIX code
           console.log("Gerando PIX com dados de simulação após falhas nas APIs");
           
-          // Generate a fallback PIX code using the utility function
-          const fallbackData = {
+          // Generate a fallback PIX code
+          const fallbackData: CheckoutData = {
             pixCode: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3",
-            qr_code_text: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3",
             point_of_interaction: {
               transaction_data: {
                 qr_code: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3"

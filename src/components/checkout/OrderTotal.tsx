@@ -60,15 +60,33 @@ const OrderTotal = ({
   const extractPixCode = () => {
     if (!checkoutData) return '';
     
+    // Log the structure to help debugging
+    console.log("Estrutura do checkoutData:", JSON.stringify({
+      hasPointOfInteraction: Boolean(checkoutData.point_of_interaction),
+      hasPixCode: Boolean(checkoutData.pixCode),
+      hasQrCodeText: Boolean(checkoutData.qr_code_text)
+    }));
+    
     // Try all possible paths to get the PIX code
     if (checkoutData.point_of_interaction?.transaction_data?.qr_code) {
       return checkoutData.point_of_interaction.transaction_data.qr_code;
     }
     
+    // Fallback to other fields
     return checkoutData.pixCode || checkoutData.qr_code_text || '';
   };
 
   const pixCode = extractPixCode();
+  
+  // Debug the extracted PIX code
+  useEffect(() => {
+    if (checkoutData) {
+      console.log("PIX code extraído:", {
+        temCodigo: Boolean(pixCode),
+        tamanho: pixCode?.length || 0
+      });
+    }
+  }, [checkoutData, pixCode]);
 
   return (
     <Card>

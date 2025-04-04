@@ -19,10 +19,18 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ pixCode, isLoading = fals
   // Generate QR code using Google's API
   useEffect(() => {
     if (pixCode) {
+      // Clean up the PIX code first (remove any unwanted characters)
+      const cleanCode = pixCode.trim();
+      
       // Generate QR code using Google's Chart API
-      const encodedContent = encodeURIComponent(pixCode);
+      const encodedContent = encodeURIComponent(cleanCode);
       const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0`;
       setQrCodeUrl(googleChartUrl);
+      
+      console.log("QR Code gerado com sucesso:", { 
+        pixCode: cleanCode.substring(0, 20) + "...", 
+        urlGerada: true 
+      });
     }
   }, [pixCode]);
 
@@ -69,7 +77,12 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ pixCode, isLoading = fals
               <img 
                 src={qrCodeUrl} 
                 alt="QR Code PIX" 
-                className="h-48 w-48 object-contain mx-auto"
+                className="h-64 w-64 object-contain mx-auto"
+                onError={(e) => {
+                  console.error("Erro ao carregar QR code, tentando novamente");
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=L|0&t=${new Date().getTime()}`;
+                }}
               />
             </div>
           )}
