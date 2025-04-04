@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, Copy, Check, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Copy, Check, AlertCircle, RefreshCw, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
@@ -29,7 +29,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   // Basic validation - PIX codes are typically long
   const isValidPixCode = cleanPixCode.length > 10;
 
-  // Generate QR code using a reliable method
+  // Generate QR code with an explicit timestamp for cache-busting
   const generateQRCode = useCallback(() => {
     if (!isValidPixCode) {
       setQrError(true);
@@ -57,16 +57,20 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         }
       }
       
-      // Fallback to Google Charts API with cache-busting
+      // Add specific cache-busting parameters to prevent cached QR codes
       const timestamp = new Date().getTime();
+      const nonce = Math.floor(Math.random() * 1000000);
+      
+      // Use Google Charts API for reliable QR code generation
       const encodedContent = encodeURIComponent(cleanPixCode);
-      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0&t=${timestamp}-${refreshKey}`;
+      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0&t=${timestamp}-${nonce}-${refreshKey}`;
       
       setQrCodeUrl(googleChartUrl);
       setQrError(false);
       
       console.log("QR Code generated successfully", { 
         method: "Google Charts API",
+        pixCodeLength: cleanPixCode.length,
         timestamp,
         refreshKey
       });
@@ -135,7 +139,6 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
           
           {qrCodeUrl && !qrError ? (
             <div className="border border-gray-200 p-4 rounded-md bg-white">
-              {/* Add error handling to the image */}
               <img 
                 src={qrCodeUrl} 
                 alt="QR Code PIX" 

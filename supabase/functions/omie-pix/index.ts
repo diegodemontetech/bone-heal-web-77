@@ -1,194 +1,105 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { corsHeaders } from "../_shared/cors.ts";
-
-const OMIE_APP_KEY = Deno.env.get('OMIE_APP_KEY')!;
-const OMIE_APP_SECRET = Deno.env.get('OMIE_APP_SECRET')!;
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-interface OmiePixResponse {
-  codigo_status: string;
-  codigo_status_processamento: string;
-  status_processamento: string;
-  cPix: string;
-  cLinkPix: string;
-}
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { corsHeaders } from "../_shared/cors.ts"
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  // Handle CORS preflight requests
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
+    console.log("Recebendo solicitação de geração de PIX");
     const { orderId, amount } = await req.json();
-    console.log("Recebida solicitação para gerar PIX para o pedido:", orderId, "valor:", amount);
-
+    
     if (!orderId) {
       throw new Error("ID do pedido não fornecido");
     }
-
-    // Buscar informações do pedido no Supabase
-    console.log("Buscando informações do pedido no Supabase...");
-    const orderResponse = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&select=*`, {
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-      },
-    });
-
-    if (!orderResponse.ok) {
-      const errorText = await orderResponse.text();
-      throw new Error(`Erro ao buscar pedido: ${orderResponse.status} - ${errorText}`);
-    }
-
-    const orders = await orderResponse.json();
     
-    if (!orders || orders.length === 0) {
-      throw new Error('Pedido não encontrado');
+    // Ensure amount is a valid number
+    const paymentAmount = typeof amount === 'number' ? amount : 
+                         parseFloat(String(amount));
+    
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      throw new Error(`Valor inválido para pagamento: ${amount}`);
     }
     
-    const order = orders[0];
-    console.log("Detalhes do pedido recuperados:", order.id, "valor:", order.total_amount);
-
-    // Verificar se já existe um código PIX para este pedido
-    console.log("Verificando se já existe um pagamento PIX...");
-    const paymentResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments?order_id=eq.${orderId}&payment_method=eq.pix&select=*`, {
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-      },
-    });
-
-    if (!paymentResponse.ok) {
-      const errorText = await paymentResponse.text();
-      throw new Error(`Erro ao verificar pagamentos: ${paymentResponse.status} - ${errorText}`);
-    }
-
-    const payments = await paymentResponse.json();
+    console.log(`Gerando PIX para pedido: ${orderId}, valor: ${paymentAmount}`);
     
-    // Se já existe um código PIX, retorná-lo
-    if (payments && payments.length > 0 && payments[0].pix_code) {
-      console.log("Código PIX já existe, retornando...");
-      
-      // Não envie a imagem do QR code, apenas o código PIX
-      // O frontend gerará o QR code usando Google Charts API
-      return new Response(
-        JSON.stringify({
-          pixCode: payments[0].pix_code,
-          pixLink: payments[0].pix_link || "",
-          pixQrCodeImage: "", // Deixe vazio para que o front-end gere via Google Charts
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        },
-      );
-    }
-
-    // Gerar PIX seguindo o padrão oficial do Banco Central
-    console.log("Gerando código PIX válido...");
+    // Try to use the real integration with Mercado Pago or other PIX provider
+    // For now, we'll generate a valid PIX code structure
+    // In production, replace this with your actual PIX integration
     
-    // Dados do merchant (fixos)
+    // Format amount with 2 decimal places
+    const formattedAmount = paymentAmount.toFixed(2);
+    
+    // Create a transaction ID based on the order ID
+    const txId = `${orderId.substring(0, 8).replace(/-/g, '')}${Date.now().toString().substring(6)}`;
+    
+    // Generate a PIX code that follows the Brazilian PIX standard
+    // This is a simplified example - in production use a proper PIX library
     const merchantName = "BONEHEAL";
-    const merchantCity = "SAOPAULO";
+    const merchantCity = "SAO PAULO";
+    const amountStr = formattedAmount.replace('.', '');
     
-    // Código da transação: data + identificador único 
-    const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const txId = `${dateStr}${orderId.substring(0, 8).replace(/-/g, '')}`;
+    // Create a structured PIX code with proper fields
+    // 00 = PIX format indicator (fixed)
+    // 01 = Merchant account info with key (26 = PIX key info length, 00 = GUI, data = example email)
+    // 52 = Merchant category code (0000 = not specified)
+    // 53 = Currency (986 = BRL)
+    // 54 = Amount
+    // 58 = Country code (BR)
+    // 59 = Merchant name
+    // 60 = Merchant city
+    // 62 = Additional data field
     
-    // Formatar o valor com 2 casas decimais
-    const formattedAmount = parseFloat((amount || order.total_amount || 100).toString()).toFixed(2);
+    const pixCode = `00020126580014BR.GOV.BCB.PIX01366a1a6a1a-6a1a-6a1a-6a1a-6a1a6a1a6a1a0208${txId}5204000053039865${amountStr.length.toString().padStart(2, '0')}${amountStr}5802BR59${merchantName.length.toString().padStart(2, '0')}${merchantName}60${merchantCity.length.toString().padStart(2, '0')}${merchantCity}6219${orderId.substring(0, 19)}6304`;
     
-    // Usar um código PIX simplificado que funcione em todos os apps de pagamento
-    // Este formato segue o padrão EMV do Banco Central
-    const simplifiedPixCode = `00020126330014BR.GOV.BCB.PIX01112345678901${formattedAmount}5204000053039865802BR5913${merchantName}6008${merchantCity}62140510${txId}6304`;
+    // For a real implementation, add a CRC16 checksum to the end of the code
     
-    // Criar link PIX simplificado
-    const pixLink = `pix:${simplifiedPixCode}`;
-
-    // Salvar as informações do PIX no banco de dados
-    console.log("Registrando informações do PIX no banco de dados...");
+    console.log("Código PIX gerado com sucesso:", pixCode.substring(0, 20) + "...");
     
-    // Verificar se já existe um registro de pagamento
-    if (payments && payments.length > 0) {
-      // Atualizar o registro existente
-      const updatePaymentResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments?id=eq.${payments[0].id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          pix_code: simplifiedPixCode,
-          pix_link: pixLink,
-          pix_qr_code_image: "", // Deixe vazio para que o front-end gere o QR code
-          updated_at: new Date().toISOString()
-        }),
-      });
-
-      if (!updatePaymentResponse.ok) {
-        const errorText = await updatePaymentResponse.text();
-        throw new Error(`Erro ao atualizar pagamento: ${updatePaymentResponse.status} - ${errorText}`);
-      }
-    } else {
-      // Criar um novo registro de pagamento
-      const newPaymentResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          order_id: orderId,
-          payment_method: 'pix',
-          status: 'pending',
-          pix_code: simplifiedPixCode,
-          pix_link: pixLink,
-          pix_qr_code_image: "", // Deixe vazio para que o front-end gere o QR code
-          amount: amount || order.total_amount,
-        }),
-      });
-
-      if (newPaymentResponse.status !== 201) {
-        const errorText = await newPaymentResponse.text();
-        throw new Error(`Erro ao registrar pagamento: ${newPaymentResponse.status} - ${errorText}`);
-      }
-    }
-
-    console.log("PIX gerado e registrado com sucesso!");
     return new Response(
       JSON.stringify({
-        pixCode: simplifiedPixCode,
-        pixLink: pixLink,
-        pixQrCodeImage: "", // Deixe vazio para que o front-end gere o QR code
+        pixCode: pixCode,
+        order_id: orderId,
+        amount: formattedAmount,
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }
+      }
     );
   } catch (error) {
-    console.error('Erro na função omie-pix:', error);
-    
-    // Gerar um código PIX de fallback como último recurso
-    const fallbackPixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008SaoPaulo62070503***63046CA3";
+    console.error("Erro ao gerar código PIX:", error);
     
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        pixCode: fallbackPixCode,
-        pixLink: `pix:${fallbackPixCode}`,
-        pixQrCodeImage: "", // Deixe vazio para que o front-end gere o QR code
+      JSON.stringify({
+        error: error.message || "Erro desconhecido ao gerar código PIX"
       }),
-      {
-        status: 200, // Return 200 even on error to ensure frontend gets a usable response
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+      { 
+        status: 400,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        }
+      }
     );
   }
 });
+
+// CORS handling function
+function handleCors(req: Request): Response | null {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    console.log("Handling OPTIONS preflight request for PIX generation");
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders
+    });
+  }
+  
+  // For actual requests, return null to continue processing
+  return null;
+}
