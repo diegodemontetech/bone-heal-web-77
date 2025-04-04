@@ -56,8 +56,18 @@ const OrderTotal = ({
     ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' }).format(deliveryDate)
     : null;
 
-  // Extract the PIX code from checkoutData
-  const pixCodeFromCheckout = checkoutData?.qr_code_text || checkoutData?.pixCode || '';
+  // Extract the PIX code from checkoutData, handling different possible structures
+  const extractPixCode = () => {
+    if (!checkoutData) return '';
+    
+    if (checkoutData.point_of_interaction?.transaction_data?.qr_code) {
+      return checkoutData.point_of_interaction.transaction_data.qr_code;
+    }
+    
+    return checkoutData.pixCode || checkoutData.qr_code_text || '';
+  };
+
+  const pixCodeFromCheckout = extractPixCode();
 
   return (
     <Card>

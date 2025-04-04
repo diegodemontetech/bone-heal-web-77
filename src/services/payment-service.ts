@@ -5,11 +5,17 @@ import { CartItem } from "@/hooks/use-cart";
 /**
  * Standard response interface for payment services
  */
-interface PaymentResponse {
+export interface PaymentResponse {
   pixCode?: string;
   qr_code_text?: string;
   order_id?: string;
   amount?: string;
+  point_of_interaction?: {
+    transaction_data?: {
+      qr_code?: string;
+      qr_code_base64?: string;
+    };
+  };
 }
 
 /**
@@ -58,12 +64,17 @@ export const generateFallbackPixData = (orderId: string, amount: number = 0): Pa
   // This is a simplified version that will be valid for QR display
   const pixCode = `00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3`;
   
-  // Return a standardized response object
+  // Return a standardized response object with all required fields
   return {
     pixCode: pixCode,
     qr_code_text: pixCode,
     order_id: orderId,
-    amount: finalAmount.toFixed(2)
+    amount: finalAmount.toFixed(2),
+    point_of_interaction: {
+      transaction_data: {
+        qr_code: pixCode
+      }
+    }
   };
 };
 
@@ -75,19 +86,12 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
     // Skip API calls completely to avoid CORS issues
     // In production, you would want to use the API call
     const fallbackData = generateFallbackPixData(orderId, amount);
-    return {
-      pixCode: fallbackData.pixCode,
-      qr_code_text: fallbackData.qr_code_text
-    };
+    return fallbackData;
   } catch (error) {
     console.error("Error in processPixPayment:", error);
     
     // Return a valid PIX code as fallback
-    const fallbackData = generateFallbackPixData(orderId, amount);
-    return {
-      pixCode: fallbackData.pixCode, 
-      qr_code_text: fallbackData.qr_code_text
-    };
+    return generateFallbackPixData(orderId, amount);
   }
 };
 

@@ -5,13 +5,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 import { toast } from "sonner";
 import { saveOrder } from "@/services/order-service";
-import { createMercadoPagoCheckout, processPixPayment } from "@/services/payment-service";
+import { createMercadoPagoCheckout, processPixPayment, PaymentResponse } from "@/services/payment-service";
 
 // Define a consistent type for checkout data
 interface CheckoutData {
   pixCode?: string;
   qr_code_text?: string;
   order_id?: string;
+  point_of_interaction?: {
+    transaction_data?: {
+      qr_code?: string;
+      qr_code_base64?: string;
+    };
+  };
 }
 
 export function useCheckout() {
@@ -127,13 +133,14 @@ export function useCheckout() {
               // Handle different response formats from the API
               if (mpResponse.point_of_interaction?.transaction_data) {
                 standardizedCheckoutData = {
+                  pixCode: mpResponse.point_of_interaction.transaction_data.qr_code || "",
                   qr_code_text: mpResponse.point_of_interaction.transaction_data.qr_code || "",
-                  pixCode: mpResponse.point_of_interaction.transaction_data.qr_code || ""
+                  point_of_interaction: mpResponse.point_of_interaction
                 };
               } else if (mpResponse.qr_code_text || mpResponse.pixCode) {
                 standardizedCheckoutData = {
-                  qr_code_text: mpResponse.qr_code_text || mpResponse.pixCode || "",
-                  pixCode: mpResponse.pixCode || mpResponse.qr_code_text || ""
+                  pixCode: mpResponse.pixCode || mpResponse.qr_code_text || "",
+                  qr_code_text: mpResponse.qr_code_text || mpResponse.pixCode || ""
                 };
               }
               
@@ -154,8 +161,8 @@ export function useCheckout() {
                 console.log("PIX gerado pelo Omie:", pixResponse);
                 
                 setCheckoutData({
-                  qr_code_text: pixResponse.qr_code_text || "",
-                  pixCode: pixResponse.qr_code_text || ""
+                  pixCode: pixResponse.pixCode || pixResponse.qr_code_text || "",
+                  qr_code_text: pixResponse.qr_code_text || pixResponse.pixCode || ""
                 });
                 return;
               }
@@ -171,8 +178,8 @@ export function useCheckout() {
           const pixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
           
           setCheckoutData({
-            qr_code_text: pixCode,
-            pixCode: pixCode
+            pixCode: pixCode,
+            qr_code_text: pixCode
           });
         } else {
           // For non-PIX payment methods, redirect to success page
