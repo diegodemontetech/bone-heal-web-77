@@ -28,7 +28,6 @@ const PixPayment = ({ pixCode, orderId }: PixPaymentProps) => {
     });
     
     // Provide a clean PIX code to the QR code display
-    // If it seems to be valid
     setProcessedPixCode(pixCode);
     setIsLoading(false);
   }, [pixCode, orderId]);

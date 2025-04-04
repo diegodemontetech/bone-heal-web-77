@@ -56,6 +56,9 @@ const OrderTotal = ({
     ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long' }).format(deliveryDate)
     : null;
 
+  // Extract the PIX code from checkoutData
+  const pixCodeFromCheckout = checkoutData?.qr_code_text || checkoutData?.pixCode || '';
+
   return (
     <Card>
       <CardHeader>
@@ -137,7 +140,7 @@ const OrderTotal = ({
           </RadioGroup>
         </div>
         
-        {/* Checkout button */}
+        {/* Checkout button or QR code display */}
         {!checkoutData ? (
           <Button 
             className="w-full" 
@@ -155,8 +158,8 @@ const OrderTotal = ({
           </Button>
         ) : (
           <QRCodeDisplay 
-            pixData={checkoutData.qr_code} 
-            pixCode={checkoutData.qr_code_text || ""}
+            pixCode={pixCodeFromCheckout}
+            isLoading={loading}
           />
         )}
         

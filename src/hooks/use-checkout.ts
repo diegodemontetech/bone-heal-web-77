@@ -7,12 +7,19 @@ import { toast } from "sonner";
 import { saveOrder } from "@/services/order-service";
 import { createMercadoPagoCheckout, processPixPayment } from "@/services/payment-service";
 
+// Define a consistent type for checkout data
+interface CheckoutData {
+  pixCode?: string;
+  qr_code_text?: string;
+  order_id?: string;
+}
+
 export function useCheckout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("pix");
   const [orderId, setOrderId] = useState<string | null>(null);
-  const [checkoutData, setCheckoutData] = useState<any>(null);
+  const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const processingRef = useRef(false);
 
@@ -111,26 +118,27 @@ export function useCheckout() {
             console.log("Resposta do Mercado Pago:", mpResponse);
             
             if (mpResponse) {
-              // Properly format the payment data for display
-              let formattedResponse = mpResponse;
+              // Create a standardized checkout data object
+              let standardizedCheckoutData: CheckoutData = {
+                pixCode: '',
+                qr_code_text: ''
+              };
               
-              // Handle different response formats
+              // Handle different response formats from the API
               if (mpResponse.point_of_interaction?.transaction_data) {
-                formattedResponse = {
-                  qr_code: mpResponse.point_of_interaction.transaction_data.qr_code_base64 ? 
-                    `data:image/png;base64,${mpResponse.point_of_interaction.transaction_data.qr_code_base64}` :
-                    null,
-                  qr_code_text: mpResponse.point_of_interaction.transaction_data.qr_code || ""
+                standardizedCheckoutData = {
+                  qr_code_text: mpResponse.point_of_interaction.transaction_data.qr_code || "",
+                  pixCode: mpResponse.point_of_interaction.transaction_data.qr_code || ""
                 };
-              } else if (mpResponse.qr_code || mpResponse.qr_code_text) {
-                formattedResponse = {
-                  qr_code: mpResponse.qr_code,
-                  qr_code_text: mpResponse.qr_code_text || ""
+              } else if (mpResponse.qr_code_text || mpResponse.pixCode) {
+                standardizedCheckoutData = {
+                  qr_code_text: mpResponse.qr_code_text || mpResponse.pixCode || "",
+                  pixCode: mpResponse.pixCode || mpResponse.qr_code_text || ""
                 };
               }
               
-              console.log("PIX gerado com sucesso:", formattedResponse);
-              setCheckoutData(formattedResponse);
+              console.log("PIX gerado com sucesso:", standardizedCheckoutData);
+              setCheckoutData(standardizedCheckoutData);
               return;
             }
           } catch (mpError) {
@@ -146,8 +154,8 @@ export function useCheckout() {
                 console.log("PIX gerado pelo Omie:", pixResponse);
                 
                 setCheckoutData({
-                  qr_code: pixResponse.qr_code || "",
-                  qr_code_text: pixResponse.qr_code_text || ""
+                  qr_code_text: pixResponse.qr_code_text || "",
+                  pixCode: pixResponse.qr_code_text || ""
                 });
                 return;
               }
@@ -159,13 +167,12 @@ export function useCheckout() {
           // If both payment methods failed, show a generic PIX code with mock data
           console.log("Gerando PIX com dados de simulação após falhas nas APIs");
           
-          // Generate a fallback QR code for PIX
+          // Generate a fallback PIX code
           const pixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
-          const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=L|0`;
           
           setCheckoutData({
-            qr_code: qrCodeUrl,
-            qr_code_text: pixCode
+            qr_code_text: pixCode,
+            pixCode: pixCode
           });
         } else {
           // For non-PIX payment methods, redirect to success page

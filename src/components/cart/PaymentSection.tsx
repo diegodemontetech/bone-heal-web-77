@@ -36,8 +36,6 @@ const PaymentSection = ({
     // Get the PIX code from various possible response formats
     const pixCode = checkoutData.qr_code_text || 
                    checkoutData.pixCode || 
-                   (checkoutData.point_of_interaction?.transaction_data?.qr_code) || 
-                   checkoutData.qr_code || 
                    '';
     
     // Ensure we have a non-empty PIX code

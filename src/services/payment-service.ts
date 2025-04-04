@@ -1,5 +1,16 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
+
+/**
+ * Standard response interface for payment services
+ */
+interface PaymentResponse {
+  pixCode?: string;
+  qr_code_text?: string;
+  order_id?: string;
+  amount?: string;
+}
 
 /**
  * Creates a Mercado Pago checkout for the given order
@@ -9,7 +20,7 @@ export const createMercadoPagoCheckout = async (
   cartItems: CartItem[], 
   shippingFee: number,
   discount: number
-) => {
+): Promise<PaymentResponse> => {
   try {
     console.log("Creating Mercado Pago checkout for order:", orderId);
     
@@ -35,7 +46,7 @@ const calculateTotal = (cartItems: CartItem[], shippingFee: number, discount: nu
  * Generate valid PIX data with a proper QR code
  * Creates a PIX code that follows the official PIX standard and will be recognized by payment apps
  */
-export const generateFallbackPixData = (orderId: string, amount: number = 0) => {
+export const generateFallbackPixData = (orderId: string, amount: number = 0): PaymentResponse => {
   // Use a fixed amount if none provided, or calculate based on order ID for demo
   const finalAmount = amount > 0 ? amount : Math.floor(100 + (parseInt(orderId.substring(0, 8), 16) % 900)) / 100;
   
@@ -47,15 +58,10 @@ export const generateFallbackPixData = (orderId: string, amount: number = 0) => 
   // This is a simplified version that will be valid for QR display
   const pixCode = `00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3`;
   
-  // Return a well-formed response object with the simplified PIX code
+  // Return a standardized response object
   return {
     pixCode: pixCode,
     qr_code_text: pixCode,
-    point_of_interaction: {
-      transaction_data: {
-        qr_code: pixCode
-      }
-    },
     order_id: orderId,
     amount: finalAmount.toFixed(2)
   };
@@ -64,13 +70,13 @@ export const generateFallbackPixData = (orderId: string, amount: number = 0) => 
 /**
  * Process a payment via PIX
  */
-export const processPixPayment = async (orderId: string, amount: number) => {
+export const processPixPayment = async (orderId: string, amount: number): Promise<PaymentResponse> => {
   try {
     // Skip API calls completely to avoid CORS issues
     // In production, you would want to use the API call
     const fallbackData = generateFallbackPixData(orderId, amount);
     return {
-      qr_code: null,
+      pixCode: fallbackData.pixCode,
       qr_code_text: fallbackData.qr_code_text
     };
   } catch (error) {
@@ -79,7 +85,7 @@ export const processPixPayment = async (orderId: string, amount: number) => {
     // Return a valid PIX code as fallback
     const fallbackData = generateFallbackPixData(orderId, amount);
     return {
-      qr_code: null, 
+      pixCode: fallbackData.pixCode, 
       qr_code_text: fallbackData.qr_code_text
     };
   }
