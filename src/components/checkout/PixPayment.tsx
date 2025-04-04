@@ -26,7 +26,7 @@ const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
     });
     
     // Ensure the QR code image has a proper data URL format
-    if (pixQrCodeImage && !pixQrCodeImage.startsWith('data:')) {
+    if (pixQrCodeImage && !pixQrCodeImage.startsWith('data:') && !pixQrCodeImage.startsWith('http')) {
       console.log("Formatting QR code image to include data URL prefix");
       qrCode = `data:image/png;base64,${pixQrCodeImage}`;
     }

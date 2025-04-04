@@ -113,10 +113,13 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
               // Use Google Charts API as fallback
               if (pixCode) {
                 const fallbackUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0`;
-                e.currentTarget.src = fallbackUrl;
-                e.currentTarget.onError = (e2) => {
+                // Using correct TypeScript event handling
+                const img = e.currentTarget;
+                img.src = fallbackUrl;
+                
+                // Using a proper lambda for the second error handler
+                img.onerror = () => {
                   console.error("Error even with fallback QR code");
-                  const img = e2.currentTarget as HTMLImageElement;
                   img.style.display = "none";
                   setQrImgError(true);
                 };
