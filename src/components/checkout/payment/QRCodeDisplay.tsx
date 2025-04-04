@@ -37,42 +37,48 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
   };
 
   // Generate QR code using Google Charts API
-  const generateGoogleQRCode = () => {
-    if (!pixCode) return null;
+  const generateQRCode = (text: string) => {
+    if (!text) return null;
     
-    // Add cache buster to prevent caching issues
-    const timestamp = new Date().getTime();
-    return `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&t=${timestamp}`;
+    try {
+      // Add cache buster to prevent caching issues
+      const timestamp = new Date().getTime();
+      const encodedText = encodeURIComponent(text);
+      return `https://chart.googleapis.com/chart?cht=qr&chl=${encodedText}&chs=300x300&chld=H|0&t=${timestamp}`;
+    } catch (error) {
+      console.error("Error generating QR code URL:", error);
+      return null;
+    }
   };
 
   const refreshQRCode = () => {
     setIsRefreshing(true);
     setQrImgError(false);
     
-    // Generate a new QR code with Google Charts
-    const googleQRCode = generateGoogleQRCode();
-    if (googleQRCode) {
-      setQrImgSrc(googleQRCode);
-    }
-    
-    setTimeout(() => setIsRefreshing(false), 500);
+    setTimeout(() => {
+      // Generate a new QR code
+      if (pixCode) {
+        const newQrCode = generateQRCode(pixCode);
+        setQrImgSrc(newQrCode);
+      }
+      setIsRefreshing(false);
+    }, 500);
   };
 
   // Update QR code when data changes
   useEffect(() => {
-    console.log("QRCodeDisplay: Updating QR code display with pixCode:", pixCode?.substring(0, 20) + "...");
+    if (!pixCode) {
+      console.log("No PIX code provided for QR generation");
+      setQrImgSrc(null);
+      return;
+    }
+    
+    console.log("Generating QR code for PIX code", pixCode.substring(0, 20) + "...");
     setQrImgError(false);
     
-    // Always generate QR code with Google Charts - most reliable method
-    const googleQRCode = generateGoogleQRCode();
-    
-    if (googleQRCode) {
-      console.log("Using Google Charts QR code");
-      setQrImgSrc(googleQRCode);
-    } else {
-      console.log("No valid QR code data available");
-      setQrImgSrc(null);
-    }
+    // Generate QR code using Google Charts
+    const newQrCode = generateQRCode(pixCode);
+    setQrImgSrc(newQrCode);
   }, [pixCode]);
 
   // Show loading state while image is being processed
@@ -132,13 +138,10 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
             alt="QR Code do PIX" 
             className="h-48 w-48"
             onError={(e) => {
-              console.error("Error loading QR code image, trying fallback method");
+              console.error("Error loading QR code image");
               setQrImgError(true);
-              
-              // Try regenerating the QR code
-              setTimeout(() => {
-                refreshQRCode();
-              }, 100);
+              // Try regenerating with a slight delay
+              setTimeout(refreshQRCode, 300);
             }}
           />
         ) : isRefreshing ? (
