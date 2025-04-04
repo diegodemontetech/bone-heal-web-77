@@ -60,6 +60,7 @@ const OrderTotal = ({
   const extractPixCode = () => {
     if (!checkoutData) return '';
     
+    // Try all possible paths to get the PIX code
     if (checkoutData.point_of_interaction?.transaction_data?.qr_code) {
       return checkoutData.point_of_interaction.transaction_data.qr_code;
     }
@@ -67,7 +68,7 @@ const OrderTotal = ({
     return checkoutData.pixCode || checkoutData.qr_code_text || '';
   };
 
-  const pixCodeFromCheckout = extractPixCode();
+  const pixCode = extractPixCode();
 
   return (
     <Card>
@@ -168,7 +169,7 @@ const OrderTotal = ({
           </Button>
         ) : (
           <QRCodeDisplay 
-            pixCode={pixCodeFromCheckout}
+            pixCode={pixCode}
             isLoading={loading}
           />
         )}

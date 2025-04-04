@@ -5,19 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 import { toast } from "sonner";
 import { saveOrder } from "@/services/order-service";
-import { createMercadoPagoCheckout, processPixPayment, PaymentResponse } from "@/services/payment-service";
+import { 
+  createMercadoPagoCheckout, 
+  processPixPayment, 
+  PaymentResponse 
+} from "@/services/payment-service";
 
 // Define a consistent type for checkout data
-interface CheckoutData {
-  pixCode?: string;
-  qr_code_text?: string;
-  order_id?: string;
-  point_of_interaction?: {
-    transaction_data?: {
-      qr_code?: string;
-      qr_code_base64?: string;
-    };
-  };
+interface CheckoutData extends PaymentResponse {
+  // Add any additional properties needed
 }
 
 export function useCheckout() {
@@ -124,28 +120,7 @@ export function useCheckout() {
             console.log("Resposta do Mercado Pago:", mpResponse);
             
             if (mpResponse) {
-              // Create a standardized checkout data object
-              let standardizedCheckoutData: CheckoutData = {
-                pixCode: '',
-                qr_code_text: ''
-              };
-              
-              // Handle different response formats from the API
-              if (mpResponse.point_of_interaction?.transaction_data) {
-                standardizedCheckoutData = {
-                  pixCode: mpResponse.point_of_interaction.transaction_data.qr_code || "",
-                  qr_code_text: mpResponse.point_of_interaction.transaction_data.qr_code || "",
-                  point_of_interaction: mpResponse.point_of_interaction
-                };
-              } else if (mpResponse.qr_code_text || mpResponse.pixCode) {
-                standardizedCheckoutData = {
-                  pixCode: mpResponse.pixCode || mpResponse.qr_code_text || "",
-                  qr_code_text: mpResponse.qr_code_text || mpResponse.pixCode || ""
-                };
-              }
-              
-              console.log("PIX gerado com sucesso:", standardizedCheckoutData);
-              setCheckoutData(standardizedCheckoutData);
+              setCheckoutData(mpResponse);
               return;
             }
           } catch (mpError) {
@@ -159,11 +134,7 @@ export function useCheckout() {
               
               if (pixResponse) {
                 console.log("PIX gerado pelo Omie:", pixResponse);
-                
-                setCheckoutData({
-                  pixCode: pixResponse.pixCode || pixResponse.qr_code_text || "",
-                  qr_code_text: pixResponse.qr_code_text || pixResponse.pixCode || ""
-                });
+                setCheckoutData(pixResponse);
                 return;
               }
             } catch (omieError) {
@@ -174,13 +145,18 @@ export function useCheckout() {
           // If both payment methods failed, show a generic PIX code with mock data
           console.log("Gerando PIX com dados de simulação após falhas nas APIs");
           
-          // Generate a fallback PIX code
-          const pixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
+          // Generate a fallback PIX code using the utility function
+          const fallbackData = {
+            pixCode: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3",
+            qr_code_text: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3",
+            point_of_interaction: {
+              transaction_data: {
+                qr_code: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3"
+              }
+            }
+          };
           
-          setCheckoutData({
-            pixCode: pixCode,
-            qr_code_text: pixCode
-          });
+          setCheckoutData(fallbackData);
         } else {
           // For non-PIX payment methods, redirect to success page
           localStorage.removeItem('cart');

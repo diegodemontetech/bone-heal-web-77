@@ -4,6 +4,6 @@ project_id = "kurpshcdafxbyqnzxvxu"
 [cors]
 allow_origin = ["*"]
 allow_methods = ["GET", "POST", "OPTIONS"]
-allow_headers = ["authorization", "x-client-info", "apikey", "content-type", "range"]
+allow_headers = ["authorization", "x-client-info", "apikey", "content-type", "range", "x-requested-with"]
 allow_credentials = false
 max_age = 86400

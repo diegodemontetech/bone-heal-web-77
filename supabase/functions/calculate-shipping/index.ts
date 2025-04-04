@@ -27,15 +27,11 @@ serve(async (req) => {
       throw new Error("CEP inválido: deve conter 8 dígitos");
     }
 
-    // Direcionar para a função correios-shipping
-    const { data, error } = await callCorreiosShipping(cleanZipCode, body.items || []);
-    
-    if (error) {
-      throw error;
-    }
+    // Generate fallback rates directly without calling correios-shipping
+    const fallbackRates = generateFallbackRates(cleanZipCode);
 
     return new Response(
-      JSON.stringify({ rates: data, success: true }),
+      JSON.stringify({ rates: fallbackRates, success: true }),
       { 
         headers: { 
           ...corsHeaders,
@@ -75,32 +71,6 @@ serve(async (req) => {
     );
   }
 });
-
-async function callCorreiosShipping(zipCode: string, items: any[] = []): Promise<{data?: any[], error?: Error}> {
-  try {
-    const response = await fetch(
-      `${Deno.env.get('SUPABASE_URL')}/functions/v1/correios-shipping`, 
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify({ zipCode, items })
-      }
-    );
-    
-    if (!response.ok) {
-      throw new Error(`Erro na requisição correios-shipping: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    return { data };
-  } catch (error) {
-    console.error('Erro ao chamar correios-shipping:', error);
-    return { error: new Error(error.message || "Erro ao chamar correios-shipping") };
-  }
-}
 
 function generateFallbackRates(zipCode: string): any[] {
   const zipPrefix = zipCode.substring(0, 3);
