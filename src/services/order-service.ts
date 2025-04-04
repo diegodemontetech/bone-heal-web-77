@@ -2,9 +2,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
+// Helper function to generate a unique order ID with timestamp
+const generateUniqueOrderId = () => {
+  // Use timestamp as part of the ID to ensure uniqueness
+  const timestamp = new Date().getTime();
+  // Generate a random string
+  const randomStr = Math.random().toString(36).substring(2, 10);
+  return `order_${timestamp}_${randomStr}`;
+};
+
 // Função para salvar o pedido no banco de dados
 export const saveOrder = async (
-  orderId: string, 
+  orderId: string | null, 
   cartItems: CartItem[], 
   shippingFee: number, 
   discount: number, 
@@ -25,13 +34,16 @@ export const saveOrder = async (
       throw new Error("É necessário estar logado para finalizar a compra");
     }
 
-    console.log("Salvando pedido:", orderId, "para usuário:", userId);
+    // Generate a new unique order ID if none is provided or ensure uniqueness
+    const finalOrderId = orderId || generateUniqueOrderId();
+
+    console.log("Salvando pedido:", finalOrderId, "para usuário:", userId);
 
     // Garantir que o user_id seja explicitamente definido
     const { error: orderError } = await supabase
       .from('orders')
       .insert({
-        id: orderId,
+        id: finalOrderId,
         user_id: userId, // Garantir que o ID do usuário esteja definido
         items: cartItems.map(item => ({
           product_id: item.id,
@@ -51,6 +63,19 @@ export const saveOrder = async (
       });
 
     if (orderError) {
+      // If we get a duplicate key error, try again with a new order ID
+      if (orderError.code === '23505') {
+        console.log("Conflito de ID de pedido, gerando novo ID...");
+        return saveOrder(
+          generateUniqueOrderId(),
+          cartItems,
+          shippingFee,
+          discount,
+          zipCode,
+          paymentMethod,
+          appliedVoucher
+        );
+      }
       console.error("Erro ao salvar pedido:", orderError);
       throw orderError;
     }
@@ -59,7 +84,7 @@ export const saveOrder = async (
     const { error: paymentError } = await supabase
       .from('payments')
       .insert({
-        order_id: orderId,
+        order_id: finalOrderId,
         status: 'pending',
         amount: total_amount,
         payment_method: paymentMethod
@@ -77,7 +102,7 @@ export const saveOrder = async (
         .eq('id', appliedVoucher.id);
     }
     
-    return orderId;
+    return finalOrderId;
   } catch (error) {
     console.error("Erro ao salvar pedido:", error);
     throw error;
