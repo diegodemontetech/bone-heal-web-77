@@ -48,24 +48,45 @@ const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
     );
   }
 
+  // Check if the QR code image is valid
+  const isValidQrCode = pixData && (
+    pixData.startsWith('data:image/png;base64,') || 
+    pixData.startsWith('data:image/jpeg;base64,') || 
+    pixData.startsWith('data:image/jpg;base64,')
+  );
+
+  console.log("QR Code data received:", isValidQrCode ? "Valid QR code image" : "Invalid QR code image", 
+    pixData ? pixData.substring(0, 50) + "..." : "No QR code data");
+
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="text-center mb-2">
         <h3 className="font-medium text-lg mb-1">Pagamento PIX</h3>
         <p className="text-sm text-muted-foreground">
-          {pixData 
+          {isValidQrCode 
             ? "Escaneie o QR code abaixo ou copie o código PIX" 
             : "Copie o código PIX abaixo para pagamento"}
         </p>
       </div>
       
-      {pixData && (
+      {isValidQrCode ? (
         <div className="bg-white p-4 rounded-lg border flex justify-center">
           <img 
-            src={pixData.startsWith('data:') ? pixData : `data:image/png;base64,${pixData}`} 
+            src={pixData} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
+            onError={(e) => {
+              console.error("Error loading QR code image:", e);
+              // Set a fallback alt text if image fails to load
+              e.currentTarget.alt = "QR Code não disponível";
+              // Hide the broken image
+              e.currentTarget.style.display = "none";
+            }}
           />
+        </div>
+      ) : (
+        <div className="bg-gray-100 p-4 rounded-lg border flex justify-center items-center h-48 w-48">
+          <p className="text-sm text-gray-500 text-center">QR Code não disponível.<br/>Use o código abaixo.</p>
         </div>
       )}
       
