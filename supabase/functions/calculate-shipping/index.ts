@@ -8,7 +8,7 @@ serve(async (req) => {
   // Handle CORS preflight request first
   const corsResponse = handleCors(req);
   if (corsResponse) {
-    console.log("Returning CORS preflight response");
+    console.log("Returning CORS preflight response with status 200");
     return corsResponse;
   }
 

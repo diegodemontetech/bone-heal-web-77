@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { corsHeaders, handleCors } from "../_shared/cors.ts"
 
 // Generate a fallback QR code when API fails
 const generateFallbackQrCode = (content: string): string => {
@@ -10,13 +10,11 @@ const generateFallbackQrCode = (content: string): string => {
 serve(async (req) => {
   console.log("=== INÍCIO DA EXECUÇÃO DA FUNÇÃO MERCADOPAGO CHECKOUT ===");
   
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    console.log("Handling CORS preflight request");
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders
-    });
+  // Handle CORS preflight request using the shared helper
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    console.log("Returning CORS preflight response with status 200");
+    return corsResponse;
   }
   
   try {
