@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
@@ -14,6 +14,7 @@ export function useCheckout() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<any>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const processingRef = useRef(false);
 
   // Generate a UUID for the order ID on initialization
   useEffect(() => {
@@ -32,17 +33,30 @@ export function useCheckout() {
     discount: number,
     appliedVoucher: any
   ) => {
+    // Prevent multiple concurrent checkout attempts
+    if (processingRef.current) {
+      console.log("Checkout already in progress, ignoring duplicate request");
+      return;
+    }
+
     if (!cartItems.length) {
       toast.error("Seu carrinho está vazio.");
       navigate("/products");
       return;
     }
 
-    // Ensure shippingFee is a number
-    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
+    // Ensure shippingFee is a valid number
+    const numericShippingFee = typeof shippingFee === 'number' && !isNaN(shippingFee) 
+      ? shippingFee 
+      : parseFloat(String(shippingFee)) || 0;
+    
     console.log("Shipping fee at checkout (numeric):", numericShippingFee);
 
     try {
+      processingRef.current = true;
+      setProcessingPayment(true);
+      setLoading(true);
+
       // Verify user authentication
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const userId = sessionData?.session?.user?.id;
@@ -70,8 +84,6 @@ export function useCheckout() {
         return;
       }
 
-      setProcessingPayment(true);
-      setLoading(true);
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
       // Save order to database with the correct shipping fee
@@ -157,6 +169,7 @@ export function useCheckout() {
     } finally {
       setLoading(false);
       setProcessingPayment(false);
+      processingRef.current = false;
     }
   };
 
