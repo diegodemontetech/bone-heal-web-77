@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, Copy, Check, AlertCircle, RefreshCw, QrCode } from "lucide-react";
+import { Loader2, Copy, Check, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
@@ -41,39 +41,41 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     }
     
     try {
-      // If a base64 or URL is directly provided, use it
+      console.log("Tentando gerar QR Code para PIX:", { 
+        pixCodeLength: cleanPixCode.length,
+        hasBase64: !!qrCodeBase64
+      });
+      
+      // Se temos um base64 direto do MP, usamos ele primeiro
       if (qrCodeBase64) {
-        if (qrCodeBase64.startsWith('data:') || qrCodeBase64.startsWith('http')) {
+        if (qrCodeBase64.startsWith('data:')) {
+          console.log("Usando QR code base64 já com prefixo data:");
           setQrCodeUrl(qrCodeBase64);
           setQrError(false);
           return;
         }
         
-        // Handle case where it's a raw base64 string without the data URI prefix
-        if (!qrCodeBase64.includes('data:') && !qrCodeBase64.startsWith('http')) {
+        // Se for base64 puro, adicionar o prefixo data:
+        if (qrCodeBase64.match(/^[A-Za-z0-9+/=]+$/)) {
+          console.log("Convertendo base64 puro para URI de dados");
           setQrCodeUrl(`data:image/png;base64,${qrCodeBase64}`);
           setQrError(false);
           return;
         }
       }
       
-      // Add specific cache-busting parameters to prevent cached QR codes
+      // Adicionar timestamp e nonce para evitar cache
       const timestamp = new Date().getTime();
       const nonce = Math.floor(Math.random() * 1000000);
       
-      // Use Google Charts API for reliable QR code generation
+      console.log("Gerando QR code via Google Charts API");
+      
+      // Fallback para Google Charts API
       const encodedContent = encodeURIComponent(cleanPixCode);
-      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodedContent}&chs=300x300&chld=L|0&t=${timestamp}-${nonce}-${refreshKey}`;
+      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedContent}&t=${timestamp}-${nonce}-${refreshKey}`;
       
       setQrCodeUrl(googleChartUrl);
       setQrError(false);
-      
-      console.log("QR Code Mercado Pago gerado com sucesso", { 
-        method: "Google Charts API",
-        pixCodeLength: cleanPixCode.length,
-        timestamp,
-        refreshKey
-      });
     } catch (error) {
       console.error("Erro ao gerar QR code:", error);
       setQrError(true);
@@ -107,7 +109,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     setRefreshKey(prev => prev + 1); // Force a refresh of the QR code
     setQrError(false);
     toast.info("Gerando novo QR code...");
-    setTimeout(generateQRCode, 100); // Small delay to ensure state is updated
+    generateQRCode();
   };
 
   if (isLoading) {
@@ -141,10 +143,10 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             <div className="border border-gray-200 p-4 rounded-md bg-white">
               <img 
                 src={qrCodeUrl} 
-                alt="QR Code PIX Mercado Pago" 
+                alt="QR Code PIX" 
                 className="h-64 w-64 object-contain mx-auto"
                 onError={(e) => {
-                  console.error("Erro ao carregar imagem do QR code");
+                  console.error("Erro ao carregar imagem do QR code", e);
                   setQrError(true);
                 }}
               />
