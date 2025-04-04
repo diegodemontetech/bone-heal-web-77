@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -53,7 +52,8 @@ export const createMercadoPagoCheckout = async (
     
     if (error) {
       console.error("Error in mercadopago-checkout call:", error);
-      throw error;
+      // Instead of throwing, fall back to PIX
+      return processPixPayment(orderId, totalAmount);
     }
     
     if (data) {
@@ -118,7 +118,8 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
     
     if (error) {
       console.error("Erro ao gerar PIX:", error);
-      throw error;
+      // Use fallback instead of throwing
+      return generateFallbackPixData(orderId, amount);
     }
     
     console.log("Resposta da função PIX:", data);

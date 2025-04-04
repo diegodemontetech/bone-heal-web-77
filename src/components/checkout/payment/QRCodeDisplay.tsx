@@ -1,202 +1,151 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Loader2, Copy, Check, AlertCircle, RefreshCw } from "lucide-react";
+import { CopyIcon, CheckIcon, ClipboardCopy, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
   pixCode: string;
   isLoading?: boolean;
-  qrCodeBase64?: string;
 }
 
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ 
   pixCode, 
-  isLoading = false,
-  qrCodeBase64
+  isLoading = false 
 }) => {
   const [copied, setCopied] = useState(false);
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [qrError, setQrError] = useState<boolean>(false);
-  const [refreshKey, setRefreshKey] = useState<number>(0);
-  
-  // Clean the PIX code - removing any potential whitespace or invalid characters
-  const cleanPixCode = (pixCode || '').trim().replace(/\s+/g, '');
-  
-  // Basic validation - PIX codes are typically long
-  const isValidPixCode = cleanPixCode.length > 10;
+  const [showCodeText, setShowCodeText] = useState(false);
+  const [qrCodeImageSrc, setQrCodeImageSrc] = useState<string | null>(null);
 
-  // Generate QR code with an explicit timestamp for cache-busting
-  const generateQRCode = useCallback(() => {
-    if (!isValidPixCode) {
-      setQrError(true);
-      console.error("Código PIX inválido ou vazio", { 
-        pixCodeLength: cleanPixCode.length,
-        pixCodeFirstChars: cleanPixCode.substring(0, 10) + "..."
-      });
-      return;
-    }
-    
-    try {
-      console.log("Tentando gerar QR Code para PIX:", { 
-        pixCodeLength: cleanPixCode.length,
-        hasBase64: !!qrCodeBase64
-      });
-      
-      // Se temos um base64 direto do MP, usamos ele primeiro
-      if (qrCodeBase64) {
-        // Se for um URL base64 completo (começando com data:)
-        if (qrCodeBase64.startsWith('data:')) {
-          console.log("Usando QR code base64 já com prefixo data:");
-          setQrCodeUrl(qrCodeBase64);
-          setQrError(false);
-          return;
-        }
-        
-        // Se for base64 puro, adicionar o prefixo data:
-        if (qrCodeBase64.match(/^[A-Za-z0-9+/=]+$/)) {
-          console.log("Convertendo base64 puro para URI de dados");
-          setQrCodeUrl(`data:image/png;base64,${qrCodeBase64}`);
-          setQrError(false);
-          return;
-        }
-      }
-      
-      // Adicionar timestamp e nonce para evitar cache
-      const timestamp = new Date().getTime();
-      const nonce = Math.floor(Math.random() * 1000000);
-      
-      console.log("Gerando QR code via Google Charts API");
-      
-      // Fallback para Google Charts API
-      const encodedContent = encodeURIComponent(cleanPixCode);
-      const googleChartUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedContent}&t=${timestamp}-${nonce}-${refreshKey}`;
-      
-      setQrCodeUrl(googleChartUrl);
-      setQrError(false);
-    } catch (error) {
-      console.error("Erro ao gerar QR code:", error);
-      setQrError(true);
-    }
-  }, [cleanPixCode, isValidPixCode, qrCodeBase64, refreshKey]);
-
-  // Generate QR code on mount and when dependencies change
   useEffect(() => {
-    generateQRCode();
-  }, [generateQRCode]);
-
-  const copyToClipboard = () => {
-    if (!isValidPixCode) {
-      toast.error("Código PIX inválido ou vazio.");
-      return;
-    }
+    // Reset state when pixel code changes
+    setCopied(false);
+    setShowCodeText(false);
     
-    navigator.clipboard.writeText(cleanPixCode)
-      .then(() => {
-        setCopied(true);
-        toast.success("Código PIX copiado!");
-        setTimeout(() => setCopied(false), 3000);
-      })
-      .catch(err => {
-        console.error("Erro ao copiar para clipboard:", err);
-        toast.error("Erro ao copiar o código PIX");
-      });
+    if (pixCode) {
+      // Check if the pixCode is a base64 image or URL
+      if (pixCode.startsWith('data:image') || pixCode.startsWith('http')) {
+        setQrCodeImageSrc(pixCode);
+      } else {
+        // Generate QR code from text if it's not an image URL
+        const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
+        setQrCodeImageSrc(qrCodeUrl);
+      }
+    }
+  }, [pixCode]);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(pixCode);
+      setCopied(true);
+      toast.success("Código PIX copiado!");
+      
+      // Reset copied state after 3 seconds
+      setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      console.error("Erro ao copiar código PIX:", error);
+      toast.error("Não foi possível copiar. Tente novamente.");
+    }
   };
 
-  const handleRetryQRCode = () => {
-    setRefreshKey(prev => prev + 1); // Force a refresh of the QR code
-    setQrError(false);
-    toast.info("Gerando novo QR code...");
-    generateQRCode();
+  const toggleCodeText = () => {
+    setShowCodeText(!showCodeText);
   };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p>Gerando código PIX...</p>
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
+        <p className="text-center text-muted-foreground">Gerando código PIX...</p>
       </div>
     );
   }
 
-  if (!isValidPixCode) {
+  if (!pixCode) {
     return (
       <div className="p-6 text-center">
-        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
-        <p className="text-red-500 font-medium">Erro ao gerar código PIX.</p>
-        <p className="text-sm text-gray-600 mt-2">
-          O código PIX recebido é inválido ou está vazio. Por favor, tente novamente ou entre em contato com o suporte.
-        </p>
+        <div className="rounded-lg bg-red-50 p-4 mb-4">
+          <p className="text-red-700">Não foi possível gerar o código PIX.</p>
+          <p className="text-sm text-red-600 mt-1">Tente novamente ou escolha outra forma de pagamento.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-0 shadow-none">
-      <CardContent className="p-0">
-        <div className="flex flex-col items-center space-y-4 p-4">
-          <h3 className="text-lg font-semibold">Pagamento PIX</h3>
-          
-          {qrCodeUrl && !qrError ? (
-            <div className="border border-gray-200 p-4 rounded-md bg-white">
-              <img 
-                src={qrCodeUrl} 
-                alt="QR Code PIX" 
-                className="h-64 w-64 object-contain mx-auto"
-                onError={(e) => {
-                  console.error("Erro ao carregar imagem do QR code:", e);
-                  setQrError(true);
-                }}
-              />
-            </div>
-          ) : (
-            <div className="border border-gray-200 p-4 rounded-md bg-white flex flex-col items-center">
-              <AlertCircle className="h-12 w-12 text-amber-500 mb-2" />
-              <p className="text-sm text-gray-600 mb-3">Erro ao carregar QR code. Use o código abaixo.</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRetryQRCode}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Tentar novamente
-              </Button>
-            </div>
-          )}
-          
-          <div className="w-full space-y-2">
-            <Label htmlFor="pix-code">Código PIX Copia e Cola</Label>
-            <div className="flex space-x-2">
-              <Input 
-                id="pix-code" 
-                value={cleanPixCode} 
-                readOnly 
-                className="font-mono text-xs bg-gray-50"
-              />
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={copyToClipboard}
-                className={copied ? "border-green-500 text-green-500" : ""}
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          
-          <div className="text-sm text-muted-foreground text-center w-full space-y-1">
-            <p>1. Abra o app do seu banco</p>
-            <p>2. Escolha pagar com PIX</p>
-            <p>3. Escaneie o QR code ou copie e cole o código</p>
-            <p>4. Confirme as informações e finalize o pagamento</p>
-          </div>
+    <div className="flex flex-col items-center p-4">
+      <div className="mb-4 text-center">
+        <h3 className="font-semibold text-lg mb-1">Pague com PIX</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Escaneie o QR code abaixo ou copie o código PIX
+        </p>
+      </div>
+      
+      {qrCodeImageSrc && (
+        <div className="border-2 border-primary/20 rounded-xl p-4 bg-primary/5 mb-4">
+          <img 
+            src={qrCodeImageSrc} 
+            alt="QR Code PIX" 
+            className="h-64 w-64 mx-auto" 
+            onError={(e) => {
+              console.error("Erro ao carregar QR code, tentando gerar novo");
+              const fallbackSrc = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
+              (e.target as HTMLImageElement).src = fallbackSrc;
+            }}
+          />
         </div>
-      </CardContent>
-    </Card>
+      )}
+      
+      <div className="w-full space-y-3">
+        <Button
+          onClick={copyToClipboard}
+          className="w-full flex items-center justify-center gap-2"
+          variant="default"
+        >
+          {copied ? (
+            <>
+              <CheckIcon className="h-4 w-4" />
+              Código Copiado!
+            </>
+          ) : (
+            <>
+              <CopyIcon className="h-4 w-4" />
+              Copiar Código PIX
+            </>
+          )}
+        </Button>
+        
+        <Button
+          onClick={toggleCodeText}
+          className="w-full flex items-center justify-center gap-2"
+          variant="outline"
+        >
+          <ClipboardCopy className="h-4 w-4" />
+          {showCodeText ? "Ocultar Código" : "Mostrar Código"}
+        </Button>
+      </div>
+      
+      {showCodeText && (
+        <div className="mt-4 w-full">
+          <div className="p-3 bg-gray-50 border rounded-md text-xs font-mono overflow-x-auto">
+            {pixCode.length > 100 
+              ? `${pixCode.substring(0, 50)}...${pixCode.substring(pixCode.length - 50)}` 
+              : pixCode}
+          </div>
+          <p className="text-xs text-center mt-2 text-muted-foreground">
+            O código completo será copiado ao clicar no botão acima
+          </p>
+        </div>
+      )}
+      
+      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100 w-full">
+        <p className="text-sm text-blue-700 text-center">
+          Após o pagamento, o pedido será processado automaticamente.
+          <br />
+          Sua compra aparecerá em "Meus Pedidos".
+        </p>
+      </div>
+    </div>
   );
 };
 

@@ -38,8 +38,10 @@ serve(async (req) => {
     
     console.log("Dados processados:", JSON.stringify(requestData));
     
-    // Extrair dados do request
-    const { orderId, items, shipping_cost, payer } = requestData;
+    // Extrair dados do request - com validação de existência
+    const { orderId, items, shipping_cost } = requestData;
+    // Tratar o caso onde payer pode ser undefined
+    const payer = requestData.payer || { email: "cliente@example.com" };
     
     if (!orderId) {
       throw new Error("orderId é obrigatório");
@@ -62,7 +64,7 @@ serve(async (req) => {
       description: `Pedido #${orderId}`,
       payment_method_id: "pix",
       payer: {
-        email: payer?.email || "cliente@example.com",
+        email: payer.email || "cliente@example.com",
         first_name: "Cliente",
         last_name: "Boneheal",
         identification: {

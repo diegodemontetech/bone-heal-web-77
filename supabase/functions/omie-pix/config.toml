@@ -7,6 +7,3 @@ allow_methods = ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
 allow_headers = ["*"]
 allow_credentials = true
 max_age = 86400
-
-[global.config]
-MP_ACCESS_TOKEN = "APP_USR-2962067149557440-061222-e69ea068e5d227259cb51e03ca536487-1414892435"
