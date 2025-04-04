@@ -20,6 +20,11 @@ const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
   }
 
   console.log(`PixPayment - Order ID: ${orderId}, Code exists: ${Boolean(pixCode)}, Image exists: ${Boolean(pixQrCodeImage)}`);
+  
+  // If the image is not available but we have a code, we'll use Google Charts API to generate one
+  if (!formattedQrCode && pixCode) {
+    console.log("No QR code image provided, will use dynamic generation via Google Charts API");
+  }
 
   return (
     <Card className="overflow-hidden">

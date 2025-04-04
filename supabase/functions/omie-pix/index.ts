@@ -90,9 +90,23 @@ serve(async (req) => {
     // Simulação de resposta do OMIE com formato compatível
     const pixCode = `00020101021226880014br.gov.bcb.pix2566qrcodes-pix.mercadopago.com/pd/v2/70c5989a-9a48-4b87-84c2-46936f9b8aa552040000530398654041.005802BR5925BONEHEAL PRODUTOS MEDICOS6009SAO PAULO62070503***6304${Math.floor(Math.random() * 10000)}`;
     const pixLink = "https://pix.boneheal.com.br/" + orderId;
-    // Gerar base64 image para QR code apenas para fins de simulação
-    const qrCodeImage = "iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAMAAAC8EZcfAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAMAUExURQAAAAICAgMDAwQEBAUFBQYGBgcHBwgICAkJCQoKCgsLCwwMDA0NDQ4ODg8PDxAQEBERERISEhMTExQUFBUVFRYWFhcXFxgYGBkZGRoaGhsbGxwcHB0dHR4eHh8fHyAgICEhISIiIiMjIyQkJCUlJSYmJicnJygoKCkpKSoqKisrKywsLC0tLS4uLi8vLzAwMDExMTIyMjMzMzQ0NDU1NTY2Njc3Nzg4ODk5OTo6Ojs7Ozw8PD09PT4+Pj8/P0BAQEFBQUJCQkNDQ0REREVFRUZGRkdHR0hISElJSUpKSktLS0xMTE1NTU5OTk9PT1BQUFFRUVJSUlNTU1RUVFVVVVZWVldXV1hYWFlZWVpaWltbW1xcXF1dXV5eXl9fX2BgYGFhYWJiYmNjY2RkZGVlZWZmZmdnZ2hoaGlpaWpqamtra2xsbG1tbW5ubm9vb3BwcHFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouLi4yMjI2NjY6Ojo+Pj5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqurq6ysrK2tra6urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvLy8zMzM3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///ywHQ3IAAAGgSURBVO4y3b8N1u2mAMCCPMf2/Z9z3TZZlmVZZnIYyCE+gAN8gAd4Aw/wCrKsVav2b25uVFW//yRZK60WgC98ZkjyHjTSCbFRoLTSh6oq0D5D5sZMIVnfrA5q2btj7Mu4lKdQVfWYbYY2FeOUj8FZozOklJI8Z29LNZUT5JQsZ+vEVE3rBDMlXdeKqYr6CVbfSKvl2hv1lnbtjaEo6tRkNBQU2jFqipYaLcYMTS6tZsTUJHqEQVMjmFdTUzOYkjZPDSRq5jP5ZshkMZPLZDWZXSazlqyWclnKZSmXBv+vfAQ5EnI85BDJkZKDKK8JObTkmpFrTK7FOYb1zJBzTs5tOQfm2ppzde8NPRbkmJFjSo45Ofb5nJ11gA4mOsjkJJST1U/mnQwcGMdCoaiDM6ZMneZpnucj6TuY6c0XTDjv1PU3jsPxOI5Ht9ttHPf77TbcrOF2nIbxdpxuxuvhPBzXsb+OfX8+nc7n09CP48d1HM/7+X1fL5f9crmc9/U8nz+nqZ/6vm/bmBTnS3e9/KbA/zLfL5/Jfrqe+2G4DcPH/fVu/PU0vQ4/I376B9t3dAM7YQQ6AAAAAElFTkSuQmCC";
     
+    // Gerar QR code usando Google Charts API
+    const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=L|0`;
+    
+    // Converter para base64 (simulando)
+    const qrCodeImage = await fetch(qrCodeUrl)
+      .then(response => response.arrayBuffer())
+      .then(buffer => {
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        return base64;
+      })
+      .catch(error => {
+        console.error("Erro ao gerar QR code:", error);
+        // Usar uma imagem de QR code pré-definida como fallback
+        return "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAMAUExURQAAAAICAgMDAwQEBAUFBQYGBgcHBwgICAkJCQoKCgsLCwwMDA0NDQ4ODg8PDxAQEBERERISEhMTExQUFBUVFRYWFhcXFxgYGBkZGRoaGhsbGxwcHB0dHR4eHh8fHyAgICEhISIiIiMjIyQkJCUlJSYmJicnJygoKCkpKSoqKisrKywsLC0tLS4uLi8vLzAwMDExMTIyMjMzMzQ0NDU1NTY2Njc3Nzg4ODk5OTo6Ojs7Ozw8PD09PT4+Pj8/P0BAQEFBQUJCQkNDQ0REREVFRUZGRkdHR0hISElJSUpKSktLS0xMTE1NTU5OTk9PT1BQUFFRUVJSUlNTU1RUVFVVVVZWVldXV1hYWFlZWVpaWltbW1xcXF1dXV5eXl9fX2BgYGFhYWJiYmNjY2RkZGVlZWZmZmdnZ2hoaGlpaWpqamtra2xsbG1tbW5ubm9vb3BwcHFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouLi4yMjI2NjY6Ojo+Pj5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqurq6ysrK2tra6urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvLy8zMzM3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///ywHQ3IAAAGgSURBVO4y3b8N1u2mAMCCPMf2/Z9z3TZZlmVZZnIYyCE+gAN8gAd4Aw/wCrKsVav2b25uVFW//yRZK60WgC98ZkjyHjTSCbFRoLTSh6oq0D5D5sZMIVnfrA5q2btj7Mu4lKdQVfWYbYY2FeOUj8FZozOklJI8Z29LNZUT5JQsZ+vEVE3rBDMlXdeKqYr6CVbfSKvl2hv1lnbtjaEo6tRkNBQU2jFqipYaLcYMTS6tZsTUJHqEQVMjmFdTUzOYkjZPDSRq5jP5ZshkMZPLZDWZXSazlqyWclnKZSmXBv+vfAQ5EnI85BDJkZKDKK8JObTkmpFrTK7FOYb1zJBzTs5tOQfm2ppzde8NPRbkmJFjSo45Ofb5nJ11gA4mOsjkJJST1U/mnQwcGMdCoaiDM6ZMneZpnucj6TuY6c0XTDjv1PU3jsPxOI5Ht9ttHPf77TbcrOF2nIbxdpxuxuvhPBzXsb+OfX8+nc7n09CP48d1HM/7+X1fL5f9crmc9/U8nz+nqZ/6vm/bmBTnS3e9/KbA/zLfL5/Jfrqe+2G4DcPH/fVu/PU0vQ4/I376B9t3dAM7YQQ6AAAAAElFTkSuQmCC";
+      });
+
     const omieData: OmiePixResponse = {
       codigo_status: "0",
       codigo_status_processamento: "0",

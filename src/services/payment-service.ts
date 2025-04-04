@@ -52,6 +52,13 @@ export const createMercadoPagoCheckout = async (
     }
 
     console.log("Mercado Pago checkout response:", data);
+    
+    // Ensure response has the correct format
+    if (data && !data.qr_code && data.point_of_interaction?.transaction_data?.qr_code) {
+      data.qr_code = data.point_of_interaction.transaction_data.qr_code;
+      data.qr_code_base64 = data.point_of_interaction.transaction_data.qr_code_base64;
+    }
+    
     return data;
   } catch (error) {
     console.error("Error in createMercadoPagoCheckout:", error);
@@ -66,11 +73,14 @@ export const createMercadoPagoCheckout = async (
 const generateFallbackPixData = (orderId: string) => {
   // This is a sample PIX QR code that's actually valid for display purposes
   // In a real environment, this would be replaced with actual QR code generation
-  const samplePixQrCode = "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";
+  const samplePixQrCode = "iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAMAUExURQAAAAICAgMDAwQEBAUFBQYGBgcHBwgICAkJCQoKCgsLCwwMDA0NDQ4ODg8PDxAQEBERERISEhMTExQUFBUVFRYWFhcXFxgYGBkZGRoaGhsbGxwcHB0dHR4eHh8fHyAgICEhISIiIiMjIyQkJCUlJSYmJicnJygoKCkpKSoqKisrKywsLC0tLS4uLi8vLzAwMDExMTIyMjMzMzQ0NDU1NTY2Njc3Nzg4ODk5OTo6Ojs7Ozw8PD09PT4+Pj8/P0BAQEFBQUJCQkNDQ0REREVFRUZGRkdHR0hISElJSUpKSktLS0xMTE1NTU5OTk9PT1BQUFFRUVJSUlNTU1RUVFVVVVZWVldXV1hYWFlZWVpaWltbW1xcXF1dXV5eXl9fX2BgYGFhYWJiYmNjY2RkZGVlZWZmZmdnZ2hoaGlpaWpqamtra2xsbG1tbW5ubm9vb3BwcHFxcXJycnNzc3R0dHV1dXZ2dnd3d3h4eHl5eXp6ent7e3x8fH19fX5+fn9/f4CAgIGBgYKCgoODg4SEhIWFhYaGhoeHh4iIiImJiYqKiouLi4yMjI2NjY6Ojo+Pj5CQkJGRkZKSkpOTk5SUlJWVlZaWlpeXl5iYmJmZmZqampubm5ycnJ2dnZ6enp+fn6CgoKGhoaKioqOjo6SkpKWlpaampqenp6ioqKmpqaqqqqurq6ysrK2tra6urq+vr7CwsLGxsbKysrOzs7S0tLW1tba2tre3t7i4uLm5ubq6uru7u7y8vL29vb6+vr+/v8DAwMHBwcLCwsPDw8TExMXFxcbGxsfHx8jIyMnJycrKysvLy8zMzM3Nzc7Ozs/Pz9DQ0NHR0dLS0tPT09TU1NXV1dbW1tfX19jY2NnZ2dra2tvb29zc3N3d3d7e3t/f3+Dg4OHh4eLi4uPj4+Tk5OXl5ebm5ufn5+jo6Onp6erq6uvr6+zs7O3t7e7u7u/v7/Dw8PHx8fLy8vPz8/T09PX19fb29vf39/j4+Pn5+fr6+vv7+/z8/P39/f7+/v///ywHQ3IAAAGgSURBVO4y3b8N1u2mAMCCPMf2/Z9z3TZZlmVZZnIYyCE+gAN8gAd4Aw/wCrKsVav2b25uVFW//yRZK60WgC98ZkjyHjTSCbFRoLTSh6oq0D5D5sZMIVnfrA5q2btj7Mu4lKdQVfWYbYY2FeOUj8FZozOklJI8Z29LNZUT5JQsZ+vEVE3rBDMlXdeKqYr6CVbfSKvl2hv1lnbtjaEo6tRkNBQU2jFqipYaLcYMTS6tZsTUJHqEQVMjmFdTUzOYkjZPDSRq5jP5ZshkMZPLZDWZXSazlqyWclnKZSmXBv+vfAQ5EnI85BDJkZKDKK8JObTkmpFrTK7FOYb1zJBzTs5tOQfm2ppzde8NPRbkmJFjSo45Ofb5nJ11gA4mOsjkJJST1U/mnQwcGMdCoaiDM6ZMneZpnucj6TuY6c0XTDjv1PU3jsPxOI5Ht9ttHPf77TbcrOF2nIbxdpxuxuvhPBzXsb+OfX8+nc7n09CP48d1HM/7+X1fL5f9crmc9/U8nz+nqZ/6vm/bmBTnS3e9/KbA/zLfL5/Jfrqe+2G4DcPH/fVu/PU0vQ4/I376B9t3dAM7YQQ6AAAAAElFTkSuQmCC";
+  
+  // Create a more realistic PIX code (actual PIX codes follow a similar format)
+  const pixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
   
   return {
     qr_code: `data:image/png;base64,${samplePixQrCode}`,
-    qr_code_text: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3",
+    qr_code_text: pixCode,
     order_id: orderId
   };
 };
@@ -102,8 +112,13 @@ export const processPixPayment = async (orderId: string, amount: number) => {
     if (data.pixQrCodeImage && !data.pixQrCodeImage.startsWith('data:image')) {
       data.pixQrCodeImage = `data:image/png;base64,${data.pixQrCodeImage}`;
     }
-
-    return data;
+    
+    // Format return data to match the expected structure
+    return {
+      qr_code: data.pixQrCodeImage,
+      qr_code_text: data.pixCode,
+      order_id: orderId
+    };
   } catch (error) {
     console.error("Error in processPixPayment:", error);
     // Return mock data for testing purposes

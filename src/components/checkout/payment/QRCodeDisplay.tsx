@@ -55,40 +55,54 @@ const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
     pixData.startsWith('data:image/jpg;base64,')
   );
 
-  console.log("QR Code data received:", isValidQrCode ? "Valid QR code image" : "Invalid QR code image", 
+  console.log("QR Code data received:", isValidQrCode ? "Valid QR code image" : "Invalid or missing QR code image", 
     pixData ? pixData.substring(0, 50) + "..." : "No QR code data");
+
+  // Attempt to generate QR code dynamically if needed
+  const qrCodeUrl = isValidQrCode ? pixData : 
+    `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=L|0`;
 
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="text-center mb-2">
         <h3 className="font-medium text-lg mb-1">Pagamento PIX</h3>
         <p className="text-sm text-muted-foreground">
-          {isValidQrCode 
-            ? "Escaneie o QR code abaixo ou copie o código PIX" 
-            : "Copie o código PIX abaixo para pagamento"}
+          Escaneie o QR code abaixo ou copie o código PIX
         </p>
       </div>
       
-      {isValidQrCode ? (
-        <div className="bg-white p-4 rounded-lg border flex justify-center">
+      <div className="bg-white p-4 rounded-lg border flex justify-center items-center">
+        {isValidQrCode ? (
           <img 
             src={pixData} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
             onError={(e) => {
-              console.error("Error loading QR code image:", e);
-              // Set a fallback alt text if image fails to load
-              e.currentTarget.alt = "QR Code não disponível";
-              // Hide the broken image
-              e.currentTarget.style.display = "none";
+              console.error("Error loading provided QR code image, falling back to generated QR code");
+              e.currentTarget.src = qrCodeUrl;
             }}
           />
-        </div>
-      ) : (
-        <div className="bg-gray-100 p-4 rounded-lg border flex justify-center items-center h-48 w-48">
-          <p className="text-sm text-gray-500 text-center">QR Code não disponível.<br/>Use o código abaixo.</p>
-        </div>
-      )}
+        ) : (
+          <img 
+            src={qrCodeUrl}
+            alt="QR Code do PIX" 
+            className="h-48 w-48"
+            onError={(e) => {
+              console.error("Error loading generated QR code image");
+              e.currentTarget.alt = "QR Code não disponível";
+              e.currentTarget.style.display = "none";
+              // Show fallback text
+              const parent = e.currentTarget.parentElement;
+              if (parent) {
+                const fallback = document.createElement('p');
+                fallback.textContent = "QR Code não disponível. Use o código abaixo.";
+                fallback.className = "text-sm text-gray-500 text-center";
+                parent.appendChild(fallback);
+              }
+            }}
+          />
+        )}
+      </div>
       
       <Card className="w-full">
         <CardContent className="pt-4">
