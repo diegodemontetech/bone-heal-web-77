@@ -36,8 +36,9 @@ export function useCheckout() {
       return;
     }
 
-    // Log shipping fee to debug
-    console.log("Shipping fee at checkout:", shippingFee);
+    // Ensure shippingFee is a number and log it for debugging
+    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
+    console.log("Shipping fee at checkout (numeric):", numericShippingFee);
 
     // Verificação de autenticação
     try {
@@ -72,18 +73,20 @@ export function useCheckout() {
       setLoading(true);
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
-      // Salvar o pedido no banco de dados
-      await saveOrder(orderId!, cartItems, shippingFee, discount, zipCode, paymentMethod, appliedVoucher);
+      // Salvar o pedido no banco de dados com o valor correto do frete
+      await saveOrder(orderId!, cartItems, numericShippingFee, discount, zipCode, paymentMethod, appliedVoucher);
       console.log("Pedido salvo com sucesso no banco de dados");
       
       // Criar a preferência de pagamento no Mercado Pago
       if (paymentMethod === 'pix') {
+        let pixGenerated = false;
+        
         try {
           // Primeiro tenta o Mercado Pago
           const mpResponse = await createMercadoPagoCheckout(
             orderId!, 
             cartItems, 
-            shippingFee, 
+            numericShippingFee, 
             discount
           );
           
@@ -91,15 +94,22 @@ export function useCheckout() {
           
           if (mpResponse) {
             setCheckoutData(mpResponse);
+            pixGenerated = true;
           }
         } catch (mpError) {
           console.error("Erro ao criar checkout do Mercado Pago:", mpError);
-          
-          // Fallback para a função Omie PIX se o Mercado Pago falhar
+          // Falha do Mercado Pago - continuamos para o fallback Omie
+        }
+        
+        // Se o MP falhou, tentamos o Omie PIX
+        if (!pixGenerated) {
           try {
             console.log("Tentando gerar PIX pelo Omie...");
             const { data: omiePix, error: omieError } = await supabase.functions.invoke("omie-pix", {
-              body: { orderId: orderId }
+              body: { 
+                orderId: orderId,
+                amount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + numericShippingFee - discount
+              }
             });
             
             if (omieError) {
@@ -115,13 +125,17 @@ export function useCheckout() {
                 qr_code: omiePix.pixQrCodeImage || "",
                 qr_code_text: omiePix.pixCode || ""
               });
-            } else {
-              toast.error("Erro ao gerar o código PIX. Tente novamente.");
+              pixGenerated = true;
             }
           } catch (omieError) {
             console.error("Erro completo ao gerar PIX pelo Omie:", omieError);
             toast.error("Erro ao gerar o código PIX. Tente novamente.");
           }
+        }
+
+        // Se ambos os métodos falharam, exibir erro
+        if (!pixGenerated) {
+          toast.error("Não foi possível gerar o código PIX. Por favor, tente novamente mais tarde ou escolha outra forma de pagamento.");
         }
       }
       

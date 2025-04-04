@@ -27,6 +27,7 @@ const Checkout = () => {
   const hasLoadedProfileRef = useRef(false);
   const [shippingCalculated, setShippingCalculated] = useState(false);
   const shippingCalculationAttempted = useRef(false);
+  const autoShippingCalculated = useRef(false);
   
   // Shipping and payment states
   const { paymentMethod, setPaymentMethod, checkoutData, loading, handleCheckout, orderId } = useCheckout();
@@ -74,11 +75,19 @@ const Checkout = () => {
             console.log('Setting zip code from profile:', cleanZipCode);
             
             // Automatically calculate shipping if we have a valid zipcode
-            if (!shippingCalculationAttempted.current) {
-              shippingCalculationAttempted.current = true;
-              calculateShipping(cleanZipCode);
-              setShippingCalculated(true);
-              console.log('Auto-calculating shipping with profile zipcode');
+            if (!autoShippingCalculated.current) {
+              autoShippingCalculated.current = true;
+              try {
+                console.log('Auto-calculating shipping with profile zipcode');
+                const result = await calculateShipping(cleanZipCode);
+                if (result.success) {
+                  setShippingCalculated(true);
+                  shippingCalculationAttempted.current = true;
+                  toast.success("Frete calculado automaticamente");
+                }
+              } catch (error) {
+                console.error("Erro ao calcular frete automaticamente:", error);
+              }
             }
           }
         }
@@ -112,16 +121,45 @@ const Checkout = () => {
       // If we have a valid zip code but haven't calculated shipping yet, do it automatically
       if (zipCode && zipCode.length === 8 && !shippingCalculated && !shippingCalculationAttempted.current) {
         shippingCalculationAttempted.current = true;
-        calculateShipping(zipCode);
-        setShippingCalculated(true);
-        // Show a message to the user
-        toast.info("Calculando frete automaticamente...");
+        calculateShipping(zipCode).then(result => {
+          if (result.success) {
+            setShippingCalculated(true);
+            // Show a message to the user
+            toast.success("Frete calculado automaticamente");
+            // Try again after shipping is calculated
+            setTimeout(() => handleProcessPayment(), 500);
+          }
+        });
         // Return early to wait for shipping calculation
         return;
       } else if (!zipCode || zipCode.length !== 8) {
         toast.error("É necessário ter um CEP válido para finalizar a compra");
         return;
+      } else if (!shippingFee || shippingFee <= 0) {
+        toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
+        return;
       }
+    }
+
+    // Ensure we have a valid shipping fee
+    if (!shippingFee || shippingFee <= 0) {
+      if (selectedShippingRate) {
+        const numericRate = parseFloat(String(selectedShippingRate.rate));
+        if (!isNaN(numericRate) && numericRate > 0) {
+          // Use the rate from the selected shipping option if shippingFee is not set correctly
+          handleCheckout(
+            cartItems,
+            zipCode,
+            numericRate,
+            discount,
+            appliedVoucher
+          );
+          return;
+        }
+      }
+      
+      toast.error("Erro ao calcular o frete. Por favor, tente novamente.");
+      return;
     }
     
     handleCheckout(
@@ -171,7 +209,7 @@ const Checkout = () => {
                   discount={discount}
                   loading={loading}
                   isLoggedIn={hasValidSession}
-                  hasZipCode={Boolean(zipCode && zipCode.length === 8)}
+                  hasZipCode={Boolean(zipCode && zipCode.length === 8 && shippingFee > 0)}
                   onCheckout={handleProcessPayment}
                   deliveryDate={deliveryDate}
                   paymentMethod={paymentMethod}

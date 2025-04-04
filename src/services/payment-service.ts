@@ -10,8 +10,12 @@ export const createMercadoPagoCheckout = async (
   discount: number
 ) => {
   try {
+    // Ensure shippingFee is numeric
+    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
+    console.log("Mercado Pago checkout - shipping fee:", numericShippingFee);
+    
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-    const total = Math.max(0, subtotal + shippingFee - discount);
+    const total = Math.max(0, subtotal + numericShippingFee - discount);
     
     // Verificar autenticação
     const { data: sessionData } = await supabase.auth.getSession();
@@ -51,7 +55,7 @@ export const createMercadoPagoCheckout = async (
       body: {
         orderId,
         items,
-        shipping_cost: shippingFee,
+        shipping_cost: numericShippingFee,
         discount: discount,
         payment_method: 'pix',
         payer,
@@ -62,15 +66,54 @@ export const createMercadoPagoCheckout = async (
     
     console.log("Resposta do checkout MP:", data, error);
     
-    if (error) throw error;
+    if (error) {
+      console.error("Erro do Mercado Pago:", error);
+      throw error;
+    }
     
     if (!data) {
+      console.error("Dados do Mercado Pago não retornados");
       throw new Error("Não foi possível gerar o checkout");
     }
     
     return data;
   } catch (error) {
     console.error("Erro ao criar checkout do Mercado Pago:", error);
+    throw error;
+  }
+};
+
+// Função para gerar PIX via Omie
+export const generateOmiePix = async (
+  orderId: string,
+  total: number
+) => {
+  try {
+    console.log("Gerando PIX via Omie para ordem:", orderId, "valor:", total);
+    
+    const { data, error } = await supabase.functions.invoke("omie-pix", {
+      body: { 
+        orderId: orderId,
+        amount: total
+      }
+    });
+    
+    if (error) {
+      console.error("Erro ao gerar PIX via Omie:", error);
+      throw error;
+    }
+    
+    if (!data || (!data.pixCode && !data.pixLink)) {
+      console.error("Dados do Omie PIX não retornados ou inválidos");
+      throw new Error("Não foi possível gerar o código PIX");
+    }
+    
+    return {
+      qr_code: data.pixQrCodeImage || "",
+      qr_code_text: data.pixCode || ""
+    };
+  } catch (error) {
+    console.error("Erro ao gerar PIX via Omie:", error);
     throw error;
   }
 };

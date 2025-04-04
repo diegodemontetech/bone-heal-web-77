@@ -45,7 +45,7 @@ const OrderTotal = ({
     setSubtotal(newSubtotal);
     
     // Ensure shippingFee is a number
-    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : 0;
+    const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
     console.log('Shipping fee in OrderTotal:', numericShippingFee);
     
     setTotal(newSubtotal + numericShippingFee - discount);
@@ -156,7 +156,7 @@ const OrderTotal = ({
         ) : (
           <QRCodeDisplay 
             pixData={checkoutData.qr_code} 
-            pixCode={checkoutData.qr_code_text}
+            pixCode={checkoutData.qr_code_text || ""}
           />
         )}
         

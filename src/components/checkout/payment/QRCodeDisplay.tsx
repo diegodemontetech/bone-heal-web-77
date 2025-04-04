@@ -26,7 +26,9 @@ const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
       <div className="text-center mb-2">
         <h3 className="font-medium text-lg mb-1">Pagamento PIX</h3>
         <p className="text-sm text-muted-foreground">
-          Escaneie o QR code abaixo ou copie o código PIX
+          {pixData 
+            ? "Escaneie o QR code abaixo ou copie o código PIX" 
+            : "Copie o código PIX abaixo para pagamento"}
         </p>
       </div>
       
@@ -59,7 +61,7 @@ const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
       </Card>
       
       <div className="text-center text-sm text-muted-foreground">
-        <p>O QR Code expira em 30 minutos.</p>
+        <p>O código PIX expira em 30 minutos.</p>
         <p>Após o pagamento, você receberá a confirmação por email.</p>
       </div>
     </div>
