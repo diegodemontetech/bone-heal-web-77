@@ -6,12 +6,11 @@ import { Copy, AlertTriangle, CheckCircle, Loader2, RefreshCw } from "lucide-rea
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
-  pixData?: string;  // base64 encoded QR code image or URL (optional)
-  pixCode: string;   // PIX code/copia e cola
+  pixCode: string;   // PIX code text
   isLoading?: boolean;
 }
 
-const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayProps) => {
+const QRCodeDisplay = ({ pixCode, isLoading = false }: QRCodeDisplayProps) => {
   const [copied, setCopied] = useState(false);
   const [qrImgSrc, setQrImgSrc] = useState<string | null>(null);
   const [qrImgError, setQrImgError] = useState(false);
@@ -37,13 +36,13 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
   };
 
   // Generate QR code using Google Charts API
-  const generateQRCode = (text: string) => {
-    if (!text) return null;
+  const generateQRCode = () => {
+    if (!pixCode) return null;
     
     try {
       // Add cache buster to prevent caching issues
       const timestamp = new Date().getTime();
-      const encodedText = encodeURIComponent(text);
+      const encodedText = encodeURIComponent(pixCode);
       return `https://chart.googleapis.com/chart?cht=qr&chl=${encodedText}&chs=300x300&chld=H|0&t=${timestamp}`;
     } catch (error) {
       console.error("Error generating QR code URL:", error);
@@ -56,11 +55,8 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
     setQrImgError(false);
     
     setTimeout(() => {
-      // Generate a new QR code
-      if (pixCode) {
-        const newQrCode = generateQRCode(pixCode);
-        setQrImgSrc(newQrCode);
-      }
+      const newQrCode = generateQRCode();
+      setQrImgSrc(newQrCode);
       setIsRefreshing(false);
     }, 500);
   };
@@ -76,8 +72,7 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
     console.log("Generating QR code for PIX code", pixCode.substring(0, 20) + "...");
     setQrImgError(false);
     
-    // Generate QR code using Google Charts
-    const newQrCode = generateQRCode(pixCode);
+    const newQrCode = generateQRCode();
     setQrImgSrc(newQrCode);
   }, [pixCode]);
 
@@ -137,7 +132,7 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
             src={qrImgSrc} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
-            onError={(e) => {
+            onError={() => {
               console.error("Error loading QR code image");
               setQrImgError(true);
               // Try regenerating with a slight delay

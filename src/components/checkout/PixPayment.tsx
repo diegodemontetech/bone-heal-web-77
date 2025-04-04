@@ -6,11 +6,10 @@ import { toast } from "sonner";
 
 interface PixPaymentProps {
   pixCode: string;
-  pixQrCodeImage?: string;
   orderId: string;
 }
 
-const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
+const PixPayment = ({ pixCode, orderId }: PixPaymentProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [processedPixCode, setProcessedPixCode] = useState(pixCode);
   
@@ -29,27 +28,8 @@ const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
     });
     
     // Provide a clean PIX code to the QR code display
-    // Remove any additional data or prefixes that might be present
-    let cleanPixCode = pixCode;
-    
-    // If code is too short, generate a valid PIX code
-    if (cleanPixCode.length < 20) {
-      const merchantName = "BONEHEAL MED";
-      const merchantCity = "SAO PAULO";
-      const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
-      const txId = `${dateStr}${orderId.substring(0, 12).replace(/-/g, '')}`;
-      
-      // Create a valid PIX payload in BR Code EMV standard
-      cleanPixCode = [
-        "00020126",                                  
-        "5204000053039865802BR",                     
-        `5913${merchantName}6009${merchantCity}`,    
-        `62${String(txId.length + 4).padStart(2, '0')}05${txId}`, 
-        "6304"                                      
-      ].join('');
-    }
-    
-    setProcessedPixCode(cleanPixCode);
+    // If it seems to be valid
+    setProcessedPixCode(pixCode);
     setIsLoading(false);
   }, [pixCode, orderId]);
 

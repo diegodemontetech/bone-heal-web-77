@@ -24,7 +24,7 @@ const PaymentSection = ({
   checkoutData,
   orderId
 }: PaymentSectionProps) => {
-  // Defina o método de pagamento como "pix" por padrão se nenhum estiver selecionado
+  // Set payment method to "pix" by default if none is selected
   useEffect(() => {
     if (!paymentMethod) {
       setPaymentMethod('pix');
@@ -33,19 +33,12 @@ const PaymentSection = ({
 
   // If we already have payment data (QR code for PIX, etc.), show the corresponding section
   if (checkoutData && paymentMethod === 'pix' && orderId) {
-    // Get the PIX code - support different response formats
-    let pixCode = '';
-    
-    // Try to get the PIX code from different possible locations in the response
-    if (checkoutData.qr_code_text) {
-      pixCode = checkoutData.qr_code_text;
-    } else if (checkoutData.pixCode) {
-      pixCode = checkoutData.pixCode;
-    } else if (checkoutData.point_of_interaction?.transaction_data?.qr_code) {
-      pixCode = checkoutData.point_of_interaction.transaction_data.qr_code;
-    } else if (checkoutData.qr_code) {
-      pixCode = checkoutData.qr_code;
-    }
+    // Get the PIX code from various possible response formats
+    const pixCode = checkoutData.qr_code_text || 
+                   checkoutData.pixCode || 
+                   (checkoutData.point_of_interaction?.transaction_data?.qr_code) || 
+                   checkoutData.qr_code || 
+                   '';
     
     // Ensure we have a non-empty PIX code
     if (pixCode) {
