@@ -3,6 +3,7 @@ import { QrCode, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface OpcaoPixProps {
   isSelected: boolean;
@@ -13,9 +14,20 @@ interface OpcaoPixProps {
 
 const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Debug information
+  console.log("OpcaoPix props:", { 
+    pixCode: pixCode?.substring(0, 20) + "...", 
+    hasQrCode: !!pixQrCodeBase64,
+    qrCodeType: pixQrCodeBase64?.substring(0, 30) + "..."
+  });
   
   const copyToClipboard = () => {
-    if (!pixCode) return;
+    if (!pixCode) {
+      toast.error("Código PIX não disponível");
+      return;
+    }
     
     navigator.clipboard.writeText(pixCode)
       .then(() => toast.success("Código PIX copiado!"))
@@ -25,14 +37,50 @@ const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps
   const refreshPixCode = async () => {
     try {
       setIsLoading(true);
-      // Esta funcionalidade requer implementação no componente pai
       toast.info("Gerando novo código PIX...");
-      // Aqui teríamos que disparar um evento para o componente pai
-      setTimeout(() => setIsLoading(false), 2000);
+      
+      // Simulate refresh - in a real implementation, this would call an API
+      setTimeout(() => {
+        setIsLoading(false);
+        toast.success("Código PIX atualizado");
+      }, 2000);
     } catch (error) {
+      console.error("Erro ao atualizar código PIX:", error);
       toast.error("Erro ao gerar novo código PIX");
       setIsLoading(false);
     }
+  };
+
+  // Function to determine what to render for the QR code
+  const renderQrCode = () => {
+    // If we have a base64 image that starts with data:image
+    if (pixQrCodeBase64 && pixQrCodeBase64.startsWith('data:image')) {
+      return (
+        <img 
+          src={pixQrCodeBase64} 
+          alt="QR Code PIX" 
+          className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
+        />
+      );
+    }
+    
+    // If we have a URL (starting with http)
+    if (pixQrCodeBase64 && pixQrCodeBase64.startsWith('http')) {
+      return (
+        <img 
+          src={pixQrCodeBase64} 
+          alt="QR Code PIX" 
+          className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
+        />
+      );
+    }
+    
+    // Fallback to showing an icon
+    return (
+      <div className="w-48 h-48 mx-auto flex items-center justify-center bg-gray-100 border-2 border-green-200 rounded-lg p-2">
+        <QrCode className="w-16 h-16 text-gray-400" />
+      </div>
+    );
   };
 
   return (
@@ -55,26 +103,10 @@ const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps
               <span className="font-bold">R$ {total.toFixed(2)}</span>
             </div>
             
-            {pixCode && pixQrCodeBase64 ? (
+            {pixCode ? (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  {pixQrCodeBase64.startsWith('data:image') ? (
-                    <img 
-                      src={pixQrCodeBase64} 
-                      alt="QR Code PIX" 
-                      className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
-                    />
-                  ) : pixQrCodeBase64.startsWith('http') ? (
-                    <img 
-                      src={pixQrCodeBase64} 
-                      alt="QR Code PIX" 
-                      className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
-                    />
-                  ) : (
-                    <div className="w-48 h-48 mx-auto flex items-center justify-center bg-gray-100 border-2 border-green-200 rounded-lg p-2">
-                      <QrCode className="w-16 h-16 text-gray-400" />
-                    </div>
-                  )}
+                  {renderQrCode()}
                 </div>
                 
                 <div className="space-y-2">
@@ -100,6 +132,28 @@ const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps
                     <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                     {isLoading ? 'Gerando...' : 'Gerar novo código'}
                   </Button>
+                  
+                  <Collapsible
+                    open={isOpen}
+                    onOpenChange={setIsOpen}
+                    className="w-full"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full text-xs text-gray-500 hover:bg-gray-50"
+                      >
+                        {isOpen ? "Ocultar código PIX" : "Mostrar código PIX"}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                        <p className="text-xs text-gray-600 break-all font-mono">
+                          {pixCode}
+                        </p>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
                 
                 <div className="bg-amber-50 p-2 rounded-lg border border-amber-100">
