@@ -6,7 +6,7 @@ import { Copy, AlertTriangle, CheckCircle, Loader2, RefreshCw } from "lucide-rea
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
-  pixData?: string;  // base64 encoded QR code image or URL
+  pixData?: string;  // base64 encoded QR code image or URL (optional)
   pixCode: string;   // PIX code/copia e cola
   isLoading?: boolean;
 }
@@ -36,7 +36,7 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
       });
   };
 
-  // Generate QR code using Google Charts API - directly using the API for reliability
+  // Generate QR code using Google Charts API
   const generateGoogleQRCode = () => {
     if (!pixCode) return null;
     
@@ -49,7 +49,7 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
     setIsRefreshing(true);
     setQrImgError(false);
     
-    // Always use Google Charts for generating QR code
+    // Generate a new QR code with Google Charts
     const googleQRCode = generateGoogleQRCode();
     if (googleQRCode) {
       setQrImgSrc(googleQRCode);
@@ -60,37 +60,20 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
 
   // Update QR code when data changes
   useEffect(() => {
-    console.log("QRCodeDisplay: Updating QR code display");
+    console.log("QRCodeDisplay: Updating QR code display with pixCode:", pixCode?.substring(0, 20) + "...");
     setQrImgError(false);
     
-    // Always try to generate QR code with Google Charts first - most reliable method
+    // Always generate QR code with Google Charts - most reliable method
     const googleQRCode = generateGoogleQRCode();
     
     if (googleQRCode) {
       console.log("Using Google Charts QR code");
       setQrImgSrc(googleQRCode);
-      return;
-    }
-    
-    // If we couldn't generate QR code with Google Charts, try to use pixData
-    if (pixData) {
-      console.log("Using provided pixData");
-      
-      // Clean up pixData to ensure it's a valid URL or data URL
-      if (pixData.startsWith('http') || pixData.startsWith('data:')) {
-        setQrImgSrc(pixData);
-      } else if (pixData.length > 100 && !pixData.includes(' ')) {
-        // Likely a base64 string without data: prefix
-        setQrImgSrc(`data:image/png;base64,${pixData}`);
-      } else {
-        // For other cases, try to use as is
-        setQrImgSrc(pixData);
-      }
     } else {
       console.log("No valid QR code data available");
       setQrImgSrc(null);
     }
-  }, [pixData, pixCode]);
+  }, [pixCode]);
 
   // Show loading state while image is being processed
   if (isLoading) {
@@ -152,15 +135,10 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
               console.error("Error loading QR code image, trying fallback method");
               setQrImgError(true);
               
-              // Try to generate QR code with Google Charts API when image fails to load
-              const googleQRCode = generateGoogleQRCode();
-              if (googleQRCode) {
-                // Use a setTimeout to avoid potential infinite rerender loop
-                setTimeout(() => {
-                  setQrImgSrc(googleQRCode);
-                  setQrImgError(false);
-                }, 100);
-              }
+              // Try regenerating the QR code
+              setTimeout(() => {
+                refreshQRCode();
+              }, 100);
             }}
           />
         ) : isRefreshing ? (

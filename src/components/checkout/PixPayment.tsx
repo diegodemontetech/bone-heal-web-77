@@ -11,43 +11,31 @@ interface PixPaymentProps {
 }
 
 const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
-  const [formattedQrCode, setFormattedQrCode] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Efeito para processar o QR code e a imagem
+  // Effect to process QR code data
   useEffect(() => {
-    setIsLoading(true);
-    
-    console.log("PixPayment - Processando dados PIX:", { 
-      hasCode: Boolean(pixCode), 
-      hasImage: Boolean(pixQrCodeImage),
-      codeLength: pixCode?.length || 0
-    });
-    
-    // Verificar se temos código PIX
     if (!pixCode) {
-      console.error("Código PIX não fornecido");
+      console.error("PIX code not provided");
       toast.error("Erro ao gerar código PIX. Por favor, tente novamente.");
       setIsLoading(false);
       return;
     }
-
-    // Gerar QR code diretamente usando Google Charts API para maior confiabilidade
-    const timestamp = new Date().getTime();
-    const googleQrCode = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&t=${timestamp}`;
-    console.log("QR code do Google gerado:", googleQrCode.substring(0, 100) + "...");
     
-    // Definir o QR code formatado e finalizar carregamento
-    setFormattedQrCode(googleQrCode);
+    console.log("PIX Payment - Processing PIX data:", { 
+      hasCode: Boolean(pixCode), 
+      codeLength: pixCode?.length || 0
+    });
+    
+    // Set loading to false as we have the necessary data
     setIsLoading(false);
-  }, [pixCode, pixQrCodeImage]);
+  }, [pixCode]);
 
   return (
     <Card className="overflow-hidden">
       <div className="p-6">
         <QRCodeDisplay 
           pixCode={pixCode} 
-          pixData={formattedQrCode} 
           isLoading={isLoading}
         />
         

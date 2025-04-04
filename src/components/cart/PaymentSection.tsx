@@ -1,4 +1,3 @@
-
 import { CreditCard, QrCode, FileText } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -33,15 +32,22 @@ const PaymentSection = ({
 
   // If we already have payment data (QR code for PIX, etc.), show the corresponding section
   if (checkoutData && paymentMethod === 'pix' && orderId) {
-    const pixCode = checkoutData?.point_of_interaction?.transaction_data?.qr_code;
-    const pixQrCodeImage = checkoutData?.point_of_interaction?.transaction_data?.qr_code_base64;
+    // Get the PIX code - support different response formats
+    const pixCode = checkoutData.pixCode || 
+                    checkoutData.qr_code_text || 
+                    checkoutData.point_of_interaction?.transaction_data?.qr_code;
     
     if (pixCode) {
+      console.log("Exibindo informações de pagamento PIX:", { 
+        hasPixCode: Boolean(pixCode),
+        codeLength: pixCode?.length || 0,
+        orderId
+      });
+      
       return (
         <div className="space-y-6">
           <PixPayment 
             pixCode={pixCode} 
-            pixQrCodeImage={pixQrCodeImage}
             orderId={orderId}
           />
         </div>

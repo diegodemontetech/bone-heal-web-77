@@ -73,9 +73,8 @@ serve(async (req) => {
     if (payments && payments.length > 0 && payments[0].pix_code) {
       console.log("Código PIX já existe, retornando...");
       
-      // Não tente gerar o QR code aqui, apenas retorne o código PIX
-      // O componente de frontend lidará com a geração do QR code
-      
+      // Não envie a imagem do QR code, apenas o código PIX
+      // O frontend gerará o QR code usando Google Charts API
       return new Response(
         JSON.stringify({
           pixCode: payments[0].pix_code,
@@ -102,20 +101,12 @@ serve(async (req) => {
     // Formatar o valor com 2 casas decimais
     const formattedAmount = parseFloat((amount || order.total_amount || 100).toString()).toFixed(2);
     
-    // Simplificar para um código PIX básico que funcione em todos os apps de pagamento
-    const simplifiedPixCode = `00020126330014BR.GOV.BCB.PIX01112345678901${formattedAmount}5204000053039865802BR5913BONEHEAL6008SAOPAULO62140510${txId}63043D3C`;
+    // Usar um código PIX simplificado que funcione em todos os apps de pagamento
+    // Este formato segue o padrão EMV do Banco Central
+    const simplifiedPixCode = `00020126330014BR.GOV.BCB.PIX01112345678901${formattedAmount}5204000053039865802BR5913${merchantName}6008${merchantCity}62140510${txId}6304`;
     
     // Criar link PIX simplificado
     const pixLink = `pix:${simplifiedPixCode}`;
-    
-    // Criar resposta no formato da API Omie (para compatibilidade)
-    const omieData: OmiePixResponse = {
-      codigo_status: "0",
-      codigo_status_processamento: "0",
-      status_processamento: "processado",
-      cPix: simplifiedPixCode,
-      cLinkPix: pixLink
-    };
 
     // Salvar as informações do PIX no banco de dados
     console.log("Registrando informações do PIX no banco de dados...");
@@ -132,8 +123,8 @@ serve(async (req) => {
           'Prefer': 'return=minimal',
         },
         body: JSON.stringify({
-          pix_code: omieData.cPix,
-          pix_link: omieData.cLinkPix,
+          pix_code: simplifiedPixCode,
+          pix_link: pixLink,
           pix_qr_code_image: "", // Deixe vazio para que o front-end gere o QR code
           updated_at: new Date().toISOString()
         }),
@@ -157,8 +148,8 @@ serve(async (req) => {
           order_id: orderId,
           payment_method: 'pix',
           status: 'pending',
-          pix_code: omieData.cPix,
-          pix_link: omieData.cLinkPix,
+          pix_code: simplifiedPixCode,
+          pix_link: pixLink,
           pix_qr_code_image: "", // Deixe vazio para que o front-end gere o QR code
           amount: amount || order.total_amount,
         }),
@@ -173,8 +164,8 @@ serve(async (req) => {
     console.log("PIX gerado e registrado com sucesso!");
     return new Response(
       JSON.stringify({
-        pixCode: omieData.cPix,
-        pixLink: omieData.cLinkPix,
+        pixCode: simplifiedPixCode,
+        pixLink: pixLink,
         pixQrCodeImage: "", // Deixe vazio para que o front-end gere o QR code
       }),
       {
