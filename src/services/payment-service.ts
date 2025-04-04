@@ -14,6 +14,11 @@ export const createMercadoPagoCheckout = async (
     const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
     console.log("Mercado Pago checkout - shipping fee:", numericShippingFee);
     
+    if (isNaN(numericShippingFee) || numericShippingFee <= 0) {
+      console.error("Valor de frete inválido:", shippingFee);
+      throw new Error("Valor de frete inválido. Por favor, recalcule o frete.");
+    }
+    
     const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const total = Math.max(0, subtotal + numericShippingFee - discount);
     
@@ -79,7 +84,36 @@ export const createMercadoPagoCheckout = async (
     return data;
   } catch (error) {
     console.error("Erro ao criar checkout do Mercado Pago:", error);
-    throw error;
+    
+    // Tente gerar PIX via Omie como fallback
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userSession = sessionData?.session;
+      
+      if (!userSession?.user) {
+        throw new Error("Usuário não está autenticado");
+      }
+      
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+      const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
+      const total = Math.max(0, subtotal + numericShippingFee - discount);
+      
+      console.log("Tentando fallback via Omie PIX devido a falha no Mercado Pago");
+      const pixData = await generateOmiePix(orderId, total);
+      
+      // Formatar resposta para compatibilidade com o formato do Mercado Pago
+      return {
+        point_of_interaction: {
+          transaction_data: {
+            qr_code: pixData.qr_code_text,
+            qr_code_base64: pixData.qr_code
+          }
+        }
+      };
+    } catch (fallbackError) {
+      console.error("Erro também no fallback Omie:", fallbackError);
+      throw error; // Lançar o erro original do Mercado Pago
+    }
   }
 };
 
@@ -89,6 +123,10 @@ export const generateOmiePix = async (
   total: number
 ) => {
   try {
+    if (!orderId || !total || total <= 0) {
+      throw new Error("Parâmetros inválidos para geração de PIX");
+    }
+    
     console.log("Gerando PIX via Omie para ordem:", orderId, "valor:", total);
     
     const { data, error } = await supabase.functions.invoke("omie-pix", {
