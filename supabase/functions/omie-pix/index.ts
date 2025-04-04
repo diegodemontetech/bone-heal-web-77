@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders, handleCors } from "../_shared/cors.ts"
+import { corsHeaders } from "../_shared/cors.ts"
 
 // Generate a QR code URL for a PIX code
 const generateQRCodeImage = (pixCode: string): string => {
@@ -18,6 +18,19 @@ const generatePixCode = (orderId: string, amount: number): string => {
   
   // Create a simple PIX code for demo/test purposes that follows the standard pattern
   return `00020126330014BR.GOV.BCB.PIX01111234567890202${String(finalAmount).length}${finalAmount}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
+};
+
+// Properly handle CORS preflight requests
+const handleCors = (req: Request) => {
+  // Handle CORS preflight OPTIONS request
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders
+    });
+  }
+  
+  return null;
 };
 
 serve(async (req) => {
@@ -73,17 +86,16 @@ serve(async (req) => {
   } catch (error) {
     console.error("Erro ao gerar PIX:", error);
     
-    // Mesmo em caso de erro, retornar um PIX válido como fallback
-    const fallbackOrderId = Math.random().toString(36).substring(2, 11);
-    const pixCode = generatePixCode(fallbackOrderId, 0);
-    const qrCodeImage = generateQRCodeImage(pixCode);
+    // Generate a safe fallback PIX without using recursion
+    const safePixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
+    const safeQrCodeImage = generateQRCodeImage(safePixCode);
     
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
-        pixCode,
-        qr_code_base64: qrCodeImage
+        pixCode: safePixCode,
+        qr_code_base64: safeQrCodeImage
       }),
       {
         status: 200, // Retornamos 200 mesmo em caso de erro para que o frontend possa exibir a mensagem

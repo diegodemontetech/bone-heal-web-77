@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { CopyIcon, CheckIcon, ClipboardCopy, QrCode } from "lucide-react";
+import { CopyIcon, CheckIcon, ClipboardCopy, QrCode, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
@@ -16,11 +16,13 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [copied, setCopied] = useState(false);
   const [showCodeText, setShowCodeText] = useState(false);
   const [qrCodeImageSrc, setQrCodeImageSrc] = useState<string | null>(null);
+  const [qrCodeError, setQrCodeError] = useState(false);
 
   useEffect(() => {
     // Reset state when pixel code changes
     setCopied(false);
     setShowCodeText(false);
+    setQrCodeError(false);
     
     if (pixCode) {
       // Check if the pixCode is a base64 image or URL
@@ -28,8 +30,13 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         setQrCodeImageSrc(pixCode);
       } else {
         // Generate QR code from text if it's not an image URL
-        const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
-        setQrCodeImageSrc(qrCodeUrl);
+        try {
+          const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
+          setQrCodeImageSrc(qrCodeUrl);
+        } catch (error) {
+          console.error("Error generating QR code URL:", error);
+          setQrCodeError(true);
+        }
       }
     }
   }, [pixCode]);
@@ -50,6 +57,20 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
   const toggleCodeText = () => {
     setShowCodeText(!showCodeText);
+  };
+  
+  const retryQrCode = () => {
+    if (pixCode) {
+      try {
+        setQrCodeError(false);
+        const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}&t=${Date.now()}`;
+        setQrCodeImageSrc(qrCodeUrl);
+      } catch (error) {
+        console.error("Error regenerating QR code:", error);
+        setQrCodeError(true);
+        toast.error("Não foi possível gerar o QR code. Tente copiar o código PIX.");
+      }
+    }
   };
 
   if (isLoading) {
@@ -81,20 +102,32 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         </p>
       </div>
       
-      {qrCodeImageSrc && (
-        <div className="border-2 border-primary/20 rounded-xl p-4 bg-primary/5 mb-4">
+      <div className="border-2 border-primary/20 rounded-xl p-4 bg-primary/5 mb-4">
+        {qrCodeError ? (
+          <div className="h-64 w-64 flex flex-col items-center justify-center bg-red-50 border border-red-200 rounded-lg">
+            <QrCode className="h-16 w-16 text-red-300 mb-2" />
+            <p className="text-sm text-red-600 mb-3">Erro ao gerar QR Code</p>
+            <Button variant="outline" size="sm" onClick={retryQrCode} className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Tentar novamente
+            </Button>
+          </div>
+        ) : qrCodeImageSrc ? (
           <img 
             src={qrCodeImageSrc} 
             alt="QR Code PIX" 
             className="h-64 w-64 mx-auto" 
             onError={(e) => {
-              console.error("Erro ao carregar QR code, tentando gerar novo");
-              const fallbackSrc = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
-              (e.target as HTMLImageElement).src = fallbackSrc;
+              console.error("Erro ao carregar QR code");
+              setQrCodeError(true);
             }}
           />
-        </div>
-      )}
+        ) : (
+          <div className="h-64 w-64 flex items-center justify-center bg-gray-100 rounded-lg">
+            <QrCode className="h-16 w-16 text-gray-300" />
+          </div>
+        )}
+      </div>
       
       <div className="w-full space-y-3">
         <Button

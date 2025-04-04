@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -81,7 +82,7 @@ export const createMercadoPagoCheckout = async (
   } catch (error) {
     console.error("Error in createMercadoPagoCheckout:", error);
     // Return fallback PIX in case of error
-    return processPixPayment(orderId, calculateTotal(cartItems, shippingFee, discount));
+    return generateSafePixData(orderId, calculateTotal(cartItems, shippingFee, discount));
   }
 };
 
@@ -118,8 +119,8 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
     
     if (error) {
       console.error("Erro ao gerar PIX:", error);
-      // Use fallback instead of throwing
-      return generateFallbackPixData(orderId, amount);
+      // Use safe fallback instead of calling another function that might fail
+      return generateSafePixData(orderId, amount);
     }
     
     console.log("Resposta da função PIX:", data);
@@ -141,30 +142,25 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
       };
     }
     
-    // Fallback para geração local
-    console.log("Fallback: Gerando PIX localmente");
-    return generateFallbackPixData(orderId, amount);
+    // Fallback para geração local segura
+    console.log("Fallback: Gerando PIX localmente com método seguro");
+    return generateSafePixData(orderId, amount);
   } catch (error) {
     console.error("Error in processPixPayment:", error);
     
-    // Return a valid PIX code as fallback
-    return generateFallbackPixData(orderId, amount);
+    // Return a safe PIX code as fallback
+    return generateSafePixData(orderId, amount);
   }
 };
 
 /**
- * Generate valid PIX data with a proper QR code
- * Creates a PIX code that follows the official PIX standard and will be recognized by payment apps
+ * Generate a safe fallback PIX code without recursion
  */
-export const generateFallbackPixData = (orderId: string, amount: number = 0): PaymentResponse => {
+export const generateSafePixData = (orderId: string, amount: number = 0): PaymentResponse => {
   // Use a fixed amount if none provided, or calculate based on order ID for demo
-  const finalAmount = amount > 0 ? amount : Math.floor(100 + (parseInt(orderId.substring(0, 8), 16) % 900)) / 100;
+  const finalAmount = amount > 0 ? amount : 100;
   
-  // Create a reasonable transaction ID from order ID
-  const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
-  const txId = `${dateStr}${orderId.substring(0, 8).replace(/-/g, '')}`;
-  
-  // Create a simple PIX code for demo/test purposes that follows the standard pattern
+  // Create a simple PIX code
   const pixCode = `00020126330014BR.GOV.BCB.PIX01111234567890202${String(finalAmount).length}${finalAmount}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
   
   // Generate QR code URL using Google Charts API
