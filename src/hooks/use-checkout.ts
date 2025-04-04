@@ -74,8 +74,13 @@ export function useCheckout() {
       console.log("Processando pagamento via", paymentMethod, "para o pedido", orderId);
       
       // Salvar o pedido no banco de dados com o valor correto do frete
-      await saveOrder(orderId!, cartItems, numericShippingFee, discount, zipCode, paymentMethod, appliedVoucher);
-      console.log("Pedido salvo com sucesso no banco de dados");
+      const savedOrderId = await saveOrder(orderId, cartItems, numericShippingFee, discount, zipCode, paymentMethod, appliedVoucher);
+      console.log("Pedido salvo com sucesso no banco de dados com ID:", savedOrderId);
+      
+      // Atualizar o ID do pedido se foi gerado um novo
+      if (savedOrderId !== orderId) {
+        setOrderId(savedOrderId);
+      }
       
       // Criar a preferência de pagamento no Mercado Pago
       if (paymentMethod === 'pix') {
@@ -84,7 +89,7 @@ export function useCheckout() {
         try {
           // Primeiro tenta o Mercado Pago
           const mpResponse = await createMercadoPagoCheckout(
-            orderId!, 
+            savedOrderId, 
             cartItems, 
             numericShippingFee, 
             discount
@@ -107,7 +112,7 @@ export function useCheckout() {
             console.log("Tentando gerar PIX pelo Omie...");
             const { data: omiePix, error: omieError } = await supabase.functions.invoke("omie-pix", {
               body: { 
-                orderId: orderId,
+                orderId: savedOrderId,
                 amount: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + numericShippingFee - discount
               }
             });
@@ -144,7 +149,7 @@ export function useCheckout() {
         localStorage.removeItem('cart');
         navigate("/checkout/success", { 
           state: { 
-            orderId: orderId,
+            orderId: savedOrderId,
             paymentMethod
           }
         });

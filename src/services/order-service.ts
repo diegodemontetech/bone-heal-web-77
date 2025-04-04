@@ -2,13 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
-// Helper function to generate a unique order ID with timestamp
+// Helper function to generate a unique order ID as a valid UUID
 const generateUniqueOrderId = () => {
-  // Use timestamp as part of the ID to ensure uniqueness
-  const timestamp = new Date().getTime();
-  // Generate a random string
-  const randomStr = Math.random().toString(36).substring(2, 10);
-  return `order_${timestamp}_${randomStr}`;
+  // Generate a proper UUID v4
+  return crypto.randomUUID();
 };
 
 // Função para salvar o pedido no banco de dados
@@ -34,7 +31,7 @@ export const saveOrder = async (
       throw new Error("É necessário estar logado para finalizar a compra");
     }
 
-    // Generate a new unique order ID if none is provided or ensure uniqueness
+    // Generate a new unique UUID if none is provided
     const finalOrderId = orderId || generateUniqueOrderId();
 
     console.log("Salvando pedido:", finalOrderId, "para usuário:", userId);
