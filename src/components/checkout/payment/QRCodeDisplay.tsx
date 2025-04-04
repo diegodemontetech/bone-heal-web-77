@@ -48,6 +48,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       
       // Se temos um base64 direto do MP, usamos ele primeiro
       if (qrCodeBase64) {
+        // Se for um URL base64 completo (começando com data:)
         if (qrCodeBase64.startsWith('data:')) {
           console.log("Usando QR code base64 já com prefixo data:");
           setQrCodeUrl(qrCodeBase64);
@@ -146,7 +147,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
                 alt="QR Code PIX" 
                 className="h-64 w-64 object-contain mx-auto"
                 onError={(e) => {
-                  console.error("Erro ao carregar imagem do QR code", e);
+                  console.error("Erro ao carregar imagem do QR code:", e);
                   setQrError(true);
                 }}
               />

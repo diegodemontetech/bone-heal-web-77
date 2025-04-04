@@ -2,11 +2,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from "../_shared/cors.ts"
 
-// Adiciona o console log detalhado para depuração
+// Função para verificar a validade do token do MP
+const validateMPToken = (token: string | null): boolean => {
+  if (!token) return false;
+  
+  // Token do MP deve começar com "APP_USR" (produção) ou "TEST" (teste)
+  return token.startsWith('APP_USR') || token.startsWith('TEST');
+}
+
+// Função principal do Edge Function
 serve(async (req) => {
-  console.log("=== INÍCIO DA EXECUÇÃO DA FUNÇÃO PIX ===");
+  console.log("=== INÍCIO DA EXECUÇÃO DA FUNÇÃO PIX MERCADO PAGO ===");
   console.log("Método da requisição:", req.method);
-  console.log("Headers:", JSON.stringify(Object.fromEntries([...req.headers.entries()])));
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -18,7 +25,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Recebendo solicitação de geração de PIX");
+    console.log("Recebendo solicitação de geração de PIX via Mercado Pago");
     
     const body = await req.text();
     console.log("Corpo da requisição recebido:", body);
@@ -42,13 +49,19 @@ serve(async (req) => {
     
     console.log(`Gerando PIX para pedido: ${orderId}, valor: ${paymentAmount}`);
     
-    // Verificar e registrar o token do Mercado Pago disponível
+    // Verificar token do Mercado Pago
     const mpAccessToken = Deno.env.get('MP_ACCESS_TOKEN');
-    console.log("Token do MP disponível:", mpAccessToken ? "Sim (primeiro 5 chars: " + mpAccessToken.substring(0, 5) + ")" : "Não");
+    console.log("Token do MP disponível:", mpAccessToken ? "Sim (primeiros 10 chars: " + mpAccessToken.substring(0, 10) + ")" : "Não");
     
     if (!mpAccessToken) {
       console.error("ERRO: Token do Mercado Pago não está definido nas variáveis de ambiente");
       throw new Error("Configuração incompleta: Token do Mercado Pago não disponível");
+    }
+    
+    if (!validateMPToken(mpAccessToken)) {
+      console.error("ERRO: Token do Mercado Pago parece inválido:", 
+        mpAccessToken.substring(0, 10) + "...");
+      throw new Error("Token do Mercado Pago parece inválido. Deve começar com 'APP_USR' (produção) ou 'TEST' (teste)");
     }
     
     console.log("Usando API do Mercado Pago para gerar PIX");
@@ -59,32 +72,38 @@ serve(async (req) => {
       description: `Pedido #${orderId}`,
       payment_method_id: "pix",
       payer: {
-        email: "cliente@boneheal.com.br",
+        email: "comprador@boneheal.com.br", // Email precisa ser válido para o MP
         first_name: "Cliente",
-        last_name: "Boneheal"
+        last_name: "Boneheal",
+        identification: {
+          type: "CPF",
+          number: "19119119100" // CPF genérico apenas para testes
+        }
       }
     };
     
     console.log("Dados para API do Mercado Pago:", JSON.stringify(mpPaymentData));
     
-    // Chamar API do Mercado Pago
+    // Chamar API do Mercado Pago com cabeçalhos corretos
     const mpResponse = await fetch("https://api.mercadopago.com/v1/payments", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${mpAccessToken}`
+        "Authorization": `Bearer ${mpAccessToken}`,
+        "X-Idempotency-Key": orderId // Evita pagamentos duplicados com mesmo orderId
       },
       body: JSON.stringify(mpPaymentData)
     });
     
     console.log("Status da resposta MP:", mpResponse.status);
+    console.log("Headers da resposta MP:", JSON.stringify(Object.fromEntries([...mpResponse.headers.entries()])));
     
     const responseBody = await mpResponse.text();
     console.log("Corpo da resposta MP:", responseBody);
     
     if (mpResponse.ok) {
       const mpData = JSON.parse(responseBody);
-      console.log("PIX Mercado Pago gerado com sucesso", mpData.id);
+      console.log("PIX Mercado Pago gerado com sucesso, ID:", mpData.id);
       
       // Extrair dados do PIX
       const pixData = mpData.point_of_interaction?.transaction_data;
@@ -93,12 +112,14 @@ serve(async (req) => {
       if (pixData?.qr_code) {
         return new Response(
           JSON.stringify({
+            success: true,
             pixCode: pixData.qr_code,
             qr_code_base64: pixData.qr_code_base64,
             payment_id: mpData.id,
             order_id: orderId,
             amount: paymentAmount,
-            point_of_interaction: mpData.point_of_interaction
+            point_of_interaction: mpData.point_of_interaction,
+            expires_at: mpData.date_of_expiration
           }),
           { 
             headers: { 
@@ -113,7 +134,18 @@ serve(async (req) => {
       }
     } else {
       console.error("Erro na API do Mercado Pago:", responseBody);
-      throw new Error(`Erro ao gerar PIX via Mercado Pago: ${responseBody}`);
+      
+      // Tentar extrair a mensagem de erro específica
+      let errorMessage = "Erro desconhecido";
+      try {
+        const errorData = JSON.parse(responseBody);
+        errorMessage = errorData.message || errorData.error || "Erro desconhecido";
+        console.error("Detalhes do erro:", JSON.stringify(errorData));
+      } catch (e) {
+        errorMessage = responseBody || "Erro desconhecido";
+      }
+      
+      throw new Error(`Erro ao gerar PIX via Mercado Pago: ${errorMessage}`);
     }
   } catch (error) {
     console.error("Erro ao processar requisição:", error);
@@ -132,6 +164,6 @@ serve(async (req) => {
       }
     );
   } finally {
-    console.log("=== FIM DA EXECUÇÃO DA FUNÇÃO PIX ===");
+    console.log("=== FIM DA EXECUÇÃO DA FUNÇÃO PIX MERCADO PAGO ===");
   }
 });
