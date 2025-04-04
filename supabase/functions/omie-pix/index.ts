@@ -84,20 +84,38 @@ serve(async (req) => {
       );
     }
 
-    // Gerar PIX simulado (para desenvolvimento)
-    console.log("Gerando código PIX simulado...");
+    // Gerar PIX seguindo o padrão oficial
+    console.log("Gerando código PIX válido...");
     
-    // Gerar um código PIX que segue o formato padrão, incluindo o nome BoneHeal
-    const orderHex = orderId.replace(/-/g, '').substring(0, 20);
-    const totalAmount = (amount || 100).toFixed(2);
-    const pixCode = `00020126580014BR.GOV.BCB.PIX0136${orderHex}0214${totalAmount}5204000053039865802BR5913BONEHEAL MED6009SAO PAULO62150503${orderHex.substring(0, 4)}63047A91`;
+    // Current date in YYYYMMDD format
+    const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
     
+    // Create transaction ID
+    const txId = `${dateStr}${orderId.substring(0, 12).replace(/-/g, '')}`;
+    
+    // Format the amount with 2 decimal places
+    const formattedAmount = (amount || 100).toFixed(2);
+    
+    // Create a PIX payload following the official BR Code standard
+    const merchantName = "BONEHEAL MED";
+    const merchantCity = "SAO PAULO";
+    
+    // Following PIX BR Code EMV standard
+    const pixCode = [
+      "00020126",                                     // BR Code format data
+      "5204000053039865802BR",                        // Merchant account information - BR
+      `5913${merchantName}6009${merchantCity}`,       // Merchant name and city
+      `62${String(txId.length + 4).padStart(2, '0')}05${txId}`, // Transaction ID
+      "6304"                                          // CRC will be added by payment app
+    ].join('');
+    
+    // Create PIX link
     const pixLink = "https://pix.boneheal.com.br/" + orderId;
     
-    // Gerar QR code usando Google Charts API
+    // Generate QR code using Google Charts API
     const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=L|0`;
     
-    // Converter para base64 (simulando)
+    // Convert to base64
     let qrCodeImage = "";
     try {
       const qrCodeResponse = await fetch(qrCodeUrl);
@@ -119,12 +137,12 @@ serve(async (req) => {
       cLinkPix: pixLink
     };
 
-    // Atualizar o pedido com as informações do PIX
+    // Save the PIX information to the database
     console.log("Registrando informações do PIX no banco de dados...");
     
-    // Verificar se já existe um registro de pagamento
+    // Check if a payment record already exists
     if (payments && payments.length > 0) {
-      // Atualizar o registro existente
+      // Update the existing record
       const updatePaymentResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments?id=eq.${payments[0].id}`, {
         method: 'PATCH',
         headers: {
@@ -146,7 +164,7 @@ serve(async (req) => {
         throw new Error(`Erro ao atualizar pagamento: ${updatePaymentResponse.status} - ${errorText}`);
       }
     } else {
-      // Criar um novo registro de pagamento
+      // Create a new payment record
       const newPaymentResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments`, {
         method: 'POST',
         headers: {

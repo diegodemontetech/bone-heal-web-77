@@ -11,28 +11,35 @@ interface PixPaymentProps {
 }
 
 const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
-  const [formattedQrCode, setFormattedQrCode] = useState<string | undefined>(pixQrCodeImage);
+  const [formattedQrCode, setFormattedQrCode] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   
   // Effect to handle QR code image processing
   useEffect(() => {
+    setIsLoading(true);
+    
     // Start with the provided QR code image
     let qrCode = pixQrCodeImage;
     
     console.log("Processing QR code for PIX payment", { 
       hasCode: Boolean(pixCode), 
       hasImage: Boolean(pixQrCodeImage),
-      imageType: pixQrCodeImage?.substring(0, 30) || 'none'
+      codePreview: pixCode?.substring(0, 20) || 'none',
+      imageType: typeof pixQrCodeImage === 'string' ? 
+        pixQrCodeImage.substring(0, 30) + '...' : 'none'
     });
     
     // Ensure the QR code image has a proper data URL format
-    if (pixQrCodeImage && !pixQrCodeImage.startsWith('data:') && !pixQrCodeImage.startsWith('http')) {
+    if (pixQrCodeImage && typeof pixQrCodeImage === 'string' && 
+        !pixQrCodeImage.startsWith('data:') && 
+        !pixQrCodeImage.startsWith('http')) {
       console.log("Formatting QR code image to include data URL prefix");
       qrCode = `data:image/png;base64,${pixQrCodeImage}`;
     }
     
     // If QR code is an actual URL (not base64), use it directly
-    if (pixQrCodeImage && (pixQrCodeImage.startsWith('http://') || pixQrCodeImage.startsWith('https://'))) {
+    if (pixQrCodeImage && typeof pixQrCodeImage === 'string' && 
+        (pixQrCodeImage.startsWith('http://') || pixQrCodeImage.startsWith('https://'))) {
       console.log("Using URL-based QR code directly");
       qrCode = pixQrCodeImage;
     }
@@ -43,6 +50,7 @@ const PixPayment = ({ pixCode, pixQrCodeImage, orderId }: PixPaymentProps) => {
       qrCode = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0`;
     }
     
+    // Set the formatted QR code image
     setFormattedQrCode(qrCode);
     setIsLoading(false);
     

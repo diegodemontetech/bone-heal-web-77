@@ -40,7 +40,18 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
     setQrImgError(false);
     
     if (pixData) {
-      setQrImgSrc(pixData);
+      // If pixData is already a complete URL or data URL, use it directly
+      if (pixData.startsWith('http') || pixData.startsWith('data:')) {
+        setQrImgSrc(pixData);
+      } 
+      // If it might be a base64 string without the data URL prefix
+      else if (pixData.length > 100 && !pixData.includes(' ')) {
+        setQrImgSrc(`data:image/png;base64,${pixData}`);
+      }
+      // For other cases, try to use as is
+      else {
+        setQrImgSrc(pixData);
+      }
     } else if (pixCode) {
       // If no image but we have the code, generate using Google Charts
       const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0`;
@@ -106,26 +117,14 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
             src={qrImgSrc} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
-            onError={(e) => {
+            onError={() => {
               console.error("Error loading QR code image, trying Google Charts API fallback");
               setQrImgError(true);
               
-              // Use Google Charts API as fallback
+              // Generate fallback QR code using Google Charts
               if (pixCode) {
-                const fallbackUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0`;
-                // Using correct TypeScript event handling
-                const img = e.currentTarget;
-                img.src = fallbackUrl;
-                
-                // Using a proper lambda for the second error handler
-                img.onerror = () => {
-                  console.error("Error even with fallback QR code");
-                  img.style.display = "none";
-                  setQrImgError(true);
-                };
-              } else {
-                e.currentTarget.style.display = "none";
-                setQrImgError(true);
+                // Force a new QR code generation using Google Charts API
+                setQrImgSrc(`https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&cache=${Date.now()}`);
               }
             }}
           />
