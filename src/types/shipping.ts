@@ -23,4 +23,6 @@ export interface ShippingCalculationRate {
   delivery_days: number;
   zipCode: string;
   region?: string;
+  // Adding these for backward compatibility
+  description?: string;
 }

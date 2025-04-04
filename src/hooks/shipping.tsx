@@ -24,11 +24,11 @@ export function useShipping() {
     if (selectedShippingRate) {
       const numericRate = parseFloat(String(selectedShippingRate.rate));
       setShippingFee(isNaN(numericRate) ? 0 : numericRate);
-      console.log("Shipping rate selected:", selectedShippingRate.label, "with fee:", numericRate);
+      console.log("Shipping rate selected:", selectedShippingRate.name, "with fee:", numericRate);
       
       // Calculate delivery date based on the shipping days
-      if (selectedShippingRate.days_min) {
-        const date = calculateDeliveryDate(Number(selectedShippingRate.days_min));
+      if (selectedShippingRate.delivery_days) {
+        const date = calculateDeliveryDate(selectedShippingRate);
         setDeliveryDate(date);
       }
     } else {
@@ -162,24 +162,18 @@ export function useShipping() {
     return [
       {
         id: 'sedex',
-        name: 'Sedex',
-        label: 'Sedex - Entrega Rápida',
         service_type: 'Sedex',
-        description: 'Entrega expressa em todo o Brasil',
-        days_min: days,
-        days_max: days + 1,
+        name: 'Sedex - Entrega Rápida',
         rate: baseFee + 10,
+        delivery_days: days,
         zipCode: zip
       },
       {
         id: 'pac',
-        name: 'PAC',
-        label: 'PAC - Entrega Econômica',
         service_type: 'PAC',
-        description: 'Entrega econômica em todo o Brasil',
-        days_min: days + 2,
-        days_max: days + 4,
+        name: 'PAC - Entrega Econômica',
         rate: baseFee,
+        delivery_days: days + 2,
         zipCode: zip
       }
     ];
@@ -187,13 +181,13 @@ export function useShipping() {
 
   // Handler for changing selected shipping rate
   const handleShippingRateChange = (rate: ShippingCalculationRate) => {
-    console.log("Selecting shipping rate:", rate);
+    console.log("Selecting shipping rate:", rate.name, "with fee:", rate.rate);
     setSelectedShippingRate(rate);
     const numericRate = parseFloat(String(rate.rate));
     setShippingFee(isNaN(numericRate) ? 0 : numericRate);
     
-    if (rate.days_min) {
-      const date = calculateDeliveryDate(Number(rate.days_min));
+    if (rate.delivery_days) {
+      const date = calculateDeliveryDate(rate);
       setDeliveryDate(date);
     }
   };

@@ -6,7 +6,7 @@ export const useDeliveryDate = () => {
   const calculateDeliveryDate = (shippingRate: ShippingCalculationRate | null) => {
     if (!shippingRate) return null;
     
-    // Default to 7 days if delivery_days is not defined
+    // Get delivery days from the shipping rate
     const deliveryDays = shippingRate.delivery_days || 7;
     
     const today = new Date();
