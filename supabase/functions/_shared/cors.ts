@@ -12,7 +12,7 @@ export function handleCors(req: Request): Response | null {
   if (req.method === 'OPTIONS') {
     console.log("Handling OPTIONS preflight request");
     return new Response(null, {
-      status: 200, // Changed from 204 to 200 for better compatibility
+      status: 200,
       headers: corsHeaders
     });
   }

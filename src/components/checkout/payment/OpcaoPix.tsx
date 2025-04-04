@@ -1,8 +1,8 @@
 
-import { QrCode, Copy, RefreshCw } from "lucide-react";
+import { QrCode, Copy, RefreshCw, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface OpcaoPixProps {
@@ -15,14 +15,60 @@ interface OpcaoPixProps {
 const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [qrCodeError, setQrCodeError] = useState(false);
   
   // Debug information
   console.log("OpcaoPix props:", { 
-    pixCode: pixCode?.substring(0, 20) + "...", 
+    hasPixCode: !!pixCode,
+    pixCodeLength: pixCode?.length || 0,
     hasQrCode: !!pixQrCodeBase64,
-    qrCodeType: pixQrCodeBase64?.substring(0, 30) + "..."
+    qrCodeType: typeof pixQrCodeBase64 === 'string' ? 
+      `${pixQrCodeBase64.substring(0, 20)}...` : 'undefined'
   });
   
+  useEffect(() => {
+    if (pixQrCodeBase64) {
+      try {
+        // If it's already a data URL or an http URL
+        if (pixQrCodeBase64.startsWith('data:') || pixQrCodeBase64.startsWith('http')) {
+          setQrCodeUrl(pixQrCodeBase64);
+        } 
+        // If it's a base64 string without the data:image prefix
+        else if (/^[A-Za-z0-9+/=]+$/.test(pixQrCodeBase64)) {
+          setQrCodeUrl(`data:image/png;base64,${pixQrCodeBase64}`);
+        }
+        // Fallback to generating a QR code from the PIX code using Google Charts
+        else if (pixCode) {
+          generateQrCodeFromText(pixCode);
+        }
+        setQrCodeError(false);
+      } catch (error) {
+        console.error("Error processing QR code:", error);
+        setQrCodeError(true);
+        // Fallback to generating a QR code from the PIX code
+        if (pixCode) {
+          generateQrCodeFromText(pixCode);
+        }
+      }
+    } else if (pixCode) {
+      // No QR code image provided, but we have the PIX code, so generate QR code
+      generateQrCodeFromText(pixCode);
+    }
+  }, [pixQrCodeBase64, pixCode]);
+  
+  const generateQrCodeFromText = (text: string) => {
+    try {
+      const encodedText = encodeURIComponent(text);
+      const timestamp = new Date().getTime();
+      setQrCodeUrl(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedText}&t=${timestamp}`);
+      setQrCodeError(false);
+    } catch (error) {
+      console.error("Error generating QR code from text:", error);
+      setQrCodeError(true);
+    }
+  };
+
   const copyToClipboard = () => {
     if (!pixCode) {
       toast.error("Código PIX não disponível");
@@ -51,37 +97,18 @@ const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps
     }
   };
 
-  // Function to determine what to render for the QR code
-  const renderQrCode = () => {
-    // If we have a base64 image that starts with data:image
-    if (pixQrCodeBase64 && pixQrCodeBase64.startsWith('data:image')) {
-      return (
-        <img 
-          src={pixQrCodeBase64} 
-          alt="QR Code PIX" 
-          className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
-        />
-      );
+  const retryQrCode = () => {
+    if (pixCode) {
+      setQrCodeError(false);
+      generateQrCodeFromText(pixCode);
+      toast.info("Tentando gerar QR code novamente...");
+    } else {
+      toast.error("Código PIX não disponível para gerar QR code");
     }
-    
-    // If we have a URL (starting with http)
-    if (pixQrCodeBase64 && pixQrCodeBase64.startsWith('http')) {
-      return (
-        <img 
-          src={pixQrCodeBase64} 
-          alt="QR Code PIX" 
-          className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
-        />
-      );
-    }
-    
-    // Fallback to showing an icon
-    return (
-      <div className="w-48 h-48 mx-auto flex items-center justify-center bg-gray-100 border-2 border-green-200 rounded-lg p-2">
-        <QrCode className="w-16 h-16 text-gray-400" />
-      </div>
-    );
   };
+
+  // Only show QR code content if we have a PIX code
+  const showQrContent = !!pixCode;
 
   return (
     <div className="flex flex-col w-full">
@@ -103,10 +130,38 @@ const OpcaoPix = ({ isSelected, total, pixCode, pixQrCodeBase64 }: OpcaoPixProps
               <span className="font-bold">R$ {total.toFixed(2)}</span>
             </div>
             
-            {pixCode ? (
+            {showQrContent ? (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  {renderQrCode()}
+                  {qrCodeError ? (
+                    <div className="w-48 h-48 mx-auto flex flex-col items-center justify-center bg-gray-100 border-2 border-amber-200 rounded-lg p-2">
+                      <AlertCircle className="w-10 h-10 text-amber-500 mb-2" />
+                      <p className="text-xs text-amber-700 text-center mb-2">Erro ao carregar QR Code</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={retryQrCode}
+                        className="text-xs"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  ) : qrCodeUrl ? (
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="QR Code PIX" 
+                      className="w-48 h-48 mx-auto border-2 border-green-200 rounded-lg p-2"
+                      onError={() => {
+                        console.error("Error loading QR code image");
+                        setQrCodeError(true);
+                      }}
+                    />
+                  ) : (
+                    <div className="w-48 h-48 mx-auto flex items-center justify-center bg-gray-100 border-2 border-green-200 rounded-lg p-2">
+                      <QrCode className="w-16 h-16 text-gray-400 animate-pulse" />
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
