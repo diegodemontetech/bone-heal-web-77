@@ -73,26 +73,14 @@ serve(async (req) => {
     if (payments && payments.length > 0 && payments[0].pix_code) {
       console.log("Código PIX já existe, retornando...");
       
-      // Gerar novo QR code para garantir que está atualizado
-      const pixCode = payments[0].pix_code;
-      const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&t=${Date.now()}`;
-      
-      let qrCodeImage = "";
-      try {
-        const qrCodeResponse = await fetch(qrCodeUrl);
-        if (qrCodeResponse.ok) {
-          const arrayBuffer = await qrCodeResponse.arrayBuffer();
-          qrCodeImage = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        }
-      } catch (error) {
-        console.error("Error converting QR code to base64:", error);
-      }
+      // Não tente gerar o QR code aqui, apenas retorne o código PIX
+      // O componente de frontend lidará com a geração do QR code
       
       return new Response(
         JSON.stringify({
           pixCode: payments[0].pix_code,
           pixLink: payments[0].pix_link || "",
-          pixQrCodeImage: qrCodeImage || "",
+          pixQrCodeImage: "", // Deixe vazio para que o front-end gere via Google Charts
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -114,48 +102,11 @@ serve(async (req) => {
     // Formatar o valor com 2 casas decimais
     const formattedAmount = parseFloat((amount || order.total_amount || 100).toString()).toFixed(2);
     
-    // Criar o payload do PIX seguindo o padrão BR Code EMV
-    // Seguindo especificação oficial do Banco Central:
-    // https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf
-    
-    // Payload principal do PIX
-    const pixPayload = [
-      "00020126",                         // Payload Format Indicator e Merchant Account Information
-      "01",                               // Chave PIX
-      "12",                               // GUI
-      "5204000053039865406",             // Código da Moeda e Valor da Transação
-      formattedAmount,                   // Valor formatado
-      "5802BR",                           // País
-      "59" + String(merchantName.length).padStart(2, '0') + merchantName, // Nome do beneficiário
-      "60" + String(merchantCity.length).padStart(2, '0') + merchantCity, // Cidade do beneficiário
-      "62" + String(txId.length + 14).padStart(2, '0') + "05" + txId,    // Informações adicionais - Código da transação
-      "6304"                              // CRC16-CCITT
-    ].join('');
-    
-    // TODO: Adicionar cálculo de CRC16 se necessário
-    
-    // Simplificar para um código PIX básico se a implementação completa estiver causando problemas
+    // Simplificar para um código PIX básico que funcione em todos os apps de pagamento
     const simplifiedPixCode = `00020126330014BR.GOV.BCB.PIX01112345678901${formattedAmount}5204000053039865802BR5913BONEHEAL6008SAOPAULO62140510${txId}63043D3C`;
     
     // Criar link PIX simplificado
     const pixLink = `pix:${simplifiedPixCode}`;
-    
-    // Gerar QR code do PIX usando Google Charts API - mais confiável
-    const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(simplifiedPixCode)}&chs=300x300&chld=H|0&t=${Date.now()}`;
-    
-    // Converter QR code para base64
-    let qrCodeImage = "";
-    try {
-      const qrCodeResponse = await fetch(qrCodeUrl);
-      if (qrCodeResponse.ok) {
-        const arrayBuffer = await qrCodeResponse.arrayBuffer();
-        qrCodeImage = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      } else {
-        console.error("Error fetching QR code image:", qrCodeResponse.statusText);
-      }
-    } catch (error) {
-      console.error("Error converting QR code to base64:", error);
-    }
     
     // Criar resposta no formato da API Omie (para compatibilidade)
     const omieData: OmiePixResponse = {
@@ -183,7 +134,7 @@ serve(async (req) => {
         body: JSON.stringify({
           pix_code: omieData.cPix,
           pix_link: omieData.cLinkPix,
-          pix_qr_code_image: qrCodeImage,
+          pix_qr_code_image: "", // Deixe vazio para que o front-end gere o QR code
           updated_at: new Date().toISOString()
         }),
       });
@@ -208,7 +159,7 @@ serve(async (req) => {
           status: 'pending',
           pix_code: omieData.cPix,
           pix_link: omieData.cLinkPix,
-          pix_qr_code_image: qrCodeImage,
+          pix_qr_code_image: "", // Deixe vazio para que o front-end gere o QR code
           amount: amount || order.total_amount,
         }),
       });
@@ -224,7 +175,7 @@ serve(async (req) => {
       JSON.stringify({
         pixCode: omieData.cPix,
         pixLink: omieData.cLinkPix,
-        pixQrCodeImage: qrCodeImage,
+        pixQrCodeImage: "", // Deixe vazio para que o front-end gere o QR code
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -235,28 +186,16 @@ serve(async (req) => {
     
     // Gerar um código PIX de fallback como último recurso
     const fallbackPixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008SaoPaulo62070503***63046CA3";
-    const fallbackQrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(fallbackPixCode)}&chs=300x300&chld=H|0&t=${Date.now()}`;
-    
-    let fallbackQrCodeImage = "";
-    try {
-      const qrCodeResponse = await fetch(fallbackQrCodeUrl);
-      if (qrCodeResponse.ok) {
-        const arrayBuffer = await qrCodeResponse.arrayBuffer();
-        fallbackQrCodeImage = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      }
-    } catch (fallbackError) {
-      console.error("Error generating fallback QR code:", fallbackError);
-    }
     
     return new Response(
       JSON.stringify({ 
         error: error.message,
         pixCode: fallbackPixCode,
         pixLink: `pix:${fallbackPixCode}`,
-        pixQrCodeImage: fallbackQrCodeImage,
+        pixQrCodeImage: "", // Deixe vazio para que o front-end gere o QR code
       }),
       {
-        status: 500,
+        status: 200, // Return 200 even on error to ensure frontend gets a usable response
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );

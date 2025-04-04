@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Copy, AlertTriangle, CheckCircle, Loader2 } from "lucide-react";
+import { Copy, AlertTriangle, CheckCircle, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
@@ -15,7 +15,7 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
   const [copied, setCopied] = useState(false);
   const [qrImgSrc, setQrImgSrc] = useState<string | null>(null);
   const [qrImgError, setQrImgError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Handle the copy to clipboard functionality
   const copyToClipboard = () => {
@@ -36,50 +36,79 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
       });
   };
 
-  // Generate QR code using Google Charts API
+  // Generate QR code using Google Charts API - directly using the API for reliability
   const generateGoogleQRCode = () => {
     if (!pixCode) return null;
     
     // Add cache buster to prevent caching issues
     const timestamp = new Date().getTime();
-    const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&t=${timestamp}`;
-    
-    console.log("Generating QR code with Google Charts:", qrCodeUrl);
-    return qrCodeUrl;
+    return `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&t=${timestamp}`;
   };
 
-  // Update QR code image when pixData changes or on retry
-  useEffect(() => {
-    console.log("QRCodeDisplay useEffect - pixData:", pixData?.substring(0, 30), "pixCode length:", pixCode?.length, "retryCount:", retryCount);
+  const refreshQRCode = () => {
+    setIsRefreshing(true);
     setQrImgError(false);
     
-    // Always try Google Charts first for reliability
+    // Always use Google Charts for generating QR code
+    const googleQRCode = generateGoogleQRCode();
+    if (googleQRCode) {
+      setQrImgSrc(googleQRCode);
+    }
+    
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  // Update QR code when data changes
+  useEffect(() => {
+    console.log("QRCodeDisplay: Updating QR code display");
+    setQrImgError(false);
+    
+    // Always try to generate QR code with Google Charts first - most reliable method
     const googleQRCode = generateGoogleQRCode();
     
     if (googleQRCode) {
       console.log("Using Google Charts QR code");
       setQrImgSrc(googleQRCode);
-    } else if (pixData) {
-      // If Google Charts fails, try to use provided pixData
+      return;
+    }
+    
+    // If we couldn't generate QR code with Google Charts, try to use pixData
+    if (pixData) {
       console.log("Using provided pixData");
       
-      // If pixData is already a complete URL or data URL, use it directly
+      // Clean up pixData to ensure it's a valid URL or data URL
       if (pixData.startsWith('http') || pixData.startsWith('data:')) {
         setQrImgSrc(pixData);
-      } 
-      // If it might be a base64 string without the data URL prefix
-      else if (pixData.length > 100 && !pixData.includes(' ')) {
+      } else if (pixData.length > 100 && !pixData.includes(' ')) {
+        // Likely a base64 string without data: prefix
         setQrImgSrc(`data:image/png;base64,${pixData}`);
-      }
-      // For other cases, try to use as is
-      else {
+      } else {
+        // For other cases, try to use as is
         setQrImgSrc(pixData);
       }
     } else {
-      console.log("No pixData available");
+      console.log("No valid QR code data available");
       setQrImgSrc(null);
     }
-  }, [pixData, pixCode, retryCount]);
+  }, [pixData, pixCode]);
+
+  // Show loading state while image is being processed
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center space-y-4">
+        <div className="text-center mb-2">
+          <h3 className="font-medium text-lg mb-1">Pagamento PIX</h3>
+          <p className="text-sm text-muted-foreground">
+            Gerando QR code...
+          </p>
+        </div>
+        
+        <div className="flex justify-center items-center h-48 w-48 bg-gray-100 rounded-lg">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+        </div>
+      </div>
+    );
+  }
 
   // When pixCode is missing/empty, show error state
   if (!pixCode) {
@@ -103,24 +132,6 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
       </div>
     );
   }
-  
-  // Show loading state while image is being processed
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center space-y-4">
-        <div className="text-center mb-2">
-          <h3 className="font-medium text-lg mb-1">Pagamento PIX</h3>
-          <p className="text-sm text-muted-foreground">
-            Gerando QR code...
-          </p>
-        </div>
-        
-        <div className="flex justify-center items-center h-48 w-48 bg-gray-100 rounded-lg">
-          <Loader2 className="h-10 w-10 text-primary animate-spin" />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center space-y-4">
@@ -132,23 +143,30 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
       </div>
       
       <div className="bg-white p-4 rounded-lg border flex justify-center items-center">
-        {qrImgSrc && !qrImgError ? (
+        {qrImgSrc && !qrImgError && !isRefreshing ? (
           <img 
             src={qrImgSrc} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
             onError={(e) => {
-              console.error("Error loading QR code image, retrying with Google Charts API");
+              console.error("Error loading QR code image, trying fallback method");
               setQrImgError(true);
-              setRetryCount(prev => prev + 1);
               
-              // Force a new QR code generation using Google Charts API
-              const newQrCode = generateGoogleQRCode();
-              if (newQrCode) {
-                setQrImgSrc(newQrCode);
+              // Try to generate QR code with Google Charts API when image fails to load
+              const googleQRCode = generateGoogleQRCode();
+              if (googleQRCode) {
+                // Use a setTimeout to avoid potential infinite rerender loop
+                setTimeout(() => {
+                  setQrImgSrc(googleQRCode);
+                  setQrImgError(false);
+                }, 100);
               }
             }}
           />
+        ) : isRefreshing ? (
+          <div className="h-48 w-48 bg-gray-100 flex items-center justify-center">
+            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          </div>
         ) : (
           <div className="h-48 w-48 bg-gray-100 flex flex-col items-center justify-center">
             <AlertTriangle className="h-10 w-10 text-amber-500 mb-2" />
@@ -160,13 +178,9 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
               variant="secondary" 
               size="sm" 
               className="mt-2"
-              onClick={() => {
-                console.log("Retrying QR code generation");
-                setQrImgError(false);
-                setRetryCount(prev => prev + 1);
-              }}
+              onClick={refreshQRCode}
             >
-              Tentar novamente
+              <RefreshCw className="h-4 w-4 mr-1" /> Tentar novamente
             </Button>
           </div>
         )}
