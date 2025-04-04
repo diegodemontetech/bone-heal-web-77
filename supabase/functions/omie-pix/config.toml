@@ -7,3 +7,6 @@ allow_methods = ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
 allow_headers = ["*"]
 allow_credentials = true
 max_age = 86400
+
+[global.config]
+MP_ACCESS_TOKEN = "TEST-MERCADOPAGO-ACCESS-TOKEN"

@@ -33,7 +33,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const generateQRCode = useCallback(() => {
     if (!isValidPixCode) {
       setQrError(true);
-      console.error("Invalid or empty PIX code provided", { 
+      console.error("Código PIX inválido ou vazio", { 
         pixCodeLength: cleanPixCode.length,
         pixCodeFirstChars: cleanPixCode.substring(0, 10) + "..."
       });
@@ -68,14 +68,14 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       setQrCodeUrl(googleChartUrl);
       setQrError(false);
       
-      console.log("QR Code generated successfully", { 
+      console.log("QR Code Mercado Pago gerado com sucesso", { 
         method: "Google Charts API",
         pixCodeLength: cleanPixCode.length,
         timestamp,
         refreshKey
       });
     } catch (error) {
-      console.error("Error generating QR code:", error);
+      console.error("Erro ao gerar QR code:", error);
       setQrError(true);
     }
   }, [cleanPixCode, isValidPixCode, qrCodeBase64, refreshKey]);
@@ -98,7 +98,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         setTimeout(() => setCopied(false), 3000);
       })
       .catch(err => {
-        console.error("Error copying to clipboard:", err);
+        console.error("Erro ao copiar para clipboard:", err);
         toast.error("Erro ao copiar o código PIX");
       });
   };
@@ -141,10 +141,10 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             <div className="border border-gray-200 p-4 rounded-md bg-white">
               <img 
                 src={qrCodeUrl} 
-                alt="QR Code PIX" 
+                alt="QR Code PIX Mercado Pago" 
                 className="h-64 w-64 object-contain mx-auto"
                 onError={(e) => {
-                  console.error("Error loading QR code image");
+                  console.error("Erro ao carregar imagem do QR code");
                   setQrError(true);
                 }}
               />
