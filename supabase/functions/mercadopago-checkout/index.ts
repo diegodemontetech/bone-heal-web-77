@@ -1,10 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from "../_shared/cors.ts"
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,8 +8,8 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, items, shipping_cost, buyer } = await req.json()
-    console.log("Dados recebidos:", { orderId, items, shipping_cost, buyer })
+    const { orderId, items, shipping_cost, payer, payment_method, notification_url, external_reference } = await req.json()
+    console.log("Dados recebidos:", { orderId, items, shipping_cost, payer })
 
     const access_token = Deno.env.get('MP_ACCESS_TOKEN')
     if (!access_token) {
@@ -23,11 +19,12 @@ serve(async (req) => {
     // Validar e formatar os itens
     const preferenceItems = items.map(item => {
       // Garantir que os valores sejam números válidos
-      const price = parseFloat(Number(item.price).toFixed(2))
-      const quantity = Math.max(1, parseInt(String(item.quantity)))
+      const priceString = typeof item.price === 'string' ? item.price : String(item.price);
+      const price = parseFloat(Number(priceString).toFixed(2));
+      const quantity = Math.max(1, parseInt(String(item.quantity)));
 
       if (isNaN(price) || price <= 0) {
-        throw new Error(`Preço inválido para o item: ${item.title}`)
+        throw new Error(`Preço inválido para o item: ${item.title}. Valor recebido: ${item.price}, convertido para: ${price}`);
       }
 
       return {
@@ -43,7 +40,7 @@ serve(async (req) => {
     if (shipping_cost > 0) {
       shippingAmount = parseFloat(Number(shipping_cost).toFixed(2))
       if (isNaN(shippingAmount)) {
-        throw new Error("Valor de frete inválido")
+        throw new Error(`Valor de frete inválido: ${shipping_cost}`)
       }
 
       preferenceItems.push({
@@ -69,16 +66,16 @@ serve(async (req) => {
     const config = {
       items: preferenceItems,
       payer: {
-        email: buyer.email || "cliente@example.com",
-        name: buyer.name || 'Cliente',
-        identification: buyer.identification || {
+        email: payer?.email || "cliente@example.com",
+        name: payer?.name || 'Cliente',
+        identification: payer?.identification || {
           type: "CPF",
           number: "00000000000"
         }
       },
-      external_reference: orderId,
+      external_reference: external_reference || orderId,
       statement_descriptor: "BONEHEAL",
-      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      notification_url: notification_url || `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
       back_urls: {
         success: `${app_url}/checkout/success?order_id=${orderId}`,
         failure: `${app_url}/checkout/failure?order_id=${orderId}`,

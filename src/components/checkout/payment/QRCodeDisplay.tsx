@@ -6,8 +6,8 @@ import { Copy, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
-  pixData?: string;
-  pixCode: string;
+  pixData?: string;  // base64 encoded QR code image
+  pixCode: string;   // PIX code/copia e cola
 }
 
 const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
@@ -62,7 +62,7 @@ const QRCodeDisplay = ({ pixData, pixCode }: QRCodeDisplayProps) => {
       {pixData && (
         <div className="bg-white p-4 rounded-lg border flex justify-center">
           <img 
-            src={`data:image/png;base64,${pixData}`} 
+            src={pixData.startsWith('data:') ? pixData : `data:image/png;base64,${pixData}`} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
           />

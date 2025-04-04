@@ -14,7 +14,7 @@ export const createMercadoPagoCheckout = async (
     const numericShippingFee = typeof shippingFee === 'number' ? shippingFee : parseFloat(String(shippingFee)) || 0;
     console.log("Mercado Pago checkout - shipping fee:", numericShippingFee);
     
-    if (isNaN(numericShippingFee) || numericShippingFee <= 0) {
+    if (isNaN(numericShippingFee)) {
       console.error("Valor de frete inválido:", shippingFee);
       throw new Error("Valor de frete inválido. Por favor, recalcule o frete.");
     }
@@ -36,7 +36,8 @@ export const createMercadoPagoCheckout = async (
     const items = cartItems.map(item => ({
       title: item.name,
       quantity: item.quantity,
-      unit_price: item.price
+      // Ensure price is a number
+      price: typeof item.price === 'number' ? item.price : parseFloat(String(item.price))
     }));
     
     // Obter dados do perfil do usuário para o pagamento
@@ -99,14 +100,28 @@ export const createMercadoPagoCheckout = async (
       const total = Math.max(0, subtotal + numericShippingFee - discount);
       
       console.log("Tentando fallback via Omie PIX devido a falha no Mercado Pago");
-      const pixData = await generateOmiePix(orderId, total);
+      const { data: pixData, error: pixError } = await supabase.functions.invoke("omie-pix", {
+        body: { 
+          orderId: orderId,
+          amount: total
+        }
+      });
+      
+      if (pixError) {
+        console.error("Erro no fallback Omie:", pixError);
+        throw pixError;
+      }
+      
+      if (!pixData) {
+        throw new Error("Dados do PIX não retornados");
+      }
       
       // Formatar resposta para compatibilidade com o formato do Mercado Pago
       return {
         point_of_interaction: {
           transaction_data: {
-            qr_code: pixData.qr_code_text,
-            qr_code_base64: pixData.qr_code
+            qr_code: pixData.pixCode,
+            qr_code_base64: pixData.pixQrCodeImage
           }
         }
       };
@@ -147,8 +162,9 @@ export const generateOmiePix = async (
     }
     
     return {
-      qr_code: data.pixQrCodeImage || "",
-      qr_code_text: data.pixCode || ""
+      qr_code: data.pixCode || "",
+      qr_code_text: data.pixCode || "",
+      qr_code_base64: data.pixQrCodeImage || ""
     };
   } catch (error) {
     console.error("Erro ao gerar PIX via Omie:", error);
