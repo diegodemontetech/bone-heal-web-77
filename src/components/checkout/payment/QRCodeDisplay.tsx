@@ -15,6 +15,7 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
   const [copied, setCopied] = useState(false);
   const [qrImgSrc, setQrImgSrc] = useState<string | null>(null);
   const [qrImgError, setQrImgError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Handle the copy to clipboard functionality
   const copyToClipboard = () => {
@@ -35,11 +36,33 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
       });
   };
 
-  // Update QR code image when pixData changes
+  // Generate QR code using Google Charts API
+  const generateGoogleQRCode = () => {
+    if (!pixCode) return null;
+    
+    // Add cache buster to prevent caching issues
+    const timestamp = new Date().getTime();
+    const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&t=${timestamp}`;
+    
+    console.log("Generating QR code with Google Charts:", qrCodeUrl);
+    return qrCodeUrl;
+  };
+
+  // Update QR code image when pixData changes or on retry
   useEffect(() => {
+    console.log("QRCodeDisplay useEffect - pixData:", pixData?.substring(0, 30), "pixCode length:", pixCode?.length, "retryCount:", retryCount);
     setQrImgError(false);
     
-    if (pixData) {
+    // Always try Google Charts first for reliability
+    const googleQRCode = generateGoogleQRCode();
+    
+    if (googleQRCode) {
+      console.log("Using Google Charts QR code");
+      setQrImgSrc(googleQRCode);
+    } else if (pixData) {
+      // If Google Charts fails, try to use provided pixData
+      console.log("Using provided pixData");
+      
       // If pixData is already a complete URL or data URL, use it directly
       if (pixData.startsWith('http') || pixData.startsWith('data:')) {
         setQrImgSrc(pixData);
@@ -52,14 +75,11 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
       else {
         setQrImgSrc(pixData);
       }
-    } else if (pixCode) {
-      // If no image but we have the code, generate using Google Charts
-      const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0`;
-      setQrImgSrc(qrCodeUrl);
     } else {
+      console.log("No pixData available");
       setQrImgSrc(null);
     }
-  }, [pixData, pixCode]);
+  }, [pixData, pixCode, retryCount]);
 
   // When pixCode is missing/empty, show error state
   if (!pixCode) {
@@ -117,14 +137,15 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
             src={qrImgSrc} 
             alt="QR Code do PIX" 
             className="h-48 w-48"
-            onError={() => {
-              console.error("Error loading QR code image, trying Google Charts API fallback");
+            onError={(e) => {
+              console.error("Error loading QR code image, retrying with Google Charts API");
               setQrImgError(true);
+              setRetryCount(prev => prev + 1);
               
-              // Generate fallback QR code using Google Charts
-              if (pixCode) {
-                // Force a new QR code generation using Google Charts API
-                setQrImgSrc(`https://chart.googleapis.com/chart?cht=qr&chl=${encodeURIComponent(pixCode)}&chs=300x300&chld=H|0&cache=${Date.now()}`);
+              // Force a new QR code generation using Google Charts API
+              const newQrCode = generateGoogleQRCode();
+              if (newQrCode) {
+                setQrImgSrc(newQrCode);
               }
             }}
           />
@@ -135,6 +156,18 @@ const QRCodeDisplay = ({ pixData, pixCode, isLoading = false }: QRCodeDisplayPro
               Não foi possível carregar o QR code.<br />
               Use o código abaixo para pagar.
             </p>
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => {
+                console.log("Retrying QR code generation");
+                setQrImgError(false);
+                setRetryCount(prev => prev + 1);
+              }}
+            >
+              Tentar novamente
+            </Button>
           </div>
         )}
       </div>
