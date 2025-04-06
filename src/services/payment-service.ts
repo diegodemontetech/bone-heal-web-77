@@ -19,6 +19,45 @@ export interface PaymentResponse {
 }
 
 /**
+ * Tests the connection to the Mercado Pago API
+ */
+export const testMercadoPagoConnection = async (): Promise<{
+  success: boolean;
+  message: string;
+  data?: any;
+}> => {
+  try {
+    console.log("Testing Mercado Pago connection...");
+    
+    const { data, error } = await supabase.functions.invoke('test-mercadopago', {
+      body: {}
+    });
+    
+    if (error) {
+      console.error("Error testing Mercado Pago connection:", error);
+      return { 
+        success: false, 
+        message: `Error: ${error.message || "Unknown error occurred"}` 
+      };
+    }
+    
+    console.log("Mercado Pago test response:", data);
+    
+    return {
+      success: data?.success || false,
+      message: data?.message || "No message returned",
+      data: data?.data
+    };
+  } catch (error) {
+    console.error("Exception testing Mercado Pago:", error);
+    return { 
+      success: false, 
+      message: `Exception: ${error.message || "Unknown exception occurred"}` 
+    };
+  }
+};
+
+/**
  * Creates a Mercado Pago checkout for the given order
  */
 export const createMercadoPagoCheckout = async (
