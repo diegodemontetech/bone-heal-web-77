@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 import { corsHeaders } from "../_shared/cors.ts"
@@ -69,9 +70,27 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseKey)
     
-    // Configurar API do Mercado Pago
-    const mercadoPagoUrl = "https://api.mercadopago.com/v1"
-    const access_token = Deno.env.get('MP_ACCESS_TOKEN')
+    // Buscar credenciais do Mercado Pago do banco de dados
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('system_settings')
+      .select('key, value')
+      .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY'])
+    
+    if (settingsError || !settingsData || settingsData.length === 0) {
+      console.log("Usando token do ambiente já que não encontrou no banco:", settingsError)
+      // Se não encontrou no banco, usar do ambiente
+    }
+    
+    // Extrair token do banco de dados ou usar o do ambiente
+    let access_token = Deno.env.get('MP_ACCESS_TOKEN')
+    
+    if (settingsData && settingsData.length > 0) {
+      const tokenSetting = settingsData.find(s => s.key === 'MP_ACCESS_TOKEN')
+      if (tokenSetting && tokenSetting.value) {
+        access_token = tokenSetting.value
+        console.log("Usando token do banco de dados")
+      }
+    }
     
     if (!access_token) {
       console.error("Token do Mercado Pago não configurado")
@@ -91,9 +110,14 @@ serve(async (req) => {
       )
     }
     
+    // Configurar API do Mercado Pago
+    const mercadoPagoUrl = "https://api.mercadopago.com/v1"
+    
     // Testar conexão com o endpoint de pagamentos do Mercado Pago
     let mpResponse;
     try {
+      console.log("Realizando teste com o token:", access_token.substring(0, 10) + "...")
+      
       mpResponse = await fetch(`${mercadoPagoUrl}/payment_methods`, {
         method: 'GET',
         headers: {

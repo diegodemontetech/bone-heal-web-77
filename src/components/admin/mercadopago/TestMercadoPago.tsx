@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { testMercadoPagoConnection } from "@/services/payment-service";
 import { toast } from "sonner";
-import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Key } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 const TestMercadoPago = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +18,11 @@ const TestMercadoPago = () => {
     data?: any;
     timestamp?: string;
   } | null>(null);
+  
+  // Estado para novas credenciais
+  const [accessToken, setAccessToken] = useState("");
+  const [publicKey, setPublicKey] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleTestConnection = async () => {
     setIsLoading(true);
@@ -39,6 +48,55 @@ const TestMercadoPago = () => {
       toast.error("Erro ao testar conexão com Mercado Pago");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdateCredentials = async () => {
+    if (!accessToken || !publicKey) {
+      toast.error("Preencha ambos os campos de token e chave pública");
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      // Verificar formatos básicos
+      if (!accessToken.includes("-")) {
+        toast.error("O formato do Access Token parece inválido");
+        return;
+      }
+      
+      if (!publicKey.startsWith("APP_")) {
+        toast.warning("A chave pública geralmente começa com 'APP_', verifique se está correta");
+      }
+      
+      // Chamar função para atualizar as credenciais no Supabase
+      const { data, error } = await supabase.functions.invoke('update-mp-credentials', {
+        body: { 
+          accessToken,
+          publicKey
+        }
+      });
+      
+      if (error) {
+        console.error("Erro ao atualizar credenciais:", error);
+        toast.error("Erro ao atualizar credenciais do Mercado Pago");
+        return;
+      }
+      
+      toast.success("Credenciais do Mercado Pago atualizadas com sucesso!");
+      
+      // Limpar campos
+      setAccessToken("");
+      setPublicKey("");
+      
+      // Testar a nova conexão automaticamente
+      handleTestConnection();
+      
+    } catch (error) {
+      console.error("Error updating credentials:", error);
+      toast.error("Erro ao atualizar credenciais");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -101,6 +159,63 @@ const TestMercadoPago = () => {
             </div>
           </div>
         )}
+
+        <Separator className="my-6" />
+        
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-4 flex items-center">
+            <Key className="h-5 w-5 mr-2" />
+            Atualizar Credenciais do Mercado Pago
+          </h3>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="accessToken">Access Token</Label>
+              <Input
+                id="accessToken"
+                type="text"
+                value={accessToken}
+                onChange={(e) => setAccessToken(e.target.value)}
+                placeholder="ACCESS-TOKEN-XXXX-XXXX-XXXX"
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Token de acesso privado do Mercado Pago
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="publicKey">Chave Pública</Label>
+              <Input
+                id="publicKey"
+                type="text"
+                value={publicKey}
+                onChange={(e) => setPublicKey(e.target.value)}
+                placeholder="APP_USR-XXXX-XXXX-XXXX"
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Chave pública do Mercado Pago (geralmente começa com APP_USR)
+              </p>
+            </div>
+            
+            <Button 
+              onClick={handleUpdateCredentials}
+              disabled={isUpdating || !accessToken || !publicKey}
+              className="w-full"
+              variant="outline"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Atualizando...
+                </>
+              ) : (
+                'Atualizar Credenciais'
+              )}
+            </Button>
+          </div>
+        </div>
 
         <div className="text-sm text-gray-600 mt-4">
           <p>

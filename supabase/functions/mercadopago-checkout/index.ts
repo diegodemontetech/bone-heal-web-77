@@ -1,234 +1,136 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders, handleCors } from "../_shared/cors.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { corsHeaders } from "../_shared/cors.ts";
 
-// Generate a fallback QR code when API fails
-const generateFallbackQrCode = (content: string): string => {
-  return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(content)}`;
-};
+interface CheckoutRequest {
+  orderId: string;
+  items: Array<{
+    title: string;
+    quantity: number;
+    price: number;
+  }>;
+  shipping_cost?: number;
+  payer: {
+    email: string;
+  };
+}
 
 serve(async (req) => {
-  console.log("=== INÍCIO DA EXECUÇÃO DA FUNÇÃO MERCADOPAGO CHECKOUT ===");
-  
-  // Handle CORS preflight request using the shared helper
-  const corsResponse = handleCors(req);
-  if (corsResponse) {
-    console.log("Returning CORS preflight response with status 200");
-    return corsResponse;
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
-  
+
   try {
-    const mpAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
-    if (!mpAccessToken) {
-      throw new Error("MERCADOPAGO_ACCESS_TOKEN não está definido nas variáveis de ambiente");
+    // Configurar cliente Supabase
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Variáveis de ambiente do Supabase não configuradas");
     }
-    
-    console.log("Token MP disponível:", mpAccessToken ? "Sim (primeiros 10 chars: " + mpAccessToken.substring(0, 10) + ")" : "Não");
-    
-    const body = await req.text();
-    console.log("Request body recebido:", body);
-    
-    let requestData;
-    try {
-      requestData = JSON.parse(body);
-    } catch (e) {
-      console.error("Erro ao fazer parse do JSON:", e);
-      throw new Error("Corpo da requisição inválido. Esperado JSON válido.");
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Parse request body
+    const body: CheckoutRequest = await req.json();
+    const { orderId, items, shipping_cost = 0, payer } = body;
+
+    if (!orderId || !items || !Array.isArray(items) || items.length === 0) {
+      throw new Error("Parâmetros inválidos");
     }
+
+    console.log("Criando checkout para pedido:", orderId);
+
+    // Buscar credenciais do Mercado Pago do banco de dados
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('system_settings')
+      .select('key, value')
+      .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY']);
     
-    console.log("Dados processados:", JSON.stringify(requestData));
+    // Extrair token do banco de dados ou usar o do ambiente
+    let access_token = Deno.env.get('MP_ACCESS_TOKEN');
     
-    // Extrair dados do request - com validação de existência
-    const { orderId, items, shipping_cost } = requestData;
-    // Tratar o caso onde payer pode ser undefined
-    const payer = requestData.payer || { email: "cliente@example.com" };
-    
-    if (!orderId) {
-      throw new Error("orderId é obrigatório");
+    if (settingsData && settingsData.length > 0) {
+      const tokenSetting = settingsData.find(s => s.key === 'MP_ACCESS_TOKEN');
+      if (tokenSetting && tokenSetting.value) {
+        access_token = tokenSetting.value;
+        console.log("Usando token do banco de dados");
+      }
     }
-    
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      throw new Error("items é obrigatório e deve ser um array não vazio");
+
+    if (!access_token) {
+      throw new Error("Token do Mercado Pago não configurado");
     }
-    
-    // Calcular valor total da transação
-    const itemsTotal = items.reduce((total, item) => {
-      return total + (item.price * item.quantity);
-    }, 0);
-    
-    const totalAmount = itemsTotal + (shipping_cost || 0);
-    
-    // Criar objeto de pagamento para o Mercado Pago
-    const paymentData = {
-      transaction_amount: totalAmount,
-      description: `Pedido #${orderId}`,
-      payment_method_id: "pix",
-      payer: {
-        email: payer.email || "cliente@example.com",
-        first_name: "Cliente",
-        last_name: "Boneheal",
-        identification: {
-          type: "CPF",
-          number: "19119119100" // CPF genérico para testes
-        }
-      },
-      items: items.map(item => ({
-        id: item.id || `item-${Math.random().toString(36).substring(2, 11)}`,
+
+    // Preparar dados para a API do Mercado Pago
+    const preferenceData = {
+      external_reference: orderId,
+      items: items.map((item) => ({
         title: item.title,
-        quantity: item.quantity,
         unit_price: item.price,
-        currency_id: "BRL"
-      }))
+        quantity: item.quantity,
+      })),
+      shipments: {
+        cost: shipping_cost,
+        mode: "not_specified",
+      },
+      payment_methods: {
+        excluded_payment_types: [{ id: "credit_card" }, { id: "debit_card" }, { id: "ticket" }], // Permite apenas PIX
+        installments: 1,
+      },
+      payer: {
+        email: payer.email,
+      },
+      statement_descriptor: "BoneHeal",
+      expires: true,
+      expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
+      notification_url: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/api/webhook/mercadopago`,
+      back_urls: {
+        success: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/orders/confirmation/${orderId}`,
+        failure: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/checkout/payment`,
+        pending: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/orders/pending/${orderId}`,
+      },
     };
-    
-    console.log("Dados de pagamento preparados:", JSON.stringify(paymentData));
-    
-    try {
-      // Fazer requisição para o Mercado Pago
-      const response = await fetch("https://api.mercadopago.com/v1/payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${mpAccessToken}`,
-          "X-Idempotency-Key": orderId // Evita pagamentos duplicados com mesmo orderId
-        },
-        body: JSON.stringify(paymentData)
-      });
-      
-      console.log("Status da resposta MP:", response.status);
-      
-      const responseText = await response.text();
-      console.log("Resposta do Mercado Pago:", responseText);
-      
-      if (response.ok) {
-        try {
-          const data = JSON.parse(responseText);
-          
-          // Se temos dados de QR code, retornar para o cliente
-          if (data.point_of_interaction?.transaction_data?.qr_code) {
-            console.log("QR Code do PIX gerado com sucesso");
-            
-            return new Response(
-              JSON.stringify(data),
-              {
-                status: 200,
-                headers: {
-                  ...corsHeaders,
-                  "Content-Type": "application/json"
-                }
-              }
-            );
-          } else {
-            // Se não tem QR code, gerar um fallback
-            const pixCode = data.id ? `MP${data.id}` : `ORDER${orderId}`;
-            const fallbackData = {
-              ...data,
-              point_of_interaction: {
-                transaction_data: {
-                  qr_code: pixCode,
-                  qr_code_base64: generateFallbackQrCode(pixCode)
-                }
-              }
-            };
-            
-            console.log("QR Code não recebido, usando fallback");
-            
-            return new Response(
-              JSON.stringify(fallbackData),
-              {
-                status: 200, 
-                headers: {
-                  ...corsHeaders,
-                  "Content-Type": "application/json"
-                }
-              }
-            );
-          }
-        } catch (jsonError) {
-          console.error("Erro ao fazer parse da resposta do MP:", jsonError);
-          throw new Error("Resposta inválida do Mercado Pago");
-        }
-      } else {
-        // Se a requisição falhou, gerar um fallback
-        console.error("Erro na requisição para o Mercado Pago:", response.status);
-        
-        const fallbackPixCode = `ORDER${orderId}${Date.now()}`;
-        const fallbackData = {
-          id: `fallback_${orderId}`,
-          status: "pending",
-          point_of_interaction: {
-            transaction_data: {
-              qr_code: fallbackPixCode,
-              qr_code_base64: generateFallbackQrCode(fallbackPixCode)
-            }
-          }
-        };
-        
-        return new Response(
-          JSON.stringify(fallbackData),
-          {
-            status: 200,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-      }
-    } catch (fetchError) {
-      console.error("Erro na chamada da API do Mercado Pago:", fetchError);
-      
-      // Gerar dados de fallback em caso de erro
-      const fallbackPixCode = `ORDER${orderId}${Date.now()}`;
-      const fallbackData = {
-        id: `fallback_${orderId}`,
-        status: "pending",
-        error_message: fetchError.message,
-        point_of_interaction: {
-          transaction_data: {
-            qr_code: fallbackPixCode,
-            qr_code_base64: generateFallbackQrCode(fallbackPixCode)
-          }
-        }
-      };
-      
-      return new Response(
-        JSON.stringify(fallbackData),
-        {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json"
-          }
-        }
-      );
+
+    console.log("Dados da preferência:", JSON.stringify(preferenceData, null, 2));
+
+    // Criar preferência no Mercado Pago
+    const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
+      },
+      body: JSON.stringify(preferenceData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Erro na API do Mercado Pago: ${response.status} - ${errorText}`);
+      throw new Error(`Erro na API do Mercado Pago: ${errorText}`);
     }
+
+    const data = await response.json();
+    console.log("Resposta do Mercado Pago:", JSON.stringify(data, null, 2));
+
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+    });
   } catch (error) {
-    console.error("Erro geral na função:", error);
-    
-    // Sempre retornar um response válido, mesmo em caso de erro
-    const errorData = {
-      error: error.message || "Erro desconhecido",
-      timestamp: new Date().toISOString(),
-      point_of_interaction: {
-        transaction_data: {
-          qr_code: "ERRORPIX12345",
-          qr_code_base64: generateFallbackQrCode("ERRORPIX12345")
-        }
-      }
-    };
-    
+    console.error("Erro no checkout do Mercado Pago:", error);
+
     return new Response(
-      JSON.stringify(errorData),
+      JSON.stringify({
+        success: false,
+        message: "Erro ao processar pagamento via Mercado Pago",
+        error: error instanceof Error ? error.message : String(error),
+      }),
       {
-        status: 200, // Status 200 para o frontend processar
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json"
-        }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
       }
     );
-  } finally {
-    console.log("=== FIM DA EXECUÇÃO DA FUNÇÃO MERCADOPAGO CHECKOUT ===");
   }
 });
