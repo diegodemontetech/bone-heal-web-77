@@ -63,6 +63,8 @@ serve(async (req) => {
       throw new Error("Token do Mercado Pago não configurado");
     }
 
+    console.log("Token utilizado (primeiros caracteres):", access_token.substring(0, 10) + "...");
+
     // Preparar dados para a API do Mercado Pago
     const preferenceData = {
       external_reference: orderId,
@@ -105,6 +107,9 @@ serve(async (req) => {
       body: JSON.stringify(preferenceData),
     });
 
+    const responseStatus = response.status;
+    console.log("Status da resposta MP:", responseStatus);
+
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro na API do Mercado Pago: ${response.status} - ${errorText}`);
@@ -113,6 +118,16 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log("Resposta do Mercado Pago:", JSON.stringify(data, null, 2));
+
+    // Registrar o sucesso no log do sistema
+    await supabase
+      .from('system_logs')
+      .insert({
+        type: 'mercadopago_checkout',
+        source: 'edge_function',
+        status: 'success',
+        details: `Preferência criada para pedido ${orderId}`
+      });
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
