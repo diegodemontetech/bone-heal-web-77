@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ShoppingCart, Award, FileCheck, Factory, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/hooks/use-cart";
 import { toast } from "sonner";
 import { Product } from "@/types/product";
@@ -89,13 +88,6 @@ const ProductActions = ({ product, profile }: ProductActionsProps) => {
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
       {profile ? (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-500">Preço</span>
-            <span className="text-3xl font-bold text-black">
-              {formatCurrency(product.price || 0)}
-            </span>
-          </div>
-          
           <div className="space-y-4">
             <Button
               className="w-full py-5 text-sm md:text-base bg-green-600 hover:bg-green-700 text-white font-bold"

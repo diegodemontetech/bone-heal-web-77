@@ -10,6 +10,9 @@ export const formatProductName = (name: string): string => {
   // Remove unwanted parentheses
   let cleanName = name.replace(/\(\)|\(\s*\)/g, '').trim();
   
+  // Remove any OMIE code or other parenthetical content
+  cleanName = cleanName.replace(/\(.*?\)/g, '').trim();
+  
   // Check if the name contains "Bone Heal" or "Heal Bone" anywhere
   if (cleanName.includes("Bone Heal") || cleanName.includes("Heal Bone")) {
     // Extract dimensions from name if present

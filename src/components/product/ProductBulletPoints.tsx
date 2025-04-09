@@ -1,6 +1,7 @@
 
 import { Check } from "lucide-react";
 import { Product } from "@/types/product";
+import { extractDimensionsFromName } from "./tech-details/utils/dimensionsFormatter";
 
 interface ProductBulletPointsProps {
   product: Product;
@@ -29,6 +30,7 @@ const ProductBulletPoints = ({ product }: ProductBulletPointsProps) => {
 // Gera bullets padrão com base nas informações do produto quando não temos bullets específicos
 const generateDefaultBulletPoints = (product: Product): string[] => {
   const bulletPoints = [];
+  const dimensions = extractDimensionsFromName(product.name);
   
   if (product.name?.toLowerCase().includes("bone heal")) {
     bulletPoints.push("Barreira de polipropileno não absorvível 100% impermeável");
@@ -37,6 +39,7 @@ const generateDefaultBulletPoints = (product: Product): string[] => {
     bulletPoints.push("Não adere aos tecidos, reduzindo a morbidade");
     bulletPoints.push("Compatível com todos os sistemas de implantes");
     bulletPoints.push("Excelentes resultados em regeneração óssea guiada");
+    bulletPoints.push(`Dimensões: ${dimensions}`);
   } else if (product.name?.toLowerCase().includes("heal bone")) {
     bulletPoints.push("Película biocompatível 100% em polipropileno");
     bulletPoints.push("Projetada para permanecer exposta ao meio bucal");
@@ -44,16 +47,17 @@ const generateDefaultBulletPoints = (product: Product): string[] => {
     bulletPoints.push("Elimina problemas de deiscência de sutura");
     bulletPoints.push("Ideal para todos os casos pós-exodontias");
     bulletPoints.push("Regeneração tanto do tecido ósseo quanto do tecido mole");
+    bulletPoints.push(`Dimensões: ${dimensions}`);
   } else {
     bulletPoints.push("Produto de alta qualidade para regeneração óssea");
     bulletPoints.push("Desenvolvido com tecnologia exclusiva");
     bulletPoints.push("Segurança e eficácia clinicamente comprovadas");
     bulletPoints.push("Registrado na ANVISA");
-  }
-  
-  // Adicionar dimensões se disponíveis
-  if (product.length && product.width) {
-    bulletPoints.push(`Dimensões: ${product.length}mm x ${product.width}mm`);
+    
+    // Adicionar dimensões se disponíveis no nome do produto
+    if (dimensions !== "Consulte embalagem") {
+      bulletPoints.push(`Dimensões: ${dimensions}`);
+    }
   }
   
   return bulletPoints;
