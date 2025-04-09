@@ -45,7 +45,7 @@ const ContactForm = () => {
   const departments = [
     { id: 1, department: 'Comercial' },
     { id: 2, department: 'Logística' },
-    { id: 3, department: 'Administrativo' },
+    { id: 3, department: 'Financeiro' },
     { id: 4, department: 'Suporte Técnico' },
     { id: 5, department: 'Consultoria' },
   ];

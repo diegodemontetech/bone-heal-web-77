@@ -11,7 +11,7 @@ export const ProductPricing: React.FC<ProductPricingProps> = ({ price }) => {
   const formattedPrice = formatCurrency(price);
 
   return (
-    <div className="mt-3 mb-4">
+    <div className="my-4">
       <div className="font-bold text-2xl md:text-3xl text-gray-900">
         {formattedPrice}
       </div>

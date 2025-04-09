@@ -1,158 +1,136 @@
 
-import React from 'react';
-import { MessageCircle, User } from 'lucide-react';
-
-interface Question {
-  id: string;
-  author: string;
-  role: string;
-  date: string;
-  content: string;
-  answer: {
-    author: string;
-    date: string;
-    content: string;
-  };
-}
+import { useState } from "react";
+import { Avatar } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 
 interface ProductQuestionsProps {
   productId: string;
 }
 
 const ProductQuestions = ({ productId }: ProductQuestionsProps) => {
-  // Estas são perguntas artificiais para demonstração
-  const questions: Question[] = [
+  // In a real implementation, you would fetch questions from an API
+  // For now, using sample data based on the provided questions
+  const [questions] = useState([
     {
       id: "1",
-      author: "Ricardo Mendes",
-      role: "Dentista",
+      question: "Qual o tempo de permanência recomendado para a membrana Bone Heal após a exodontia?",
+      answer: "O tempo de permanência da membrana Bone Heal varia de acordo com o caso clínico. Normalmente, pode ser removida a partir de 7 dias, tempo suficiente para a formação do tecido de granulação. Todavia, nada impede que seja removida depois de 7 dias, não havendo necessidade de deixá-la até 28 dias.",
+      asker: {
+        name: "Ricardo Mendes",
+        role: "Dentista",
+        initial: "R"
+      },
       date: "15 de maio de 2022",
-      content: "Qual o tempo de permanência recomendado para a membrana Bone Heal após a exodontia?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "17 de maio de 2022",
-        content: "O tempo de permanência da membrana Bone Heal varia de acordo com o caso clínico. Normalmente, pode ser removida a partir de 7 dias, tempo suficiente para a formação do tecido de granulação. Todavia, nada impede que seja removida depois de 7 dias, não havendo necessidade de deixá-la até 28 dias."
-      }
+      answerDate: "17 de maio de 2022"
     },
     {
       id: "2",
-      author: "Eduardo Nascimento",
-      role: "Cirurgião-Dentista",
+      question: "Qual a vida útil/validade das membranas Bone Heal e Heal Bone após a abertura da embalagem?",
+      answer: "A validade é de 3 anos a partir da data de fabricação, conforme indicado na embalagem.",
+      asker: {
+        name: "Eduardo Nascimento",
+        role: "Cirurgião-Dentista",
+        initial: "E"
+      },
       date: "17 de março de 2024",
-      content: "Qual a vida útil/validade das membranas Bone Heal e Heal Bone após a abertura da embalagem?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "18 de março de 2024",
-        content: "A validade é de 3 anos a partir da data de fabricação, conforme indicado na embalagem."
-      }
+      answerDate: "18 de março de 2024"
     },
     {
       id: "3",
-      author: "Matheus Silva",
-      role: "Dentista",
+      question: "A membrana pode ser utilizada em pacientes com diabetes controlada?",
+      answer: "Tanto Bone Heal® quanto Heal Bone® podem ser usadas em qualquer paciente que possa ser submetido à cirurgia de exodontia. Os cuidados pré e pós-operatórios dependem da avaliação sistêmica.",
+      asker: {
+        name: "Matheus Silva",
+        role: "Dentista",
+        initial: "M"
+      },
       date: "18 de março de 2023",
-      content: "A membrana pode ser utilizada em pacientes com diabetes controlada?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "20 de março de 2023",
-        content: "Tanto Bone Heal® quanto Heal Bone® podem ser usadas em qualquer paciente que possa ser submetido à cirurgia de exodontia. Os cuidados pré e pós-operatórios dependem da avaliação sistêmica."
-      }
+      answerDate: "20 de março de 2023"
     },
     {
       id: "4",
-      author: "Rogério Campos",
-      role: "Dentista",
+      question: "Posso associar a membrana Bone Heal com biomateriais de enxerto ósseo?",
+      answer: "Sim, a membrana Bone Heal® ou Heal Bone® pode ser perfeitamente associada com biomateriais de enxerto ósseo. Um dos grandes diferenciais da técnica ROG-M (Regeneração Óssea Guiada Modificada) com Bone Heal® é justamente trabalhar apenas com o coágulo sanguíneo, pois todos os biomateriais, sem exceção, interferem na osteogênese.",
+      asker: {
+        name: "Rogério Campos",
+        role: "Dentista",
+        initial: "R"
+      },
       date: "22 de novembro de 2023",
-      content: "Posso associar a membrana Bone Heal com biomateriais de enxerto ósseo?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "23 de novembro de 2023",
-        content: "Sim, a membrana Bone Heal® ou Heal Bone® pode ser perfeitamente associada com biomateriais de enxerto ósseo. Um dos grandes diferenciais da técnica ROG-M (Regeneração Óssea Guiada Modificada) com Bone Heal® é justamente trabalhar apenas com o coágulo sanguíneo, pois todos os biomateriais, sem exceção, interferem na osteogênese."
-      }
+      answerDate: "23 de novembro de 2023"
     },
     {
       id: "5",
-      author: "Felipe Albuquerque",
-      role: "Cirurgião-Dentista",
+      question: "Qual a diferença entre o Bone Heal e o Heal Bone? Em quais casos devo escolher um ou outro?",
+      answer: "Tanto o Bone Heal® quanto o Heal Bone® são membranas não-reabsorvíveis de polipropileno para regeneração óssea guiada. A principal diferença está na no processo fabril. Heal Bone® foi projetada para permanecer até 28 dias implantada. Bone Heal® pode ser deixada por tempo indeterminado.",
+      asker: {
+        name: "Felipe Albuquerque",
+        role: "Cirurgião-Dentista",
+        initial: "F"
+      },
       date: "10 de setembro de 2022",
-      content: "Qual a diferença entre o Bone Heal e o Heal Bone? Em quais casos devo escolher um ou outro?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "12 de setembro de 2022",
-        content: "Tanto o Bone Heal® quanto o Heal Bone® são membranas não-reabsorvíveis de polipropileno para regeneração óssea guiada. A principal diferença está na no processo fabril. Heal Bone® foi projetada para permanecer até 28 dias implantada. Bone Heal® pode ser deixada por tempo indeterminado."
-      }
+      answerDate: "12 de setembro de 2022"
     },
     {
       id: "6",
-      author: "Carolina Ferreira",
-      role: "Implantodontista",
+      question: "A membrana Bone Heal pode ser usada em casos de implante imediato?",
+      answer: "Sim, a membrana Bone Heal® é altamente recomendada para casos de implantes imediatos. É imprescindível que haja espaço entre o implante e a Bone Heal® ou Heal Bone®. Quanto maior for o gap mais previsível o resultado.",
+      asker: {
+        name: "Carolina Ferreira",
+        role: "Implantodontista",
+        initial: "C"
+      },
       date: "23 de julho de 2022",
-      content: "A membrana Bone Heal pode ser usada em casos de implante imediato?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "24 de julho de 2022",
-        content: "Sim, a membrana Bone Heal® é altamente recomendada para casos de implantes imediatos. É imprescindível que haja espaço entre o implante e a Bone Heal® ou Heal Bone®. Quanto maior for o gap mais previsível o resultado."
-      }
+      answerDate: "24 de julho de 2022"
     },
     {
       id: "7",
-      author: "Paulo Roberto",
-      role: "Implantodontista",
+      question: "É possível usar o Bone Heal em casos de preservação alveolar pós-extração de dentes com lesão periapical?",
+      answer: "Sim, o Bone Heal® ou Heal Bone® podem ser indicados também para casos de preservação alveolar após extração de dentes com lesão periapical, desde que se trate de lesões crônicas.",
+      asker: {
+        name: "Paulo Roberto",
+        role: "Implantodontista",
+        initial: "P"
+      },
       date: "07 de junho de 2023",
-      content: "É possível usar o Bone Heal em casos de preservação alveolar pós-extração de dentes com lesão periapical?",
-      answer: {
-        author: "Equipe Bone Heal",
-        date: "08 de junho de 2023",
-        content: "Sim, o Bone Heal® ou Heal Bone® podem ser indicados também para casos de preservação alveolar após extração de dentes com lesão periapical, desde que se trate de lesões crônicas."
-      }
-    }
-  ];
+      answerDate: "08 de junho de 2023"
+    },
+  ]);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm mb-12">
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <MessageCircle className="h-5 w-5 text-primary" />
-        Perguntas Frequentes
-      </h2>
-
-      <div className="space-y-8">
-        {questions.map((question) => (
-          <div key={question.id} className="border-b border-gray-100 pb-6 last:border-0">
-            <div className="flex gap-3 mb-4">
-              <div className="flex-shrink-0">
-                <div className="bg-gray-100 h-10 w-10 rounded-full flex items-center justify-center text-gray-600 font-medium">
-                  {question.author.charAt(0)}
-                </div>
-              </div>
+    <div className="bg-white p-6 rounded-lg shadow-sm">
+      <h2 className="text-2xl font-bold mb-4">Perguntas e Respostas</h2>
+      
+      <div className="space-y-6">
+        {questions.map((item) => (
+          <div key={item.id} className="pb-6">
+            <div className="flex items-start gap-4 mb-3">
+              <Avatar className="h-10 w-10 bg-primary text-white">
+                <span>{item.asker.initial}</span>
+              </Avatar>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">{question.author}</span>
-                  <span className="text-xs text-gray-500">•</span>
-                  <span className="text-xs text-gray-500">{question.role}</span>
+                <div className="flex flex-col">
+                  <span className="font-medium">{item.asker.name}</span>
+                  <span className="text-sm text-gray-500">{item.asker.role} • {item.date}</span>
                 </div>
-                <p className="text-sm text-gray-500 mb-2">{question.date}</p>
-                <p className="font-medium text-gray-800">{question.content}</p>
+                <p className="mt-2 text-gray-800 font-medium">{item.question}</p>
               </div>
             </div>
-
-            {question.answer && (
-              <div className="ml-12 pl-4 border-l-2 border-primary/20">
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0">
-                    <div className="bg-primary/10 h-8 w-8 rounded-full flex items-center justify-center text-primary font-medium text-xs">
-                      BH
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-primary">{question.answer.author}</span>
-                      <span className="text-xs text-gray-500">{question.answer.date}</span>
-                    </div>
-                    <p className="text-gray-700 mt-1">{question.answer.content}</p>
-                  </div>
+            
+            <div className="ml-14 mt-3 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <Avatar className="h-8 w-8 bg-blue-600 text-white">
+                  <span>BH</span>
+                </Avatar>
+                <div>
+                  <span className="font-medium">Equipe Bone Heal</span>
+                  <span className="text-xs text-gray-500 ml-2">{item.answerDate}</span>
                 </div>
               </div>
-            )}
+              <p className="text-gray-700">{item.answer}</p>
+            </div>
+            
+            {questions.indexOf(item) < questions.length - 1 && <Separator className="mt-6" />}
           </div>
         ))}
       </div>
