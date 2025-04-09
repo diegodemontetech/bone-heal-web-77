@@ -49,15 +49,19 @@ const ReviewsTab = ({ productId }: ReviewsTabProps) => {
     });
   };
 
+  const hasReviews = reviews.length > 0;
+
   return (
     <div className="space-y-6">
-      {reviews.length > 0 && (
+      {hasReviews && (
         <ReviewsSummary reviews={reviews} />
       )}
 
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="text-lg font-medium">Avaliações dos Clientes</h4>
-      </div>
+      {hasReviews && (
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-lg font-medium">Avaliações dos Clientes</h4>
+        </div>
+      )}
 
       {session && (
         <ReviewForm
@@ -72,7 +76,7 @@ const ReviewsTab = ({ productId }: ReviewsTabProps) => {
       
       <ReviewsList loading={loading} reviews={reviews} />
       
-      {!session && reviews.length > 0 && (
+      {!session && hasReviews && (
         <div className="mt-6 text-center">
           <p className="text-gray-600 mb-2">Compartilhe sua experiência com este produto</p>
           <button 

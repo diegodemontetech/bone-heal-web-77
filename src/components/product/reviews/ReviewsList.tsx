@@ -1,7 +1,6 @@
 
 import { Loader2 } from "lucide-react";
 import ReviewItem from "./ReviewItem";
-import { sortProductsByBrand } from "@/utils/product-formatters";
 
 interface ReviewsListProps {
   loading: boolean;
@@ -15,6 +14,11 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // If there are no reviews, return null instead of showing a message
+  if (reviews.length === 0) {
+    return null;
   }
 
   // First sort by brand (Bone Heal first, then Heal Bone),
@@ -38,16 +42,6 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
     // Lastly by date (newest first)
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
-
-  if (sortedReviews.length === 0) {
-    return (
-      <div className="bg-gray-50 border rounded-lg p-8 text-center">
-        <p className="text-gray-500">
-          Ainda não há avaliações para este produto.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
