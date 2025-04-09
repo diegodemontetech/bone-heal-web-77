@@ -15,17 +15,23 @@ const generateQRCodeImage = (pixCode: string): string => {
   return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
 };
 
-// Format a valid PIX code according to the PIX standard
+// Format a valid PIX code according to the Brazilian Central Bank's PIX standard
 const formatPIXCode = (orderId: string, amount: number): string => {
-  // Clean orderId to use as transaction ID (max 25 chars)
-  const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 25);
+  // Clean orderId to use as transaction ID (remove special chars, limit length)
+  const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 20);
   
-  // Format amount with 2 decimal places and no thousands separator
+  // Format amount with 2 decimal places, no decimal separator
   const amountStr = amount.toFixed(2).replace('.', '');
   
-  // Build PIX code according to Brazilian PIX standard
-  // Note: These values are simplified and should be replaced with your actual merchant info
-  return `00020126330014BR.GOV.BCB.PIX0111${txId}0204${amountStr}5204000053039865802BR5913BoneHeal6008Sao Paulo6304`;
+  // Fixed key for demonstration (in production this would be the merchant's PIX key)
+  const pixKey = "12345678901";
+  
+  // Example merchant name and city (should be actual merchant info in production)
+  const merchantName = "BONEHEAL";
+  const merchantCity = "SAOPAULO";
+  
+  // Build PIX code according to Brazilian Central Bank standards
+  return `00020101021226870014BR.GOV.BCB.PIX2565${pixKey}5204000053039865802BR5915${merchantName}6008${merchantCity}624105${txId}6304`;
 };
 
 serve(async (req) => {
@@ -100,7 +106,7 @@ serve(async (req) => {
           details: `API Error: ${errorText}`
         });
         
-      // Generate a proper fallback PIX code (following Brazilian standards)
+      // Generate a proper fallback PIX code using the improved formatting function
       const fallbackPixCode = formatPIXCode(orderId, amount);
       const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
       

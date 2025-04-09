@@ -18,6 +18,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [qrCodeImageSrc, setQrCodeImageSrc] = useState<string | null>(null);
   const [qrCodeError, setQrCodeError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [extractedPixCode, setExtractedPixCode] = useState('');
 
   useEffect(() => {
     // Reset state when pix code changes
@@ -27,21 +28,36 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     
     if (pixCode) {
       try {
-        // Check if the pixCode is already a base64 image or URL
-        if (pixCode.startsWith('data:image') || pixCode.startsWith('http')) {
-          console.log("Using provided QR code image URL/base64");
-          
-          // Fix for Google Charts API QR codes
-          if (pixCode.includes('chart.googleapis.com')) {
-            // Use the pixCode directly without modification
-            setQrCodeImageSrc(pixCode);
-          } else {
-            setQrCodeImageSrc(pixCode);
+        // Extract the actual PIX text code - this is crucial for the user to copy
+        let pixTextCode = pixCode;
+        
+        // If pixCode is a Google Charts URL, try to extract the code parameter
+        if (pixCode.includes('chart.googleapis.com')) {
+          try {
+            const url = new URL(pixCode);
+            const chl = url.searchParams.get('chl');
+            if (chl) {
+              pixTextCode = decodeURIComponent(chl);
+            }
+          } catch (e) {
+            console.error("Failed to extract PIX code from URL:", e);
           }
+        }
+        
+        // Store the extracted code for copying
+        setExtractedPixCode(pixTextCode);
+        
+        // Check if the pixCode is already a base64 image or URL for display
+        if (pixCode.startsWith('data:image')) {
+          console.log("Using provided Base64 QR code");
+          setQrCodeImageSrc(pixCode);
+        } else if (pixCode.startsWith('http')) {
+          console.log("Using provided QR code URL");
+          setQrCodeImageSrc(pixCode);
         } else {
           console.log("Converting PIX code to QR code:", pixCode.substring(0, 20) + "...");
-          // Use Google Charts API to generate QR code with proper encoding
-          const timestamp = new Date().getTime(); // Add timestamp to prevent caching
+          // Generate a fresh QR code with a timestamp to prevent caching
+          const timestamp = new Date().getTime();
           const encodedData = encodeURIComponent(pixCode);
           setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
         }
@@ -54,18 +70,8 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
 
   const copyToClipboard = async () => {
     try {
-      // For URLs that contain QR codes, extract just the PIX text code if possible
-      let textToCopy = pixCode;
-      
-      // If it's a URL but we have a text version of the code, use that instead
-      if (pixCode.startsWith('http') && pixCode.includes('chart.googleapis.com')) {
-        // Try to extract the PIX code from the URL query parameter
-        const url = new URL(pixCode);
-        const chl = url.searchParams.get('chl');
-        if (chl) {
-          textToCopy = decodeURIComponent(chl);
-        }
-      }
+      // Always use the extracted PIX code, which should be the raw text code
+      const textToCopy = extractedPixCode || pixCode;
       
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
@@ -117,19 +123,6 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       </div>
     );
   }
-  
-  // Extract the actual PIX code from URL if needed
-  const displayPixCode = pixCode.startsWith('http') && pixCode.includes('chart.googleapis.com')
-    ? (() => {
-        try {
-          const url = new URL(pixCode);
-          const chl = url.searchParams.get('chl');
-          return chl ? decodeURIComponent(chl) : pixCode;
-        } catch {
-          return pixCode;
-        }
-      })()
-    : pixCode;
 
   return (
     <div className="flex flex-col items-center p-4">
@@ -155,12 +148,11 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             src={qrCodeImageSrc} 
             alt="QR Code PIX" 
             className="h-64 w-64 mx-auto" 
-            onError={(e) => {
+            onError={() => {
               console.error("Erro ao carregar QR code");
               setQrCodeError(true);
             }}
             onLoad={() => {
-              // Successfully loaded QR code
               setQrCodeError(false);
             }}
           />
@@ -203,7 +195,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       {showCodeText && (
         <div className="mt-4 w-full">
           <div className="p-3 bg-gray-50 border rounded-md text-xs font-mono overflow-x-auto break-all">
-            {displayPixCode}
+            {extractedPixCode || pixCode}
           </div>
           <p className="text-xs text-center mt-2 text-muted-foreground">
             O código completo será copiado ao clicar no botão acima
