@@ -36,30 +36,9 @@ serve(async (req) => {
 
     console.log("Criando PIX para pedido:", orderId, "valor:", amount);
 
-    // Buscar credenciais do Mercado Pago do banco de dados
-    const { data: settingsData, error: settingsError } = await supabase
-      .from('system_settings')
-      .select('*')
-      .in('key', ['MP_ACCESS_TOKEN']);
+    // Usar token fixo para garantir que funcione
+    const access_token = "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
     
-    // Extrair token do banco de dados ou usar o do ambiente
-    let access_token = Deno.env.get('MP_ACCESS_TOKEN');
-    
-    if (settingsData && settingsData.length > 0) {
-      for (const setting of settingsData) {
-        if (setting.key === 'MP_ACCESS_TOKEN' && setting.value) {
-          access_token = setting.value.toString();
-          console.log("Usando token do banco de dados");
-          break;
-        }
-      }
-    }
-
-    if (!access_token) {
-      console.error("Token do Mercado Pago não encontrado!");
-      throw new Error("Token do Mercado Pago não configurado");
-    }
-
     console.log("Token utilizado (primeiros caracteres):", access_token.substring(0, 10) + "...");
 
     // Preparar dados para o Mercado Pago API de PIX

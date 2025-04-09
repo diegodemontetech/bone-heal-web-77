@@ -25,18 +25,13 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     setQrCodeError(false);
     
     if (pixCode) {
-      // Check if the pixCode is a base64 image or URL
+      // Check if the pixCode is already a base64 image or URL
       if (pixCode.startsWith('data:image') || pixCode.startsWith('http')) {
+        console.log("Using provided QR code image URL/base64");
         setQrCodeImageSrc(pixCode);
       } else {
-        // Generate QR code from text if it's not an image URL
-        try {
-          const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
-          setQrCodeImageSrc(qrCodeUrl);
-        } catch (error) {
-          console.error("Error generating QR code URL:", error);
-          setQrCodeError(true);
-        }
+        console.log("Converting PIX code to QR code:", pixCode.substring(0, 20) + "...");
+        setQrCodeImageSrc(pixCode);
       }
     }
   }, [pixCode]);
@@ -63,8 +58,15 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     if (pixCode) {
       try {
         setQrCodeError(false);
-        const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}&t=${Date.now()}`;
-        setQrCodeImageSrc(qrCodeUrl);
+        // Try to regenerate QR code with timestamp to avoid cache issues
+        if (pixCode.startsWith('data:image') || pixCode.startsWith('http')) {
+          setQrCodeImageSrc(`${pixCode.split('?')[0]}?t=${Date.now()}`);
+        } else {
+          // Handle text PIX code
+          toast.info("Usando QR code alternativo");
+          const qrCodeUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}&t=${Date.now()}`;
+          setQrCodeImageSrc(qrCodeUrl);
+        }
       } catch (error) {
         console.error("Error regenerating QR code:", error);
         setQrCodeError(true);
@@ -112,9 +114,10 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
               Tentar novamente
             </Button>
           </div>
-        ) : qrCodeImageSrc ? (
+        ) : pixCode.startsWith('data:image') || pixCode.startsWith('http') ? (
+          // If the pixCode is an image URL or base64
           <img 
-            src={qrCodeImageSrc} 
+            src={qrCodeImageSrc || ''} 
             alt="QR Code PIX" 
             className="h-64 w-64 mx-auto" 
             onError={(e) => {
@@ -123,9 +126,16 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             }}
           />
         ) : (
-          <div className="h-64 w-64 flex items-center justify-center bg-gray-100 rounded-lg">
-            <QrCode className="h-16 w-16 text-gray-300" />
-          </div>
+          // If we're dealing with a text PIX code, generate QR code
+          <img 
+            src={`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`}
+            alt="QR Code PIX" 
+            className="h-64 w-64 mx-auto"
+            onError={(e) => {
+              console.error("Erro ao gerar QR code a partir do texto");
+              setQrCodeError(true);
+            }}
+          />
         )}
       </div>
       

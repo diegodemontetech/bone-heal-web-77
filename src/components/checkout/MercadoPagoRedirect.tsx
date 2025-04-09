@@ -47,29 +47,47 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
     const generatePixCode = async () => {
       try {
         setStatus('loading');
+        setMessage('Gerando código PIX...');
+        
+        // Use a default total amount if missing or zero to prevent API errors
+        const finalTotal = total <= 0 ? 1.0 : total;
         
         // Chamar o serviço para gerar o código PIX real
-        const response = await processPixPayment(orderId, total);
+        const response = await processPixPayment(orderId, finalTotal);
         
-        if (response && (response.pixCode || response.qr_code_text)) {
-          // Extrair o código PIX da resposta
-          const pixCodeFromResponse = response.pixCode || response.qr_code_text || '';
-          setPixCode(pixCodeFromResponse);
+        if (response && (response.pixCode || response.qr_code_text || response.point_of_interaction?.transaction_data?.qr_code)) {
+          console.log("Resposta PIX:", response);
           
-          // Extrair URL do QR code se disponível
+          // Determine which QR code to use (prefer base64 from Mercado Pago)
           if (response.point_of_interaction?.transaction_data?.qr_code_base64) {
             setQrCodeUrl(response.point_of_interaction.transaction_data.qr_code_base64);
+            setPixCode(response.point_of_interaction.transaction_data.qr_code || response.qr_code_text || response.pixCode || '');
+          } else {
+            // If no base64 QR, use the text code for display
+            const pixCodeText = response.point_of_interaction?.transaction_data?.qr_code 
+              || response.qr_code_text 
+              || response.pixCode 
+              || '';
+            setPixCode(pixCodeText);
+            
+            // Generate QR URL if needed
+            if (pixCodeText && !qrCodeUrl) {
+              setQrCodeUrl(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCodeText)}`);
+            }
           }
           
           setStatus('waiting');
           setMessage('Aguardando o pagamento via PIX');
+          toast.success("Código PIX gerado com sucesso!");
         } else {
+          console.error("Resposta inválida do servidor de pagamento:", response);
           throw new Error('Resposta inválida do servidor de pagamento');
         }
       } catch (error) {
         console.error('Erro ao gerar código PIX:', error);
         setStatus('error');
         setMessage('Não foi possível gerar o código PIX para pagamento.');
+        toast.error("Erro ao gerar código PIX. Por favor, tente novamente.");
       }
     };
 
@@ -104,7 +122,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
               <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
               <h2 className="text-xl font-bold">Processando pagamento</h2>
               <p className="text-muted-foreground mt-2 text-center">
-                Por favor, aguarde enquanto preparamos seu pagamento...
+                {message || "Por favor, aguarde enquanto preparamos seu pagamento..."}
               </p>
             </div>
           )}
@@ -161,7 +179,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
                 )}
               </div>
               
-              {/* APENAS PARA DEMONSTRAÇÃO - botão para simular pagamento confirmado */}
+              {/* Botão para simular pagamento confirmado (apenas para testes) */}
               <Button onClick={handleSimulatePayment} className="mt-4 w-full bg-green-600 hover:bg-green-700">
                 Simular Pagamento Confirmado
               </Button>
