@@ -307,16 +307,23 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
       return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
 
+    // Type assertion to help TypeScript understand the structure
+    interface OrderData {
+      payment_details?: Record<string, any> | null;
+      mp_preference_id?: string | null;
+    }
+    
+    // Cast to the expected type
+    const orderData = data as OrderData;
+
     // Safely access payment_details if it exists
-    const paymentDetails = data.payment_details as Record<string, any> | null;
-    if (paymentDetails && 'init_point' in paymentDetails) {
-      return paymentDetails.init_point as string;
+    if (orderData.payment_details && 'init_point' in orderData.payment_details) {
+      return orderData.payment_details.init_point as string;
     }
     
     // Safely access mp_preference_id if it exists
-    const preferenceId = data.mp_preference_id as string | null;
-    if (preferenceId) {
-      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`;
+    if (orderData.mp_preference_id) {
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${orderData.mp_preference_id}`;
     }
     
     return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
@@ -325,3 +332,4 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
     return `https://www.mercadopago.com.br/checkout/v1/redirect?test=true&preference_id=${orderId}`;
   }
 };
+
