@@ -1,6 +1,5 @@
 
 import React from "react";
-import { useInstallments } from "@/hooks/use-installments";
 import { formatCurrency, formatInstallment } from "@/utils/price-formatters";
 
 interface ProductPricingProps {
@@ -8,8 +7,6 @@ interface ProductPricingProps {
 }
 
 export const ProductPricing: React.FC<ProductPricingProps> = ({ price }) => {
-  const { installments } = useInstallments(price || 0, 6);
-  const installmentValue = installments.length > 0 ? installments[installments.length - 1].value : 0;
   const formattedInstallment = formatInstallment(price, 6);
   const formattedPrice = formatCurrency(price);
 

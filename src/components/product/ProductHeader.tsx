@@ -16,9 +16,6 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
       <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{formattedName}</h1>
       
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="outline" className="font-normal bg-primary/10">
-          Registro ANVISA: 81197590000
-        </Badge>
         <Badge className="bg-green-50 text-green-700 hover:bg-green-100 border border-green-200">
           <div className="flex items-center">
             <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400 mr-1" />
