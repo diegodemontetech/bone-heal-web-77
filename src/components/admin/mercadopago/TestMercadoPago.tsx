@@ -36,10 +36,11 @@ const TestMercadoPago = () => {
     const fetchCredentials = async () => {
       try {
         setIsLoading(true);
+        // Using raw query to avoid TypeScript issues with table schema
         const { data, error } = await supabase
-          .from('system_settings')
-          .select('*')
-          .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET']);
+          .rpc('get_system_settings', { 
+            setting_keys: ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET'] 
+          });
 
         if (error) {
           console.error('Erro ao carregar credenciais:', error);
