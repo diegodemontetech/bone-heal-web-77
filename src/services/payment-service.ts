@@ -293,25 +293,21 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('mp_preference_id, mp_sandbox_init_point, payment_details')
+      .select('mp_preference_id, payment_details')
       .eq('id', orderId)
       .single();
     
-    if (error || !data) {
+    if (error) {
       console.error("Error getting order redirect URL:", error);
-      throw error;
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
     
-    if (data.payment_details && data.payment_details.init_point) {
+    if (data && data.payment_details && data.payment_details.init_point) {
       return data.payment_details.init_point;
     }
     
-    if (data.mp_preference_id) {
+    if (data && data.mp_preference_id) {
       return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.mp_preference_id}`;
-    }
-    
-    if (data.mp_sandbox_init_point) {
-      return data.mp_sandbox_init_point;
     }
     
     return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
