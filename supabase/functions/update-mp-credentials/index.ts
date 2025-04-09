@@ -1,109 +1,132 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
-import { corsHeaders } from "../_shared/cors.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { corsHeaders } from "../_shared/cors.ts";
 
-interface CredentialsRequest {
+interface UpdateCredentialsRequest {
   accessToken: string;
   publicKey: string;
-}
-
-interface CredentialsResponse {
-  success: boolean;
-  message: string;
-  error?: string;
+  clientId?: string;
+  clientSecret?: string;
 }
 
 serve(async (req) => {
   // Lidar com requisições OPTIONS para CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
-  
+
   try {
+    // Parse request body
+    const { accessToken, publicKey, clientId, clientSecret }: UpdateCredentialsRequest = await req.json();
+
+    if (!accessToken || !publicKey) {
+      throw new Error("Credenciais incompletas. Forneça pelo menos accessToken e publicKey.");
+    }
+
+    console.log("Atualizando credenciais do Mercado Pago");
+    
     // Configurar cliente Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Variáveis de ambiente do Supabase não configuradas corretamente")
+      throw new Error("Variáveis de ambiente do Supabase não configuradas");
     }
     
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Extrair credenciais do body
-    const { accessToken, publicKey } = await req.json() as CredentialsRequest
-    
-    if (!accessToken || !publicKey) {
-      throw new Error("Token de acesso e chave pública são obrigatórios")
-    }
-    
-    console.log("Atualizando credenciais do Mercado Pago")
-    
-    // Armazenar credenciais na tabela de configurações do sistema
-    const { error: insertError } = await supabase
+    // Atualizar ou inserir configuração na tabela 'system_settings'
+    console.log("Salvando Access Token");
+    const { error: accessTokenError } = await supabase
       .from('system_settings')
-      .upsert([
-        {
-          key: 'MP_ACCESS_TOKEN',
-          value: accessToken,
-          updated_at: new Date().toISOString()
-        },
-        {
-          key: 'MP_PUBLIC_KEY',
-          value: publicKey,
-          updated_at: new Date().toISOString()
-        }
-      ])
-      
-    if (insertError) {
-      console.error("Erro ao armazenar credenciais:", insertError)
-      throw new Error(`Erro ao armazenar credenciais: ${insertError.message}`)
+      .upsert({
+        key: 'MP_ACCESS_TOKEN',
+        value: accessToken,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'key'
+      });
+
+    if (accessTokenError) {
+      throw new Error(`Erro ao salvar Access Token: ${accessTokenError.message}`);
     }
-    
-    // Registrar evento de atualização no log
-    const { error: logError } = await supabase
+
+    console.log("Salvando Public Key");
+    const { error: publicKeyError } = await supabase
+      .from('system_settings')
+      .upsert({
+        key: 'MP_PUBLIC_KEY',
+        value: publicKey,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'key'
+      });
+
+    if (publicKeyError) {
+      throw new Error(`Erro ao salvar Public Key: ${publicKeyError.message}`);
+    }
+
+    // Opcionais: Client ID e Client Secret
+    if (clientId) {
+      console.log("Salvando Client ID");
+      await supabase
+        .from('system_settings')
+        .upsert({
+          key: 'MP_CLIENT_ID',
+          value: clientId,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
+    }
+
+    if (clientSecret) {
+      console.log("Salvando Client Secret");
+      await supabase
+        .from('system_settings')
+        .upsert({
+          key: 'MP_CLIENT_SECRET',
+          value: clientSecret,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
+    }
+
+    // Registrar no log do sistema
+    await supabase
       .from('system_logs')
       .insert({
-        type: 'credentials_update',
-        source: 'mercadopago',
+        type: 'mercadopago_credentials',
+        source: 'edge_function',
         status: 'success',
-        details: `Credenciais do Mercado Pago atualizadas em ${new Date().toISOString()}`
-      })
-    
-    if (logError) {
-      console.warn("Aviso: Não foi possível registrar o log:", logError.message)
-    }
-    
-    // Retornar resposta de sucesso
-    const response: CredentialsResponse = {
-      success: true,
-      message: "Credenciais do Mercado Pago atualizadas com sucesso"
-    }
-    
+        details: 'Credenciais do Mercado Pago atualizadas'
+      });
+
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        success: true,
+        message: "Credenciais do Mercado Pago atualizadas com sucesso"
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       }
-    )
+    );
     
   } catch (error) {
-    console.error("Erro ao atualizar credenciais:", error instanceof Error ? error.message : String(error))
-    
-    const response: CredentialsResponse = {
-      success: false,
-      message: "Falha ao atualizar credenciais do Mercado Pago",
-      error: error instanceof Error ? error.message : String(error)
-    }
+    console.error("Erro ao atualizar credenciais do Mercado Pago:", error);
     
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        success: false,
+        message: `Erro ao atualizar credenciais: ${error instanceof Error ? error.message : String(error)}`
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500
       }
-    )
+    );
   }
-})
+});

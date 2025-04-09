@@ -45,17 +45,19 @@ serve(async (req) => {
     // Buscar credenciais do Mercado Pago do banco de dados
     const { data: settingsData, error: settingsError } = await supabase
       .from('system_settings')
-      .select('key, value')
+      .select('*')
       .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY']);
     
     // Extrair token do banco de dados ou usar o do ambiente
-    let access_token = Deno.env.get('MP_ACCESS_TOKEN');
+    let access_token = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
     
     if (settingsData && settingsData.length > 0) {
-      const tokenSetting = settingsData.find(s => s.key === 'MP_ACCESS_TOKEN');
-      if (tokenSetting && tokenSetting.value) {
-        access_token = tokenSetting.value;
-        console.log("Usando token do banco de dados");
+      for (const setting of settingsData) {
+        if (setting.key === 'MP_ACCESS_TOKEN' && setting.value) {
+          access_token = setting.value.toString();
+          console.log("Usando token do banco de dados");
+          break;
+        }
       }
     }
 
@@ -78,8 +80,8 @@ serve(async (req) => {
         mode: "not_specified",
       },
       payment_methods: {
-        excluded_payment_types: [{ id: "credit_card" }, { id: "debit_card" }, { id: "ticket" }], // Permite apenas PIX
-        installments: 1,
+        // Removido exclusão de métodos para permitir todos os tipos
+        installments: 12, // Permitir parcelamento em até 12x
       },
       payer: {
         email: payer.email,
@@ -93,6 +95,7 @@ serve(async (req) => {
         failure: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/checkout/payment`,
         pending: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/orders/pending/${orderId}`,
       },
+      auto_return: "approved", // Retornar automaticamente após pagamento aprovado
     };
 
     console.log("Dados da preferência:", JSON.stringify(preferenceData, null, 2));
@@ -119,7 +122,7 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Resposta do Mercado Pago:", JSON.stringify(data, null, 2));
 
-    // Registrar o sucesso no log do sistema
+    // Registrar o sucesso no log do sistema e atualizar o pedido com a preferência
     await supabase
       .from('system_logs')
       .insert({
@@ -129,7 +132,23 @@ serve(async (req) => {
         details: `Preferência criada para pedido ${orderId}`
       });
 
-    return new Response(JSON.stringify(data), {
+    // Atualizar o pedido com o ID da preferência do Mercado Pago
+    await supabase
+      .from('orders')
+      .update({ 
+        mp_preference_id: data.id,
+        mp_init_point: data.init_point,
+        mp_sandbox_init_point: data.sandbox_init_point
+      })
+      .eq('id', orderId);
+
+    // Retornar os dados da preferência
+    return new Response(JSON.stringify({
+      success: true,
+      preferenceId: data.id,
+      init_point: data.init_point,
+      sandbox_init_point: data.sandbox_init_point
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

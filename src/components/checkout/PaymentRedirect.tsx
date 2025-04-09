@@ -49,6 +49,7 @@ const PaymentRedirect = ({ paymentUrl }: PaymentRedirectProps) => {
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-4">
               <p className="text-sm text-gray-700 mb-3">
                 Você será direcionado para o ambiente seguro do Mercado Pago para concluir seu pagamento.
+                Não feche a janela até concluir a transação.
               </p>
               <div className="flex items-center justify-center space-x-2">
                 <img src="https://www.mercadopago.com/org-img/Manual/ManualMP/imgs/isologoHorizontal.png" alt="Mercado Pago" className="h-6" />

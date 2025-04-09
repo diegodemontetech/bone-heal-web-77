@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -6,8 +5,12 @@ import { CartItem } from "@/hooks/use-cart";
  * Standard response interface for payment services
  */
 export interface PaymentResponse {
-  pixCode: string;
+  success?: boolean;
+  pixCode?: string;
   qr_code_text?: string;
+  preferenceId?: string;
+  init_point?: string;
+  sandbox_init_point?: string;
   order_id?: string;
   amount?: string;
   point_of_interaction?: {
@@ -76,8 +79,6 @@ export const createMercadoPagoCheckout = async (
       price: item.price
     }));
     
-    const totalAmount = calculateTotal(cartItems, shippingFee, discount);
-    
     // Call Edge Function API
     const { data, error } = await supabase.functions.invoke('mercadopago-checkout', {
       body: {
@@ -92,36 +93,24 @@ export const createMercadoPagoCheckout = async (
     
     if (error) {
       console.error("Error in mercadopago-checkout call:", error);
-      // Instead of throwing, fall back to PIX
-      return processPixPayment(orderId, totalAmount);
+      throw error;
     }
     
-    if (data) {
-      console.log("Mercado Pago API response:", data);
-      
-      // If API returns QR code data
-      if (data.point_of_interaction?.transaction_data?.qr_code) {
-        return {
-          pixCode: data.point_of_interaction.transaction_data.qr_code,
-          qr_code_text: data.point_of_interaction.transaction_data.qr_code,
-          order_id: orderId,
-          amount: totalAmount.toString(),
-          point_of_interaction: {
-            transaction_data: {
-              qr_code: data.point_of_interaction.transaction_data.qr_code,
-              qr_code_base64: data.point_of_interaction.transaction_data.qr_code_base64
-            }
-          }
-        };
-      }
+    console.log("Mercado Pago API response:", data);
+    
+    if (data?.success && data?.init_point) {
+      return {
+        success: true,
+        preferenceId: data.preferenceId,
+        init_point: data.init_point,
+        sandbox_init_point: data.sandbox_init_point
+      };
     }
     
-    // Se não foi possível obter dados do Mercado Pago, tentar via função omie-pix
-    return processPixPayment(orderId, totalAmount);
+    throw new Error("Resposta do Mercado Pago incompleta ou inválida");
   } catch (error) {
     console.error("Error in createMercadoPagoCheckout:", error);
-    // Return fallback PIX in case of error
-    return generateSafePixData(orderId, calculateTotal(cartItems, shippingFee, discount));
+    throw error;
   }
 };
 

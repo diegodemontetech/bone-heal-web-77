@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { testMercadoPagoConnection } from "@/services/payment-service";
@@ -11,6 +11,13 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+interface MercadoPagoCredentials {
+  accessToken?: string;
+  publicKey?: string;
+  clientId?: string;
+  clientSecret?: string;
+}
 
 const TestMercadoPago = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,15 +31,20 @@ const TestMercadoPago = () => {
   // Estado para novas credenciais
   const [accessToken, setAccessToken] = useState("");
   const [publicKey, setPublicKey] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Estado para buscar as credenciais atuais
-  const [currentCredentials, setCurrentCredentials] = useState<{
-    accessToken?: string;
-    publicKey?: string;
+  // Estado para credenciais atuais
+  const [currentCredentials, setCurrentCredentials] = useState<MercadoPagoCredentials & {
     fetched?: boolean;
   }>({});
   const [isFetchingCredentials, setIsFetchingCredentials] = useState(false);
+
+  // Buscar credenciais quando o componente for montado
+  useEffect(() => {
+    fetchCurrentCredentials();
+  }, []);
 
   // Função para buscar as credenciais atuais
   const fetchCurrentCredentials = async () => {
@@ -40,32 +52,37 @@ const TestMercadoPago = () => {
     try {
       const { data: settings, error } = await supabase
         .from('system_settings')
-        .select('key, value')
-        .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY']);
+        .select('*')
+        .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET']);
       
       if (error) {
         throw error;
       }
       
-      let accessToken = "";
-      let publicKey = "";
+      const credentials: MercadoPagoCredentials = {};
       
       if (settings && settings.length > 0) {
-        const accessTokenSetting = settings.find(s => s.key === 'MP_ACCESS_TOKEN');
-        const publicKeySetting = settings.find(s => s.key === 'MP_PUBLIC_KEY');
-        
-        if (accessTokenSetting) {
-          accessToken = accessTokenSetting.value.toString();
-        }
-        
-        if (publicKeySetting) {
-          publicKey = publicKeySetting.value.toString();
-        }
+        settings.forEach(setting => {
+          if (setting.key === 'MP_ACCESS_TOKEN') {
+            credentials.accessToken = setting.value.toString();
+          }
+          else if (setting.key === 'MP_PUBLIC_KEY') {
+            credentials.publicKey = setting.value.toString();
+          }
+          else if (setting.key === 'MP_CLIENT_ID') {
+            credentials.clientId = setting.value.toString();
+          }
+          else if (setting.key === 'MP_CLIENT_SECRET') {
+            credentials.clientSecret = setting.value.toString();
+          }
+        });
       }
       
       setCurrentCredentials({
-        accessToken: accessToken ? `${accessToken.substring(0, 10)}...` : "Não configurado",
-        publicKey: publicKey ? `${publicKey.substring(0, 10)}...` : "Não configurado",
+        accessToken: credentials.accessToken ? `${credentials.accessToken.substring(0, 10)}...` : "Não configurado",
+        publicKey: credentials.publicKey ? `${credentials.publicKey.substring(0, 10)}...` : "Não configurado",
+        clientId: credentials.clientId ? credentials.clientId : "Não configurado",
+        clientSecret: credentials.clientSecret ? "••••••••••••••••" : "Não configurado",
         fetched: true
       });
       
@@ -76,11 +93,6 @@ const TestMercadoPago = () => {
       setIsFetchingCredentials(false);
     }
   };
-
-  // Buscar credenciais quando o componente for montado
-  useState(() => {
-    fetchCurrentCredentials();
-  });
 
   const handleTestConnection = async () => {
     setIsLoading(true);
@@ -131,7 +143,9 @@ const TestMercadoPago = () => {
       const { data, error } = await supabase.functions.invoke('update-mp-credentials', {
         body: { 
           accessToken,
-          publicKey
+          publicKey,
+          clientId: clientId || undefined,
+          clientSecret: clientSecret || undefined
         }
       });
       
@@ -149,6 +163,8 @@ const TestMercadoPago = () => {
       // Limpar campos
       setAccessToken("");
       setPublicKey("");
+      setClientId("");
+      setClientSecret("");
       
       // Testar a nova conexão automaticamente
       handleTestConnection();
@@ -194,6 +210,18 @@ const TestMercadoPago = () => {
                     <p className="text-muted-foreground">Chave Pública:</p>
                     <p className="font-mono">{currentCredentials.publicKey}</p>
                   </div>
+                  {currentCredentials.clientId && currentCredentials.clientId !== "Não configurado" && (
+                    <div>
+                      <p className="text-muted-foreground">Client ID:</p>
+                      <p className="font-mono">{currentCredentials.clientId}</p>
+                    </div>
+                  )}
+                  {currentCredentials.clientSecret && currentCredentials.clientSecret !== "Não configurado" && (
+                    <div>
+                      <p className="text-muted-foreground">Client Secret:</p>
+                      <p className="font-mono">{currentCredentials.clientSecret}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -305,6 +333,30 @@ const TestMercadoPago = () => {
                   <p className="text-xs text-muted-foreground mt-1">
                     Chave pública do Mercado Pago (geralmente começa com APP_USR)
                   </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="clientId">Client ID (opcional)</Label>
+                  <Input
+                    id="clientId"
+                    type="text"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    placeholder="123456789"
+                    className="font-mono"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="clientSecret">Client Secret (opcional)</Label>
+                  <Input
+                    id="clientSecret"
+                    type="password"
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                    placeholder="••••••••••••••••"
+                    className="font-mono"
+                  />
                 </div>
                 
                 <Button 
