@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { corsHeaders } from "../_shared/cors.ts";
+import { corsHeaders, handleCors } from "../_shared/cors.ts";
 
 interface PixRequest {
   orderId: string;
@@ -38,13 +38,10 @@ const formatPIXCode = (orderId: string, amount: number): string => {
 };
 
 serve(async (req) => {
-  // Handle OPTIONS request for CORS preflight
-  if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS preflight request");
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders
-    });
+  // Handle CORS preflight request
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    return corsResponse;
   }
 
   try {

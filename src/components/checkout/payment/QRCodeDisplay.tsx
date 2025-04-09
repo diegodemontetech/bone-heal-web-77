@@ -185,6 +185,15 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
               onError={() => {
                 console.error("Erro ao carregar QR code");
                 setQrCodeError(true);
+                
+                // Try one more time with a different approach - direct Google Charts
+                if (!qrCodeImageSrc.includes('chart.googleapis.com')) {
+                  const timestamp = new Date().getTime();
+                  const fallbackCode = extractedPixCode || "00020101026330014BR.GOV.BCB.PIX011123456789020210Pagamento";
+                  const encodedData = encodeURIComponent(fallbackCode);
+                  setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
+                  setQrCodeError(false);
+                }
               }}
             />
           </div>

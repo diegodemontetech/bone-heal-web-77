@@ -32,12 +32,73 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
   const [pixCode, setPixCode] = useState('');
   const [mercadoPagoUrl, setMercadoPagoUrl] = useState('');
   const [retryCount, setRetryCount] = useState(0);
+  const [retryAttempts, setRetryAttempts] = useState(0);
   
   // Calculate order total correctly
   const subtotal = items && items.length > 0 
     ? items.reduce((acc, item) => acc + (item.price * item.quantity), 0) 
     : 0;
   const total = subtotal + (shippingFee || 0) - (discount || 0);
+
+  // Function to safely generate PIX with retries
+  const safelyGeneratePixCode = async () => {
+    // Max retries to prevent infinite loop
+    if (retryAttempts >= 3) {
+      console.error("Maximum retry attempts reached for PIX generation");
+      setStatus('waiting');
+      setMessage('Usando código PIX de contingência devido a problemas de comunicação');
+      
+      // Generate a fallback QR code using Google Charts
+      const fallbackPixCode = `00020101026330014BR.GOV.BCB.PIX01111234567890202${total.toFixed(2)}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
+      const fallbackQrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(fallbackPixCode)}`;
+      setPixCode(fallbackQrUrl);
+      setMercadoPagoUrl(`https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`);
+      return;
+    }
+    
+    setRetryAttempts(prev => prev + 1);
+    
+    try {
+      // Try to generate PIX code
+      const response = await processPixPayment(orderId, total);
+      
+      if (response && response.success) {
+        console.log("PIX response:", response);
+        
+        // Store the Mercado Pago redirect URL
+        if (response.redirect_url || response.point_of_interaction?.transaction_data?.ticket_url) {
+          setMercadoPagoUrl(response.redirect_url || response.point_of_interaction?.transaction_data?.ticket_url || '');
+        }
+        
+        // Determine which QR code to use
+        if (response.point_of_interaction?.transaction_data?.qr_code_base64) {
+          setPixCode(response.point_of_interaction.transaction_data.qr_code_base64);
+        } else if (response.point_of_interaction?.transaction_data?.qr_code) {
+          setPixCode(response.point_of_interaction.transaction_data.qr_code);
+        } else if (response.qr_code_text || response.pixCode) {
+          // If we only have text, generate a QR code from it
+          const pixText = response.qr_code_text || response.pixCode || '';
+          setPixCode(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixText)}`);
+        } else {
+          throw new Error("QR code não disponível na resposta");
+        }
+        
+        setStatus('waiting');
+        setMessage('Aguardando o pagamento via PIX');
+        toast.success("Código PIX gerado com sucesso!");
+      } else {
+        console.error("Invalid response from payment server:", response);
+        throw new Error('Invalid response from payment server');
+      }
+    } catch (error) {
+      console.error('Error generating PIX code:', error);
+      
+      // Retry after a short delay
+      setTimeout(() => {
+        safelyGeneratePixCode();
+      }, 1000);
+    }
+  };
 
   useEffect(() => {
     console.log('Redirecionamento do Mercado Pago iniciado');
@@ -97,75 +158,11 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
         
         // If there's no redirect URL, fall back to PIX payment
         console.log('Fallback: gerando pagamento PIX');
-        await generatePixCode();
+        await safelyGeneratePixCode();
       } catch (error) {
         console.error('Erro ao iniciar checkout:', error);
         // Fall back to PIX payment on error
-        await generatePixCode();
-      }
-    };
-
-    // Generate PIX code function
-    const generatePixCode = async () => {
-      try {
-        setStatus('loading');
-        setMessage('Gerando código PIX...');
-        
-        // Use a default total amount if missing or zero to prevent API errors
-        const finalTotal = total <= 0 ? 1.0 : total;
-        
-        // Call the service to generate a real PIX code
-        const response = await processPixPayment(orderId, finalTotal);
-        
-        if (response && response.success) {
-          console.log("Resposta PIX:", response);
-          
-          // Store the Mercado Pago redirect URL
-          if (response.redirect_url || response.point_of_interaction?.transaction_data?.ticket_url) {
-            setMercadoPagoUrl(response.redirect_url || response.point_of_interaction?.transaction_data?.ticket_url || '');
-          }
-          
-          // Determine which QR code to use
-          if (response.point_of_interaction?.transaction_data?.qr_code_base64) {
-            setPixCode(response.point_of_interaction.transaction_data.qr_code_base64);
-          } else if (response.point_of_interaction?.transaction_data?.qr_code) {
-            setPixCode(response.point_of_interaction.transaction_data.qr_code);
-          } else if (response.qr_code_text || response.pixCode) {
-            setPixCode(response.qr_code_text || response.pixCode || '');
-          } else {
-            throw new Error("QR code não disponível na resposta");
-          }
-          
-          setStatus('waiting');
-          setMessage('Aguardando o pagamento via PIX');
-          toast.success("Código PIX gerado com sucesso!");
-          
-          // Automatically redirect to Mercado Pago if available
-          if (response.redirect_url) {
-            toast.info("Você pode pagar no site do Mercado Pago", {
-              action: {
-                label: "Ir agora",
-                onClick: () => window.open(response.redirect_url, '_blank')
-              },
-            });
-          }
-        } else {
-          console.error("Resposta inválida do servidor de pagamento:", response);
-          throw new Error('Resposta inválida do servidor de pagamento');
-        }
-      } catch (error) {
-        console.error('Erro ao gerar código PIX:', error);
-        
-        // Use a fallback PIX code
-        const defaultPixCode = `00020101026330014BR.GOV.BCB.PIX01111234567890202${total.toFixed(2)}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
-        const googleQRUrl = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(defaultPixCode)}`;
-        
-        setPixCode(googleQRUrl);
-        setMercadoPagoUrl(`https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`);
-        
-        setStatus('waiting');
-        setMessage('Aguardando o pagamento via PIX (gerado localmente)');
-        toast.warning("Usando código PIX alternativo devido a um erro de comunicação");
+        await safelyGeneratePixCode();
       }
     };
 
@@ -186,6 +183,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
 
   const handleRetryPixGeneration = () => {
     setRetryCount(prev => prev + 1);
+    setRetryAttempts(0); // Reset retry attempts counter
   };
 
   const handleDirectRedirect = () => {

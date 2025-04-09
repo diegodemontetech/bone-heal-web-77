@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { corsHeaders, handleCors } from "../_shared/cors.ts"
 
 // Generate a QR code URL for a PIX code
 const generateQRCodeImage = (pixCode: string): string => {
@@ -22,12 +22,9 @@ const generatePixCode = (orderId: string, amount: number): string => {
 
 serve(async (req) => {
   // Handle CORS preflight request
-  if (req.method === "OPTIONS") {
-    console.log("Handling OPTIONS preflight request for CORS");
-    return new Response(null, {
-      status: 200,
-      headers: corsHeaders
-    });
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    return corsResponse;
   }
   
   try {
