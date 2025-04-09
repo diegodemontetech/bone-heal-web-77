@@ -33,5 +33,6 @@ export interface ReviewItemProps {
     created_at: string;
     rating: number;
     comment: string;
+    helpful_count?: number;
   };
 }

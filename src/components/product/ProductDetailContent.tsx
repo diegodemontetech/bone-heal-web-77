@@ -7,6 +7,7 @@ import ProductTechDetails from "./ProductTechDetails";
 import GoogleReviews from "./GoogleReviews";
 import ProductReviews from "./ProductReviews";
 import FloatingActions from "./FloatingActions";
+import ProductBulletPoints from "./ProductBulletPoints";
 
 interface ProductDetailContentProps {
   product: Product;
@@ -24,10 +25,13 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
 
         <div className="space-y-6">
           <ProductHeader product={product} />
+          
+          {/* Adição dos bullet points do produto */}
+          <ProductBulletPoints product={product} />
+          
           <div id="product-actions">
             <ProductActions product={product} profile={profile} />
           </div>
-          <GoogleReviews />
         </div>
       </div>
 
@@ -41,8 +45,13 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
         
         <ProductTechDetails product={product} />
         
-        <div className="mt-8">
-          <ProductReviews product={product} />
+        <div className="mt-12 pt-6 border-t">
+          <h2 className="text-2xl font-bold mb-6">Avaliações do Produto</h2>
+          <GoogleReviews />
+          
+          <div className="mt-8">
+            <ProductReviews product={product} />
+          </div>
         </div>
       </div>
       

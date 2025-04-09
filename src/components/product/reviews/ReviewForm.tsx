@@ -19,22 +19,40 @@ const ReviewForm = ({
   if (!session) return null;
 
   return (
-    <div className="border rounded-lg p-4 bg-gray-50 space-y-3 mt-4">
-      <h4 className="text-md font-medium">Adicionar Avaliação</h4>
-      <div className="flex items-center mb-2">
-        <span className="mr-2">Sua avaliação:</span>
-        <StarRating rating={userRating} setRating={setUserRating} />
+    <div className="border rounded-lg p-5 bg-gray-50 space-y-4">
+      <h4 className="font-medium">Escreva uma Avaliação</h4>
+      
+      <div>
+        <p className="mb-1 text-sm text-gray-700">Sua avaliação</p>
+        <div className="flex items-center">
+          <StarRating rating={userRating} setRating={setUserRating} />
+          <span className="ml-2 text-sm text-gray-500">
+            {userRating === 5 ? "Excelente" : 
+             userRating === 4 ? "Muito bom" :
+             userRating === 3 ? "Bom" :
+             userRating === 2 ? "Regular" : "Ruim"}
+          </span>
+        </div>
       </div>
-      <Textarea 
-        placeholder="Escreva sua avaliação aqui..."
-        value={userReview}
-        onChange={(e) => setUserReview(e.target.value)}
-        className="bg-white"
-      />
+      
+      <div>
+        <p className="mb-1 text-sm text-gray-700">Seu comentário</p>
+        <Textarea 
+          placeholder="Conte sua experiência com este produto..."
+          value={userReview}
+          onChange={(e) => setUserReview(e.target.value)}
+          className="bg-white resize-y"
+          rows={4}
+        />
+        <p className="mt-1 text-xs text-gray-500">
+          {400 - userReview.length} caracteres restantes
+        </p>
+      </div>
+      
       <Button 
         onClick={submitReview}
-        disabled={submitLoading}
-        className="bg-primary hover:bg-primary/90 text-white"
+        disabled={submitLoading || !userReview.trim()}
+        className="w-full sm:w-auto"
       >
         {submitLoading ? (
           <>
