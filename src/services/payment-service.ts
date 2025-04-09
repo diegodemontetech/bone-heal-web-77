@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -292,6 +291,9 @@ export const updatePaymentStatus = async (orderId: string, status: string, detai
  */
 export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string> => {
   try {
+    console.log("Getting Mercado Pago redirect URL for order:", orderId);
+    
+    // Query to get the order data
     const { data, error } = await supabase
       .from('orders')
       .select('mp_preference_id, payment_details')
@@ -304,32 +306,30 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
     }
     
     if (!data) {
+      console.log("Order data not found, using fallback URL");
       return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
 
-    // Type assertion to help TypeScript understand the structure
-    interface OrderData {
-      payment_details?: Record<string, any> | null;
-      mp_preference_id?: string | null;
+    // Check and access payment_details if it exists
+    if (data.payment_details && typeof data.payment_details === 'object') {
+      const paymentDetails = data.payment_details as Record<string, any>;
+      if ('init_point' in paymentDetails && typeof paymentDetails.init_point === 'string') {
+        console.log("Using init_point from payment_details");
+        return paymentDetails.init_point;
+      }
     }
     
-    // Cast to the expected type
-    const orderData = data as OrderData;
-
-    // Safely access payment_details if it exists
-    if (orderData.payment_details && 'init_point' in orderData.payment_details) {
-      return orderData.payment_details.init_point as string;
+    // Check and use mp_preference_id if it exists
+    if (data.mp_preference_id && typeof data.mp_preference_id === 'string') {
+      console.log("Using mp_preference_id for redirect");
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.mp_preference_id}`;
     }
     
-    // Safely access mp_preference_id if it exists
-    if (orderData.mp_preference_id) {
-      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${orderData.mp_preference_id}`;
-    }
-    
+    // Fallback to default URL
+    console.log("Using fallback URL with orderId as preference_id");
     return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
   } catch (error) {
     console.error("Error getting Mercado Pago redirect URL:", error);
     return `https://www.mercadopago.com.br/checkout/v1/redirect?test=true&preference_id=${orderId}`;
   }
 };
-

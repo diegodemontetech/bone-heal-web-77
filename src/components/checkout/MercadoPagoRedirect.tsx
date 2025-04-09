@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { toast } from 'sonner';
 import QRCodeDisplay from '@/components/checkout/payment/QRCodeDisplay';
-import { processPixPayment } from '@/services/payment-service';
+import { processPixPayment, createMercadoPagoCheckout } from '@/services/payment-service';
 
 interface MercadoPagoRedirectProps {
   orderId: string;
@@ -43,7 +43,51 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
     console.log('Detalhes do pedido:', { orderId, email, shippingFee, discount });
     console.log('Itens do pedido:', items);
 
-    // Processar pagamento PIX real
+    const initiateCheckout = async () => {
+      try {
+        setStatus('loading');
+        setMessage('Preparando checkout...');
+        
+        // Skip if there are no items or the orderId is placeholder/invalid
+        if (!items?.length || !orderId || orderId === 'placeholder') {
+          throw new Error('Dados do pedido inválidos ou incompletos');
+        }
+
+        // Format items for Mercado Pago API
+        const formattedItems = items.map(item => ({
+          title: item.name,
+          quantity: item.quantity,
+          price: item.price
+        }));
+
+        // Create Mercado Pago checkout
+        const response = await createMercadoPagoCheckout(
+          orderId,
+          formattedItems,
+          shippingFee || 0,
+          discount || 0
+        );
+
+        if (response && response.redirect_url) {
+          console.log('Redirecionando para:', response.redirect_url);
+          // Redirect to Mercado Pago checkout page
+          window.location.href = response.redirect_url;
+        } else if (response && response.init_point) {
+          console.log('Redirecionando para init_point:', response.init_point);
+          window.location.href = response.init_point;
+        } else {
+          // If there's no redirect URL, fall back to PIX payment
+          console.log('Fallback: gerando pagamento PIX');
+          await generatePixCode();
+        }
+      } catch (error) {
+        console.error('Erro ao iniciar checkout:', error);
+        // Fall back to PIX payment on error
+        await generatePixCode();
+      }
+    };
+
+    // Generate PIX code function
     const generatePixCode = async () => {
       try {
         setStatus('loading');
@@ -52,7 +96,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
         // Use a default total amount if missing or zero to prevent API errors
         const finalTotal = total <= 0 ? 1.0 : total;
         
-        // Chamar o serviço para gerar o código PIX real
+        // Call the service to generate a real PIX code
         const response = await processPixPayment(orderId, finalTotal);
         
         if (response) {
@@ -97,10 +141,11 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
       }
     };
 
-    generatePixCode();
+    // Start the checkout process
+    initiateCheckout();
   }, [clearCart, items, orderId, email, shippingFee, discount, subtotal, total]);
 
-  // Função para simular confirmação de pagamento (apenas para demonstração)
+  // Function to simulate payment confirmation (demo only)
   const handleSimulatePayment = () => {
     setStatus('loading');
     setTimeout(() => {
