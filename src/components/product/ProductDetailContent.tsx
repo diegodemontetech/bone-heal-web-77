@@ -4,12 +4,12 @@ import ProductHeader from "./ProductHeader";
 import ProductActions from "./ProductActions";
 import ProductGallery from "./ProductGallery";
 import ProductTechDetails from "./ProductTechDetails";
-import GoogleReviews from "./GoogleReviews";
 import ProductReviews from "./ProductReviews";
 import FloatingActions from "./FloatingActions";
 import ProductBulletPoints from "./ProductBulletPoints";
 import { ProductPricing } from "../products/ProductPricing";
 import ProductQuestions from "./ProductQuestions";
+import GoogleReviews from "./GoogleReviews";
 
 interface ProductDetailContentProps {
   product: Product;
@@ -45,6 +45,15 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
       </div>
 
       <div className="space-y-12 mb-12">
+        {/* Avaliações - movido para cima */}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-2xl font-bold mb-4">Avaliações do Produto</h2>
+          <GoogleReviews />
+          <div className="mt-8">
+            <ProductReviews productId={product.id} product={product} />
+          </div>
+        </div>
+
         {/* Descrição do produto */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-2xl font-bold mb-4">Descrição</h2>
@@ -58,17 +67,8 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
           <h2 className="text-2xl font-bold mb-4">Detalhes Técnicos</h2>
           <ProductTechDetails product={product} />
         </div>
-
-        {/* Google Reviews e Avaliações */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Avaliações do Produto</h2>
-          <GoogleReviews />
-          <div className="mt-8">
-            <ProductReviews productId={product.id} product={product} />
-          </div>
-        </div>
         
-        {/* Perguntas e respostas */}
+        {/* Perguntas e respostas - movido para o final */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-2xl font-bold mb-4">Perguntas e Respostas</h2>
           <ProductQuestions productId={product.id} />
