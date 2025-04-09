@@ -162,14 +162,15 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             <img 
               src={qrCodeImageSrc} 
               alt="QR Code PIX" 
-              className="h-64 w-64 mx-auto"
-              style={{ backgroundColor: "white", padding: "4px" }}
+              className="h-64 w-64 mx-auto" 
+              style={{ 
+                backgroundColor: "white", 
+                padding: "4px",
+                border: "1px solid #e2e8f0" 
+              }}
               onError={() => {
                 console.error("Erro ao carregar QR code");
                 setQrCodeError(true);
-              }}
-              onLoad={() => {
-                setQrCodeError(false);
               }}
             />
           </div>

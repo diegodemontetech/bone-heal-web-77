@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -131,20 +130,11 @@ const generateGoogleQRCode = (content: string): string => {
  * Generate a valid PIX code according to the Brazilian Central Bank standards
  */
 const generateStandardPixCode = (orderId: string, amount: number): string => {
-  // Clean orderId to use as transaction ID (remove non-alphanumeric, limit length)
   const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 20);
-  
-  // Format amount with 2 decimal places
   const amountStr = amount.toFixed(2);
-  
-  // Fixed PIX key for demonstration (in production this would be the merchant's PIX key)
   const pixKey = "12345678901";
-  
-  // Merchant name and city (simplified for readability)
   const merchantName = "BONEHEAL";
   const merchantCity = "SAOPAULO";
-  
-  // Build PIX code according to Brazilian Central Bank standards
   return `00020101021226580014BR.GOV.BCB.PIX2565${pixKey}5204000053039865802BR5915${merchantName}6008${merchantCity}62140510${txId}6304`;
 };
 
@@ -155,10 +145,8 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
   try {
     console.log("Gerando PIX via função Edge para pedido:", orderId, "valor:", amount);
     
-    // Make sure the amount is positive and non-zero to prevent API errors
     const safeAmount = amount <= 0 ? 1.0 : amount;
     
-    // Chamar função do Supabase para gerar PIX real
     const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
       body: {
         orderId,
@@ -170,7 +158,6 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
     
     if (error) {
       console.error("Erro ao gerar PIX via Mercado Pago:", error);
-      // Fall back to the alternative method
       return generatePixWithAlternativeMethod(orderId, safeAmount);
     }
     
@@ -195,13 +182,11 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
       };
     }
     
-    // Fall back if the response is incomplete
     console.log("Fallback: Gerando PIX com método alternativo");
     return generatePixWithAlternativeMethod(orderId, safeAmount);
   } catch (error) {
     console.error("Error in processPixPayment:", error);
     
-    // Fall back to alternative generation
     return generatePixWithAlternativeMethod(orderId, amount);
   }
 };
@@ -211,7 +196,6 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
  */
 const generatePixWithAlternativeMethod = async (orderId: string, amount: number): Promise<PaymentResponse> => {
   try {
-    // Try the Omie PIX function as an alternative
     const { data, error } = await supabase.functions.invoke('omie-pix', {
       body: {
         orderId,
@@ -221,14 +205,12 @@ const generatePixWithAlternativeMethod = async (orderId: string, amount: number)
     
     if (error || !data || !data.pixCode) {
       console.error("Erro ao gerar PIX via método alternativo:", error);
-      // Last resort - generate PIX locally
       return generateSafePixData(orderId, amount);
     }
     
     console.log("PIX gerado com sucesso via Omie:", data);
     
-    // Create a direct link to Mercado Pago checkout as fallback
-    const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=omie_${orderId}`;
+    const redirectUrl = `https://www.mercadopago.com.br/checkout?preference_id=omie_${orderId}`;
     
     return {
       success: true,
@@ -254,20 +236,11 @@ const generatePixWithAlternativeMethod = async (orderId: string, amount: number)
 /**
  * Generate a safe fallback PIX code
  */
-export const generateSafePixData = (orderId: string, amount: number = 0): PaymentResponse => {
-  // Use a fixed amount if none provided, or calculate based on order ID for demo
+export const generateSafePixData = (orderId: string, amount: number = 0): Promise<PaymentResponse> | PaymentResponse => {
   const finalAmount = amount > 0 ? amount : 100;
-  
-  // Create a valid PIX code that follows Brazilian Central Bank standards
   const pixCode = generateStandardPixCode(orderId, finalAmount);
-  
-  // Generate QR code URL using Google Charts API
   const qrCodeUrl = generateGoogleQRCode(pixCode);
-  
-  // Create a direct link to Mercado Pago checkout as fallback
   const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=fallback_${orderId}`;
-  
-  // Return a standardized response object with all required fields
   return {
     success: true,
     pixCode: pixCode,
@@ -318,10 +291,9 @@ export const updatePaymentStatus = async (orderId: string, status: string, detai
  */
 export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string> => {
   try {
-    // Get order data
     const { data, error } = await supabase
       .from('orders')
-      .select('mp_init_point')
+      .select('mp_preference_id, mp_sandbox_init_point, payment_details')
       .eq('id', orderId)
       .single();
     
@@ -330,15 +302,21 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
       throw error;
     }
     
-    if (data.mp_init_point) {
-      return data.mp_init_point;
-    } else {
-      // Create a fallback link if no init_point is found
-      return `https://www.mercadopago.com.br/checkout?preference_id=${orderId}`;
+    if (data.payment_details && data.payment_details.init_point) {
+      return data.payment_details.init_point;
     }
+    
+    if (data.mp_preference_id) {
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.mp_preference_id}`;
+    }
+    
+    if (data.mp_sandbox_init_point) {
+      return data.mp_sandbox_init_point;
+    }
+    
+    return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
   } catch (error) {
     console.error("Error getting Mercado Pago redirect URL:", error);
-    // Return a fallback URL
-    return `https://www.mercadopago.com.br/checkout?preference_id=${orderId}`;
+    return `https://www.mercadopago.com.br/checkout/v1/redirect?test=true&preference_id=${orderId}`;
   }
 };

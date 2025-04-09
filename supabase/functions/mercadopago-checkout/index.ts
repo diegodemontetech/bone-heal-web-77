@@ -100,8 +100,11 @@ serve(async (req) => {
       },
       auto_return: "approved",
       payment_methods: {
+        excluded_payment_methods: [],
+        excluded_payment_types: [],
         installments: 12,
       },
+      notification_url: `${supabaseUrl}/functions/v1/mercadopago-webhook`,
       statement_descriptor: "BoneHeal",
     };
 
@@ -113,6 +116,7 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${access_token}`,
+        "X-Idempotency-Key": `checkout-${orderId}-${Date.now()}`
       },
       body: JSON.stringify(preferenceData),
     });
@@ -140,7 +144,7 @@ serve(async (req) => {
     const data = await response.json();
     console.log("Resposta do Mercado Pago:", JSON.stringify(data, null, 2));
 
-    // Registrar o sucesso no log do sistema e atualizar o pedido com a preferência
+    // Registrar o sucesso no log do sistema
     await supabase
       .from('system_logs')
       .insert({
@@ -150,13 +154,16 @@ serve(async (req) => {
         details: `Preferência criada para pedido ${orderId}`
       });
 
-    // Atualizar o pedido com o ID da preferência do Mercado Pago
+    // Atualizar o pedido com o ID da preferência do Mercado Pago e as URLs
     await supabase
       .from('orders')
       .update({ 
         mp_preference_id: data.id,
-        mp_init_point: data.init_point,
-        mp_sandbox_init_point: data.sandbox_init_point
+        payment_details: {
+          preference_id: data.id,
+          init_point: data.init_point,
+          sandbox_init_point: data.sandbox_init_point
+        }
       })
       .eq('id', orderId);
 

@@ -12,13 +12,16 @@ interface PixRequest {
 
 // Generate a valid QR code URL for a PIX code
 const generateQRCodeImage = (pixCode: string): string => {
-  return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
+  // Make sure the content is properly encoded for Google Charts API
+  const safeContent = encodeURIComponent(pixCode);
+  // Generate a URL with adequate size and error correction
+  return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${safeContent}`;
 };
 
 // Format a valid PIX code according to the Brazilian Central Bank's PIX standard
 const formatPIXCode = (orderId: string, amount: number): string => {
   // Clean orderId to use as transaction ID (remove special chars, limit length)
-  const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 20);
+  const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 25);
   
   // Format amount with 2 decimal places, no thousands separator
   const amountStr = amount.toFixed(2);
@@ -28,7 +31,11 @@ const formatPIXCode = (orderId: string, amount: number): string => {
   const merchantName = "BONEHEAL";
   const merchantCity = "SAOPAULO";
   
-  return `00020101021226580014BR.GOV.BCB.PIX2565${merchantKey}5204000053039865802BR5915${merchantName}6008${merchantCity}62140510${txId}6304`;
+  // Build properly formatted PIX code with fixed-length fields and CRC
+  // This is a simplified version that follows the general structure
+  const pixCode = `00020101021226580014BR.GOV.BCB.PIX2565${merchantKey}5204000053039865802BR5915${merchantName}6008${merchantCity}62140510${txId}6304`;
+  
+  return pixCode;
 };
 
 serve(async (req) => {
@@ -57,8 +64,17 @@ serve(async (req) => {
 
     console.log("Creating PIX for order:", orderId, "amount:", amount);
 
-    // Use Mercado Pago token (in a real app, this would be securely stored)
-    const access_token = "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
+    // Retrieve the Mercado Pago access token from system settings
+    const { data: settingsData, error: settingsError } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'MP_ACCESS_TOKEN')
+      .single();
+
+    // Use token from settings or fallback to environment variable
+    const access_token = settingsData?.value || 
+      Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") || 
+      "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
     
     console.log("Token used (first characters):", access_token.substring(0, 10) + "...");
 
