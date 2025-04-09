@@ -73,7 +73,7 @@ export function Routes() {
         <Route path="/profile/tickets/:id" element={<ProfileTicketDetails />} />
         <Route path="/profile/notifications" element={<NotificationSettings />} />
         
-        {/* Rotas de Admin - usando o componente das rotas administrativas diretamente */}
+        {/* Rotas de Admin */}
         <Route path="/admin" element={<AdminRoute>{adminRoutes.element}</AdminRoute>}>
           {adminRoutes.children && adminRoutes.children
             .filter(Boolean)

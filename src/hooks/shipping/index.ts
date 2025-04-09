@@ -33,7 +33,7 @@ export const useShipping = () => {
     shippingRates,
     selectedShippingRate,
     calculateShipping: originalCalculateShipping,
-    handleShippingRateChange,
+    handleShippingRateChange: originalHandleShippingRateChange,
     resetShipping,
     zipCode,
     setZipCode
@@ -65,6 +65,19 @@ export const useShipping = () => {
       }
     };
   }, []);
+  
+  // Modified handler to prevent multiple log statements and recursive updates
+  const handleShippingRateChange = useCallback((rate: ShippingCalculationRate) => {
+    if (preventRecursion.current) return;
+    
+    preventRecursion.current = true;
+    originalHandleShippingRateChange(rate);
+    
+    // Reset the flag after a short delay to allow for intended changes
+    setTimeout(() => {
+      preventRecursion.current = false;
+    }, 100);
+  }, [originalHandleShippingRateChange]);
   
   // Automatic mock shipping rates when needed
   const useMockShippingRates = useCallback((zipCodeInput: string) => {
@@ -98,10 +111,22 @@ export const useShipping = () => {
     ];
     
     if (shippingRates.length === 0 || !selectedShippingRate) {
+      preventRecursion.current = true;
+      
       // Only set rates if we don't have any
-      shippingRates.length === 0 && insertShippingRates(mockRates);
-      !selectedShippingRate && handleShippingRateChange(mockRates[0]);
+      if (shippingRates.length === 0) {
+        insertShippingRates(mockRates);
+      }
+      
+      if (!selectedShippingRate) {
+        handleShippingRateChange(mockRates[0]);
+      }
+      
       lastCalculatedZipCode.current = zipCodeInput;
+      
+      setTimeout(() => {
+        preventRecursion.current = false;
+      }, 100);
     }
     
     return mockRates;
@@ -144,7 +169,7 @@ export const useShipping = () => {
     return { success: true };
   }, [isProcessingShipping, selectedShippingRate, zipCode, useMockShippingRates]);
 
-  // Apply mock rates on initialization to avoid errors
+  // Apply mock rates on initialization to avoid errors - using a more controlled approach
   useEffect(() => {
     if (!preventRecursion.current && !selectedShippingRate && zipCode && zipCode.length === 8) {
       preventRecursion.current = true;
