@@ -302,12 +302,15 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
       return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
     
-    const paymentDetails = data?.payment_details;
-    if (paymentDetails && 'init_point' in paymentDetails) {
-      return paymentDetails.init_point as string;
+    if (!data) {
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
+    }
+
+    if (data.payment_details && typeof data.payment_details === 'object' && 'init_point' in data.payment_details) {
+      return data.payment_details.init_point as string;
     }
     
-    if (data?.mp_preference_id) {
+    if (data.mp_preference_id) {
       return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.mp_preference_id}`;
     }
     
