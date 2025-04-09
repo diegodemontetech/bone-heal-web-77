@@ -11,11 +11,11 @@ export const ProductPricing: React.FC<ProductPricingProps> = ({ price }) => {
   const formattedPrice = formatCurrency(price);
 
   return (
-    <div className="mt-2">
-      <div className="font-semibold text-md md:text-lg">
+    <div className="mt-3 mb-4">
+      <div className="font-bold text-2xl md:text-3xl text-gray-900">
         {formattedPrice}
       </div>
-      <div className="text-xs text-green-600">
+      <div className="text-sm text-green-600 font-medium mt-1">
         ou 6x de {formattedInstallment} sem juros
       </div>
     </div>

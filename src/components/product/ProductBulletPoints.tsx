@@ -1,5 +1,14 @@
 
-import { Check } from "lucide-react";
+import { 
+  ShieldCheck, 
+  Sparkles, 
+  Clock, 
+  CheckCircle2, 
+  Waypoints, 
+  Ruler, 
+  Award, 
+  FileCheck 
+} from "lucide-react";
 import { Product } from "@/types/product";
 import { extractDimensionsFromName } from "./tech-details/utils/dimensionsFormatter";
 
@@ -14,17 +23,55 @@ const ProductBulletPoints = ({ product }: ProductBulletPointsProps) => {
 
   return (
     <div className="bg-gray-50 p-5 rounded-lg my-6">
-      <h3 className="text-lg font-semibold mb-4">Características do Produto</h3>
-      <ul className="space-y-3">
-        {bulletPoints.map((point: string, index: number) => (
-          <li key={index} className="flex items-start gap-2">
-            <Check className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-            <span className="text-gray-700">{point}</span>
-          </li>
-        ))}
+      <h3 className="text-xl font-semibold mb-4">Características do Produto</h3>
+      <ul className="space-y-4">
+        {bulletPoints.map((point: string, index: number) => {
+          const icon = getBulletIcon(point, index);
+          return (
+            <li key={index} className="flex items-start gap-3">
+              <div className="h-6 w-6 text-primary mt-0.5 flex-shrink-0">
+                {icon}
+              </div>
+              <span className="text-gray-700">{formatBulletPoint(point)}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
+};
+
+// Retorna o ícone apropriado com base no conteúdo do bullet point
+const getBulletIcon = (point: string, index: number) => {
+  const lowerPoint = point.toLowerCase();
+  
+  if (lowerPoint.includes("dimensões")) return <Ruler className="h-5 w-5" />;
+  if (lowerPoint.includes("barreira") || lowerPoint.includes("impermeável")) return <ShieldCheck className="h-5 w-5" />;
+  if (lowerPoint.includes("técnica") || lowerPoint.includes("cirurgia")) return <Sparkles className="h-5 w-5" />;
+  if (lowerPoint.includes("dispensa") || lowerPoint.includes("enxertos")) return <CheckCircle2 className="h-5 w-5" />;
+  if (lowerPoint.includes("não adere")) return <Waypoints className="h-5 w-5" />;
+  if (lowerPoint.includes("compatível")) return <CheckCircle2 className="h-5 w-5" />;
+  if (lowerPoint.includes("resultados") || lowerPoint.includes("regeneração")) return <Award className="h-5 w-5" />;
+  if (lowerPoint.includes("registrado")) return <FileCheck className="h-5 w-5" />;
+  
+  // Ícone padrão para outros casos
+  return <CheckCircle2 className="h-5 w-5" />;
+};
+
+// Formata o texto do bullet point para melhorar a legibilidade
+const formatBulletPoint = (point: string): string => {
+  // Garante que o texto comece com maiúscula e tenha pontuação adequada
+  let formatted = point.trim();
+  
+  // Capitaliza primeira letra se não estiver capitalizada
+  formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  
+  // Adiciona ponto final se necessário
+  if (!formatted.endsWith('.') && !formatted.endsWith(':')) {
+    formatted += '.';
+  }
+  
+  return formatted;
 };
 
 // Gera bullets padrão com base nas informações do produto quando não temos bullets específicos
