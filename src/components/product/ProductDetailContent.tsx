@@ -10,6 +10,7 @@ import ProductBulletPoints from "./ProductBulletPoints";
 import { ProductPricing } from "../products/ProductPricing";
 import ProductQuestions from "./ProductQuestions";
 import GoogleReviews from "./GoogleReviews";
+import { Separator } from "../ui/separator";
 
 interface ProductDetailContentProps {
   product: Product;
@@ -45,9 +46,12 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
       </div>
 
       <div className="space-y-12 mb-12">
-        {/* Avaliações - movido para cima */}
+        {/* Avaliações */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Avaliações do Produto</h2>
+          <div className="flex flex-col gap-2 mb-4">
+            <h2 className="text-2xl font-bold">Avaliações do Produto</h2>
+            <Separator className="bg-gray-200" />
+          </div>
           <GoogleReviews />
           <div className="mt-8">
             <ProductReviews productId={product.id} product={product} />
@@ -56,7 +60,10 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
 
         {/* Descrição do produto */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Descrição</h2>
+          <div className="flex flex-col gap-2 mb-4">
+            <h2 className="text-2xl font-bold">Descrição</h2>
+            <Separator className="bg-gray-200" />
+          </div>
           <div className="text-gray-600 leading-relaxed">
             {product.full_description || product.description || "Nenhuma descrição disponível."}
           </div>
@@ -64,13 +71,19 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
         
         {/* Detalhes técnicos */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Detalhes Técnicos</h2>
+          <div className="flex flex-col gap-2 mb-4">
+            <h2 className="text-2xl font-bold">Detalhes Técnicos</h2>
+            <Separator className="bg-gray-200" />
+          </div>
           <ProductTechDetails product={product} />
         </div>
         
-        {/* Perguntas e respostas - movido para o final */}
+        {/* Perguntas e respostas */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Perguntas e Respostas</h2>
+          <div className="flex flex-col gap-2 mb-4">
+            <h2 className="text-2xl font-bold">Perguntas e Respostas</h2>
+            <Separator className="bg-gray-200" />
+          </div>
           <ProductQuestions productId={product.id} />
         </div>
       </div>

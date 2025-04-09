@@ -29,7 +29,7 @@ const ReviewsSummary = ({ reviews }: ReviewsSummaryProps) => {
   });
 
   return (
-    <div className="bg-white rounded-lg p-6 border mb-8">
+    <div className="bg-white rounded-lg mb-8">
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="flex flex-col items-center">
           <div className="text-4xl font-bold">{roundedRating.toFixed(1)}</div>
