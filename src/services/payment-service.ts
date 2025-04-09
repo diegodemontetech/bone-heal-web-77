@@ -306,7 +306,9 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
       return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
 
-    if (data.payment_details && typeof data.payment_details === 'object' && 'init_point' in data.payment_details) {
+    if (data.payment_details && 
+        typeof data.payment_details === 'object' && 
+        'init_point' in data.payment_details) {
       return data.payment_details.init_point as string;
     }
     
