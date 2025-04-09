@@ -20,36 +20,15 @@ const formatPIXCode = (orderId: string, amount: number): string => {
   // Clean orderId to use as transaction ID (remove special chars, limit length)
   const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 20);
   
-  // Format amount with 2 decimal places, no decimal separator
-  const amountStr = amount.toFixed(2).replace('.', '');
+  // Format amount with 2 decimal places, no thousands separator
+  const amountStr = amount.toFixed(2);
   
   // Build PIX code according to Brazilian Central Bank standards
-  // Following the BRCode PIX standard
-  const pixKey = "12345678901"; // Example PIX key (in production would be the merchant's real PIX key)
+  const merchantKey = "12345678901"; // Example PIX key (in production would be the merchant's real PIX key)
   const merchantName = "BONEHEAL";
   const merchantCity = "SAOPAULO";
   
-  // This follows the Brazilian PIX standard layout
-  let pixCode = "";
-  pixCode += "00020101"; // PIX payload format
-  pixCode += "0212"; // Merchant account information
-  pixCode += "26580014BR.GOV.BCB.PIX";
-  pixCode += "01" + pixKey.length + pixKey;
-  pixCode += "52040000"; // Category code: generic 
-  pixCode += "5303986"; // Currency: BRL (986)
-  pixCode += "58" + String(merchantName.length).padStart(2, '0') + merchantName; // Merchant name
-  pixCode += "60" + String(merchantCity.length).padStart(2, '0') + merchantCity; // Merchant city
-  pixCode += "62" + String(txId.length + 4).padStart(2, '0') + "0505" + txId; // Additional data field with tx ID
-  
-  // Add amount if provided
-  if (amount > 0) {
-    pixCode += "54" + String(amountStr.length).padStart(2, '0') + amountStr;
-  }
-  
-  // Add static CRC field at the end
-  pixCode += "6304"; // CRC16
-
-  return pixCode;
+  return `00020101021226580014BR.GOV.BCB.PIX2565${merchantKey}5204000053039865802BR5915${merchantName}6008${merchantCity}62140510${txId}6304`;
 };
 
 serve(async (req) => {
@@ -78,7 +57,7 @@ serve(async (req) => {
 
     console.log("Creating PIX for order:", orderId, "amount:", amount);
 
-    // Use fixed Mercado Pago token
+    // Use Mercado Pago token (in a real app, this would be securely stored)
     const access_token = "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
     
     console.log("Token used (first characters):", access_token.substring(0, 10) + "...");
@@ -128,18 +107,23 @@ serve(async (req) => {
       const fallbackPixCode = formatPIXCode(orderId, amount);
       const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
       
+      // Create a direct link to Mercado Pago checkout
+      const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference-id=MP_FALLBACK_${orderId}`;
+      
       return new Response(JSON.stringify({
         success: true,
         qr_code: fallbackPixCode,
         qr_code_text: fallbackPixCode,
         qr_code_base64: fallbackQrCodeImage,
+        redirect_url: redirectUrl,
         payment_id: `fallback-${orderId}`,
         order_id: orderId,
         amount: amount,
         point_of_interaction: {
           transaction_data: {
             qr_code: fallbackPixCode,
-            qr_code_base64: fallbackQrCodeImage
+            qr_code_base64: fallbackQrCodeImage,
+            ticket_url: redirectUrl
           }
         }
       }), {
@@ -176,9 +160,10 @@ serve(async (req) => {
       })
       .eq('id', orderId);
 
-    // Extract important PIX QR code data
+    // Extract important PIX QR code data and ticket URL
     const qrCodeText = data.point_of_interaction.transaction_data.qr_code;
     const qrCodeBase64 = data.point_of_interaction.transaction_data.qr_code_base64;
+    const ticketUrl = data.point_of_interaction.transaction_data.ticket_url || '';
 
     // Return PIX data
     return new Response(JSON.stringify({
@@ -186,6 +171,7 @@ serve(async (req) => {
       qr_code: qrCodeText,
       qr_code_text: qrCodeText,
       qr_code_base64: qrCodeBase64,
+      redirect_url: ticketUrl,
       payment_id: data.id,
       order_id: orderId,
       amount: amount,
@@ -212,22 +198,24 @@ serve(async (req) => {
     // Create a standardized PIX code
     const fallbackPixCode = formatPIXCode(orderId, amount);
     const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
+    const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference-id=MP_ERROR_${orderId}`;
 
     return new Response(
       JSON.stringify({
         success: false,
         message: "Error processing Mercado Pago PIX payment",
         error: error instanceof Error ? error.message : String(error),
-        // Provide fallback PIX data
         qr_code: fallbackPixCode,
         qr_code_text: fallbackPixCode,
         qr_code_base64: fallbackQrCodeImage,
+        redirect_url: redirectUrl,
         order_id: orderId,
         amount: amount,
         point_of_interaction: {
           transaction_data: {
             qr_code: fallbackPixCode,
-            qr_code_base64: fallbackQrCodeImage
+            qr_code_base64: fallbackQrCodeImage,
+            ticket_url: redirectUrl
           }
         }
       }),

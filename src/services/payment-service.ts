@@ -11,6 +11,7 @@ export interface PaymentResponse {
   qr_code_text?: string;
   preferenceId?: string;
   init_point?: string;
+  redirect_url?: string;
   sandbox_init_point?: string;
   order_id?: string;
   amount?: string;
@@ -18,6 +19,7 @@ export interface PaymentResponse {
     transaction_data?: {
       qr_code?: string;
       qr_code_base64?: string;
+      ticket_url?: string;
     };
   };
 }
@@ -97,6 +99,7 @@ export const createMercadoPagoCheckout = async (
         success: true,
         preferenceId: data.preferenceId,
         init_point: data.init_point,
+        redirect_url: data.init_point,
         sandbox_init_point: data.sandbox_init_point
       };
     }
@@ -131,8 +134,8 @@ const generateStandardPixCode = (orderId: string, amount: number): string => {
   // Clean orderId to use as transaction ID (remove non-alphanumeric, limit length)
   const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 20);
   
-  // Format amount with 2 decimal places, no decimal separator
-  const amountStr = amount.toFixed(2).replace('.', '');
+  // Format amount with 2 decimal places
+  const amountStr = amount.toFixed(2);
   
   // Fixed PIX key for demonstration (in production this would be the merchant's PIX key)
   const pixKey = "12345678901";
@@ -142,7 +145,7 @@ const generateStandardPixCode = (orderId: string, amount: number): string => {
   const merchantCity = "SAOPAULO";
   
   // Build PIX code according to Brazilian Central Bank standards
-  return `00020101021226870014BR.GOV.BCB.PIX2565${pixKey}5204000053039865802BR5915${merchantName}6008${merchantCity}624105${txId}6304`;
+  return `00020101021226580014BR.GOV.BCB.PIX2565${pixKey}5204000053039865802BR5915${merchantName}6008${merchantCity}62140510${txId}6304`;
 };
 
 /**
@@ -179,12 +182,14 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
         success: true,
         pixCode: data.qr_code_text || data.qr_code || '',
         qr_code_text: data.qr_code_text || '',
+        redirect_url: data.redirect_url || data.point_of_interaction?.transaction_data?.ticket_url || '',
         order_id: orderId,
         amount: safeAmount.toString(),
         point_of_interaction: {
           transaction_data: {
             qr_code: data.qr_code || '',
-            qr_code_base64: data.qr_code_base64 || generateGoogleQRCode(data.qr_code_text || '')
+            qr_code_base64: data.qr_code_base64 || generateGoogleQRCode(data.qr_code_text || ''),
+            ticket_url: data.redirect_url || data.point_of_interaction?.transaction_data?.ticket_url || ''
           }
         }
       };
@@ -222,16 +227,21 @@ const generatePixWithAlternativeMethod = async (orderId: string, amount: number)
     
     console.log("PIX gerado com sucesso via Omie:", data);
     
+    // Create a direct link to Mercado Pago checkout as fallback
+    const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=omie_${orderId}`;
+    
     return {
       success: true,
       pixCode: data.pixCode,
       qr_code_text: data.pixCode,
+      redirect_url: redirectUrl,
       order_id: orderId,
       amount: amount.toString(),
       point_of_interaction: {
         transaction_data: {
           qr_code: data.pixCode,
-          qr_code_base64: data.qr_code_base64 || generateGoogleQRCode(data.pixCode)
+          qr_code_base64: data.qr_code_base64 || generateGoogleQRCode(data.pixCode),
+          ticket_url: redirectUrl
         }
       }
     };
@@ -254,17 +264,22 @@ export const generateSafePixData = (orderId: string, amount: number = 0): Paymen
   // Generate QR code URL using Google Charts API
   const qrCodeUrl = generateGoogleQRCode(pixCode);
   
+  // Create a direct link to Mercado Pago checkout as fallback
+  const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=fallback_${orderId}`;
+  
   // Return a standardized response object with all required fields
   return {
     success: true,
     pixCode: pixCode,
     qr_code_text: pixCode,
+    redirect_url: redirectUrl,
     order_id: orderId,
     amount: finalAmount.toFixed(2),
     point_of_interaction: {
       transaction_data: {
         qr_code: pixCode,
-        qr_code_base64: qrCodeUrl
+        qr_code_base64: qrCodeUrl,
+        ticket_url: redirectUrl
       }
     }
   };
@@ -295,5 +310,35 @@ export const updatePaymentStatus = async (orderId: string, status: string, detai
   } catch (error) {
     console.error("Error in updatePaymentStatus:", error);
     throw error;
+  }
+};
+
+/**
+ * Get Mercado Pago redirect URL for an order
+ */
+export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string> => {
+  try {
+    // Get order data
+    const { data, error } = await supabase
+      .from('orders')
+      .select('mp_init_point')
+      .eq('id', orderId)
+      .single();
+    
+    if (error || !data) {
+      console.error("Error getting order redirect URL:", error);
+      throw error;
+    }
+    
+    if (data.mp_init_point) {
+      return data.mp_init_point;
+    } else {
+      // Create a fallback link if no init_point is found
+      return `https://www.mercadopago.com.br/checkout?preference_id=${orderId}`;
+    }
+  } catch (error) {
+    console.error("Error getting Mercado Pago redirect URL:", error);
+    // Return a fallback URL
+    return `https://www.mercadopago.com.br/checkout?preference_id=${orderId}`;
   }
 };

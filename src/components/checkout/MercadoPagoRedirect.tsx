@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +30,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'waiting'>('loading');
   const [message, setMessage] = useState('');
   const [pixCode, setPixCode] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [mercadoPagoUrl, setMercadoPagoUrl] = useState('');
   
   // Calculate order total correctly
   const subtotal = items && items.length > 0 
@@ -55,30 +55,36 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
         // Chamar o serviço para gerar o código PIX real
         const response = await processPixPayment(orderId, finalTotal);
         
-        if (response && (response.pixCode || response.qr_code_text || response.point_of_interaction?.transaction_data?.qr_code)) {
+        if (response) {
           console.log("Resposta PIX:", response);
           
-          // Determine which QR code to use (prefer base64 from Mercado Pago)
+          // Store the Mercado Pago redirect URL
+          if (response.redirect_url || response.point_of_interaction?.transaction_data?.ticket_url) {
+            setMercadoPagoUrl(response.redirect_url || response.point_of_interaction?.transaction_data?.ticket_url || '');
+          }
+          
+          // Determine which QR code to use
           if (response.point_of_interaction?.transaction_data?.qr_code_base64) {
-            setQrCodeUrl(response.point_of_interaction.transaction_data.qr_code_base64);
-            setPixCode(response.point_of_interaction.transaction_data.qr_code || response.qr_code_text || response.pixCode || '');
+            setPixCode(response.point_of_interaction.transaction_data.qr_code_base64);
+          } else if (response.point_of_interaction?.transaction_data?.qr_code) {
+            setPixCode(response.point_of_interaction.transaction_data.qr_code);
           } else {
-            // If no base64 QR, use the text code for display
-            const pixCodeText = response.point_of_interaction?.transaction_data?.qr_code 
-              || response.qr_code_text 
-              || response.pixCode 
-              || '';
-            setPixCode(pixCodeText);
-            
-            // Generate QR URL if needed
-            if (pixCodeText && !qrCodeUrl) {
-              setQrCodeUrl(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCodeText)}`);
-            }
+            setPixCode(response.qr_code_text || response.pixCode || '');
           }
           
           setStatus('waiting');
           setMessage('Aguardando o pagamento via PIX');
           toast.success("Código PIX gerado com sucesso!");
+          
+          // Automatically redirect to Mercado Pago if available
+          if (response.redirect_url) {
+            toast.info("Você pode pagar no site do Mercado Pago", {
+              action: {
+                label: "Ir agora",
+                onClick: () => window.open(response.redirect_url, '_blank')
+              },
+            });
+          }
         } else {
           console.error("Resposta inválida do servidor de pagamento:", response);
           throw new Error('Resposta inválida do servidor de pagamento');
@@ -103,6 +109,14 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
       clearCart();
       toast.success('Pagamento confirmado com sucesso!');
     }, 1500);
+  };
+
+  const handleDirectRedirect = () => {
+    if (mercadoPagoUrl) {
+      window.open(mercadoPagoUrl, '_blank');
+    } else {
+      toast.error("URL de pagamento não disponível");
+    }
   };
 
   const handleReturnToStore = () => {
@@ -130,13 +144,21 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
           {status === 'waiting' && (
             <div className="flex flex-col items-center py-8">
               <h2 className="text-xl font-bold mb-4">Pagamento via PIX</h2>
-              <p className="text-center text-muted-foreground mb-6">
-                Escaneie o QR Code abaixo ou copie o código PIX para realizar o pagamento
-              </p>
+              
+              {mercadoPagoUrl && (
+                <Button 
+                  onClick={handleDirectRedirect}
+                  className="mb-4 w-full bg-[#009EE3] hover:bg-[#008CCD] text-white"
+                >
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Pagar no Mercado Pago
+                </Button>
+              )}
               
               <QRCodeDisplay 
-                pixCode={qrCodeUrl || pixCode}
+                pixCode={pixCode}
                 isLoading={false}
+                mercadoPagoUrl={mercadoPagoUrl}
               />
               
               <div className="border-t border-gray-200 w-full my-6 pt-6">
@@ -180,7 +202,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
               </div>
               
               {/* Botão para simular pagamento confirmado (apenas para testes) */}
-              <Button onClick={handleSimulatePayment} className="mt-4 w-full bg-green-600 hover:bg-green-700">
+              <Button onClick={handleSimulatePayment} className="mt-2 w-full bg-green-600 hover:bg-green-700">
                 Simular Pagamento Confirmado
               </Button>
               

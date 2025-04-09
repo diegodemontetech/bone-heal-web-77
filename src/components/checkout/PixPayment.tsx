@@ -7,9 +7,10 @@ import { toast } from "sonner";
 interface PixPaymentProps {
   pixCode: string;
   orderId: string;
+  mercadoPagoUrl?: string;
 }
 
-const PixPayment = ({ pixCode, orderId }: PixPaymentProps) => {
+const PixPayment = ({ pixCode, orderId, mercadoPagoUrl }: PixPaymentProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [processedPixCode, setProcessedPixCode] = useState(pixCode);
   
@@ -24,13 +25,24 @@ const PixPayment = ({ pixCode, orderId }: PixPaymentProps) => {
     
     console.log("PIX Payment - Processing PIX data:", { 
       hasCode: Boolean(pixCode), 
-      codeLength: pixCode?.length || 0
+      codeLength: pixCode?.length || 0,
+      hasMercadoPagoUrl: Boolean(mercadoPagoUrl)
     });
     
     // Provide a clean PIX code to the QR code display
     setProcessedPixCode(pixCode);
     setIsLoading(false);
-  }, [pixCode, orderId]);
+    
+    // Show a toast with the Mercado Pago option if available
+    if (mercadoPagoUrl) {
+      toast.info("Você também pode pagar diretamente no Mercado Pago", {
+        action: {
+          label: "Acessar",
+          onClick: () => window.open(mercadoPagoUrl, '_blank')
+        }
+      });
+    }
+  }, [pixCode, orderId, mercadoPagoUrl]);
 
   return (
     <Card className="overflow-hidden">
@@ -38,6 +50,7 @@ const PixPayment = ({ pixCode, orderId }: PixPaymentProps) => {
         <QRCodeDisplay 
           pixCode={processedPixCode} 
           isLoading={isLoading}
+          mercadoPagoUrl={mercadoPagoUrl}
         />
         
         <div className="mt-4 pt-4 border-t border-gray-200">

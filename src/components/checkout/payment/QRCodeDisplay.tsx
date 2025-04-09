@@ -1,17 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { CopyIcon, CheckIcon, ClipboardCopy, QrCode, RefreshCw } from "lucide-react";
+import { CopyIcon, CheckIcon, ClipboardCopy, QrCode, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 interface QRCodeDisplayProps {
   pixCode: string;
   isLoading?: boolean;
+  mercadoPagoUrl?: string;
 }
 
 const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ 
   pixCode, 
-  isLoading = false 
+  isLoading = false,
+  mercadoPagoUrl
 }) => {
   const [copied, setCopied] = useState(false);
   const [showCodeText, setShowCodeText] = useState(false);
@@ -108,6 +110,13 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       }
     }
   };
+  
+  const openMercadoPago = () => {
+    if (mercadoPagoUrl) {
+      window.open(mercadoPagoUrl, '_blank');
+      toast.info("Redirecionando para o Mercado Pago...");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -189,6 +198,17 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             </>
           )}
         </Button>
+        
+        {mercadoPagoUrl && (
+          <Button
+            onClick={openMercadoPago}
+            className="w-full flex items-center justify-center gap-2"
+            variant="secondary"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Pagar no Mercado Pago
+          </Button>
+        )}
         
         <Button
           onClick={toggleCodeText}
