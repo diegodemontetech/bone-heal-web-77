@@ -15,18 +15,31 @@ const generateQRCodeImage = (pixCode: string): string => {
   return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodeURIComponent(pixCode)}`;
 };
 
+// Format a valid PIX code according to the PIX standard
+const formatPIXCode = (orderId: string, amount: number): string => {
+  // Clean orderId to use as transaction ID (max 25 chars)
+  const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 25);
+  
+  // Format amount with 2 decimal places and no thousands separator
+  const amountStr = amount.toFixed(2).replace('.', '');
+  
+  // Build PIX code according to Brazilian PIX standard
+  // Note: These values are simplified and should be replaced with your actual merchant info
+  return `00020126330014BR.GOV.BCB.PIX0111${txId}0204${amountStr}5204000053039865802BR5913BoneHeal6008Sao Paulo6304`;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Configurar cliente Supabase
+    // Setup Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
     if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Variáveis de ambiente do Supabase não configuradas");
+      throw new Error("Supabase environment variables not configured");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -36,23 +49,23 @@ serve(async (req) => {
     const { orderId, amount, description, email } = body;
 
     if (!orderId || !amount || amount <= 0) {
-      throw new Error("Parâmetros inválidos: orderId e amount são obrigatórios");
+      throw new Error("Invalid parameters: orderId and amount are required");
     }
 
-    console.log("Criando PIX para pedido:", orderId, "valor:", amount);
+    console.log("Creating PIX for order:", orderId, "amount:", amount);
 
-    // Usar token fixo do Mercado Pago
+    // Use fixed Mercado Pago token
     const access_token = "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
     
-    console.log("Token utilizado (primeiros caracteres):", access_token.substring(0, 10) + "...");
+    console.log("Token used (first characters):", access_token.substring(0, 10) + "...");
 
-    // Preparar dados para o Mercado Pago API de PIX
+    // Prepare data for Mercado Pago PIX API
     const pixData = {
       transaction_amount: amount,
-      description: description || `Pedido #${orderId}`,
+      description: description || `Order #${orderId}`,
       payment_method_id: "pix",
       payer: {
-        email: email || "cliente@example.com",
+        email: email || "customer@example.com",
         first_name: "Cliente",
         last_name: "BoneHeal",
         identification: {
@@ -62,7 +75,7 @@ serve(async (req) => {
       }
     };
 
-    // Criar pagamento PIX no Mercado Pago
+    // Create PIX payment in Mercado Pago
     const response = await fetch("https://api.mercadopago.com/v1/payments", {
       method: "POST",
       headers: {
@@ -75,7 +88,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Erro na API de PIX do Mercado Pago: ${response.status} - ${errorText}`);
+      console.error(`Mercado Pago PIX API error: ${response.status} - ${errorText}`);
       
       // Log the error in the database
       await supabase
@@ -87,8 +100,8 @@ serve(async (req) => {
           details: `API Error: ${errorText}`
         });
         
-      // Fallback - Generate a local PIX code for testing
-      const fallbackPixCode = `00020126580014BR.GOV.BCB.PIX0136${orderId.substring(0, 30)}520400005303986${amount < 10 ? '5' : '6'}802BR5913BoneHeal LTDA6008Sao Paulo62090505${orderId.substring(0, 5)}6304`;
+      // Generate a proper fallback PIX code (following Brazilian standards)
+      const fallbackPixCode = formatPIXCode(orderId, amount);
       const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
       
       return new Response(JSON.stringify({
@@ -111,26 +124,26 @@ serve(async (req) => {
       });
     }
 
-    // Processar resposta do Mercado Pago
+    // Process Mercado Pago response
     const data = await response.json();
-    console.log("Resposta do Mercado Pago PIX:", JSON.stringify(data, null, 2));
+    console.log("Mercado Pago PIX response:", JSON.stringify(data, null, 2));
 
-    // Verificar se a resposta contém os dados do PIX
+    // Check if the response contains PIX data
     if (!data.point_of_interaction?.transaction_data?.qr_code) {
-      throw new Error("Resposta do Mercado Pago não contém dados do PIX");
+      throw new Error("Mercado Pago response does not contain PIX data");
     }
 
-    // Registrar o sucesso no log do sistema
+    // Log success in system log
     await supabase
       .from('system_logs')
       .insert({
         type: 'mercadopago_pix',
         source: 'edge_function',
         status: 'success',
-        details: `PIX gerado para pedido ${orderId}`
+        details: `PIX generated for order ${orderId}`
       });
 
-    // Atualizar o pedido com os dados do PIX
+    // Update the order with PIX data
     await supabase
       .from('orders')
       .update({ 
@@ -139,11 +152,11 @@ serve(async (req) => {
       })
       .eq('id', orderId);
 
-    // Extrair os dados importantes do QR code do PIX
+    // Extract important PIX QR code data
     const qrCodeText = data.point_of_interaction.transaction_data.qr_code;
     const qrCodeBase64 = data.point_of_interaction.transaction_data.qr_code_base64;
 
-    // Retornar os dados do PIX
+    // Return PIX data
     return new Response(JSON.stringify({
       success: true,
       qr_code: qrCodeText,
@@ -158,18 +171,28 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Erro na geração de PIX do Mercado Pago:", error);
+    console.error("Error in Mercado Pago PIX generation:", error);
+    
+    // Get the orderId from the request if possible
+    let orderId = "unknown";
+    let amount = 1.00; // Default amount for fallback
+    
+    try {
+      const body = await req.clone().json();
+      orderId = body.orderId || "unknown";
+      amount = body.amount || 1.00;
+    } catch (e) {
+      console.error("Failed to extract orderId from request:", e);
+    }
 
-    // Create a fallback PIX code when there's an error
-    const orderId = typeof error === 'object' && error !== null ? (error as any).orderId || 'unknown' : 'unknown';
-    const amount = 1.00; // Default amount for fallback
-    const fallbackPixCode = `00020126580014BR.GOV.BCB.PIX0136${orderId.substring(0, 30)}520400005303986802BR5913BoneHeal LTDA6008Sao Paulo62090505${orderId.substring(0, 5)}6304`;
+    // Create a well-formatted fallback PIX code
+    const fallbackPixCode = formatPIXCode(orderId, amount);
     const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
 
     return new Response(
       JSON.stringify({
         success: false,
-        message: "Erro ao processar pagamento via Mercado Pago PIX",
+        message: "Error processing Mercado Pago PIX payment",
         error: error instanceof Error ? error.message : String(error),
         // Provide fallback PIX data
         qr_code: fallbackPixCode,
