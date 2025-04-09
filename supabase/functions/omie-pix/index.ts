@@ -17,33 +17,22 @@ const generatePixCode = (orderId: string, amount: number): string => {
   const txId = `${dateStr}${orderId.substring(0, 8).replace(/-/g, '')}`;
   
   // Create a simple PIX code for demo/test purposes that follows the standard pattern
-  return `00020126330014BR.GOV.BCB.PIX01111234567890202${String(finalAmount).length}${finalAmount}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
+  return `00020101026330014BR.GOV.BCB.PIX01111234567890202${String(finalAmount).length}${finalAmount}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
 };
 
-// Properly handle CORS preflight requests
-const handleCors = (req: Request) => {
-  // Handle CORS preflight OPTIONS request
+serve(async (req) => {
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
+    console.log("Handling OPTIONS preflight request for CORS");
     return new Response(null, {
       status: 200,
       headers: corsHeaders
     });
   }
   
-  return null;
-};
-
-serve(async (req) => {
-  console.log("=== INÍCIO DA EXECUÇÃO DA FUNÇÃO OMIE-PIX ===");
-  
-  // Handle CORS preflight request
-  const corsResponse = handleCors(req);
-  if (corsResponse) {
-    console.log("Returning CORS preflight response with status 200");
-    return corsResponse;
-  }
-  
   try {
+    console.log("=== INÍCIO DA EXECUÇÃO DA FUNÇÃO OMIE-PIX ===");
+    
     let requestData;
     
     try {
@@ -51,13 +40,40 @@ serve(async (req) => {
       console.log("Payload recebido:", JSON.stringify(requestData));
     } catch (e) {
       console.error("Erro ao fazer parse do JSON:", e);
-      throw new Error("Corpo da requisição inválido. Esperado JSON válido.");
+      // Return a proper response even when JSON parsing fails
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Corpo da requisição inválido. Esperado JSON válido."
+        }),
+        {
+          status: 200, // Use 200 to ensure the error message is returned to the client
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+          }
+        }
+      );
     }
     
     const { orderId, amount } = requestData;
     
     if (!orderId) {
-      throw new Error("orderId é obrigatório");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "orderId é obrigatório",
+          pixCode: generatePixCode("placeholder", amount || 1),
+          qr_code_base64: generateQRCodeImage(generatePixCode("placeholder", amount || 1))
+        }),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+          }
+        }
+      );
     }
     
     // Gerar código PIX
@@ -87,13 +103,13 @@ serve(async (req) => {
     console.error("Erro ao gerar PIX:", error);
     
     // Generate a safe fallback PIX without using recursion
-    const safePixCode = "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
+    const safePixCode = "00020101026330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
     const safeQrCodeImage = generateQRCodeImage(safePixCode);
     
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         pixCode: safePixCode,
         qr_code_base64: safeQrCodeImage
       }),

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -296,7 +297,7 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
     // Query to get the order data
     const { data, error } = await supabase
       .from('orders')
-      .select('mp_preference_id, payment_details')
+      .select('*')
       .eq('id', orderId)
       .single();
     
@@ -310,9 +311,12 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
       return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
 
+    // Type assertion to access properties safely
+    const orderData = data as any;
+
     // Check and access payment_details if it exists
-    if (data.payment_details && typeof data.payment_details === 'object') {
-      const paymentDetails = data.payment_details as Record<string, any>;
+    if (orderData.payment_details && typeof orderData.payment_details === 'object') {
+      const paymentDetails = orderData.payment_details as Record<string, any>;
       if ('init_point' in paymentDetails && typeof paymentDetails.init_point === 'string') {
         console.log("Using init_point from payment_details");
         return paymentDetails.init_point;
@@ -320,9 +324,9 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
     }
     
     // Check and use mp_preference_id if it exists
-    if (data.mp_preference_id && typeof data.mp_preference_id === 'string') {
+    if (orderData.mp_preference_id && typeof orderData.mp_preference_id === 'string') {
       console.log("Using mp_preference_id for redirect");
-      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.mp_preference_id}`;
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${orderData.mp_preference_id}`;
     }
     
     // Fallback to default URL

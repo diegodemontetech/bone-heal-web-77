@@ -19,7 +19,6 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [showCodeText, setShowCodeText] = useState(false);
   const [qrCodeImageSrc, setQrCodeImageSrc] = useState<string | null>(null);
   const [qrCodeError, setQrCodeError] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
   const [extractedPixCode, setExtractedPixCode] = useState('');
 
   useEffect(() => {
@@ -73,7 +72,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         setQrCodeError(true);
       }
     }
-  }, [pixCode, retryCount]);
+  }, [pixCode]);
 
   const copyToClipboard = async () => {
     try {
@@ -97,11 +96,26 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   };
   
   const retryQrCode = () => {
+    setQrCodeError(false);
+    
     if (pixCode) {
       try {
-        setQrCodeError(false);
-        // Increment retry count to force useEffect to regenerate QR
-        setRetryCount(prev => prev + 1);
+        // Try to regenerate the QR code image
+        if (pixCode.startsWith('data:image')) {
+          setQrCodeImageSrc(pixCode);
+        } else if (pixCode.startsWith('http')) {
+          // Add timestamp to bust cache
+          const timestamp = new Date().getTime();
+          const qrUrl = pixCode.includes('?') 
+            ? `${pixCode}&t=${timestamp}` 
+            : `${pixCode}?t=${timestamp}`;
+          setQrCodeImageSrc(qrUrl);
+        } else {
+          const timestamp = new Date().getTime();
+          const encodedData = encodeURIComponent(pixCode);
+          setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
+        }
+        
         toast.info("Gerando QR code novamente...");
       } catch (error) {
         console.error("Error regenerating QR code:", error);
@@ -218,6 +232,15 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         >
           <ClipboardCopy className="h-4 w-4" />
           {showCodeText ? "Ocultar Código" : "Mostrar Código"}
+        </Button>
+        
+        <Button
+          onClick={retryQrCode}
+          className="w-full flex items-center justify-center gap-2"
+          variant="outline"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Recarregar QR Code
         </Button>
       </div>
       
