@@ -64,18 +64,24 @@ const ReviewsTab = ({ productId }: ReviewsTabProps) => {
 
   return (
     <div className="space-y-6">
+      {reviews.length > 0 && (
+        <ReviewsSummary reviews={reviews} />
+      )}
+
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-lg font-medium">Avaliações dos Clientes</h4>
         
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="text-sm border rounded-md px-2 py-1"
-        >
-          <option value="highest">Maiores notas</option>
-          <option value="lowest">Menores notas</option>
-          <option value="newest">Mais recentes</option>
-        </select>
+        {reviews.length > 0 && (
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="text-sm border rounded-md px-2 py-1"
+          >
+            <option value="highest">Maiores notas</option>
+            <option value="lowest">Menores notas</option>
+            <option value="newest">Mais recentes</option>
+          </select>
+        )}
       </div>
 
       {session && (

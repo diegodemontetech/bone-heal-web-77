@@ -51,19 +51,6 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gray-50 rounded-lg p-5 mb-4">
-        <h3 className="font-medium text-lg mb-1">Resumo das Avaliações</h3>
-        <div className="flex items-center">
-          <div className="text-3xl font-bold text-primary mr-3">
-            {(reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length || 0).toFixed(1)}
-            <span className="text-lg">/5</span>
-          </div>
-          <div className="text-sm text-gray-500">
-            Baseado em {reviews.length} {reviews.length === 1 ? 'avaliação' : 'avaliações'}
-          </div>
-        </div>
-      </div>
-      
       {sortedReviews.map((review) => (
         <ReviewItem key={review.id} review={review} />
       ))}
