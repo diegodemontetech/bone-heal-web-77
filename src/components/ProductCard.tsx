@@ -18,6 +18,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
   // Ensure product has a valid name
   const productName = product.name || "Produto sem nome";
   
+  // Format product name properly with brand first and registration mark
+  const formattedName = formatProductName(productName);
+  
   // Generate a clean slug for the URL
   const productSlug = generateCleanSlug(productName, product.slug);
   const productUrl = `/products/${encodeURIComponent(productSlug)}`;
@@ -37,7 +40,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <div className="aspect-square relative bg-foreground/5 dark:bg-background rounded-lg overflow-hidden">
               <img
                 src={productImage}
-                alt={productName}
+                alt={formattedName}
                 className="aspect-square object-cover rounded-lg transition-all duration-300 group-hover:scale-105 w-full h-full"
                 onError={(e) => {
                   console.error("Erro ao carregar imagem:", productImage);
@@ -52,7 +55,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <div className="w-full">
             <Link to={productUrl}>
               <h3 className="font-semibold text-md md:text-lg line-clamp-2">
-                {formatProductName(productName)}
+                {formattedName}
               </h3>
               <p className="text-xs md:text-sm text-muted-foreground line-clamp-2">
                 {product.short_description || "Sem descrição"}

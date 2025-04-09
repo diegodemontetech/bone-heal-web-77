@@ -9,6 +9,7 @@ import ProductCard from '@/components/ProductCard';
 import WhatsAppWidget from '@/components/WhatsAppWidget';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { sortProductsByBrand } from '@/utils/product-formatters';
 
 const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,6 +35,9 @@ const Products = () => {
       return data as Product[];
     },
   });
+
+  // Sort products - Bone Heal first, then Heal Bone
+  const sortedProducts = products ? sortProductsByBrand(products) : [];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -69,11 +73,11 @@ const Products = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {products?.map((product) => (
+            {sortedProducts?.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
             
-            {products?.length === 0 && (
+            {sortedProducts?.length === 0 && (
               <div className="col-span-full text-center py-12">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum produto encontrado</h3>
                 <p className="text-gray-500">

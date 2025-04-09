@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/types/product";
+import { sortProductsByBrand } from "@/utils/product-formatters";
 
 const ProductsPreview = () => {
   const { data: products, isLoading, error } = useQuery({
@@ -66,6 +67,9 @@ const ProductsPreview = () => {
     );
   }
 
+  // Sort products - Bone Heal first, then Heal Bone
+  const sortedProducts = sortProductsByBrand(products);
+
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-8">
@@ -85,7 +89,7 @@ const ProductsPreview = () => {
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-8 mb-12">
-          {products?.map((product) => (
+          {sortedProducts?.map((product) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 20 }}

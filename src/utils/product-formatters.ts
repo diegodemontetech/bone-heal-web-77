@@ -4,7 +4,7 @@
  */
 
 /**
- * Format product name to show brand first
+ * Format product name to show brand first with proper registration mark
  */
 export const formatProductName = (name: string): string => {
   // Remove unwanted parentheses
@@ -12,23 +12,21 @@ export const formatProductName = (name: string): string => {
   
   // Check if the name contains "Bone Heal" or "Heal Bone" anywhere
   if (cleanName.includes("Bone Heal") || cleanName.includes("Heal Bone")) {
-    // If it already starts with a brand name, return as is but with ® symbol
-    if (cleanName.startsWith("Bone Heal")) {
-      return cleanName.replace("Bone Heal", "Bone Heal®");
-    } else if (cleanName.startsWith("Heal Bone")) {
-      return cleanName.replace("Heal Bone", "Heal Bone®");
-    }
-    
-    // Extract brand name
+    // Extract brand name and add registration mark
     let brandName = "";
-    if (cleanName.includes("Bone Heal")) {
+    let productNameWithoutBrand = "";
+    
+    if (cleanName.toLowerCase().includes("bone heal")) {
+      // Replace all instances of Bone Heal (with or without ®) with the properly marked version
       brandName = "Bone Heal®";
-    } else if (cleanName.includes("Heal Bone")) {
+      productNameWithoutBrand = cleanName.replace(/Bone Heal®?/gi, "").trim();
+    } else if (cleanName.toLowerCase().includes("heal bone")) {
+      // Replace all instances of Heal Bone (with or without ®) with the properly marked version
       brandName = "Heal Bone®";
+      productNameWithoutBrand = cleanName.replace(/Heal Bone®?/gi, "").trim();
     }
     
-    // Create new product name with brand first
-    const productNameWithoutBrand = cleanName.replace(/Bone Heal®?|Heal Bone®?/g, "").trim();
+    // Create standardized product name with brand first
     return `${brandName} ${productNameWithoutBrand}`;
   }
   
@@ -50,4 +48,29 @@ export const generateCleanSlug = (name: string, existingSlug?: string): string =
     .replace(/\s+/g, "-")     // Replace spaces with hyphens
     .replace(/-+/g, "-")      // Remove consecutive hyphens
     .trim();
+};
+
+/**
+ * Sort products by brand (Bone Heal first, then Heal Bone) and then by name
+ */
+export const sortProductsByBrand = (products: any[]): any[] => {
+  return [...products].sort((a, b) => {
+    const aName = a.name?.toLowerCase() || '';
+    const bName = b.name?.toLowerCase() || '';
+    
+    // Check if products contain different brands
+    const aHasBoneHeal = aName.includes('bone heal');
+    const bHasBoneHeal = bName.includes('bone heal');
+    const aHasHealBone = aName.includes('heal bone');
+    const bHasHealBone = bName.includes('heal bone');
+    
+    // Sort by brand priority: Bone Heal first, then Heal Bone
+    if (aHasBoneHeal && !bHasBoneHeal) return -1;
+    if (!aHasBoneHeal && bHasBoneHeal) return 1;
+    if (aHasHealBone && !bHasHealBone) return -1;
+    if (!aHasHealBone && bHasHealBone) return 1;
+    
+    // If same brand or no recognized brand, sort alphabetically
+    return aName.localeCompare(bName);
+  });
 };

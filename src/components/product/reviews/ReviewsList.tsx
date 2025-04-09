@@ -1,6 +1,7 @@
 
 import { Loader2 } from "lucide-react";
 import ReviewItem from "./ReviewItem";
+import { sortProductsByBrand } from "@/utils/product-formatters";
 
 interface ReviewsListProps {
   loading: boolean;
@@ -16,13 +17,25 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
     );
   }
 
-  // Ordena as avaliações: primeiro por marca (Bone Heal depois Heal Bone), depois por classificação
+  // First sort by brand (Bone Heal first, then Heal Bone),
+  // then by rating (highest first), then by date (newest first)
   const sortedReviews = [...reviews].sort((a, b) => {
-    // Primeiro ordenar por classificação (rating) em ordem decrescente
+    // First check product brand - prioritize Bone Heal over Heal Bone
+    const aName = a.product_name?.toLowerCase() || '';
+    const bName = b.product_name?.toLowerCase() || '';
+    
+    const aHasBoneHeal = aName.includes('bone heal');
+    const bHasBoneHeal = bName.includes('bone heal');
+    
+    if (aHasBoneHeal && !bHasBoneHeal) return -1;
+    if (!aHasBoneHeal && bHasBoneHeal) return 1;
+    
+    // Then by rating (highest first)
     if (b.rating !== a.rating) {
       return b.rating - a.rating;
     }
-    // Em caso de empate na classificação, ordena por data (mais recente primeiro)
+    
+    // Lastly by date (newest first)
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 

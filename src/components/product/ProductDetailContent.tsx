@@ -44,7 +44,7 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
       </div>
 
       <div className="space-y-12 mb-12">
-        {/* Google Reviews e Avaliações */}
+        {/* Google Reviews e Avaliações - agora em primeiro lugar */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-2xl font-bold mb-4">Avaliações do Produto</h2>
           <GoogleReviews />

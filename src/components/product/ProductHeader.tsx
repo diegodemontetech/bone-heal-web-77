@@ -2,39 +2,13 @@
 import { Badge } from "@/components/ui/badge";
 import { Product } from "@/types/product";
 import { Star } from "lucide-react";
+import { formatProductName } from "@/utils/product-formatters";
 
 interface ProductHeaderProps {
   product: Product;
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
-  // Format product name to show brand first and remove unwanted parentheses
-  const formatProductName = (name: string) => {
-    // Remove unwanted parentheses
-    let cleanName = name.replace(/\(\)|\(\s*\)/g, '').trim();
-    
-    // Check if the name already starts with a brand name
-    if (cleanName.startsWith("Bone Heal") || cleanName.startsWith("Heal Bone")) {
-      return cleanName;
-    }
-    
-    // Extract brand name
-    let brandName = "";
-    if (cleanName.includes("Bone Heal")) {
-      brandName = "Bone Heal®";
-    } else if (cleanName.includes("Heal Bone")) {
-      brandName = "Heal Bone®";
-    }
-    
-    // If brand found, create new product name with brand first
-    if (brandName) {
-      const productNameWithoutBrand = cleanName.replace(/Bone Heal®?|Heal Bone®?/g, "").trim();
-      return `${brandName} ${productNameWithoutBrand}`;
-    }
-    
-    return cleanName;
-  };
-
   return (
     <div className="space-y-4">
       <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{formatProductName(product.name)}</h1>

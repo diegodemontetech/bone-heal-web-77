@@ -12,6 +12,7 @@ import ProductLoading from "@/components/product/ProductLoading";
 import ProductNotFound from "@/components/product/ProductNotFound";
 import { fetchProductBySlug } from "@/api/product-api";
 import { toast } from "sonner";
+import { formatProductName } from "@/utils/product-formatters";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -34,6 +35,11 @@ const ProductDetail = () => {
         if (!product) {
           console.log("Produto não encontrado");
           return null;
+        }
+        
+        // Update product name to ensure correct formatting
+        if (product.name) {
+          product.name = formatProductName(product.name);
         }
         
         console.log("Produto encontrado:", product);
