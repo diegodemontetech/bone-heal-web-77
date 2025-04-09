@@ -28,7 +28,8 @@ const MercadoPagoRedirectPage = () => {
     }
     
     // Clear cart after successful redirect to payment
-    clearCart();
+    // Commenting out the cart clearing temporarily to fix the issue
+    // clearCart();
   }, [searchParams, clearCart]);
 
   return (

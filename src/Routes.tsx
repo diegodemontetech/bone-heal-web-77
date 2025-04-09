@@ -24,6 +24,7 @@ import Cart from "@/pages/Cart";
 import Checkout from "@/pages/checkout/Checkout";
 import MercadoPagoRedirect from "@/pages/checkout/MercadoPagoRedirect";
 import RouteWithSidebar from "@/components/RouteWithSidebar";
+import Failure from "@/pages/checkout/Failure";
 
 // Importação das páginas de perfil
 import ProfilePage from "@/pages/profile/Profile";
@@ -56,6 +57,14 @@ export function Routes() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         
+        {/* Payment routes */}
+        <Route path="/checkout/mercadopago" element={
+          <RouteWithSidebar>
+            <MercadoPagoRedirect />
+          </RouteWithSidebar>
+        } />
+        <Route path="/checkout/error" element={<Failure />} />
+        
         {/* Rotas de perfil */}
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/profile/orders" element={<ProfileOrders />} />
@@ -76,13 +85,6 @@ export function Routes() {
         {/* Rotas de Suporte */}
         <Route path="/support/tickets" element={<Support />} />
         <Route path="/support/tickets/:id" element={<TicketDetails />} />
-        
-        {/* Payment Routes */}
-        <Route path="/checkout/mercadopago" element={
-          <RouteWithSidebar>
-            <MercadoPagoRedirect />
-          </RouteWithSidebar>
-        } />
       </RoutesList>
     </BrowserRouter>
   );

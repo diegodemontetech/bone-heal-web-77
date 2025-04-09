@@ -19,6 +19,9 @@ export interface CartStore {
   clear: () => void; // Alias para clearCart para compatibilidade
 }
 
+// Key for local storage
+const CART_STORAGE_KEY = 'boneheal_cart';
+
 const useCartStore = (): CartStore => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,24 +29,24 @@ const useCartStore = (): CartStore => {
   // Load cart from localStorage on initialization
   useEffect(() => {
     try {
-      const storedCart = localStorage.getItem('cart');
-      console.log("Carregando carrinho do localStorage:", storedCart);
+      const storedCart = localStorage.getItem(CART_STORAGE_KEY);
+      console.log("[useCart] Carregando carrinho do localStorage:", storedCart);
       
       if (storedCart) {
         const parsedCart = JSON.parse(storedCart);
         if (Array.isArray(parsedCart)) {
-          console.log("Carrinho carregado com sucesso, itens:", parsedCart.length);
+          console.log("[useCart] Carrinho carregado com sucesso, itens:", parsedCart.length);
           setCart(parsedCart);
         } else {
-          console.error("Stored cart is not an array:", parsedCart);
-          localStorage.removeItem('cart');
+          console.error("[useCart] Stored cart is not an array:", parsedCart);
+          localStorage.removeItem(CART_STORAGE_KEY);
         }
       } else {
-        console.log("Nenhum carrinho encontrado no localStorage");
+        console.log("[useCart] Nenhum carrinho encontrado no localStorage");
       }
     } catch (error) {
-      console.error("Error loading cart from storage:", error);
-      localStorage.removeItem('cart');
+      console.error("[useCart] Error loading cart from storage:", error);
+      localStorage.removeItem(CART_STORAGE_KEY);
     } finally {
       setIsLoading(false);
     }
@@ -52,8 +55,8 @@ const useCartStore = (): CartStore => {
   // Save cart to localStorage whenever it changes
   useEffect(() => {
     if (!isLoading) {
-      console.log("Salvando carrinho no localStorage, itens:", cart.length);
-      localStorage.setItem('cart', JSON.stringify(cart));
+      console.log("[useCart] Salvando carrinho no localStorage, itens:", cart.length);
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
     }
   }, [cart, isLoading]);
 
@@ -64,17 +67,17 @@ const useCartStore = (): CartStore => {
       quantity: item.quantity || 1
     };
     
-    console.log("Adicionando item ao carrinho:", newItem);
+    console.log("[useCart] Adicionando item ao carrinho:", newItem);
     
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === newItem.id);
       if (existingItem) {
-        console.log("Item já existe no carrinho, atualizando quantidade");
+        console.log("[useCart] Item já existe no carrinho, atualizando quantidade");
         return prevCart.map(cartItem =>
           cartItem.id === newItem.id ? { ...cartItem, quantity: cartItem.quantity + newItem.quantity } : cartItem
         );
       } else {
-        console.log("Novo item adicionado ao carrinho");
+        console.log("[useCart] Novo item adicionado ao carrinho");
         return [...prevCart, newItem];
       }
     });
@@ -83,12 +86,12 @@ const useCartStore = (): CartStore => {
   }, []);
 
   const removeItem = useCallback((id: string) => {
-    console.log("Removendo item do carrinho:", id);
+    console.log("[useCart] Removendo item do carrinho:", id);
     setCart(prevCart => prevCart.filter(item => item.id !== id));
   }, []);
 
   const updateQuantity = useCallback((id: string, quantity: number) => {
-    console.log("Atualizando quantidade:", id, quantity);
+    console.log("[useCart] Atualizando quantidade:", id, quantity);
     if (quantity <= 0) {
       removeItem(id);
     } else {
@@ -99,9 +102,9 @@ const useCartStore = (): CartStore => {
   }, [removeItem]);
 
   const clearCart = useCallback(() => {
-    console.log("Limpando carrinho");
+    console.log("[useCart] Limpando carrinho");
     setCart([]);
-    localStorage.removeItem('cart');
+    localStorage.removeItem(CART_STORAGE_KEY);
   }, []);
 
   const getTotalPrice = useCallback(() => {

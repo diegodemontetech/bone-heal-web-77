@@ -16,7 +16,7 @@ const CartPage = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const { zipCode, loadUserZipCode } = useUserZipCode();
   
-  console.log("CartPage renderizando, itens:", cartItems?.length, "isLoading:", isLoading);
+  console.log("[CartPage] renderizando, itens:", cartItems?.length, "isLoading:", isLoading);
   
   // Load user profile data if authenticated
   useEffect(() => {
@@ -39,13 +39,13 @@ const CartPage = () => {
             }
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          console.error("[CartPage] Error fetching user profile:", error);
         }
       }
     };
     
     fetchUserProfile();
-  }, [isAuthenticated, profile]);
+  }, [isAuthenticated, profile, zipCode, loadUserZipCode]);
 
   const handleCheckout = () => {
     navigate("/checkout");
@@ -64,8 +64,8 @@ const CartPage = () => {
   }
 
   // Verify cart has items
-  if (!cartItems || cartItems.length === 0) {
-    console.log("Carrinho vazio, exibindo EmptyCart");
+  if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+    console.log("[CartPage] Carrinho vazio, exibindo EmptyCart");
     return <EmptyCart />;
   }
 
@@ -82,9 +82,13 @@ const CartPage = () => {
                 <div key={item.id} className="flex gap-4 pb-4 border-b">
                   <div className="h-24 w-24 bg-gray-50 rounded-md border overflow-hidden flex-shrink-0">
                     <img 
-                      src={`/products/${item.image}`} 
+                      src={item.image.startsWith('http') ? item.image : `/products/${item.image}`} 
                       alt={item.name} 
                       className="h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = "/placeholder.svg";
+                      }}
                     />
                   </div>
                   <div className="flex-1 min-w-0">

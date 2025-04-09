@@ -10,14 +10,16 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 const CartWidget = () => {
-  const { cartItems, total, removeItem, updateQuantity } = useCart();
+  const { cartItems = [], total, removeItem, updateQuantity, isLoading } = useCart();
   const [isAnimating, setIsAnimating] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   
-  const itemCount = cartItems && cartItems.length > 0 
-    ? cartItems.reduce((sum, item) => sum + item.quantity, 0) 
+  const itemCount = cartItems && Array.isArray(cartItems) && cartItems.length > 0 
+    ? cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) 
     : 0;
+
+  console.log("[CartWidget] renderizando, itens:", cartItems?.length, "isLoading:", isLoading, "itemCount:", itemCount);
 
   // Animate badge when cart items change
   useEffect(() => {
@@ -30,18 +32,18 @@ const CartWidget = () => {
 
   const handleCheckout = () => {
     setIsOpen(false); // Close the drawer before navigation
-    console.log("Direcionando para checkout, itens no carrinho:", cartItems.length);
+    console.log("[CartWidget] Direcionando para checkout, itens no carrinho:", cartItems?.length);
     
-    if (cartItems && cartItems.length > 0) {
+    if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
       navigate("/cart");
     } else {
       navigate("/products");
     }
   };
 
-  if (itemCount === 0) {
+  if (isLoading) {
     return (
-      <Button variant="ghost" size="icon" className="relative text-primary" onClick={() => navigate("/products")}>
+      <Button variant="ghost" size="icon" className="relative text-primary">
         <ShoppingCart className="h-5 w-5" />
       </Button>
     );
@@ -52,17 +54,19 @@ const CartWidget = () => {
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-primary">
           <ShoppingCart className="h-5 w-5" />
-          <motion.div
-            animate={isAnimating ? { scale: [1, 1.3, 1] } : {}}
-            transition={{ duration: 0.5 }}
-          >
-            <Badge 
-              className="absolute -top-2 -right-2 px-1.5 py-0.5 text-xs bg-primary text-white"
-              variant="default"
+          {itemCount > 0 && (
+            <motion.div
+              animate={isAnimating ? { scale: [1, 1.3, 1] } : {}}
+              transition={{ duration: 0.5 }}
             >
-              {itemCount}
-            </Badge>
-          </motion.div>
+              <Badge 
+                className="absolute -top-2 -right-2 px-1.5 py-0.5 text-xs bg-primary text-white"
+                variant="default"
+              >
+                {itemCount}
+              </Badge>
+            </motion.div>
+          )}
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-md">
@@ -74,7 +78,7 @@ const CartWidget = () => {
         </SheetHeader>
         
         <div className="mt-6 flex flex-col h-[calc(100vh-180px)]">
-          {cartItems.length === 0 ? (
+          {!cartItems || !Array.isArray(cartItems) || cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="bg-gray-100 p-6 rounded-full mb-4">
                 <ShoppingCart className="h-10 w-10 text-muted-foreground" />
@@ -92,7 +96,7 @@ const CartWidget = () => {
                   <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                     <div className="relative h-20 w-20 bg-white rounded-md border overflow-hidden">
                       <img
-                        src={item.image.startsWith('/') ? item.image : `https://kurpshcdafxbyqnzxvxu.supabase.co/storage/v1/object/public/products/${item.image}`}
+                        src={item.image.startsWith('http') ? item.image : `/products/${item.image}`}
                         alt={item.name}
                         className="h-full w-full object-cover"
                         onError={(e) => {
