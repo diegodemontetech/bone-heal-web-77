@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
+import { toast } from 'sonner';
 
 interface MercadoPagoRedirectProps {
   orderId: string;
@@ -34,20 +35,23 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
   const total = subtotal + (shippingFee || 0) - (discount || 0);
 
   useEffect(() => {
-    console.log('MercadoPagoRedirect mounted with items:', items);
-    console.log('Order details:', { orderId, email, shippingFee, discount });
-    console.log('Calculated values:', { subtotal, total });
+    console.log('Redirecionamento do Mercado Pago iniciado');
+    console.log('Detalhes do pedido:', { orderId, email, shippingFee, discount });
+    console.log('Itens do pedido:', items);
 
-    // Simulate a payment process
+    // Em um cenário real, aqui verificaríamos o status do pagamento via API
+    // Simulando resposta de pagamento para demonstração
     const timer = setTimeout(() => {
       if (Math.random() > 0.2) {
         setStatus('success');
         setMessage('Seu pagamento foi processado com sucesso!');
-        // Clear cart on successful payment
+        // Limpar carrinho após pagamento bem-sucedido
         clearCart();
+        toast.success('Pagamento confirmado com sucesso!');
       } else {
         setStatus('error');
         setMessage('Ocorreu um erro ao processar seu pagamento.');
+        toast.error('Falha no processamento do pagamento');
       }
     }, 2000);
 

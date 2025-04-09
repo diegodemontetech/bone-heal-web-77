@@ -57,7 +57,7 @@ export function Routes() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         
-        {/* Payment routes */}
+        {/* Rotas de pagamento */}
         <Route path="/checkout/mercadopago" element={<MercadoPagoRedirect />} />
         <Route path="/checkout/error" element={<Failure />} />
         
