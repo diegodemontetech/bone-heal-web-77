@@ -53,7 +53,12 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
           setQrCodeImageSrc(pixCode);
         } else if (pixCode.startsWith('http')) {
           console.log("Using provided QR code URL");
-          setQrCodeImageSrc(pixCode);
+          // Use the URL directly but add timestamp to prevent caching issues
+          const timestamp = new Date().getTime();
+          const qrUrl = pixCode.includes('?') 
+            ? `${pixCode}&t=${timestamp}` 
+            : `${pixCode}?t=${timestamp}`;
+          setQrCodeImageSrc(qrUrl);
         } else {
           console.log("Converting PIX code to QR code:", pixCode.substring(0, 20) + "...");
           // Generate a fresh QR code with a timestamp to prevent caching
@@ -133,7 +138,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         </p>
       </div>
       
-      <div className="border-2 border-primary/20 rounded-xl p-4 bg-primary/5 mb-4">
+      <div className="border-2 border-primary/20 rounded-xl p-4 bg-white mb-4 shadow-sm">
         {qrCodeError ? (
           <div className="h-64 w-64 flex flex-col items-center justify-center bg-red-50 border border-red-200 rounded-lg">
             <QrCode className="h-16 w-16 text-red-300 mb-2" />
@@ -144,18 +149,21 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             </Button>
           </div>
         ) : qrCodeImageSrc ? (
-          <img 
-            src={qrCodeImageSrc} 
-            alt="QR Code PIX" 
-            className="h-64 w-64 mx-auto" 
-            onError={() => {
-              console.error("Erro ao carregar QR code");
-              setQrCodeError(true);
-            }}
-            onLoad={() => {
-              setQrCodeError(false);
-            }}
-          />
+          <div className="bg-white p-2 rounded-md shadow-sm">
+            <img 
+              src={qrCodeImageSrc} 
+              alt="QR Code PIX" 
+              className="h-64 w-64 mx-auto"
+              style={{ backgroundColor: "white", padding: "4px" }}
+              onError={() => {
+                console.error("Erro ao carregar QR code");
+                setQrCodeError(true);
+              }}
+              onLoad={() => {
+                setQrCodeError(false);
+              }}
+            />
+          </div>
         ) : (
           <div className="h-64 w-64 flex items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg">
             <QrCode className="h-16 w-16 text-gray-400 animate-pulse" />

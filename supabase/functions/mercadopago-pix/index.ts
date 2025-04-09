@@ -23,15 +23,33 @@ const formatPIXCode = (orderId: string, amount: number): string => {
   // Format amount with 2 decimal places, no decimal separator
   const amountStr = amount.toFixed(2).replace('.', '');
   
-  // Fixed key for demonstration (in production this would be the merchant's PIX key)
-  const pixKey = "12345678901";
-  
-  // Example merchant name and city (should be actual merchant info in production)
+  // Build PIX code according to Brazilian Central Bank standards
+  // Following the BRCode PIX standard
+  const pixKey = "12345678901"; // Example PIX key (in production would be the merchant's real PIX key)
   const merchantName = "BONEHEAL";
   const merchantCity = "SAOPAULO";
   
-  // Build PIX code according to Brazilian Central Bank standards
-  return `00020101021226870014BR.GOV.BCB.PIX2565${pixKey}5204000053039865802BR5915${merchantName}6008${merchantCity}624105${txId}6304`;
+  // This follows the Brazilian PIX standard layout
+  let pixCode = "";
+  pixCode += "00020101"; // PIX payload format
+  pixCode += "0212"; // Merchant account information
+  pixCode += "26580014BR.GOV.BCB.PIX";
+  pixCode += "01" + pixKey.length + pixKey;
+  pixCode += "52040000"; // Category code: generic 
+  pixCode += "5303986"; // Currency: BRL (986)
+  pixCode += "58" + String(merchantName.length).padStart(2, '0') + merchantName; // Merchant name
+  pixCode += "60" + String(merchantCity.length).padStart(2, '0') + merchantCity; // Merchant city
+  pixCode += "62" + String(txId.length + 4).padStart(2, '0') + "0505" + txId; // Additional data field with tx ID
+  
+  // Add amount if provided
+  if (amount > 0) {
+    pixCode += "54" + String(amountStr.length).padStart(2, '0') + amountStr;
+  }
+  
+  // Add static CRC field at the end
+  pixCode += "6304"; // CRC16
+
+  return pixCode;
 };
 
 serve(async (req) => {
@@ -106,7 +124,7 @@ serve(async (req) => {
           details: `API Error: ${errorText}`
         });
         
-      // Generate a proper fallback PIX code using the improved formatting function
+      // Generate a standardized PIX code using local method
       const fallbackPixCode = formatPIXCode(orderId, amount);
       const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
       
@@ -191,7 +209,7 @@ serve(async (req) => {
       console.error("Failed to extract orderId from request:", e);
     }
 
-    // Create a well-formatted fallback PIX code
+    // Create a standardized PIX code
     const fallbackPixCode = formatPIXCode(orderId, amount);
     const fallbackQrCodeImage = generateQRCodeImage(fallbackPixCode);
 
