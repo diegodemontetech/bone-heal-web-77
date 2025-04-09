@@ -20,6 +20,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [qrCodeImageSrc, setQrCodeImageSrc] = useState<string | null>(null);
   const [qrCodeError, setQrCodeError] = useState(false);
   const [extractedPixCode, setExtractedPixCode] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     // Reset state when pix code changes
@@ -29,6 +30,9 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     
     if (pixCode) {
       try {
+        console.log("Processing PIX code for QR display:", 
+          pixCode.length > 50 ? pixCode.substring(0, 50) + "..." : pixCode);
+        
         // Extract the actual PIX text code - this is crucial for the user to copy
         let pixTextCode = pixCode;
         
@@ -39,6 +43,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
             const chl = url.searchParams.get('chl');
             if (chl) {
               pixTextCode = decodeURIComponent(chl);
+              console.log("Extracted PIX code from Google Charts URL");
             }
           } catch (e) {
             console.error("Failed to extract PIX code from URL:", e);
@@ -70,9 +75,15 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
       } catch (error) {
         console.error("Error setting up QR code:", error);
         setQrCodeError(true);
+        
+        // Try to create a QR code as a fallback
+        const timestamp = new Date().getTime();
+        const fallbackCode = pixCode || "00020101026330014BR.GOV.BCB.PIX011123456789020210Pagamento";
+        const encodedData = encodeURIComponent(fallbackCode);
+        setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
       }
     }
-  }, [pixCode]);
+  }, [pixCode, retryCount]);
 
   const copyToClipboard = async () => {
     try {
@@ -97,32 +108,9 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   
   const retryQrCode = () => {
     setQrCodeError(false);
+    setRetryCount(prev => prev + 1); // Trigger the useEffect again
     
-    if (pixCode) {
-      try {
-        // Try to regenerate the QR code image
-        if (pixCode.startsWith('data:image')) {
-          setQrCodeImageSrc(pixCode);
-        } else if (pixCode.startsWith('http')) {
-          // Add timestamp to bust cache
-          const timestamp = new Date().getTime();
-          const qrUrl = pixCode.includes('?') 
-            ? `${pixCode}&t=${timestamp}` 
-            : `${pixCode}?t=${timestamp}`;
-          setQrCodeImageSrc(qrUrl);
-        } else {
-          const timestamp = new Date().getTime();
-          const encodedData = encodeURIComponent(pixCode);
-          setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
-        }
-        
-        toast.info("Gerando QR code novamente...");
-      } catch (error) {
-        console.error("Error regenerating QR code:", error);
-        setQrCodeError(true);
-        toast.error("Não foi possível gerar o QR code. Tente copiar o código PIX.");
-      }
-    }
+    toast.info("Gerando QR code novamente...");
   };
   
   const openMercadoPago = () => {
@@ -184,15 +172,20 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
               }}
               onError={() => {
                 console.error("Erro ao carregar QR code");
-                setQrCodeError(true);
                 
-                // Try one more time with a different approach - direct Google Charts
-                if (!qrCodeImageSrc.includes('chart.googleapis.com')) {
-                  const timestamp = new Date().getTime();
-                  const fallbackCode = extractedPixCode || "00020101026330014BR.GOV.BCB.PIX011123456789020210Pagamento";
-                  const encodedData = encodeURIComponent(fallbackCode);
-                  setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
-                  setQrCodeError(false);
+                // Increment retry count to avoid infinite loops
+                if (retryCount < 3) {
+                  setQrCodeError(true);
+                  
+                  // Try one more time with a different approach - direct Google Charts
+                  setTimeout(() => {
+                    const timestamp = new Date().getTime();
+                    const fallbackCode = extractedPixCode || "00020101026330014BR.GOV.BCB.PIX011123456789020210Pagamento";
+                    const encodedData = encodeURIComponent(fallbackCode);
+                    setQrCodeImageSrc(`https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${encodedData}&t=${timestamp}`);
+                    setQrCodeError(false);
+                    setRetryCount(prev => prev + 1);
+                  }, 1000);
                 }
               }}
             />

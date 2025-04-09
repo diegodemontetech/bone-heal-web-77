@@ -28,14 +28,34 @@ serve(async (req) => {
     
     // Basic ZIP code validation
     if (!zipCode) {
-      throw new Error("ZIP code not provided");
+      return new Response(
+        JSON.stringify({
+          rates: [],
+          success: false,
+          error: "ZIP code not provided"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200 // Using 200 instead of 400 to bypass CORS issues
+        }
+      );
     }
     
     // Clean ZIP code to have only numbers
     const cleanZipCode = zipCode.toString().replace(/\D/g, '');
     
     if (cleanZipCode.length !== 8) {
-      throw new Error("Invalid ZIP code: must contain 8 digits");
+      return new Response(
+        JSON.stringify({
+          rates: [],
+          success: false,
+          error: "Invalid ZIP code: must contain 8 digits"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200 // Using 200 instead of 400 to bypass CORS issues
+        }
+      );
     }
 
     // Generate shipping rates
@@ -75,7 +95,7 @@ serve(async (req) => {
       JSON.stringify({ 
         rates: fallbackRates, 
         success: true, 
-        error: error.message, 
+        error: error instanceof Error ? error.message : String(error), 
         message: "Using default shipping rates due to an error" 
       }),
       { 

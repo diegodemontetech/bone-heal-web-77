@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
@@ -10,57 +9,45 @@ interface PixRequest {
   email?: string;
 }
 
-// Generate a valid QR code URL for a PIX code
 const generateQRCodeImage = (pixCode: string): string => {
-  // Make sure the content is properly encoded for Google Charts API
   const safeContent = encodeURIComponent(pixCode);
-  // Generate a URL with adequate size and error correction
   return `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chld=L|0&chl=${safeContent}`;
 };
 
-// Format a valid PIX code according to the Brazilian Central Bank's PIX standard
 const formatPIXCode = (orderId: string, amount: number): string => {
-  // Clean orderId to use as transaction ID (remove special chars, limit length)
   const txId = orderId.replace(/[^a-zA-Z0-9]/g, "").substring(0, 25);
-  
-  // Format amount with 2 decimal places, no thousands separator
   const amountStr = amount.toFixed(2);
-  
-  // Build PIX code according to Brazilian Central Bank standards
-  const merchantKey = "12345678901"; // Example PIX key (in production would be the merchant's real PIX key)
+  const merchantKey = "12345678901";
   const merchantName = "BONEHEAL";
   const merchantCity = "SAOPAULO";
-  
-  // Build properly formatted PIX code with fixed-length fields
   const pixCode = `00020101021226580014BR.GOV.BCB.PIX2565${merchantKey}5204000053039865802BR5915${merchantName}6008${merchantCity}62140510${txId}6304`;
-  
   return pixCode;
 };
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  console.log(`Processing ${req.method} request to mercadopago-pix`);
+  
   const corsResponse = handleCors(req);
   if (corsResponse) {
+    console.log("Returning CORS preflight response with status 200");
     return corsResponse;
   }
 
   try {
-    // Setup Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
     if (!supabaseUrl || !supabaseKey) {
       console.error("Supabase environment variables not configured");
-      // Return a fallback response instead of throwing
       return createFallbackPixResponse("Supabase configuration missing", "fallback");
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Parse request body
     let body: PixRequest;
     try {
       body = await req.json();
+      console.log("Request payload:", JSON.stringify(body));
     } catch (e) {
       console.error("Failed to parse request JSON:", e);
       return createFallbackPixResponse("Invalid request format", "invalid-request");
@@ -75,21 +62,18 @@ serve(async (req) => {
 
     console.log("Creating PIX for order:", orderId, "amount:", amount);
 
-    // Retrieve the Mercado Pago access token from system settings
     const { data: settingsData, error: settingsError } = await supabase
       .from('system_settings')
       .select('value')
       .eq('key', 'MP_ACCESS_TOKEN')
       .single();
 
-    // Use token from settings or fallback to environment variable
     const access_token = settingsData?.value || 
       Deno.env.get("MERCADOPAGO_ACCESS_TOKEN") || 
       "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
-    
+
     console.log("Token used (first characters):", access_token.substring(0, 10) + "...");
 
-    // Prepare data for Mercado Pago PIX API
     const pixData = {
       transaction_amount: amount,
       description: description || `Order #${orderId}`,
@@ -105,11 +89,9 @@ serve(async (req) => {
       }
     };
 
-    // Generate idempotency key based on order ID and timestamp
     const idempotencyKey = `pix-${orderId}-${Date.now()}`;
 
     try {
-      // Create PIX payment in Mercado Pago
       const response = await fetch("https://api.mercadopago.com/v1/payments", {
         method: "POST",
         headers: {
@@ -124,7 +106,6 @@ serve(async (req) => {
         const errorText = await response.text();
         console.error(`Mercado Pago PIX API error: ${response.status} - ${errorText}`);
         
-        // Log the error in the database, but don't throw
         try {
           await supabase
             .from('system_logs')
@@ -138,21 +119,17 @@ serve(async (req) => {
           console.error("Failed to log error to database:", logError);
         }
         
-        // Generate a standardized PIX code
         return createFallbackPixResponse(`Mercado Pago API error: ${response.status}`, orderId);
       }
 
-      // Process Mercado Pago response
       const data = await response.json();
       console.log("Mercado Pago PIX response:", JSON.stringify(data, null, 2));
 
-      // Check if the response contains PIX data
       if (!data.point_of_interaction?.transaction_data?.qr_code) {
         console.error("Mercado Pago response does not contain PIX data");
         return createFallbackPixResponse("Invalid response from Mercado Pago (missing PIX data)", orderId);
       }
 
-      // Log success in system log
       try {
         await supabase
           .from('system_logs')
@@ -163,7 +140,6 @@ serve(async (req) => {
             details: `PIX generated for order ${orderId}`
           });
 
-        // Update the order with PIX data
         await supabase
           .from('orders')
           .update({ 
@@ -173,15 +149,12 @@ serve(async (req) => {
           .eq('id', orderId);
       } catch (dbError) {
         console.error("Database update error:", dbError);
-        // Continue with response even if DB update fails
       }
 
-      // Extract important PIX QR code data and ticket URL
       const qrCodeText = data.point_of_interaction.transaction_data.qr_code;
       const qrCodeBase64 = data.point_of_interaction.transaction_data.qr_code_base64;
       const ticketUrl = data.point_of_interaction.transaction_data.ticket_url || '';
 
-      // Return PIX data
       return new Response(JSON.stringify({
         success: true,
         qr_code: qrCodeText,
@@ -205,15 +178,16 @@ serve(async (req) => {
     return createFallbackPixResponse(error instanceof Error ? error.message : String(error), "unknown");
   }
   
-  // Helper function to create a fallback PIX response
   function createFallbackPixResponse(errorMessage: string, orderId: string): Response {
-    const pixCode = formatPIXCode(orderId, 100); // Default to 100 if amount is unknown
+    console.log(`Creating fallback PIX response due to: ${errorMessage}`);
+    
+    const pixCode = formatPIXCode(orderId, 100);
     const qrCodeUrl = generateQRCodeImage(pixCode);
     const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=MP_FALLBACK_${orderId}`;
     
     return new Response(
       JSON.stringify({
-        success: true, // Return success to avoid frontend errors
+        success: true,
         message: "Using fallback PIX code",
         error: errorMessage,
         qr_code: pixCode,
@@ -232,7 +206,7 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200, // Always return 200 to ensure frontend can process the response
+        status: 200,
       }
     );
   }

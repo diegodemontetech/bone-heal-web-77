@@ -2,13 +2,15 @@
 // Define CORS headers to allow cross-origin requests
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, origin, accept',
+  'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Max-Age': '86400'
 }
 
 // Helper function to handle OPTIONS preflight requests
 export const handleCors = (req: Request): Response | null => {
+  console.log(`Handling ${req.method} request with CORS headers`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS preflight request for CORS');

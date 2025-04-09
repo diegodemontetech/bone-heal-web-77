@@ -21,9 +21,12 @@ const generatePixCode = (orderId: string, amount: number): string => {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  console.log(`Processing ${req.method} request to omie-pix`);
+  
+  // Handle CORS preflight request first
   const corsResponse = handleCors(req);
   if (corsResponse) {
+    console.log("Returning CORS preflight response with status 200");
     return corsResponse;
   }
   
