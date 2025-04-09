@@ -4,20 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import { motion } from "framer-motion";
 
-// Filtered to only include 5-star reviews
+// Filtered to only include 5-star reviews that specifically praise the product
 const testimonials = [
-  {
-    name: "Munir S.",
-    role: "Cirurgião-Dentista",
-    content: "Excelente resultados quando corretamente utilizada.",
-    date: "17/02/2017"
-  },
-  {
-    name: "Jamil S.",
-    role: "Cirurgião-Dentista",
-    content: "Produto muito bom, parabéns pela parceria Dental Cremer e Boneheal.",
-    date: "16/02/2017"
-  },
   {
     name: "Sandra O.",
     role: "Cirurgiã-Dentista",
@@ -37,12 +25,6 @@ const testimonials = [
     date: "13/12/2017"
   },
   {
-    name: "Decio M.",
-    role: "Cirurgião-Dentista",
-    content: "Muito bom",
-    date: "07/04/2017"
-  },
-  {
     name: "Roberto R.",
     role: "Cirurgião-Dentista", 
     content: "Excelente produto",
@@ -53,6 +35,12 @@ const testimonials = [
     role: "Cirurgiã-Dentista",
     content: "Excelente resultado",
     date: "24/08/2017"
+  },
+  {
+    name: "Jamil S.",
+    role: "Cirurgião-Dentista",
+    content: "Produto muito bom, parabéns pela parceria Dental Cremer e Boneheal.",
+    date: "16/02/2017"
   },
   {
     name: "Cristianode E.",
