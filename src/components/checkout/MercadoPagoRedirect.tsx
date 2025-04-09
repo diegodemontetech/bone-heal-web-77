@@ -28,10 +28,16 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
   const [message, setMessage] = useState('');
   
   // Calculate order total correctly
-  const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-  const total = subtotal + shippingFee - discount;
+  const subtotal = items && items.length > 0 
+    ? items.reduce((acc, item) => acc + (item.price * item.quantity), 0) 
+    : 0;
+  const total = subtotal + (shippingFee || 0) - (discount || 0);
 
   useEffect(() => {
+    console.log('MercadoPagoRedirect mounted with items:', items);
+    console.log('Order details:', { orderId, email, shippingFee, discount });
+    console.log('Calculated values:', { subtotal, total });
+
     // Simulate a payment process
     const timer = setTimeout(() => {
       if (Math.random() > 0.2) {
@@ -46,7 +52,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [clearCart]);
+  }, [clearCart, items, orderId, email, shippingFee, discount, subtotal, total]);
 
   const handleReturnToStore = () => {
     navigate('/products');
@@ -99,7 +105,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
                       </div>
                       <div className="flex justify-between">
                         <span>Frete:</span>
-                        <span>{formatCurrency(shippingFee)}</span>
+                        <span>{formatCurrency(shippingFee || 0)}</span>
                       </div>
                       {discount > 0 && (
                         <div className="flex justify-between text-green-600">

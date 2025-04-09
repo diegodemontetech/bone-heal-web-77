@@ -17,11 +17,11 @@ const TestMercadoPago = () => {
       try {
         setIsLoading(true);
         
-        // Use a direct SQL query to avoid TypeScript errors with table names
+        // Use a direct query instead of RPC
         const { data, error } = await supabase
-          .rpc('get_system_settings', {
-            setting_keys: ['mp_access_token', 'mp_public_key', 'mp_client_id', 'mp_client_secret']
-          });
+          .from('system_settings')
+          .select('key, value')
+          .in('key', ['mp_access_token', 'mp_public_key', 'mp_client_id', 'mp_client_secret']);
         
         if (error) {
           console.error('Error fetching MercadoPago settings:', error);

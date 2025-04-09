@@ -19,6 +19,10 @@ const MercadoPagoRedirectPage = () => {
   const [items, setItems] = useState<Array<{name: string; price: number; quantity: number}>>([]);
   
   useEffect(() => {
+    console.log('MercadoPagoRedirectPage mounted');
+    console.log('Location state:', location.state);
+    console.log('Search params:', Object.fromEntries(searchParams.entries()));
+    
     // Try to get items from location state first (preferred method)
     if (location.state?.items && Array.isArray(location.state.items)) {
       console.log("Using items from location state:", location.state.items);
