@@ -1,3 +1,4 @@
+
 import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
 import Home from "@/pages/Index";
 import About from "@/pages/About";
@@ -79,13 +80,7 @@ export function Routes() {
         {/* Payment Routes */}
         <Route path="/checkout/mercadopago" element={
           <RouteWithSidebar>
-            <MercadoPagoRedirect 
-              orderId="placeholder" 
-              items={[]} 
-              shippingFee={0} 
-              discount={0} 
-              email="placeholder@example.com"
-            />
+            <MercadoPagoRedirect />
           </RouteWithSidebar>
         } />
       </RoutesList>

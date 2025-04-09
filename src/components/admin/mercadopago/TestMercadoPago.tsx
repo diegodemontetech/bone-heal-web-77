@@ -36,11 +36,11 @@ const TestMercadoPago = () => {
     const fetchCredentials = async () => {
       try {
         setIsLoading(true);
-        // Using raw query to avoid TypeScript issues with table schema
+        // Using SQL query to get the system settings directly
         const { data, error } = await supabase
-          .rpc('get_system_settings', { 
-            setting_keys: ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET'] 
-          });
+          .from('system_settings')
+          .select('key, value')
+          .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET']);
 
         if (error) {
           console.error('Erro ao carregar credenciais:', error);
@@ -48,18 +48,18 @@ const TestMercadoPago = () => {
           return;
         }
 
-        if (data && data.length > 0) {
+        if (data && Array.isArray(data) && data.length > 0) {
           const newCredentials = { ...credentials };
 
-          data.forEach((setting: any) => {
+          data.forEach((setting) => {
             if (setting.key === 'MP_ACCESS_TOKEN') {
-              newCredentials.accessToken = setting.value;
+              newCredentials.accessToken = setting.value || '';
             } else if (setting.key === 'MP_PUBLIC_KEY') {
-              newCredentials.publicKey = setting.value;
+              newCredentials.publicKey = setting.value || '';
             } else if (setting.key === 'MP_CLIENT_ID') {
-              newCredentials.clientId = setting.value;
+              newCredentials.clientId = setting.value || '';
             } else if (setting.key === 'MP_CLIENT_SECRET') {
-              newCredentials.clientSecret = setting.value;
+              newCredentials.clientSecret = setting.value || '';
             }
           });
 
@@ -112,12 +112,12 @@ const TestMercadoPago = () => {
         return;
       }
 
-      if (data.success) {
+      if (data && data.success) {
         toast.success('Credenciais salvas com sucesso!');
         // Reset status após salvar
         setStatus('idle');
       } else {
-        toast.error(`Erro: ${data.message}`);
+        toast.error(`Erro: ${data?.message || 'Erro desconhecido ao salvar credenciais'}`);
       }
     } catch (err) {
       console.error('Erro ao salvar credenciais:', err);

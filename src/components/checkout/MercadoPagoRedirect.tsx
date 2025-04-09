@@ -6,23 +6,23 @@ import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 interface MercadoPagoRedirectProps {
-  orderId: string;
-  items: Array<{
+  orderId?: string;
+  items?: Array<{
     name: string;
     price: number;
     quantity: number;
   }>;
-  shippingFee: number;
-  discount: number;
-  email: string;
+  shippingFee?: number;
+  discount?: number;
+  email?: string;
 }
 
 const MercadoPagoRedirect = ({
-  orderId,
-  items,
-  shippingFee,
-  discount,
-  email
+  orderId = '',
+  items = [],
+  shippingFee = 0,
+  discount = 0,
+  email = ''
 }: MercadoPagoRedirectProps) => {
   const navigate = useNavigate();
   const location = useLocation();
