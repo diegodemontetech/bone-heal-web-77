@@ -1,6 +1,6 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, Award, Shield, Sparkles, ShieldCheck, Ruler, FileCheck } from "lucide-react";
+import { Check, Award, Shield, Sparkles, ShieldCheck, Ruler, FileCheck, Info, AlertTriangle, Beaker, Circle } from "lucide-react";
 
 interface BoneHealTechDetailsProps {
   dimensions: string;
@@ -8,6 +8,11 @@ interface BoneHealTechDetailsProps {
 }
 
 const BoneHealTechDetails = ({ dimensions, indication }: BoneHealTechDetailsProps) => {
+  // Extrair os valores de largura e altura das dimensões
+  const dimensionMatch = dimensions.match(/(\d+)\s*[xX]\s*(\d+)/);
+  const width = dimensionMatch ? dimensionMatch[1] : "20";
+  const height = dimensionMatch ? dimensionMatch[2] : "30";
+
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 p-5 rounded-lg mb-6">
@@ -24,6 +29,98 @@ const BoneHealTechDetails = ({ dimensions, indication }: BoneHealTechDetailsProp
         </div>
       </div>
       
+      {/* Uso e Aplicação */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
+          <Info className="h-5 w-5 text-green-500 mr-2" />
+          <h3 className="font-medium text-lg">Uso e Aplicação</h3>
+        </div>
+        
+        <div className="p-4 space-y-6">
+          <div className="flex items-start gap-3">
+            <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Indication</div>
+              <p>
+                {indication || "Exodontias unitárias ou múltiplas, dependendo do tamanho da barreira."}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Instructions</div>
+              <p>
+                Hidratar antes do uso. Posicionar a barreira sobre o alvéolo com a porção mais longa voltada para vestibular.
+                Suturar a barreira ao retalho utilizando fio cirúrgico.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Contraindication</div>
+              <p>Pacientes com infecções ativas</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Materiais e Composição */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
+          <Beaker className="h-5 w-5 text-blue-500 mr-2" />
+          <h3 className="font-medium text-lg">Materiais e Composição</h3>
+        </div>
+        
+        <div className="p-4 space-y-6">
+          <div className="flex items-start gap-3">
+            <Circle className="h-5 w-5 text-gray-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Material</div>
+              <p>100% polipropileno, impermeável</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <Circle className="h-5 w-5 text-gray-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Composition</div>
+              <p>Filme de polipropileno</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Dimensões */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
+          <Ruler className="h-5 w-5 text-purple-500 mr-2" />
+          <h3 className="font-medium text-lg">Dimensões</h3>
+        </div>
+        
+        <div className="p-4 space-y-6">
+          <div className="flex items-start gap-3">
+            <Circle className="h-5 w-5 text-gray-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Width</div>
+              <p>{width}mm</p>
+            </div>
+          </div>
+          
+          <div className="flex items-start gap-3">
+            <Circle className="h-5 w-5 text-gray-500 mt-1 flex-shrink-0" />
+            <div>
+              <div className="font-medium mb-1">Height</div>
+              <p>{height}mm</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Vantagens */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
           <Shield className="h-5 w-5 text-indigo-500 mr-2" />
@@ -55,69 +152,7 @@ const BoneHealTechDetails = ({ dimensions, indication }: BoneHealTechDetailsProp
         </div>
       </div>
       
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
-          <Award className="h-5 w-5 text-green-500 mr-2" />
-          <h3 className="font-medium text-lg">Indicações</h3>
-        </div>
-        <div className="p-4">
-          <p className="text-gray-700">
-            {indication || "Exodontias unitárias ou múltiplas, dependendo do tamanho da barreira."}
-          </p>
-        </div>
-      </div>
-      
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
-          <Ruler className="h-5 w-5 text-purple-500 mr-2" />
-          <h3 className="font-medium text-lg">Especificações Técnicas</h3>
-        </div>
-        <div className="p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <span className="font-medium">Material:</span>
-              <span className="ml-2">100% polipropileno, impermeável</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <span className="font-medium">Composição:</span>
-              <span className="ml-2">Filme de polipropileno</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <span className="font-medium">Compatibilidade:</span>
-              <span className="ml-2">Compatível com todos os sistemas de implantes, imediatos ou mediatos</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <Ruler className="h-5 w-5 text-purple-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <span className="font-medium">Dimensões:</span>
-              <span className="ml-2">{dimensions}</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <FileCheck className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <span className="font-medium">Registro ANVISA:</span>
-              <span className="ml-2">81197590000</span>
-            </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-indigo-500 mt-0.5 flex-shrink-0" />
-            <div>
-              <span className="font-medium">Desenvolvido por:</span>
-              <span className="ml-2">Prof. Dr. Munir Salomão</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
+      {/* Tamanhos Disponíveis */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
           <Ruler className="h-5 w-5 text-indigo-500 mr-2" />
@@ -138,6 +173,30 @@ const BoneHealTechDetails = ({ dimensions, indication }: BoneHealTechDetailsProp
               <span>30 x 40 mm</span>
             </li>
           </ul>
+        </div>
+      </div>
+      
+      {/* Informações Regulatórias */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
+          <FileCheck className="h-5 w-5 text-red-500 mr-2" />
+          <h3 className="font-medium text-lg">Informações Regulatórias</h3>
+        </div>
+        <div className="p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <FileCheck className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium">Registro ANVISA:</span>
+              <span className="ml-2">81197590000</span>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <span className="font-medium">Desenvolvido por:</span>
+              <span className="ml-2">Prof. Dr. Munir Salomão</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
