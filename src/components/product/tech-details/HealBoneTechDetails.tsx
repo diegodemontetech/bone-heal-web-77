@@ -16,7 +16,7 @@ const HealBoneTechDetails = ({ dimensions, indication }: HealBoneTechDetailsProp
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 p-5 rounded-lg mb-6">
-        <h3 className="text-xl font-semibold mb-4">Lote Promocional: Valid 05/25</h3>
+        <h3 className="text-xl font-semibold mb-4">Descrição</h3>
         <div className="text-gray-700 space-y-4">
           <p>
             Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. 
@@ -45,9 +45,7 @@ const HealBoneTechDetails = ({ dimensions, indication }: HealBoneTechDetailsProp
             <div>
               <div className="font-medium mb-1">Indication</div>
               <p>
-                A barreira não-reabsorvível Heal Bone® é indicada em todos os casos pós–exodontias, 
-                independentemente da causa, principalmente quando houver perda de parede alveolar, 
-                nos casos de implantes imediatos e na correção de fenestrações ósseas.
+                {indication || "A barreira não-reabsorvível Heal Bone® é indicada em todos os casos pós–exodontias, independentemente da causa, principalmente quando houver perda de parede alveolar, nos casos de implantes imediatos e na correção de fenestrações ósseas."}
               </p>
             </div>
           </div>
