@@ -9,9 +9,11 @@ interface ProductHeaderProps {
 }
 
 const ProductHeader = ({ product }: ProductHeaderProps) => {
+  const formattedName = formatProductName(product.name);
+  
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{formatProductName(product.name)}</h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{formattedName}</h1>
       
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="font-normal bg-primary/10">

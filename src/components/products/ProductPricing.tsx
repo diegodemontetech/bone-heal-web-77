@@ -8,9 +8,9 @@ interface ProductPricingProps {
 }
 
 export const ProductPricing: React.FC<ProductPricingProps> = ({ price }) => {
-  const { installments } = useInstallments(price || 0, 12);
+  const { installments } = useInstallments(price || 0, 6);
   const installmentValue = installments.length > 0 ? installments[installments.length - 1].value : 0;
-  const formattedInstallment = formatInstallment(price, 12);
+  const formattedInstallment = formatInstallment(price, 6);
   const formattedPrice = formatCurrency(price);
 
   return (
@@ -19,7 +19,7 @@ export const ProductPricing: React.FC<ProductPricingProps> = ({ price }) => {
         {formattedPrice}
       </div>
       <div className="text-xs text-green-600">
-        ou 12x de {formattedInstallment} sem juros
+        ou 6x de {formattedInstallment} sem juros
       </div>
     </div>
   );

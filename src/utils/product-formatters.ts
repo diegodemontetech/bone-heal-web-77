@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for product formatting
  */
@@ -12,22 +11,18 @@ export const formatProductName = (name: string): string => {
   
   // Check if the name contains "Bone Heal" or "Heal Bone" anywhere
   if (cleanName.includes("Bone Heal") || cleanName.includes("Heal Bone")) {
-    // Extract brand name and add registration mark
-    let brandName = "";
-    let productNameWithoutBrand = "";
-    
-    if (cleanName.toLowerCase().includes("bone heal")) {
-      // Replace all instances of Bone Heal (with or without ®) with the properly marked version
-      brandName = "Bone Heal®";
-      productNameWithoutBrand = cleanName.replace(/Bone Heal®?/gi, "").trim();
-    } else if (cleanName.toLowerCase().includes("heal bone")) {
-      // Replace all instances of Heal Bone (with or without ®) with the properly marked version
-      brandName = "Heal Bone®";
-      productNameWithoutBrand = cleanName.replace(/Heal Bone®?/gi, "").trim();
-    }
+    // Extract dimensions from name if present
+    const dimensionsMatch = cleanName.match(/(\d+)\s*[xX]\s*(\d+)/);
+    const dimensions = dimensionsMatch ? `${dimensionsMatch[1]}x${dimensionsMatch[2]}mm` : '';
     
     // Create standardized product name with brand first
-    return `${brandName} ${productNameWithoutBrand}`;
+    if (cleanName.toLowerCase().includes("bone heal")) {
+      // Replace all instances of Bone Heal (with or without ®) with the properly marked version
+      return `Bone Heal® Membrana Regenerativa Odontológica${dimensions ? ` ${dimensions}` : ''}`;
+    } else if (cleanName.toLowerCase().includes("heal bone")) {
+      // Replace all instances of Heal Bone (with or without ®) with the properly marked version
+      return `Heal Bone® Membrana Regenerativa Odontológica${dimensions ? ` ${dimensions}` : ''}`;
+    }
   }
   
   return cleanName;
