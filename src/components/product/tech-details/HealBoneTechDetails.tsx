@@ -10,7 +10,7 @@ const HealBoneTechDetails = ({ dimensions, indication }: HealBoneTechDetailsProp
   return (
     <div className="space-y-6">
       <div className="bg-gray-50 p-5 rounded-lg mb-6">
-        <h3 className="text-xl font-semibold mb-4">Descrição</h3>
+        <h3 className="text-xl font-semibold mb-4">Lote Promocional: Valid 05/25</h3>
         <div className="text-gray-700 space-y-4">
           <p>
             Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. 

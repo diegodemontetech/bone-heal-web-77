@@ -27,7 +27,8 @@ const technicalDetailsTemplates = {
     indicações: "Todos os casos pós-exodontias, perda de parede alveolar, implantes imediatos e correção de fenestrações ósseas",
     técnica: "Simples, segura e previsível",
     vantagens: "Elimina a necessidade de outros biomateriais, reduz a necessidade de liberação de grandes retalhos",
-    registro_anvisa: "81197590000"
+    registro_anvisa: "81197590000",
+    lote_promocional: "Valid 05/25"
   },
   // Template padrão para outros produtos
   default: {
@@ -142,7 +143,9 @@ Desenvolvido pelo Prof. Dr. Munir Salomão.
 Registro ANVISA: 81197590000`;
   } 
   else if (productType === 'healBone') {
-    return `Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. Projetada para permanecer exposta intencionalmente ao meio bucal, não apresenta porosidade em sua superfície, o que lhe confere total impermeabilidade dificultando o acúmulo de detritos, restos alimentares e micro organismos em sua superfície.
+    return `Lote Promocional: Valid 05/25
+
+Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. Projetada para permanecer exposta intencionalmente ao meio bucal, não apresenta porosidade em sua superfície, o que lhe confere total impermeabilidade dificultando o acúmulo de detritos, restos alimentares e micro organismos em sua superfície.
 
 A barreira Heal Bone® utiliza apenas o coágulo sanguíneo, sem adição de enxertos ou implante de biomateriais de qualquer natureza, é possível solucionar problemas complexos através de uma técnica cirúrgica simples, segura e previsível, objetivando a regeneração simultânea tanto do tecido ósseo quanto dos tecidos moles.
 
@@ -159,6 +162,11 @@ Mais Vantagens:
 Indicações:
 
 A barreira não-reabsorvível Heal Bone® é indicada em todos os casos pós–exodontias, independentemente da causa, principalmente quando houver perda de parede alveolar, nos casos de implantes imediatos e na correção de fenestrações ósseas.
+
+Tamanhos Disponíveis:
+– 15 x 40 mm
+– 20 x 30 mm
+– 30 x 40 mm
 
 ${dimensionText}
 
@@ -220,6 +228,11 @@ serve(async (req) => {
       
       // Adicionar desenvolvido por Prof. Dr. Munir Salomão
       customizedTemplate.desenvolvido_por = "Prof. Dr. Munir Salomão";
+      
+      // Para produtos Heal Bone, adicionar lote promocional
+      if (productType === 'healBone') {
+        customizedTemplate.lote_promocional = "Valid 05/25";
+      }
       
       responseData = {
         technical_details: customizedTemplate
