@@ -58,11 +58,7 @@ export function Routes() {
         <Route path="/checkout" element={<Checkout />} />
         
         {/* Payment routes */}
-        <Route path="/checkout/mercadopago" element={
-          <RouteWithSidebar>
-            <MercadoPagoRedirect />
-          </RouteWithSidebar>
-        } />
+        <Route path="/checkout/mercadopago" element={<MercadoPagoRedirect />} />
         <Route path="/checkout/error" element={<Failure />} />
         
         {/* Rotas de perfil */}

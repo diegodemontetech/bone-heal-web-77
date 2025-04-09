@@ -4,6 +4,8 @@ import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils';
+import { useCart } from '@/hooks/use-cart';
 
 interface MercadoPagoRedirectProps {
   orderId: string;
@@ -21,8 +23,13 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
   items
 }) => {
   const navigate = useNavigate();
+  const { clearCart } = useCart();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  
+  // Calculate order total correctly
+  const subtotal = items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const total = subtotal + shippingFee - discount;
 
   useEffect(() => {
     // Simulate a payment process
@@ -30,6 +37,8 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
       if (Math.random() > 0.2) {
         setStatus('success');
         setMessage('Seu pagamento foi processado com sucesso!');
+        // Clear cart on successful payment
+        clearCart();
       } else {
         setStatus('error');
         setMessage('Ocorreu um erro ao processar seu pagamento.');
@@ -37,7 +46,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [clearCart]);
 
   const handleReturnToStore = () => {
     navigate('/products');
@@ -71,7 +80,40 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
                 <h3 className="font-medium mb-3">Detalhes do pedido:</h3>
                 <p className="text-sm">Pedido: #{orderId}</p>
                 <p className="text-sm">Email: {email}</p>
-                <p className="text-sm mb-4">Total: {(items.reduce((acc, item) => acc + (item.price * item.quantity), 0) + shippingFee - discount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                
+                {items && items.length > 0 && (
+                  <div className="mt-3 mb-3">
+                    <h4 className="text-sm font-medium">Itens:</h4>
+                    <div className="space-y-1 my-2">
+                      {items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span>{item.name} x {item.quantity}</span>
+                          <span>{formatCurrency(item.price * item.quantity)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-sm pt-2">
+                      <div className="flex justify-between">
+                        <span>Subtotal:</span>
+                        <span>{formatCurrency(subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Frete:</span>
+                        <span>{formatCurrency(shippingFee)}</span>
+                      </div>
+                      {discount > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Desconto:</span>
+                          <span>-{formatCurrency(discount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-medium border-t pt-2 mt-2">
+                        <span>Total:</span>
+                        <span>{formatCurrency(total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <Button onClick={handleReturnToStore} className="mt-4 w-full">

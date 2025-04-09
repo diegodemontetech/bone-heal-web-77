@@ -5,14 +5,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Mock interface for system settings
-interface SystemSetting {
-  id: string;
-  key: string;
-  value: string;
-  description?: string;
-}
-
 const TestMercadoPago = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [accessToken, setAccessToken] = useState('');
@@ -25,12 +17,11 @@ const TestMercadoPago = () => {
       try {
         setIsLoading(true);
         
-        // We're using a direct query instead of an RPC to avoid TypeScript errors
-        // This assumes you have a system_settings table with key and value columns
+        // Use a direct SQL query to avoid TypeScript errors with table names
         const { data, error } = await supabase
-          .from('system_settings')
-          .select('key, value')
-          .in('key', ['mp_access_token', 'mp_public_key', 'mp_client_id', 'mp_client_secret']);
+          .rpc('get_system_settings', {
+            setting_keys: ['mp_access_token', 'mp_public_key', 'mp_client_id', 'mp_client_secret']
+          });
         
         if (error) {
           console.error('Error fetching MercadoPago settings:', error);
