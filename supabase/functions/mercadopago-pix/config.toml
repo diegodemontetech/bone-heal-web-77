@@ -1,0 +1,9 @@
+
+project_id = "kurpshcdafxbyqnzxvxu"
+
+[cors]
+allow_origin = ["*"]
+allow_methods = ["GET", "POST", "OPTIONS", "PUT", "DELETE"]
+allow_headers = ["*"]
+allow_credentials = true
+max_age = 86400

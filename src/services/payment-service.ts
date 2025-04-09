@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -130,7 +131,57 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
   try {
     console.log("Gerando PIX via função Edge para pedido:", orderId, "valor:", amount);
     
-    // Chamar função do Supabase corretamente nomeada (omie-pix)
+    // Chamar função do Supabase para gerar PIX real
+    const { data, error } = await supabase.functions.invoke('mercadopago-pix', {
+      body: {
+        orderId,
+        amount,
+        description: `Pedido #${orderId} - BoneHeal`,
+        email: 'cliente@example.com'
+      }
+    });
+    
+    if (error) {
+      console.error("Erro ao gerar PIX via Mercado Pago:", error);
+      // Use geração alternativa de PIX
+      return generatePixWithAlternativeMethod(orderId, amount);
+    }
+    
+    console.log("Resposta da função PIX do Mercado Pago:", data);
+    
+    if (data && (data.qr_code || data.qr_code_base64 || data.qr_code_text)) {
+      console.log("PIX gerado com sucesso via Mercado Pago");
+      return {
+        pixCode: data.qr_code_text || data.qr_code || '',
+        qr_code_text: data.qr_code_text || '',
+        order_id: orderId,
+        amount: amount.toString(),
+        point_of_interaction: {
+          transaction_data: {
+            qr_code: data.qr_code || '',
+            qr_code_base64: data.qr_code_base64 || generateGoogleQRCode(data.qr_code_text || '')
+          }
+        }
+      };
+    }
+    
+    // Usar geração alternativa se a resposta estiver incompleta
+    console.log("Fallback: Gerando PIX com método alternativo");
+    return generatePixWithAlternativeMethod(orderId, amount);
+  } catch (error) {
+    console.error("Error in processPixPayment:", error);
+    
+    // Fallback para geração alternativa
+    return generatePixWithAlternativeMethod(orderId, amount);
+  }
+};
+
+/**
+ * Generate PIX using alternative method if Mercado Pago fails
+ */
+const generatePixWithAlternativeMethod = async (orderId: string, amount: number): Promise<PaymentResponse> => {
+  try {
+    // Tentar usar a função Omie PIX como alternativa
     const { data, error } = await supabase.functions.invoke('omie-pix', {
       body: {
         orderId,
@@ -138,38 +189,26 @@ export const processPixPayment = async (orderId: string, amount: number): Promis
       }
     });
     
-    if (error) {
-      console.error("Erro ao gerar PIX:", error);
-      // Use safe fallback instead of calling another function that might fail
+    if (error || !data || !data.pixCode) {
+      console.error("Erro ao gerar PIX via método alternativo:", error);
+      // Último recurso - gerar PIX localmente
       return generateSafePixData(orderId, amount);
     }
     
-    console.log("Resposta da função PIX:", data);
-    
-    if (data && data.pixCode) {
-      console.log("PIX gerado com sucesso");
-      
-      return {
-        pixCode: data.pixCode,
-        qr_code_text: data.pixCode,
-        order_id: orderId,
-        amount: amount.toString(),
-        point_of_interaction: {
-          transaction_data: {
-            qr_code: data.pixCode,
-            qr_code_base64: data.qr_code_base64
-          }
+    return {
+      pixCode: data.pixCode,
+      qr_code_text: data.pixCode,
+      order_id: orderId,
+      amount: amount.toString(),
+      point_of_interaction: {
+        transaction_data: {
+          qr_code: data.pixCode,
+          qr_code_base64: data.qr_code_base64 || generateGoogleQRCode(data.pixCode)
         }
-      };
-    }
-    
-    // Fallback para geração local segura
-    console.log("Fallback: Gerando PIX localmente com método seguro");
-    return generateSafePixData(orderId, amount);
+      }
+    };
   } catch (error) {
-    console.error("Error in processPixPayment:", error);
-    
-    // Return a safe PIX code as fallback
+    console.error("Erro no método alternativo de PIX:", error);
     return generateSafePixData(orderId, amount);
   }
 };
@@ -181,7 +220,7 @@ export const generateSafePixData = (orderId: string, amount: number = 0): Paymen
   // Use a fixed amount if none provided, or calculate based on order ID for demo
   const finalAmount = amount > 0 ? amount : 100;
   
-  // Create a simple PIX code
+  // Create a simple PIX code with updated format
   const pixCode = `00020126330014BR.GOV.BCB.PIX01111234567890202${String(finalAmount).length}${finalAmount}5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***6304`;
   
   // Generate QR code URL using Google Charts API

@@ -4,102 +4,98 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
-  // Lidar com requisições OPTIONS para CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  // This is a preflight request. Reply successfully:
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
   
   try {
-    console.log("Iniciando teste de conexão com Mercado Pago");
-    
-    // Configurar cliente Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error("Variáveis de ambiente do Supabase não configuradas corretamente");
-    }
-    
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Buscar credenciais do Mercado Pago do banco de dados
+    // Get Mercado Pago credentials from system_settings or environment variables
     const { data: settingsData, error: settingsError } = await supabase
       .from('system_settings')
-      .select('key, value')
+      .select('*')
       .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY']);
     
-    // Extrair token do banco de dados ou usar o do ambiente
-    let access_token = Deno.env.get('MP_ACCESS_TOKEN');
+    if (settingsError) {
+      console.error("Error fetching MP settings:", settingsError);
+    }
+    
+    // Get access token from settings or environment
+    let accessToken = "";
+    let publicKey = "";
     
     if (settingsData && settingsData.length > 0) {
-      const tokenSetting = settingsData.find(s => s.key === 'MP_ACCESS_TOKEN');
-      if (tokenSetting && tokenSetting.value) {
-        access_token = tokenSetting.value;
-        console.log("Usando token do banco de dados");
-      }
-    }
-
-    if (!access_token) {
-      throw new Error("Token do Mercado Pago não configurado");
+      settingsData.forEach(setting => {
+        if (setting.key === 'MP_ACCESS_TOKEN' && setting.value) {
+          accessToken = setting.value.toString();
+        }
+        if (setting.key === 'MP_PUBLIC_KEY' && setting.value) {
+          publicKey = setting.value.toString();
+        }
+      });
     }
     
-    console.log("Token utilizado: ", access_token.substring(0, 10) + "...");
+    // Fall back to environment variables if settings not found
+    if (!accessToken) {
+      accessToken = Deno.env.get("MP_ACCESS_TOKEN") || "APP_USR-609050106721186-021911-eae43656d661dca581ec088d09694fd5-2268930884";
+    }
     
-    // Testar API do Mercado Pago buscando os métodos de pagamento disponíveis
-    const mpResponse = await fetch("https://api.mercadopago.com/v1/payment_methods", {
+    if (!publicKey) {
+      publicKey = Deno.env.get("MP_PUBLIC_KEY") || "APP_USR-711c6c25-bab3-4517-8ecf-c258c5ee4691";
+    }
+    
+    // Test Mercado Pago connection
+    const response = await fetch("https://api.mercadopago.com/v1/payment_methods", {
+      method: "GET",
       headers: {
-        "Authorization": `Bearer ${access_token}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
       }
     });
     
-    const responseStatus = mpResponse.status;
-    const responseData = await mpResponse.json();
-    
-    console.log("Resposta da API MP (status):", responseStatus);
-    
-    // Verificar se a resposta foi bem-sucedida
-    if (responseStatus !== 200) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Erro na API do Mercado Pago: ${responseStatus}`,
-          data: responseData
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 // Retornamos 200 mesmo com erro da API para facilitar tratamento no frontend
-        }
-      );
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Mercado Pago API error: ${response.status} - ${errorText}`);
     }
     
-    // Log do sucesso
-    console.log("Teste de conexão com Mercado Pago bem-sucedido");
+    const paymentMethods = await response.json();
     
+    // Add a log in the system_logs table
+    await supabase.from('system_logs').insert({
+      type: 'mercadopago_test',
+      source: 'edge_function',
+      status: 'success',
+      details: 'MP connection test successful'
+    });
+    
+    // Return the payment methods
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Conexão com Mercado Pago testada com sucesso",
-        data: responseData
+        message: "Mercado Pago connection successful",
+        data: {
+          payment_methods_count: paymentMethods.length,
+          public_key_prefix: publicKey.substring(0, 10) + "...",
+          access_token_prefix: accessToken.substring(0, 10) + "..."
+        }
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
     
   } catch (error) {
-    console.error("Erro ao testar conexão com Mercado Pago:", error);
+    console.error("Error in test-mercadopago:", error);
     
     return new Response(
       JSON.stringify({
         success: false,
-        message: `Erro ao testar conexão com Mercado Pago: ${error instanceof Error ? error.message : String(error)}`,
-        error: error instanceof Error ? error.stack : null
+        message: error instanceof Error ? error.message : "Unknown error occurred",
       }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
 });

@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useCart } from '@/hooks/use-cart';
 import { toast } from 'sonner';
 import QRCodeDisplay from '@/components/checkout/payment/QRCodeDisplay';
+import { processPixPayment } from '@/services/payment-service';
 
 interface MercadoPagoRedirectProps {
   orderId: string;
@@ -29,6 +30,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
   const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'waiting'>('loading');
   const [message, setMessage] = useState('');
   const [pixCode, setPixCode] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   
   // Calculate order total correctly
   const subtotal = items && items.length > 0 
@@ -41,14 +43,37 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
     console.log('Detalhes do pedido:', { orderId, email, shippingFee, discount });
     console.log('Itens do pedido:', items);
 
-    // Gerar código PIX simulado para demonstração
-    setTimeout(() => {
-      // Simulando um código PIX
-      const mockPixCode = '00020126580014BR.GOV.BCB.PIX013654321098765432109876543210123BONEHEALCOMPRAONLINE520400005303986540' + total.toFixed(2) + '6009SAO PAULO62090505123456304ABCD';
-      setPixCode(mockPixCode);
-      setStatus('waiting');
-      setMessage('Aguardando o pagamento via PIX');
-    }, 1500);
+    // Processar pagamento PIX real
+    const generatePixCode = async () => {
+      try {
+        setStatus('loading');
+        
+        // Chamar o serviço para gerar o código PIX real
+        const response = await processPixPayment(orderId, total);
+        
+        if (response && (response.pixCode || response.qr_code_text)) {
+          // Extrair o código PIX da resposta
+          const pixCodeFromResponse = response.pixCode || response.qr_code_text || '';
+          setPixCode(pixCodeFromResponse);
+          
+          // Extrair URL do QR code se disponível
+          if (response.point_of_interaction?.transaction_data?.qr_code_base64) {
+            setQrCodeUrl(response.point_of_interaction.transaction_data.qr_code_base64);
+          }
+          
+          setStatus('waiting');
+          setMessage('Aguardando o pagamento via PIX');
+        } else {
+          throw new Error('Resposta inválida do servidor de pagamento');
+        }
+      } catch (error) {
+        console.error('Erro ao gerar código PIX:', error);
+        setStatus('error');
+        setMessage('Não foi possível gerar o código PIX para pagamento.');
+      }
+    };
+
+    generatePixCode();
   }, [clearCart, items, orderId, email, shippingFee, discount, subtotal, total]);
 
   // Função para simular confirmação de pagamento (apenas para demonstração)
@@ -92,7 +117,7 @@ const MercadoPagoRedirect: React.FC<MercadoPagoRedirectProps> = ({
               </p>
               
               <QRCodeDisplay 
-                pixCode={pixCode}
+                pixCode={qrCodeUrl || pixCode}
                 isLoading={false}
               />
               
