@@ -30,7 +30,7 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
     return (
       <div className="bg-gray-50 border rounded-lg p-8 text-center">
         <p className="text-gray-500">
-          Sem avaliações ainda. Seja o primeiro a avaliar este produto!
+          Este produto ainda não possui avaliações.
         </p>
       </div>
     );
