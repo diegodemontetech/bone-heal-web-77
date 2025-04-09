@@ -1,6 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { corsHeaders, handleCors, addCorsHeaders } from "../_shared/cors.ts";
 
 interface PixRequest {
   orderId: string;
@@ -27,9 +28,10 @@ const formatPIXCode = (orderId: string, amount: number): string => {
 serve(async (req) => {
   console.log(`Processing ${req.method} request to mercadopago-pix`);
   
+  // Handle CORS preflight request first
   const corsResponse = handleCors(req);
   if (corsResponse) {
-    console.log("Returning CORS preflight response with status 200");
+    console.log("Returning CORS preflight response with status 204");
     return corsResponse;
   }
 
@@ -155,7 +157,7 @@ serve(async (req) => {
       const qrCodeBase64 = data.point_of_interaction.transaction_data.qr_code_base64;
       const ticketUrl = data.point_of_interaction.transaction_data.ticket_url || '';
 
-      return new Response(JSON.stringify({
+      const successResponse = new Response(JSON.stringify({
         success: true,
         qr_code: qrCodeText,
         qr_code_text: qrCodeText,
@@ -169,6 +171,8 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
+      
+      return addCorsHeaders(successResponse);
     } catch (fetchError) {
       console.error("Error calling Mercado Pago API:", fetchError);
       return createFallbackPixResponse(`API call failed: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, orderId);
@@ -185,7 +189,7 @@ serve(async (req) => {
     const qrCodeUrl = generateQRCodeImage(pixCode);
     const redirectUrl = `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=MP_FALLBACK_${orderId}`;
     
-    return new Response(
+    const response = new Response(
       JSON.stringify({
         success: true,
         message: "Using fallback PIX code",
@@ -209,5 +213,7 @@ serve(async (req) => {
         status: 200,
       }
     );
+    
+    return addCorsHeaders(response);
   }
 });

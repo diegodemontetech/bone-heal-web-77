@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders, handleCors } from "../_shared/cors.ts";
+import { corsHeaders, handleCors, addCorsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
   console.log(`Processing ${req.method} request to calculate-shipping`);
@@ -8,7 +8,7 @@ serve(async (req) => {
   // Handle CORS preflight request first
   const corsResponse = handleCors(req);
   if (corsResponse) {
-    console.log("Returning CORS preflight response with status 200");
+    console.log("Returning CORS preflight response with status 204");
     return corsResponse;
   }
 
@@ -28,7 +28,7 @@ serve(async (req) => {
     
     // Basic ZIP code validation
     if (!zipCode) {
-      return new Response(
+      const errorResponse = new Response(
         JSON.stringify({
           rates: [],
           success: false,
@@ -39,13 +39,14 @@ serve(async (req) => {
           status: 200 // Using 200 instead of 400 to bypass CORS issues
         }
       );
+      return addCorsHeaders(errorResponse);
     }
     
     // Clean ZIP code to have only numbers
     const cleanZipCode = zipCode.toString().replace(/\D/g, '');
     
     if (cleanZipCode.length !== 8) {
-      return new Response(
+      const errorResponse = new Response(
         JSON.stringify({
           rates: [],
           success: false,
@@ -56,6 +57,7 @@ serve(async (req) => {
           status: 200 // Using 200 instead of 400 to bypass CORS issues
         }
       );
+      return addCorsHeaders(errorResponse);
     }
 
     // Generate shipping rates
@@ -63,7 +65,7 @@ serve(async (req) => {
     
     console.log(`Returning ${shippingRates.length} shipping rates`);
 
-    return new Response(
+    const successResponse = new Response(
       JSON.stringify({ 
         rates: shippingRates, 
         success: true 
@@ -76,6 +78,8 @@ serve(async (req) => {
         status: 200
       }
     );
+    
+    return addCorsHeaders(successResponse);
 
   } catch (error) {
     console.error('Error in calculate-shipping function:', error);
@@ -91,7 +95,7 @@ serve(async (req) => {
     
     const fallbackRates = generateFallbackRates(zipCode);
     
-    return new Response(
+    const errorResponse = new Response(
       JSON.stringify({ 
         rates: fallbackRates, 
         success: true, 
@@ -106,6 +110,8 @@ serve(async (req) => {
         status: 200
       }
     );
+    
+    return addCorsHeaders(errorResponse);
   }
 });
 

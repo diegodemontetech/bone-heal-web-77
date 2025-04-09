@@ -1,6 +1,6 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders, handleCors } from "../_shared/cors.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders, handleCors, addCorsHeaders } from "../_shared/cors.ts";
 
 // Generate a QR code URL for a PIX code
 const generateQRCodeImage = (pixCode: string): string => {
@@ -26,7 +26,7 @@ serve(async (req) => {
   // Handle CORS preflight request first
   const corsResponse = handleCors(req);
   if (corsResponse) {
-    console.log("Returning CORS preflight response with status 200");
+    console.log("Returning CORS preflight response with status 204");
     return corsResponse;
   }
   
@@ -41,7 +41,7 @@ serve(async (req) => {
     } catch (e) {
       console.error("Erro ao fazer parse do JSON:", e);
       // Return a proper response even when JSON parsing fails
-      return new Response(
+      const errorResponse = new Response(
         JSON.stringify({
           success: false,
           error: "Corpo da requisição inválido. Esperado JSON válido."
@@ -54,12 +54,13 @@ serve(async (req) => {
           }
         }
       );
+      return addCorsHeaders(errorResponse);
     }
     
     const { orderId, amount } = requestData;
     
     if (!orderId) {
-      return new Response(
+      const errorResponse = new Response(
         JSON.stringify({
           success: false,
           error: "orderId é obrigatório",
@@ -74,6 +75,7 @@ serve(async (req) => {
           }
         }
       );
+      return addCorsHeaders(errorResponse);
     }
     
     // Gerar código PIX
@@ -83,7 +85,7 @@ serve(async (req) => {
     console.log(`PIX gerado com sucesso: ${pixCode.substring(0, 20)}...`);
     
     // Retornar dados do PIX
-    return new Response(
+    const successResponse = new Response(
       JSON.stringify({
         success: true,
         orderId,
@@ -99,6 +101,7 @@ serve(async (req) => {
         }
       }
     );
+    return addCorsHeaders(successResponse);
   } catch (error) {
     console.error("Erro ao gerar PIX:", error);
     
@@ -106,7 +109,7 @@ serve(async (req) => {
     const safePixCode = "00020101026330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3";
     const safeQrCodeImage = generateQRCodeImage(safePixCode);
     
-    return new Response(
+    const errorResponse = new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -121,6 +124,7 @@ serve(async (req) => {
         }
       }
     );
+    return addCorsHeaders(errorResponse);
   } finally {
     console.log("=== FIM DA EXECUÇÃO DA FUNÇÃO OMIE-PIX ===");
   }
