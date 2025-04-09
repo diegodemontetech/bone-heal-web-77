@@ -20,8 +20,6 @@ const PaymentTabs = ({
   setPaymentMethod,
   processPayment,
   isProcessing,
-  pixCode,
-  pixQrCodeImage,
   orderId,
   cartTotal
 }: PaymentTabsProps) => {
@@ -33,7 +31,12 @@ const PaymentTabs = ({
 
   return (
     <>
-      <PaymentInfoAlert />
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <h3 className="font-medium text-blue-800 mb-2">Checkout rápido via Mercado Pago</h3>
+        <p className="text-sm text-blue-700">
+          Você será redirecionado para o ambiente seguro do Mercado Pago para concluir seu pagamento com cartão, PIX ou outros métodos.
+        </p>
+      </div>
       
       <div className="space-y-6">
         <MercadoPagoCheckoutInfo />
@@ -41,7 +44,7 @@ const PaymentTabs = ({
       
       <CheckoutButton 
         isProcessing={isProcessing} 
-        onClick={processPayment} 
+        onClick={processPayment}
       />
     </>
   );

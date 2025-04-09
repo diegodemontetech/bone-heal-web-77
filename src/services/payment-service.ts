@@ -65,19 +65,12 @@ export const testMercadoPagoConnection = async (): Promise<{
  */
 export const createMercadoPagoCheckout = async (
   orderId: string, 
-  cartItems: CartItem[], 
+  items: Array<{ title: string; quantity: number; price: number; }>, 
   shippingFee: number,
   discount: number
 ): Promise<PaymentResponse> => {
   try {
     console.log("Creating Mercado Pago checkout for order:", orderId);
-    
-    // Prepare items for Mercado Pago
-    const items = cartItems.map(item => ({
-      title: item.name,
-      quantity: item.quantity,
-      price: item.price
-    }));
     
     // Call Edge Function API
     const { data, error } = await supabase.functions.invoke('mercadopago-checkout', {

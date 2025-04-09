@@ -1,393 +1,264 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { testMercadoPagoConnection } from "@/services/payment-service";
-import { toast } from "sonner";
-import { CheckCircle, AlertCircle, Loader2, Key, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { testMercadoPagoConnection } from '@/services/payment-service';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-interface MercadoPagoCredentials {
-  accessToken?: string;
-  publicKey?: string;
+type CredentialType = {
+  accessToken: string;
+  publicKey: string;
   clientId?: string;
   clientSecret?: string;
-}
+};
+
+type TestStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const TestMercadoPago = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [testResult, setTestResult] = useState<{
-    success?: boolean;
-    message?: string;
-    data?: any;
-    timestamp?: string;
-  } | null>(null);
-  
-  // Estado para novas credenciais
-  const [accessToken, setAccessToken] = useState("");
-  const [publicKey, setPublicKey] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [status, setStatus] = useState<TestStatus>('idle');
+  const [message, setMessage] = useState<string>('');
+  const [credentials, setCredentials] = useState<CredentialType>({
+    accessToken: '',
+    publicKey: '',
+    clientId: '',
+    clientSecret: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Estado para credenciais atuais
-  const [currentCredentials, setCurrentCredentials] = useState<MercadoPagoCredentials & {
-    fetched?: boolean;
-  }>({});
-  const [isFetchingCredentials, setIsFetchingCredentials] = useState(false);
-
-  // Buscar credenciais quando o componente for montado
+  // Carregar credenciais atuais
   useEffect(() => {
-    fetchCurrentCredentials();
+    const fetchCredentials = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('*')
+          .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET']);
+
+        if (error) {
+          console.error('Erro ao carregar credenciais:', error);
+          toast.error('Não foi possível carregar as credenciais do banco de dados');
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const newCredentials = { ...credentials };
+
+          data.forEach((setting: any) => {
+            if (setting.key === 'MP_ACCESS_TOKEN') {
+              newCredentials.accessToken = setting.value;
+            } else if (setting.key === 'MP_PUBLIC_KEY') {
+              newCredentials.publicKey = setting.value;
+            } else if (setting.key === 'MP_CLIENT_ID') {
+              newCredentials.clientId = setting.value;
+            } else if (setting.key === 'MP_CLIENT_SECRET') {
+              newCredentials.clientSecret = setting.value;
+            }
+          });
+
+          setCredentials(newCredentials);
+        }
+      } catch (err) {
+        console.error('Erro ao processar credenciais:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCredentials();
   }, []);
 
-  // Função para buscar as credenciais atuais
-  const fetchCurrentCredentials = async () => {
-    setIsFetchingCredentials(true);
-    try {
-      const { data: settings, error } = await supabase
-        .from('system_settings')
-        .select('*')
-        .in('key', ['MP_ACCESS_TOKEN', 'MP_PUBLIC_KEY', 'MP_CLIENT_ID', 'MP_CLIENT_SECRET']);
-      
-      if (error) {
-        throw error;
-      }
-      
-      const credentials: MercadoPagoCredentials = {};
-      
-      if (settings && settings.length > 0) {
-        settings.forEach(setting => {
-          if (setting.key === 'MP_ACCESS_TOKEN') {
-            credentials.accessToken = setting.value.toString();
-          }
-          else if (setting.key === 'MP_PUBLIC_KEY') {
-            credentials.publicKey = setting.value.toString();
-          }
-          else if (setting.key === 'MP_CLIENT_ID') {
-            credentials.clientId = setting.value.toString();
-          }
-          else if (setting.key === 'MP_CLIENT_SECRET') {
-            credentials.clientSecret = setting.value.toString();
-          }
-        });
-      }
-      
-      setCurrentCredentials({
-        accessToken: credentials.accessToken ? `${credentials.accessToken.substring(0, 10)}...` : "Não configurado",
-        publicKey: credentials.publicKey ? `${credentials.publicKey.substring(0, 10)}...` : "Não configurado",
-        clientId: credentials.clientId ? credentials.clientId : "Não configurado",
-        clientSecret: credentials.clientSecret ? "••••••••••••••••" : "Não configurado",
-        fetched: true
-      });
-      
-    } catch (error) {
-      console.error("Erro ao buscar credenciais:", error);
-      toast.error("Erro ao buscar credenciais atuais");
-    } finally {
-      setIsFetchingCredentials(false);
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCredentials({ ...credentials, [name]: value });
   };
 
   const handleTestConnection = async () => {
-    setIsLoading(true);
+    setStatus('loading');
+    setMessage('Testando conexão com o Mercado Pago...');
+
     try {
       const result = await testMercadoPagoConnection();
-      setTestResult({
-        ...result,
-        timestamp: new Date().toISOString()
-      });
-      
       if (result.success) {
-        toast.success("Conexão com Mercado Pago testada com sucesso!");
+        setStatus('success');
+        setMessage(result.message);
       } else {
-        toast.error(`Falha no teste de conexão: ${result.message}`);
+        setStatus('error');
+        setMessage(result.message);
       }
     } catch (error) {
-      console.error("Error testing connection:", error);
-      setTestResult({
-        success: false,
-        message: `Erro: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
-        timestamp: new Date().toISOString()
-      });
-      toast.error("Erro ao testar conexão com Mercado Pago");
-    } finally {
-      setIsLoading(false);
+      setStatus('error');
+      setMessage(`Falha ao testar conexão: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
-  const handleUpdateCredentials = async () => {
-    if (!accessToken || !publicKey) {
-      toast.error("Preencha ambos os campos de token e chave pública");
-      return;
-    }
-    
-    setIsUpdating(true);
+  const saveCredentials = async () => {
     try {
-      // Verificar formatos básicos
-      if (accessToken.length < 20) {
-        toast.error("O formato do Access Token parece inválido (muito curto)");
-        return;
-      }
+      setIsSaving(true);
       
-      if (!publicKey.startsWith("APP_")) {
-        toast.warning("A chave pública geralmente começa com 'APP_', verifique se está correta");
-      }
-      
-      // Chamar função para atualizar as credenciais no Supabase
       const { data, error } = await supabase.functions.invoke('update-mp-credentials', {
-        body: { 
-          accessToken,
-          publicKey,
-          clientId: clientId || undefined,
-          clientSecret: clientSecret || undefined
-        }
+        body: credentials
       });
-      
+
       if (error) {
-        console.error("Erro ao atualizar credenciais:", error);
-        toast.error("Erro ao atualizar credenciais do Mercado Pago");
+        toast.error(`Erro ao salvar credenciais: ${error.message}`);
         return;
       }
-      
-      toast.success("Credenciais do Mercado Pago atualizadas com sucesso!");
-      
-      // Atualizar credenciais exibidas
-      await fetchCurrentCredentials();
-      
-      // Limpar campos
-      setAccessToken("");
-      setPublicKey("");
-      setClientId("");
-      setClientSecret("");
-      
-      // Testar a nova conexão automaticamente
-      handleTestConnection();
-      
-    } catch (error) {
-      console.error("Error updating credentials:", error);
-      toast.error("Erro ao atualizar credenciais");
+
+      if (data.success) {
+        toast.success('Credenciais salvas com sucesso!');
+        // Reset status após salvar
+        setStatus('idle');
+      } else {
+        toast.error(`Erro: ${data.message}`);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar credenciais:', err);
+      toast.error('Ocorreu um erro ao salvar as credenciais');
     } finally {
-      setIsUpdating(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle>Teste de Conexão com Mercado Pago</CardTitle>
+        <CardTitle>Mercado Pago - Teste de Conexão</CardTitle>
+        <CardDescription>
+          Configure e teste suas credenciais do Mercado Pago
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Tabs defaultValue="test">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="test">Testar Conexão</TabsTrigger>
-            <TabsTrigger value="credentials">Atualizar Credenciais</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="test" className="space-y-4">
-            {!currentCredentials.fetched ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                <span>Carregando informações...</span>
+      <CardContent className="space-y-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="accessToken">Access Token</Label>
+                <Input
+                  id="accessToken"
+                  name="accessToken"
+                  value={credentials.accessToken}
+                  onChange={handleInputChange}
+                  placeholder="APP_USR-0000000000000-000000-00000000000000000000000000000000-000000000"
+                />
               </div>
-            ) : (
-              <div className="bg-muted/50 p-4 rounded-md">
-                <h3 className="font-medium flex items-center mb-2">
-                  <Info className="h-4 w-4 mr-2" />
-                  Credenciais Configuradas
-                </h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Access Token:</p>
-                    <p className="font-mono">{currentCredentials.accessToken}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Chave Pública:</p>
-                    <p className="font-mono">{currentCredentials.publicKey}</p>
-                  </div>
-                  {currentCredentials.clientId && currentCredentials.clientId !== "Não configurado" && (
-                    <div>
-                      <p className="text-muted-foreground">Client ID:</p>
-                      <p className="font-mono">{currentCredentials.clientId}</p>
-                    </div>
-                  )}
-                  {currentCredentials.clientSecret && currentCredentials.clientSecret !== "Não configurado" && (
-                    <div>
-                      <p className="text-muted-foreground">Client Secret:</p>
-                      <p className="font-mono">{currentCredentials.clientSecret}</p>
-                    </div>
-                  )}
-                </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="publicKey">Public Key</Label>
+                <Input
+                  id="publicKey"
+                  name="publicKey"
+                  value={credentials.publicKey}
+                  onChange={handleInputChange}
+                  placeholder="APP_USR-00000000-0000-0000-0000-000000000000"
+                />
               </div>
-            )}
-            
-            <div className="flex justify-center">
-              <Button 
-                onClick={handleTestConnection} 
-                disabled={isLoading}
-                size="lg"
-                variant="default"
+
+              <div className="space-y-2">
+                <Label htmlFor="clientId">Client ID (opcional)</Label>
+                <Input
+                  id="clientId"
+                  name="clientId"
+                  value={credentials.clientId || ''}
+                  onChange={handleInputChange}
+                  placeholder="000000000000000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="clientSecret">Client Secret (opcional)</Label>
+                <Input
+                  id="clientSecret"
+                  name="clientSecret"
+                  type="password"
+                  value={credentials.clientSecret || ''}
+                  onChange={handleInputChange}
+                  placeholder="••••••••••••••••"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between pt-4">
+              <Button
+                onClick={saveCredentials}
+                disabled={isSaving}
+                className="bg-primary text-white"
               >
-                {isLoading ? (
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Credenciais'
+                )}
+              </Button>
+
+              <Button
+                onClick={handleTestConnection}
+                disabled={status === 'loading'}
+                variant="outline"
+              >
+                {status === 'loading' ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Testando...
                   </>
                 ) : (
-                  'Testar Conexão com Mercado Pago'
+                  'Testar Conexão'
                 )}
               </Button>
             </div>
-            
-            {testResult && (
-              <div className={`mt-6 p-4 rounded-lg border ${
-                testResult.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-              }`}>
-                <div className="flex items-start">
-                  {testResult.success ? (
-                    <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
-                  )}
-                  
-                  <div className="flex-1">
-                    <h4 className={`font-medium ${
-                      testResult.success ? 'text-green-800' : 'text-red-800'
-                    }`}>
-                      {testResult.success ? 'Sucesso!' : 'Falha!'}
-                    </h4>
-                    <p className="text-sm mt-1">
-                      {testResult.message}
-                    </p>
-                    
-                    {!testResult.success && testResult.data && testResult.data.message === 'invalid_token' && (
-                      <Alert className="mt-3 bg-amber-50">
-                        <AlertDescription>
-                          O token de acesso foi rejeitado pelo Mercado Pago. Verifique se você está usando um token de produção válido e não um token de sandbox/teste.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {testResult.data && (
-                      <div className="mt-4 bg-white bg-opacity-60 p-3 rounded border border-gray-200 overflow-auto max-h-48">
-                        <pre className="text-xs whitespace-pre-wrap break-words">
-                          {JSON.stringify(testResult.data, null, 2)}
-                        </pre>
-                      </div>
-                    )}
-                    
-                    <p className="text-xs text-gray-500 mt-2">
-                      Teste realizado em: {new Date(testResult.timestamp || '').toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="credentials" className="space-y-4">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium mb-4 flex items-center">
-                <Key className="h-5 w-5 mr-2" />
-                Atualizar Credenciais do Mercado Pago
-              </h3>
-              
-              <Alert className="bg-blue-50 mb-4">
-                <AlertDescription>
-                  Insira credenciais de <strong>produção</strong> do Mercado Pago para processar pagamentos reais. 
-                  As credenciais podem ser obtidas no <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" rel="noopener noreferrer" className="text-primary underline">Painel de Desenvolvedores do Mercado Pago</a>.
-                </AlertDescription>
-              </Alert>
-              
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="accessToken">Access Token (Produção)</Label>
-                  <Input
-                    id="accessToken"
-                    type="text"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    placeholder="APP_USR-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
-                    className="font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Token de acesso privado do Mercado Pago
-                  </p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="publicKey">Chave Pública (Produção)</Label>
-                  <Input
-                    id="publicKey"
-                    type="text"
-                    value={publicKey}
-                    onChange={(e) => setPublicKey(e.target.value)}
-                    placeholder="APP_USR-XXXX-XXXX-XXXX-XXXX"
-                    className="font-mono"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Chave pública do Mercado Pago (geralmente começa com APP_USR)
-                  </p>
-                </div>
+          </>
+        )}
 
-                <div>
-                  <Label htmlFor="clientId">Client ID (opcional)</Label>
-                  <Input
-                    id="clientId"
-                    type="text"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder="123456789"
-                    className="font-mono"
-                  />
-                </div>
+        {status === 'success' && (
+          <Alert className="bg-green-50 border-green-200">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Conexão realizada com sucesso</AlertTitle>
+            <AlertDescription className="text-green-700">
+              {message}
+            </AlertDescription>
+          </Alert>
+        )}
 
-                <div>
-                  <Label htmlFor="clientSecret">Client Secret (opcional)</Label>
-                  <Input
-                    id="clientSecret"
-                    type="password"
-                    value={clientSecret}
-                    onChange={(e) => setClientSecret(e.target.value)}
-                    placeholder="••••••••••••••••"
-                    className="font-mono"
-                  />
-                </div>
-                
-                <Button 
-                  onClick={handleUpdateCredentials}
-                  disabled={isUpdating || !accessToken || !publicKey}
-                  className="w-full"
-                  variant="default"
-                >
-                  {isUpdating ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Atualizando...
-                    </>
-                  ) : (
-                    'Atualizar Credenciais'
-                  )}
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <Separator className="my-6" />
-        
-        <div className="text-sm text-gray-600 mt-4">
-          <p>
-            Este teste verifica se as credenciais do Mercado Pago estão configuradas corretamente, 
-            tentando obter os métodos de pagamento disponíveis.
-          </p>
-        </div>
+        {status === 'error' && (
+          <Alert className="bg-red-50 border-red-200">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertTitle className="text-red-800">Erro de conexão</AlertTitle>
+            <AlertDescription className="text-red-700">
+              {message}
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
+      <CardFooter className="flex flex-col items-start border-t p-4 text-sm text-gray-600">
+        <p>
+          Use as credenciais de produção do Mercado Pago para processar pagamentos reais.
+        </p>
+        <p className="mt-2">
+          Para obter suas credenciais, acesse sua{" "}
+          <a
+            href="https://www.mercadopago.com.br/settings/account/credentials"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            conta do Mercado Pago
+          </a>
+          .
+        </p>
+      </CardFooter>
     </Card>
   );
 };

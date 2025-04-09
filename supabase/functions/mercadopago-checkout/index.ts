@@ -62,10 +62,24 @@ serve(async (req) => {
     }
 
     if (!access_token) {
-      throw new Error("Token do Mercado Pago não configurado");
+      console.error("Token do Mercado Pago não encontrado!");
+      
+      // Use a fallback from config.toml
+      access_token = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN') || '';
+      
+      if (!access_token) {
+        throw new Error("Token do Mercado Pago não configurado");
+      }
+      
+      console.log("Usando token de fallback do arquivo de configuração");
     }
 
     console.log("Token utilizado (primeiros caracteres):", access_token.substring(0, 10) + "...");
+
+    // Obter URL do frontend para redirecionamento
+    const appUrl = Deno.env.get("APP_URL") || "https://workshop.lovable.dev";
+
+    console.log("URL da aplicação para redirecionamento:", appUrl);
 
     // Preparar dados para a API do Mercado Pago
     const preferenceData = {
@@ -79,23 +93,16 @@ serve(async (req) => {
         cost: shipping_cost,
         mode: "not_specified",
       },
-      payment_methods: {
-        // Removido exclusão de métodos para permitir todos os tipos
-        installments: 12, // Permitir parcelamento em até 12x
+      back_urls: {
+        success: `${appUrl}/orders/confirmation/${orderId}`,
+        failure: `${appUrl}/checkout/error`,
+        pending: `${appUrl}/orders/pending/${orderId}`,
       },
-      payer: {
-        email: payer.email,
+      auto_return: "approved",
+      payment_methods: {
+        installments: 12,
       },
       statement_descriptor: "BoneHeal",
-      expires: true,
-      expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 horas
-      notification_url: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/api/webhook/mercadopago`,
-      back_urls: {
-        success: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/orders/confirmation/${orderId}`,
-        failure: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/checkout/payment`,
-        pending: `${Deno.env.get("APP_URL") || "https://boneheal.com.br"}/orders/pending/${orderId}`,
-      },
-      auto_return: "approved", // Retornar automaticamente após pagamento aprovado
     };
 
     console.log("Dados da preferência:", JSON.stringify(preferenceData, null, 2));
@@ -116,6 +123,17 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Erro na API do Mercado Pago: ${response.status} - ${errorText}`);
+      
+      // Log the error in the database
+      await supabase
+        .from('system_logs')
+        .insert({
+          type: 'mercadopago_error',
+          source: 'edge_function',
+          status: 'error',
+          details: `API Error: ${errorText}`
+        });
+        
       throw new Error(`Erro na API do Mercado Pago: ${errorText}`);
     }
 

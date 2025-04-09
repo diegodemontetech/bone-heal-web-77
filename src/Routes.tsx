@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Route, Routes as RoutesList } from "react-router-dom";
 import Home from "@/pages/Index";
 import About from "@/pages/About";
@@ -22,6 +21,8 @@ import ComoFunciona from "@/pages/ComoFunciona";
 import PoliticaTroca from "@/pages/PoliticaTroca";
 import Cart from "@/pages/Cart";
 import Checkout from "@/pages/checkout/Checkout";
+import MercadoPagoRedirect from "@/pages/checkout/MercadoPagoRedirect";
+import RouteWithSidebar from "@/components/RouteWithSidebar";
 
 // Importação das páginas de perfil
 import ProfilePage from "@/pages/profile/Profile";
@@ -75,7 +76,21 @@ export function Routes() {
         <Route path="/support/tickets" element={<Support />} />
         <Route path="/support/tickets/:id" element={<TicketDetails />} />
         
+        {/* Payment Routes */}
+        <Route path="/checkout/mercadopago" element={
+          <RouteWithSidebar>
+            <MercadoPagoRedirect 
+              orderId="placeholder" 
+              items={[]} 
+              shippingFee={0} 
+              discount={0} 
+              email="placeholder@example.com"
+            />
+          </RouteWithSidebar>
+        } />
       </RoutesList>
     </BrowserRouter>
   );
 }
+
+export default Routes;

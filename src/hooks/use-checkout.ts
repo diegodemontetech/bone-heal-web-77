@@ -5,21 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 import { toast } from "sonner";
 import { saveOrder } from "@/services/order-service";
-import { 
-  createMercadoPagoCheckout, 
-  processPixPayment, 
-  PaymentResponse 
-} from "@/services/payment-service";
+import { createMercadoPagoCheckout } from "@/services/payment-service";
 
 // Define a consistent type for checkout data
-export interface CheckoutData extends PaymentResponse {
+export interface CheckoutData extends Object {
   // Propriedades extras podem ser adicionadas aqui
+  init_point?: string;
 }
 
 export function useCheckout() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("pix");
+  const [paymentMethod, setPaymentMethod] = useState<string>("standard");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
@@ -105,67 +102,23 @@ export function useCheckout() {
           setOrderId(savedOrderId);
         }
         
-        // Process payment based on selected method
-        if (paymentMethod === 'pix') {
-          // Try Mercado Pago first
-          try {
-            console.log("Tentando gerar PIX via Mercado Pago...");
-            const mpResponse = await createMercadoPagoCheckout(
-              savedOrderId, 
-              cartItems, 
-              numericShippingFee, 
-              discount
-            );
-            
-            console.log("Resposta do Mercado Pago:", mpResponse);
-            
-            if (mpResponse && mpResponse.pixCode) {
-              setCheckoutData(mpResponse);
-              return;
-            }
-          } catch (mpError) {
-            console.error("Erro ao criar checkout do Mercado Pago:", mpError);
-            
-            // Fall back to Omie PIX if Mercado Pago fails
-            try {
-              console.log("Tentando gerar PIX pelo Omie...");
-              const totalAmount = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + numericShippingFee - discount;
-              const pixResponse = await processPixPayment(savedOrderId, totalAmount);
-              
-              if (pixResponse && pixResponse.pixCode) {
-                console.log("PIX gerado pelo Omie:", pixResponse);
-                setCheckoutData(pixResponse);
-                return;
-              }
-            } catch (omieError) {
-              console.error("Erro completo ao gerar PIX pelo Omie:", omieError);
-            }
+        // Process direct redirect to Mercado Pago
+        const mpItems = cartItems.map(item => ({
+          title: item.name,
+          quantity: item.quantity,
+          price: item.price
+        }));
+        
+        // Redirect to Mercado Pago
+        navigate(`/checkout/mercadopago`, {
+          state: {
+            orderId: savedOrderId,
+            items: mpItems,
+            shippingFee: numericShippingFee,
+            discount: discount,
+            email: "cliente@example.com" // Ideally would use actual user email
           }
-          
-          // If both payment methods failed, use a fallback PIX code
-          console.log("Gerando PIX com dados de simulação após falhas nas APIs");
-          
-          // Generate a fallback PIX code
-          const fallbackData: CheckoutData = {
-            pixCode: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3",
-            point_of_interaction: {
-              transaction_data: {
-                qr_code: "00020126330014BR.GOV.BCB.PIX0111123456789020212Pagamento PIX5204000053039865802BR5913BoneHeal6008Sao Paulo62070503***63046CA3"
-              }
-            }
-          };
-          
-          setCheckoutData(fallbackData);
-        } else {
-          // For non-PIX payment methods, redirect to success page
-          localStorage.removeItem('cart');
-          navigate("/checkout/success", { 
-            state: { 
-              orderId: savedOrderId,
-              paymentMethod
-            }
-          });
-        }
+        });
       } catch (saveError) {
         console.error("Erro ao salvar o pedido:", saveError);
         toast.error("Erro ao salvar o pedido. Por favor, tente novamente.");

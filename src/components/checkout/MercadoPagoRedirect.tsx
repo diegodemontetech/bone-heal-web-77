@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createMercadoPagoCheckout } from '@/services/payment-service';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -25,12 +25,15 @@ const MercadoPagoRedirect = ({
   email
 }: MercadoPagoRedirectProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isRedirecting, setIsRedirecting] = useState(true);
 
   useEffect(() => {
     const redirectToMercadoPago = async () => {
       try {
         setIsRedirecting(true);
+        console.log("Iniciando redirecionamento para Mercado Pago...");
+        console.log("Dados do pedido:", { orderId, items, shippingFee, discount, email });
         
         // Converter os itens do carrinho para o formato esperado pelo Mercado Pago
         const mpItems = items.map(item => ({
@@ -43,9 +46,12 @@ const MercadoPagoRedirect = ({
         const result = await createMercadoPagoCheckout(orderId, mpItems, shippingFee, discount);
         
         if (result && result.init_point) {
-          // Navegar para o componente de redirecionamento com a URL de checkout
-          navigate('/checkout/redirect', { state: { paymentUrl: result.init_point } });
+          console.log("Redirecionamento para:", result.init_point);
+          
+          // Redirecionar diretamente para a página do Mercado Pago
+          window.location.href = result.init_point;
         } else {
+          console.error("Falha no redirecionamento: Sem URL de checkout", result);
           toast.error("Não foi possível criar o link de pagamento");
           navigate('/checkout/error');
         }
