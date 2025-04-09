@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { CartItem } from "@/hooks/use-cart";
 
@@ -306,14 +307,16 @@ export const getMercadoPagoRedirectUrl = async (orderId: string): Promise<string
       return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
     }
 
-    if (data.payment_details && 
-        typeof data.payment_details === 'object' && 
-        'init_point' in data.payment_details) {
-      return data.payment_details.init_point as string;
+    // Safely access payment_details if it exists
+    const paymentDetails = data.payment_details as Record<string, any> | null;
+    if (paymentDetails && 'init_point' in paymentDetails) {
+      return paymentDetails.init_point as string;
     }
     
-    if (data.mp_preference_id) {
-      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${data.mp_preference_id}`;
+    // Safely access mp_preference_id if it exists
+    const preferenceId = data.mp_preference_id as string | null;
+    if (preferenceId) {
+      return `https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=${preferenceId}`;
     }
     
     return `https://www.mercadopago.com.br/checkout/v1/redirect?preference_id=${orderId}`;
