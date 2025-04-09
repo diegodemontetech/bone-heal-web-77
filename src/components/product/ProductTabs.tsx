@@ -1,8 +1,6 @@
 
 import { Product } from "@/types/product";
-import ProductReviews from "./ProductReviews";
 import { useIsMobile } from "@/hooks/use-mobile";
-import ProductTechDetails from "./ProductTechDetails";
 
 interface ProductTabsProps {
   product: Product;
@@ -12,7 +10,6 @@ const ProductTabs = ({ product }: ProductTabsProps) => {
   const isMobile = useIsMobile();
 
   // This component has been refactored and is no longer used with tabs
-  // It now returns the description directly
   return (
     <div className="space-y-6">
       <div className="text-gray-600 leading-relaxed">

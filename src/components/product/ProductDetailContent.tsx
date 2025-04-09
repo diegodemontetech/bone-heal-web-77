@@ -44,18 +44,21 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
       </div>
 
       <div className="space-y-12 mb-12">
+        {/* Google Reviews e Avaliações */}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <h2 className="text-2xl font-bold mb-4">Avaliações do Produto</h2>
+          <GoogleReviews />
+          <div className="mt-8">
+            <ProductReviews productId={product.id} product={product} />
+          </div>
+        </div>
+        
         {/* Descrição do produto */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <h2 className="text-2xl font-bold mb-4">Descrição</h2>
           <div className="text-gray-600 leading-relaxed">
             {product.full_description || product.description || "Nenhuma descrição disponível."}
           </div>
-        </div>
-        
-        {/* Google Reviews */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Avaliações do Produto</h2>
-          <GoogleReviews />
         </div>
         
         {/* Detalhes técnicos */}

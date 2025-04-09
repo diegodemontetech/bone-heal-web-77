@@ -64,8 +64,6 @@ const ReviewsTab = ({ productId }: ReviewsTabProps) => {
 
   return (
     <div className="space-y-6">
-      <ReviewsSummary reviews={reviews} />
-      
       <div className="flex justify-between items-center mb-4">
         <h4 className="text-lg font-medium">Avaliações dos Clientes</h4>
         
@@ -98,7 +96,6 @@ const ReviewsTab = ({ productId }: ReviewsTabProps) => {
           <p className="text-gray-600 mb-2">Compartilhe sua experiência com este produto</p>
           <button 
             onClick={() => {
-              // Redirecionar para a página de login
               window.location.href = "/login?redirect=" + window.location.pathname;
             }}
             className="text-primary font-medium hover:underline"

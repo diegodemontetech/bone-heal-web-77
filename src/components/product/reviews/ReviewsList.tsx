@@ -16,9 +16,9 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
     );
   }
 
-  // Ordena as avaliações: primeiro as mais positivas (5 estrelas), depois por data
+  // Ordena as avaliações: primeiro por marca (Bone Heal depois Heal Bone), depois por classificação
   const sortedReviews = [...reviews].sort((a, b) => {
-    // Primeiro por classificação (rating) em ordem decrescente
+    // Primeiro ordenar por classificação (rating) em ordem decrescente
     if (b.rating !== a.rating) {
       return b.rating - a.rating;
     }
@@ -30,7 +30,7 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
     return (
       <div className="bg-gray-50 border rounded-lg p-8 text-center">
         <p className="text-gray-500">
-          Este produto ainda não possui avaliações.
+          Seja o primeiro a avaliar este produto!
         </p>
       </div>
     );
@@ -42,7 +42,7 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
         <h3 className="font-medium text-lg mb-1">Resumo das Avaliações</h3>
         <div className="flex items-center">
           <div className="text-3xl font-bold text-primary mr-3">
-            {reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length || 0}
+            {(reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length || 0).toFixed(1)}
             <span className="text-lg">/5</span>
           </div>
           <div className="text-sm text-gray-500">

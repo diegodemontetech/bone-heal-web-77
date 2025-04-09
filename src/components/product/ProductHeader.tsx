@@ -21,14 +21,14 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
     // Extract brand name
     let brandName = "";
     if (cleanName.includes("Bone Heal")) {
-      brandName = "Bone Heal";
+      brandName = "Bone Heal®";
     } else if (cleanName.includes("Heal Bone")) {
-      brandName = "Heal Bone";
+      brandName = "Heal Bone®";
     }
     
     // If brand found, create new product name with brand first
     if (brandName) {
-      const productNameWithoutBrand = cleanName.replace(brandName, "").trim();
+      const productNameWithoutBrand = cleanName.replace(/Bone Heal®?|Heal Bone®?/g, "").trim();
       return `${brandName} ${productNameWithoutBrand}`;
     }
     
@@ -40,11 +40,6 @@ const ProductHeader = ({ product }: ProductHeaderProps) => {
       <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{formatProductName(product.name)}</h1>
       
       <div className="flex flex-wrap items-center gap-2">
-        {product.omie_code && (
-          <Badge variant="outline" className="font-normal">
-            Código: {product.omie_code}
-          </Badge>
-        )}
         <Badge variant="outline" className="font-normal bg-primary/10">
           Registro ANVISA: 81197590000
         </Badge>

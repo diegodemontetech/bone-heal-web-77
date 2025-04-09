@@ -7,27 +7,32 @@
  * Format product name to show brand first
  */
 export const formatProductName = (name: string): string => {
+  // Remove unwanted parentheses
+  let cleanName = name.replace(/\(\)|\(\s*\)/g, '').trim();
+  
   // Check if the name contains "Bone Heal" or "Heal Bone" anywhere
-  if (name.includes("Bone Heal") || name.includes("Heal Bone")) {
-    // If it already starts with a brand name, return as is
-    if (name.startsWith("Bone Heal") || name.startsWith("Heal Bone")) {
-      return name;
+  if (cleanName.includes("Bone Heal") || cleanName.includes("Heal Bone")) {
+    // If it already starts with a brand name, return as is but with ® symbol
+    if (cleanName.startsWith("Bone Heal")) {
+      return cleanName.replace("Bone Heal", "Bone Heal®");
+    } else if (cleanName.startsWith("Heal Bone")) {
+      return cleanName.replace("Heal Bone", "Heal Bone®");
     }
     
     // Extract brand name
     let brandName = "";
-    if (name.includes("Bone Heal")) {
-      brandName = "Bone Heal";
-    } else if (name.includes("Heal Bone")) {
-      brandName = "Heal Bone";
+    if (cleanName.includes("Bone Heal")) {
+      brandName = "Bone Heal®";
+    } else if (cleanName.includes("Heal Bone")) {
+      brandName = "Heal Bone®";
     }
     
     // Create new product name with brand first
-    const productNameWithoutBrand = name.replace(brandName, "").trim();
+    const productNameWithoutBrand = cleanName.replace(/Bone Heal®?|Heal Bone®?/g, "").trim();
     return `${brandName} ${productNameWithoutBrand}`;
   }
   
-  return name;
+  return cleanName;
 };
 
 /**

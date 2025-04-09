@@ -52,8 +52,6 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
 
   const renderBoneHealDetails = () => (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold mb-4">Detalhes Técnicos</h2>
-      
       <Table>
         <TableHeader>
           <TableRow>
@@ -81,6 +79,10 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
           <TableRow>
             <TableCell className="font-medium">Compatibilidade</TableCell>
             <TableCell>Compatível com todos os sistemas de implantes, imediatos ou mediatos</TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium">Desenvolvido por</TableCell>
+            <TableCell>Prof. Dr. Munir Salomão</TableCell>
           </TableRow>
         </TableBody>
       </Table>
@@ -123,7 +125,7 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
         <div className="flex items-start">
           <Info className="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
           <p className="text-sm text-blue-800">
-            A barreira Bone Heal é 100% impermeável, constituída por um filme de polipropileno, projetada para permanecer exposta ao meio bucal. Não apresenta porosidade em sua superfície, o que dificulta o acúmulo de detritos e micro-organismos.
+            A barreira Bone Heal® é 100% impermeável, constituída por um filme de polipropileno, projetada para permanecer exposta ao meio bucal. Não apresenta porosidade em sua superfície, o que dificulta o acúmulo de detritos e micro-organismos.
           </p>
         </div>
       </div>
@@ -132,8 +134,6 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
   
   const renderHealBoneDetails = () => (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold mb-4">Detalhes Técnicos</h2>
-      
       <Table>
         <TableHeader>
           <TableRow>
@@ -158,19 +158,23 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
             <TableCell className="font-medium">Registro ANVISA</TableCell>
             <TableCell>81197590000</TableCell>
           </TableRow>
+          <TableRow>
+            <TableCell className="font-medium">Desenvolvido por</TableCell>
+            <TableCell>Prof. Dr. Munir Salomão</TableCell>
+          </TableRow>
         </TableBody>
       </Table>
       
       <div className="space-y-4 mt-8">
         <h3 className="text-lg font-semibold">Descrição</h3>
         <p className="text-gray-700">
-          Heal Bone é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. 
+          Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. 
           Projetada para permanecer exposta intencionalmente ao meio bucal, não apresenta porosidade em sua superfície, 
           o que lhe confere total impermeabilidade dificultando o acúmulo de detritos, restos alimentares e micro organismos em sua superfície.
         </p>
         
         <p className="text-gray-700">
-          A barreira Heal Bone utiliza apenas o coágulo sanguíneo, sem adição de enxertos ou implante de biomateriais de qualquer natureza, 
+          A barreira Heal Bone® utiliza apenas o coágulo sanguíneo, sem adição de enxertos ou implante de biomateriais de qualquer natureza, 
           é possível solucionar problemas complexos através de uma técnica cirúrgica simples, segura e previsível, 
           objetivando a regeneração simultânea tanto do tecido ósseo quanto dos tecidos moles.
         </p>
@@ -213,7 +217,7 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
       <div className="space-y-4 mt-8">
         <h3 className="text-lg font-semibold">Indicações</h3>
         <p className="text-gray-700">
-          A barreira não-reabsorvível Heal Bone é indicada em todos os casos pós–exodontias, independentemente da causa, 
+          A barreira não-reabsorvível Heal Bone® é indicada em todos os casos pós–exodontias, independentemente da causa, 
           principalmente quando houver perda de parede alveolar, nos casos de implantes imediatos e na correção de fenestrações ósseas.
         </p>
       </div>
@@ -225,7 +229,6 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
     if (product.technical_details) {
       return (
         <div className="space-y-6">
-          <h2 className="text-xl font-bold mb-4">Detalhes Técnicos</h2>
           <Table>
             <TableHeader>
               <TableRow>
@@ -253,7 +256,7 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
   };
 
   return (
-    <div className="mt-10">
+    <div>
       {isBoneHeal ? renderBoneHealDetails() : 
        isHealBone ? renderHealBoneDetails() : 
        renderDefaultDetails()}

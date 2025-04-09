@@ -53,7 +53,7 @@ function classifyProduct(productName) {
 
 // Função para gerar uma descrição curta
 function generateShortDescription(productName, omieCode) {
-  if (!productName) return `Código Omie: ${omieCode}`;
+  if (!productName) return '';
   
   // Extrai dimensões do nome se houver
   const dimensionsMatch = productName.match(/(\d+)[xX](\d+)(?:mm)?/);
@@ -94,15 +94,12 @@ function generateShortDescription(productName, omieCode) {
     description = productName;
   }
   
-  // Adicionar código
-  description += ` | Código: ${omieCode}`;
-  
   return description;
 }
 
 // Função para gerar uma descrição longa
 function generateLongDescription(productName, omieCode) {
-  if (!productName) return `Produto código Omie: ${omieCode}. Entre em contato para mais informações.`;
+  if (!productName) return `Entre em contato para mais informações.`;
   
   const productType = classifyProduct(productName);
   
@@ -140,12 +137,14 @@ Aumenta o conforto pós-operatório.
 
 ${dimensionText}
 
+Desenvolvido pelo Prof. Dr. Munir Salomão.
+
 Registro ANVISA: 81197590000`;
   } 
   else if (productType === 'healBone') {
     return `Heal Bone® é uma película biocompatível, não-reabsorvível, impermeável, constituída 100% por um filme de polipropileno. Projetada para permanecer exposta intencionalmente ao meio bucal, não apresenta porosidade em sua superfície, o que lhe confere total impermeabilidade dificultando o acúmulo de detritos, restos alimentares e micro organismos em sua superfície.
 
-A barreira Heal Bone utiliza apenas o coágulo sanguíneo, sem adição de enxertos ou implante de biomateriais de qualquer natureza, é possível solucionar problemas complexos através de uma técnica cirúrgica simples, segura e previsível, objetivando a regeneração simultânea tanto do tecido ósseo quanto dos tecidos moles.
+A barreira Heal Bone® utiliza apenas o coágulo sanguíneo, sem adição de enxertos ou implante de biomateriais de qualquer natureza, é possível solucionar problemas complexos através de uma técnica cirúrgica simples, segura e previsível, objetivando a regeneração simultânea tanto do tecido ósseo quanto dos tecidos moles.
 
 Mais Vantagens:
 
@@ -159,16 +158,16 @@ Mais Vantagens:
 
 Indicações:
 
-A barreira não-reabsorvível Heal Bone é indicada em todos os casos pós–exodontias, independentemente da causa, principalmente quando houver perda de parede alveolar, nos casos de implantes imediatos e na correção de fenestrações ósseas.
+A barreira não-reabsorvível Heal Bone® é indicada em todos os casos pós–exodontias, independentemente da causa, principalmente quando houver perda de parede alveolar, nos casos de implantes imediatos e na correção de fenestrações ósseas.
 
 ${dimensionText}
+
+Desenvolvido pelo Prof. Dr. Munir Salomão.
 
 Registro ANVISA: 81197590000`;
   } 
   else {
-    return `Produto código Omie: ${omieCode}.
-    
-Este produto faz parte da linha de materiais odontológicos da Boneheal. Para informações detalhadas sobre especificações técnicas, indicações de uso e contraindicações, consulte a documentação oficial do produto ou entre em contato com nossa equipe técnica.
+    return `Este produto faz parte da linha de materiais odontológicos da Bone Heal®. Para informações detalhadas sobre especificações técnicas, indicações de uso e contraindicações, consulte a documentação oficial do produto ou entre em contato com nossa equipe técnica.
 
 Registro ANVISA: 81197590000`;
   }
@@ -182,8 +181,8 @@ serve(async (req) => {
   try {
     const { omieCode, productName, contentType } = await req.json();
     
-    if (!omieCode) {
-      throw new Error("Código Omie não informado");
+    if (!productName) {
+      throw new Error("Nome do produto não informado");
     }
     
     console.log(`Gerando ${contentType || 'conteúdo'} para produto: ${omieCode} - ${productName || 'sem nome'}`);
@@ -219,8 +218,8 @@ serve(async (req) => {
         customizedTemplate.indicação = indicação;
       }
       
-      // Adicionar código ao registro regulatório
-      customizedTemplate.código_produto = omieCode;
+      // Adicionar desenvolvido por Prof. Dr. Munir Salomão
+      customizedTemplate.desenvolvido_por = "Prof. Dr. Munir Salomão";
       
       responseData = {
         technical_details: customizedTemplate
