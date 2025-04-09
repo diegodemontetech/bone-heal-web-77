@@ -1,6 +1,6 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Check, Shield, Flask, Ruler, FileCheck, Info, AlertTriangle } from "lucide-react";
+import { Check, Shield, Ruler, FileCheck, Info, AlertTriangle, Beaker } from "lucide-react";
 
 interface DefaultTechDetailsProps {
   technicalDetails: Record<string, any> | null | undefined;
@@ -27,7 +27,7 @@ const DefaultTechDetails = ({ technicalDetails }: DefaultTechDetailsProps) => {
 
   // Icons for different sections
   const sectionIcons: Record<string, React.ReactNode> = {
-    materials: <Flask className="h-5 w-5 text-blue-500" />,
+    materials: <Beaker className="h-5 w-5 text-blue-500" />,
     dimensions: <Ruler className="h-5 w-5 text-purple-500" />,
     usage: <Info className="h-5 w-5 text-green-500" />,
     regulatory: <FileCheck className="h-5 w-5 text-red-500" />,
