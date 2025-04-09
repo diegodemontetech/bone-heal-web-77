@@ -1,6 +1,5 @@
 
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/utils/formatters";
 import { Product } from "@/types/product";
 import { Star } from "lucide-react";
 

@@ -8,6 +8,8 @@ import GoogleReviews from "./GoogleReviews";
 import ProductReviews from "./ProductReviews";
 import FloatingActions from "./FloatingActions";
 import ProductBulletPoints from "./ProductBulletPoints";
+import ProductTabs from "./ProductTabs";
+import { ProductPricing } from "../products/ProductPricing";
 
 interface ProductDetailContentProps {
   product: Product;
@@ -26,6 +28,13 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
         <div className="space-y-6">
           <ProductHeader product={product} />
           
+          {/* Adiciona o preço do produto */}
+          {product.price && (
+            <div className="mt-2">
+              <ProductPricing price={product.price} />
+            </div>
+          )}
+          
           {/* Adição dos bullet points do produto */}
           <ProductBulletPoints product={product} />
           
@@ -36,14 +45,8 @@ const ProductDetailContent = ({ product, profile }: ProductDetailContentProps) =
       </div>
 
       <div className="mb-12">
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Descrição do Produto</h2>
-          <div className="prose max-w-none">
-            {product.full_description || product.description || "Nenhuma descrição disponível."}
-          </div>
-        </div>
-        
-        <ProductTechDetails product={product} />
+        {/* Usar ProductTabs para evitar duplicação e melhorar a organização */}
+        <ProductTabs product={product} />
         
         <div className="mt-12 pt-6 border-t">
           <h2 className="text-2xl font-bold mb-6">Avaliações do Produto</h2>

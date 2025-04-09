@@ -34,5 +34,6 @@ export interface ReviewItemProps {
     rating: number;
     comment: string;
     helpful_count?: number;
+    verified_purchase?: boolean;
   };
 }

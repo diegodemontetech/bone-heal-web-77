@@ -3,8 +3,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ThumbsUp } from "lucide-react";
 import StarRating from "./StarRating";
 import { ReviewItemProps } from "./types";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 
 const ReviewItem = ({ review }: ReviewItemProps) => {
+  const [helpfulCount, setHelpfulCount] = useState(review.helpful_count || 0);
+  const [userMarkedHelpful, setUserMarkedHelpful] = useState(false);
+  
   // Formatar data em formato brasileiro
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -14,9 +19,31 @@ const ReviewItem = ({ review }: ReviewItemProps) => {
       year: 'numeric'
     });
   };
+  
+  const handleMarkHelpful = () => {
+    if (!userMarkedHelpful) {
+      setHelpfulCount(helpfulCount + 1);
+      setUserMarkedHelpful(true);
+    }
+  };
+
+  // Gerar badges de verificação
+  const generateBadges = () => {
+    const badges = [];
+    
+    if (review.verified_purchase) {
+      badges.push(
+        <Badge key="verified" variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          Compra Verificada
+        </Badge>
+      );
+    }
+    
+    return badges;
+  };
 
   return (
-    <div className="border rounded-lg p-4 hover:border-gray-400 transition-colors">
+    <div className="border rounded-lg p-5 hover:border-gray-400 transition-colors">
       <div className="flex items-start gap-4">
         <Avatar className="h-10 w-10 border">
           <AvatarFallback className="bg-primary/10 text-primary">
@@ -34,14 +61,21 @@ const ReviewItem = ({ review }: ReviewItemProps) => {
                   {formatDate(review.created_at)}
                 </span>
               </div>
+              
+              <div className="flex gap-2 mt-1">
+                {generateBadges()}
+              </div>
             </div>
             
             <button 
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+              className={`flex items-center gap-1 text-xs ${userMarkedHelpful ? 'text-primary font-medium' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={handleMarkHelpful}
+              disabled={userMarkedHelpful}
               aria-label="Marcar como útil"
             >
               <ThumbsUp className="h-3.5 w-3.5" />
-              <span>Útil</span>
+              <span>{userMarkedHelpful ? 'Útil' : 'Marcar como útil'}</span>
+              {helpfulCount > 0 && <span className="ml-1">({helpfulCount})</span>}
             </button>
           </div>
 

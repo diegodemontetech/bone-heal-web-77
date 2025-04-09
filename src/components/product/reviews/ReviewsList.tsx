@@ -16,7 +16,17 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
     );
   }
 
-  if (reviews.length === 0) {
+  // Ordena as avaliações: primeiro as mais positivas (5 estrelas), depois por data
+  const sortedReviews = [...reviews].sort((a, b) => {
+    // Primeiro por classificação (rating) em ordem decrescente
+    if (b.rating !== a.rating) {
+      return b.rating - a.rating;
+    }
+    // Em caso de empate na classificação, ordena por data (mais recente primeiro)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  if (sortedReviews.length === 0) {
     return (
       <div className="bg-gray-50 border rounded-lg p-8 text-center">
         <p className="text-gray-500">
@@ -27,8 +37,21 @@ const ReviewsList = ({ loading, reviews }: ReviewsListProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      {reviews.map((review) => (
+    <div className="space-y-6">
+      <div className="bg-gray-50 rounded-lg p-5 mb-4">
+        <h3 className="font-medium text-lg mb-1">Resumo das Avaliações</h3>
+        <div className="flex items-center">
+          <div className="text-3xl font-bold text-primary mr-3">
+            {reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length || 0}
+            <span className="text-lg">/5</span>
+          </div>
+          <div className="text-sm text-gray-500">
+            Baseado em {reviews.length} {reviews.length === 1 ? 'avaliação' : 'avaliações'}
+          </div>
+        </div>
+      </div>
+      
+      {sortedReviews.map((review) => (
         <ReviewItem key={review.id} review={review} />
       ))}
     </div>
