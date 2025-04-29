@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Phone, MessageCircle } from "lucide-react";
+import { Menu, X, Phone } from "lucide-react";
 import WhatsAppButton from "./WhatsAppButton";
 
 const Navbar = () => {
@@ -17,7 +17,7 @@ const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "Produtos", path: "/produtos" },
     { name: "Como Funciona", path: "/como-funciona" },
-    { name: "Estudos", path: "/estudos" },
+    { name: "Casos Clínicos", path: "/casos-clinicos" },
     { name: "Sobre", path: "/sobre" },
     { name: "Contato", path: "/contato" },
   ];

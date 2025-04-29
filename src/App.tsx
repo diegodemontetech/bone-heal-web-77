@@ -6,7 +6,7 @@ import { routes } from "@/routes";
 import { Toaster } from "sonner";
 import PageLoader from "@/components/PageLoader";
 
-// Criação do cliente de consulta
+// Create query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -16,12 +16,12 @@ const queryClient = new QueryClient({
   },
 });
 
-// Componente que renderiza as rotas
+// Component that renders routes
 function AppRoutes() {
   return useRoutes(routes);
 }
 
-// Componente principal da aplicação
+// Main application component
 function App() {
   return (
     <QueryClientProvider client={queryClient}>

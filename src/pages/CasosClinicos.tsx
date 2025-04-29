@@ -1,43 +1,38 @@
 
+import React from 'react';
 import { Helmet } from "react-helmet-async";
+import { useQuery } from "@tanstack/react-query";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 import LeadsterChat from "@/components/LeadsterChat";
-import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { FileText, Download } from "lucide-react";
 
 const CasosClinicos = () => {
-  const cases = [
-    {
-      id: 1,
-      title: "Regeneração óssea após exodontia",
-      description: "Caso clínico demonstrando regeneração óssea guiada após exodontia utilizando membrana Bone Heal.",
-      image: "https://boneheal.com.br/wp-content/uploads/2023/05/caso-clinico-1.jpg"
+  const { data: studies, isLoading } = useQuery({
+    queryKey: ["studies"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("scientific_studies")
+        .select("*")
+        .order("published_date", { ascending: false });
+        
+      if (error) {
+        console.error("Erro ao buscar estudos:", error);
+        throw error;
+      }
+      
+      return data || [];
     },
-    {
-      id: 2,
-      title: "Reconstrução de grande defeito ósseo",
-      description: "Reconstrução de defeito ósseo de grande proporção utilizando técnica avançada.",
-      image: "https://boneheal.com.br/wp-content/uploads/2023/05/caso-clinico-2.jpg"
-    },
-    {
-      id: 3,
-      title: "Preservação alveolar pós-extração",
-      description: "Técnica de preservação alveolar após extração dentária com resultados após 6 meses.",
-      image: "https://boneheal.com.br/wp-content/uploads/2023/05/caso-clinico-3.jpg"
-    },
-    {
-      id: 4,
-      title: "Regeneração com a técnica Bone Heal",
-      description: "Utilização da membrana Bone Heal em defeito ósseo vestibular com acompanhamento de 12 meses.",
-      image: "https://boneheal.com.br/wp-content/uploads/2023/05/caso-clinico-4.jpg"
-    }
-  ];
+  });
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Helmet>
         <title>Casos Clínicos | BoneHeal</title>
-        <meta name="description" content="Conheça casos clínicos de sucesso com uso das membranas BoneHeal para regeneração óssea guiada." />
+        <meta name="description" content="Conheça os casos clínicos e estudos científicos sobre os produtos BoneHeal para regeneração óssea guiada." />
       </Helmet>
       
       <Navbar />
@@ -45,41 +40,74 @@ const CasosClinicos = () => {
       <main className="flex-grow">
         <section className="bg-gradient-to-r from-primary to-primary-dark text-white py-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-3xl md:text-5xl font-bold mb-6">Casos Clínicos</h1>
+            <h1 className="text-3xl md:text-5xl font-bold mb-6">Casos Clínicos e Estudos</h1>
             <p className="text-xl max-w-3xl mx-auto">
-              Conheça casos reais de profissionais que já utilizam as tecnologias BoneHeal em seus procedimentos.
+              Conheça os estudos científicos e casos clínicos que comprovam a eficácia dos nossos produtos.
             </p>
           </div>
         </section>
         
         <section className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
-            {cases.map((c) => (
-              <Card key={c.id} className="overflow-hidden">
-                <div className="aspect-video overflow-hidden">
-                  <img 
-                    src={c.image} 
-                    alt={c.title}
-                    className="w-full h-full object-cover transition-transform hover:scale-105"
-                  />
+          {isLoading ? (
+            <div className="flex justify-center my-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {studies && studies.length > 0 ? (
+                studies.map((study) => (
+                  <div key={study.id} className="border rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow duration-300">
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold mb-2 text-gray-800">{study.title}</h3>
+                      <p className="text-sm text-gray-500 mb-2">
+                        Publicado em: {new Date(study.published_date).toLocaleDateString('pt-BR')}
+                      </p>
+                      <p className="text-gray-600 mb-4 text-sm line-clamp-3">{study.description}</p>
+                      <div className="mt-auto">
+                        <Button 
+                          variant="outline" 
+                          className="w-full flex items-center justify-center"
+                          onClick={() => window.open(study.file_url, '_blank')}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          <span>Ver PDF</span>
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          className="w-full mt-2 text-primary flex items-center justify-center"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = study.file_url;
+                            link.download = `${study.title.replace(/\s+/g, '_')}.pdf`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          <span>Download</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-12">
+                  <p className="text-gray-500">
+                    Nenhum estudo encontrado. Por favor, tente novamente mais tarde.
+                  </p>
                 </div>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-2">{c.title}</h3>
-                  <p className="text-gray-600">{c.description}</p>
-                  <button className="mt-4 text-primary font-medium hover:underline">
-                    Ver caso completo
-                  </button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </section>
       </main>
       
       <Footer />
+      <WhatsAppWidget />
       <LeadsterChat 
-        title="Fale com um especialista"
-        message="Olá! Gostaria de saber mais sobre como a BoneHeal pode ajudar nos seus procedimentos de regeneração óssea?"
+        title="Dúvidas sobre casos clínicos?"
+        message="Olá! Posso ajudar com informações sobre nossos estudos ou casos clínicos?"
       />
     </div>
   );

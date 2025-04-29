@@ -1,33 +1,24 @@
 
 import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
+import PageLoader from "@/components/PageLoader";
 
-// Componente de carregamento
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
-
-// Páginas com carregamento imediato
+// Pages with immediate loading
 import Home from "@/pages/Home";
-import ComoFunciona from "@/pages/ComoFunciona";
 
-// Páginas com carregamento preguiçoso
+// Pages with lazy loading
 const Produtos = lazy(() => import("@/pages/Produtos"));
+const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
+const ComoFunciona = lazy(() => import("@/pages/ComoFunciona"));
 const CasosClinicos = lazy(() => import("@/pages/CasosClinicos"));
 const Sobre = lazy(() => import("@/pages/Sobre"));
 const Contato = lazy(() => import("@/pages/Contato"));
-const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
+const PageNotFound = lazy(() => import("@/pages/PageNotFound"));
 
 export const routes: RouteObject[] = [
   {
     path: "/",
     element: <Home />
-  },
-  {
-    path: "/como-funciona",
-    element: <ComoFunciona />
   },
   {
     path: "/produtos",
@@ -46,7 +37,23 @@ export const routes: RouteObject[] = [
     )
   },
   {
+    path: "/como-funciona",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <ComoFunciona />
+      </Suspense>
+    )
+  },
+  {
     path: "/casos-clinicos",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <CasosClinicos />
+      </Suspense>
+    )
+  },
+  {
+    path: "/estudos",
     element: (
       <Suspense fallback={<PageLoader />}>
         <CasosClinicos />
@@ -69,9 +76,13 @@ export const routes: RouteObject[] = [
       </Suspense>
     )
   },
-  // Rota de fallback para páginas não encontradas
+  // Fallback for pages not found
   {
     path: "*",
-    element: <div className="min-h-screen flex items-center justify-center">Página não encontrada</div>
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <PageNotFound />
+      </Suspense>
+    )
   }
 ];
