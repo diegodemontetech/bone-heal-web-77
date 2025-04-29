@@ -33,9 +33,9 @@ const ProductBulletPoints = ({ product }: ProductBulletPointsProps) => {
       }
     }
     
-    // If technical_details is an object, access bullet_points property
-    if (techDetails && typeof techDetails === 'object') {
-      return techDetails.bullet_points || generateDefaultBulletPoints(product);
+    // If technical_details is an object (and not an array), access bullet_points property
+    if (techDetails && typeof techDetails === 'object' && !Array.isArray(techDetails)) {
+      return (techDetails as Record<string, any>).bullet_points || generateDefaultBulletPoints(product);
     }
     
     // Default case
