@@ -28,7 +28,7 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
   }
   
   // Use our safe parser for technical_details
-  const parsedTechDetails = parseTechnicalDetails(product.technical_details);
+  const parsedTechDetails = parseTechnicalDetails(product.technical_details ?? null);
   return <DefaultTechDetails technicalDetails={parsedTechDetails} />;
 };
 

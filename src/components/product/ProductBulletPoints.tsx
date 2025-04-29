@@ -11,7 +11,7 @@ interface ProductBulletPointsProps {
 
 const ProductBulletPoints = ({ product, className = '' }: ProductBulletPointsProps) => {
   // Use the safer parser from our custom types
-  const techDetails = parseTechnicalDetails(product.technical_details);
+  const techDetails = parseTechnicalDetails(product.technical_details ?? null);
   
   // Default bullet points for any product if none are specified
   const defaultBulletPoints = [

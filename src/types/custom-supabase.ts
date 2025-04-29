@@ -1,5 +1,5 @@
 
-import type { Json } from '@supabase/supabase-js';
+import type { Json } from '@/integrations/supabase/types';
 
 // Additional type helpers for working with Supabase data
 export interface TechnicalDetails {
