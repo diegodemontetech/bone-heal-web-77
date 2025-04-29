@@ -7,6 +7,7 @@ import { checkExistingProduct, createProduct, updateProduct } from "@/api/produc
 import { useProductImages } from "@/hooks/use-product-images";
 import { useProductNotifications } from "@/utils/product-notifications";
 import { Product } from "@/types/product";
+import { Json } from "@/integrations/supabase/types";
 
 export type { ProductFormValues };
 
@@ -20,9 +21,24 @@ export const useProductForm = (
     product?.gallery ? [product.main_image, ...product.gallery].filter(Boolean) as string[] : []
   );
   const { notifyProductCreated, notifyProductUpdated, notifyProductError } = useProductNotifications();
-  const [technicalDetails, setTechnicalDetails] = useState<Record<string, any>>(
-    product?.technical_details || {}
-  );
+  
+  // Safely initialize technical details from product
+  const initTechnicalDetails = (): Record<string, any> => {
+    if (!product?.technical_details) return {};
+    
+    if (typeof product.technical_details === 'string') {
+      try {
+        return JSON.parse(product.technical_details);
+      } catch (e) {
+        console.warn('Failed to parse technical_details as JSON:', e);
+        return {};
+      }
+    }
+    
+    return product.technical_details as Record<string, any>;
+  };
+  
+  const [technicalDetails, setTechnicalDetails] = useState<Record<string, any>>(initTechnicalDetails());
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),

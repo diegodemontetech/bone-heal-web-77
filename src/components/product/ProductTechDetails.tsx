@@ -17,6 +17,7 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
   const dimensions = extractDimensionsFromName(product.name);
   const indication = getIndicationByDimensions(product.name);
   
+  // Handle tech details based on product type
   if (isBoneHeal) {
     return <BoneHealTechDetails dimensions={dimensions} indication={indication} />;
   }
@@ -25,7 +26,27 @@ const ProductTechDetails = ({ product }: ProductTechDetailsProps) => {
     return <HealBoneTechDetails dimensions={dimensions} indication={indication} />;
   }
   
-  return <DefaultTechDetails technicalDetails={product.technical_details} />;
+  // For DefaultTechDetails, pass a properly typed technical_details object
+  const parsedTechDetails = parseTechnicalDetails(product.technical_details);
+  return <DefaultTechDetails technicalDetails={parsedTechDetails} />;
 };
+
+// Helper function to safely parse technical_details
+function parseTechnicalDetails(details: Product['technical_details']): Record<string, any> {
+  if (!details) {
+    return {};
+  }
+  
+  if (typeof details === 'string') {
+    try {
+      return JSON.parse(details);
+    } catch (e) {
+      console.warn('Failed to parse technical_details as JSON:', e);
+      return {};
+    }
+  }
+  
+  return details as Record<string, any>;
+}
 
 export default ProductTechDetails;

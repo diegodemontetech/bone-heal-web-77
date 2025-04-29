@@ -11,15 +11,38 @@ import {
 } from "lucide-react";
 import { Product } from "@/types/product";
 import { extractDimensionsFromName } from "./tech-details/utils/dimensionsFormatter";
+import { Json } from "@/integrations/supabase/types";
 
 interface ProductBulletPointsProps {
   product: Product;
 }
 
 const ProductBulletPoints = ({ product }: ProductBulletPointsProps) => {
-  // Extrair características do produto do technical_details ou criar padrão
-  const bulletPoints = product.technical_details?.bullet_points || 
-    generateDefaultBulletPoints(product);
+  // Safely extract bullet points from technical_details, handling both object and string formats
+  const getBulletPoints = () => {
+    const techDetails = product.technical_details;
+    
+    // If technical_details is a string, try to parse it
+    if (typeof techDetails === 'string') {
+      try {
+        const parsed = JSON.parse(techDetails);
+        return parsed.bullet_points || generateDefaultBulletPoints(product);
+      } catch (e) {
+        console.warn('Failed to parse technical_details as JSON:', e);
+        return generateDefaultBulletPoints(product);
+      }
+    }
+    
+    // If technical_details is an object, access bullet_points property
+    if (techDetails && typeof techDetails === 'object') {
+      return techDetails.bullet_points || generateDefaultBulletPoints(product);
+    }
+    
+    // Default case
+    return generateDefaultBulletPoints(product);
+  };
+  
+  const bulletPoints = getBulletPoints();
 
   return (
     <div className="bg-gray-50 p-5 rounded-lg my-6">
