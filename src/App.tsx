@@ -1,13 +1,12 @@
 
 import { Suspense } from "react";
-import { BrowserRouter, Routes, Route, useRoutes } from "react-router-dom";
+import { BrowserRouter, useRoutes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { routes } from "@/routes";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as SonnerToaster } from "sonner";
+import { Toaster } from "sonner";
 import PageLoader from "@/components/PageLoader";
-import { AuthProvider } from "@/hooks/auth/auth-provider";
 
+// Criação do cliente de consulta
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -17,21 +16,20 @@ const queryClient = new QueryClient({
   },
 });
 
+// Componente que renderiza as rotas
 function AppRoutes() {
   return useRoutes(routes);
 }
 
+// Componente principal da aplicação
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AuthProvider>
-          <Suspense fallback={<PageLoader />}>
-            <AppRoutes />
-          </Suspense>
-          <Toaster />
-          <SonnerToaster position="top-right" />
-        </AuthProvider>
+        <Suspense fallback={<PageLoader />}>
+          <AppRoutes />
+        </Suspense>
+        <Toaster position="top-right" />
       </BrowserRouter>
     </QueryClientProvider>
   );

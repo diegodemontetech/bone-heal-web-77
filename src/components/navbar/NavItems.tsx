@@ -10,13 +10,11 @@ interface NavItemsProps {
 
 const navItems = [
   { path: "/", label: "Início" },
-  { path: "/about", label: "Sobre" },
-  { path: "/products", label: "Produtos" },
+  { path: "/produtos", label: "Produtos" },
   { path: "/como-funciona", label: "Como Funciona" },
-  { path: "/studies", label: "Estudos" },
-  // News item temporarily disabled as requested
-  // { path: "/news", label: "Notícias" },
-  { path: "/contact", label: "Contato" },
+  { path: "/casos-clinicos", label: "Casos Clínicos" },
+  { path: "/sobre", label: "Sobre" },
+  { path: "/contato", label: "Contato" },
 ];
 
 export const NavItems = ({ mobile, onClose }: NavItemsProps) => {

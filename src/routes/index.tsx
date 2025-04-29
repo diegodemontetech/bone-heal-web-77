@@ -2,93 +2,76 @@
 import { lazy, Suspense } from "react";
 import { RouteObject } from "react-router-dom";
 
-// Admin routes
-import { adminRoutes } from "./admin/adminRoutes";
-
-// Lazy load page components
-const Home = lazy(() => import("@/pages/HomePage"));
-const Products = lazy(() => import("@/pages/ProductsPage"));
-const ProductDetails = lazy(() => import("@/pages/ProductPage"));
-const About = lazy(() => import("@/pages/AboutPage"));
-const HowItWorks = lazy(() => import("@/pages/HowItWorksPage"));
-const Studies = lazy(() => import("@/pages/StudiesPage"));
-const Contact = lazy(() => import("@/pages/ContactPage"));
-const PageNotFound = lazy(() => import("@/pages/PageNotFound"));
-
-// Loading component
+// Componente de carregamento
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
   </div>
 );
 
+// Páginas com carregamento imediato
+import Home from "@/pages/Home";
+import ComoFunciona from "@/pages/ComoFunciona";
+
+// Páginas com carregamento preguiçoso
+const Produtos = lazy(() => import("@/pages/Produtos"));
+const CasosClinicos = lazy(() => import("@/pages/CasosClinicos"));
+const Sobre = lazy(() => import("@/pages/Sobre"));
+const Contato = lazy(() => import("@/pages/Contato"));
+const ProductDetail = lazy(() => import("@/pages/ProductDetail"));
+
 export const routes: RouteObject[] = [
   {
     path: "/",
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <Home />
-      </Suspense>
-    ),
+    element: <Home />
+  },
+  {
+    path: "/como-funciona",
+    element: <ComoFunciona />
   },
   {
     path: "/produtos",
     element: (
       <Suspense fallback={<PageLoader />}>
-        <Products />
+        <Produtos />
       </Suspense>
-    ),
+    )
   },
   {
-    path: "/produtos/:id",
+    path: "/produtos/:slug",
     element: (
       <Suspense fallback={<PageLoader />}>
-        <ProductDetails />
+        <ProductDetail />
       </Suspense>
-    ),
+    )
+  },
+  {
+    path: "/casos-clinicos",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <CasosClinicos />
+      </Suspense>
+    )
   },
   {
     path: "/sobre",
     element: (
       <Suspense fallback={<PageLoader />}>
-        <About />
+        <Sobre />
       </Suspense>
-    ),
-  },
-  {
-    path: "/como-funciona",
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <HowItWorks />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/estudos",
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <Studies />
-      </Suspense>
-    ),
+    )
   },
   {
     path: "/contato",
     element: (
       <Suspense fallback={<PageLoader />}>
-        <Contact />
+        <Contato />
       </Suspense>
-    ),
+    )
   },
-  {
-    path: "/admin/*",
-    children: [adminRoutes],
-  },
+  // Rota de fallback para páginas não encontradas
   {
     path: "*",
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <PageNotFound />
-      </Suspense>
-    ),
-  },
+    element: <div className="min-h-screen flex items-center justify-center">Página não encontrada</div>
+  }
 ];
