@@ -1,4 +1,6 @@
 
+import { Json } from "@/integrations/supabase/types";
+
 export interface Product {
   id: string;
   name: string;
@@ -11,7 +13,7 @@ export interface Product {
   gallery?: string[];
   price?: number;
   video_url?: string;
-  technical_details?: Record<string, any> | null;
+  technical_details?: Record<string, any> | Json | null;
   documents?: Record<string, string>;
   created_at?: string;
   updated_at?: string;
@@ -25,7 +27,7 @@ export interface Product {
   width?: number;
   length?: number;
   
-  // Adding missing properties used in various components
+  // Adding fields used in various components
   image_url?: string;
   dimensions?: string;
   indication?: string;

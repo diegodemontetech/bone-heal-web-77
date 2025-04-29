@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -9,6 +8,7 @@ import { ArrowRight, Shield, Award, Sparkles, FileCheck, MessageCircle, Loader }
 import { Link } from "react-router-dom";
 import PageLoader from "@/components/PageLoader";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import { Product } from "@/types/product";
 
 const HomePage = () => {
   const { data: featuredProducts, isLoading } = useQuery({
