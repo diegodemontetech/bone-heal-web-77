@@ -1,132 +1,144 @@
 
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, Instagram, Facebook, Youtube, ChevronRight } from "lucide-react";
+import { Phone, Mail, MapPin, Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="bg-neutral-900 text-white pt-16">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Coluna 1 - Logo e Sobre */}
+    <footer className="bg-gray-900 text-white">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Company Info */}
           <div>
-            <div className="mb-6">
-              <h2 className="text-white text-2xl font-bold">BONEHEAL</h2>
-            </div>
-            <p className="text-neutral-400 mb-6">
-              A Bone Heal é referência em dispositivos médicos implantáveis de polipropileno para Regeneração Óssea Guiada, com reconhecimento internacional.
+            <Link to="/" className="flex items-center mb-4">
+              <img src="/logo.png" alt="Bone Heal Logo" className="h-10 mr-2" />
+              <span className="text-xl font-bold">Bone Heal</span>
+            </Link>
+            <p className="text-gray-400 mb-6">
+              Soluções avançadas para regeneração óssea e tecidual em odontologia.
             </p>
             <div className="flex space-x-4">
-              <a 
-                href="https://www.instagram.com/boneheal/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-white hover:text-primary transition-colors"
-              >
-                <Instagram />
+              <a href="https://facebook.com" className="text-gray-400 hover:text-white transition-colors">
+                <Facebook className="h-5 w-5" />
               </a>
-              <a 
-                href="https://www.facebook.com/boneheal/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-white hover:text-primary transition-colors"
-              >
-                <Facebook />
+              <a href="https://instagram.com" className="text-gray-400 hover:text-white transition-colors">
+                <Instagram className="h-5 w-5" />
               </a>
-              <a 
-                href="https://www.youtube.com/channel/UC6oMsiAHK_Z4S9XpyQ0K5Cw" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-white hover:text-primary transition-colors"
-              >
-                <Youtube />
+              <a href="https://linkedin.com" className="text-gray-400 hover:text-white transition-colors">
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a href="https://youtube.com" className="text-gray-400 hover:text-white transition-colors">
+                <Youtube className="h-5 w-5" />
               </a>
             </div>
           </div>
-          
-          {/* Coluna 2 - Links Úteis */}
+
+          {/* Quick Links */}
           <div>
-            <h3 className="font-bold text-xl mb-6">Links Úteis</h3>
-            <ul className="space-y-3">
+            <h3 className="text-lg font-bold mb-4">Links Rápidos</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/about" className="text-neutral-400 hover:text-white transition-colors flex items-center">
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Nossa História
+                <Link to="/" className="text-gray-400 hover:text-white transition-colors">
+                  Home
                 </Link>
               </li>
               <li>
-                <Link to="/products" className="text-neutral-400 hover:text-white transition-colors flex items-center">
-                  <ChevronRight className="w-4 h-4 mr-2" />
+                <Link to="/produtos" className="text-gray-400 hover:text-white transition-colors">
                   Produtos
                 </Link>
               </li>
               <li>
-                <Link to="/como-funciona" className="text-neutral-400 hover:text-white transition-colors flex items-center">
-                  <ChevronRight className="w-4 h-4 mr-2" />
+                <Link to="/como-funciona" className="text-gray-400 hover:text-white transition-colors">
                   Como Funciona
                 </Link>
               </li>
               <li>
-                <Link to="/studies" className="text-neutral-400 hover:text-white transition-colors flex items-center">
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Artigos Científicos
+                <Link to="/estudos" className="text-gray-400 hover:text-white transition-colors">
+                  Estudos
                 </Link>
               </li>
               <li>
-                <Link to="/news" className="text-neutral-400 hover:text-white transition-colors flex items-center">
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Notícias
+                <Link to="/sobre" className="text-gray-400 hover:text-white transition-colors">
+                  Sobre
                 </Link>
               </li>
               <li>
-                <Link to="/politica-troca" className="text-neutral-400 hover:text-white transition-colors flex items-center">
-                  <ChevronRight className="w-4 h-4 mr-2" />
-                  Política de Troca e Cancelamento
+                <Link to="/contato" className="text-gray-400 hover:text-white transition-colors">
+                  Contato
                 </Link>
               </li>
             </ul>
           </div>
-          
-          {/* Coluna 3 - Contato */}
+
+          {/* Products */}
           <div>
-            <h3 className="font-bold text-xl mb-6">Contato</h3>
+            <h3 className="text-lg font-bold mb-4">Nossos Produtos</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/produtos" className="text-gray-400 hover:text-white transition-colors">
+                  Heal Bone
+                </Link>
+              </li>
+              <li>
+                <Link to="/produtos" className="text-gray-400 hover:text-white transition-colors">
+                  Bone Heal
+                </Link>
+              </li>
+              <li>
+                <Link to="/produtos" className="text-gray-400 hover:text-white transition-colors">
+                  Membranas
+                </Link>
+              </li>
+              <li>
+                <Link to="/produtos" className="text-gray-400 hover:text-white transition-colors">
+                  Instrumentais
+                </Link>
+              </li>
+              <li>
+                <Link to="/produtos" className="text-gray-400 hover:text-white transition-colors">
+                  Ver Todos
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="text-lg font-bold mb-4">Contato</h3>
             <ul className="space-y-4">
               <li className="flex items-start">
-                <MapPin className="w-5 h-5 mr-3 text-primary mt-1" />
-                <span className="text-neutral-400">Rua Anália Franco, 336 - Vila Reg. Feijó, São Paulo - SP, 03344-040</span>
+                <Phone className="h-5 w-5 text-primary mr-2 mt-0.5" />
+                <span className="text-gray-400">
+                  (11) 4326-4252
+                </span>
               </li>
-              <li className="flex items-center">
-                <Phone className="w-5 h-5 mr-3 text-primary" />
-                <span className="text-neutral-400">(11) 94512-2884</span>
+              <li className="flex items-start">
+                <Mail className="h-5 w-5 text-primary mr-2 mt-0.5" />
+                <span className="text-gray-400">
+                  contato@boneheal.com.br
+                </span>
               </li>
-              <li className="flex items-center">
-                <Mail className="w-5 h-5 mr-3 text-primary" />
-                <span className="text-neutral-400">vendas@boneheal.com.br</span>
-              </li>
-            </ul>
-          </div>
-          
-          {/* Coluna 4 - Horário de Funcionamento */}
-          <div>
-            <h3 className="font-bold text-xl mb-6">Horário de Funcionamento</h3>
-            <ul className="space-y-3 text-neutral-400">
-              <li className="flex justify-between">
-                <span>Segunda à Quinta:</span>
-                <span>8h às 17h50</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Sexta:</span>
-                <span>8h às 16h50</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Sábado e Domingo:</span>
-                <span>Fechado</span>
+              <li className="flex items-start">
+                <MapPin className="h-5 w-5 text-primary mr-2 mt-0.5" />
+                <span className="text-gray-400">
+                  São Paulo - SP, Brasil
+                </span>
               </li>
             </ul>
           </div>
         </div>
-        
-        <div className="border-t border-neutral-800 mt-12 pt-6 pb-8 text-center text-neutral-500">
-          <p>© {new Date().getFullYear()} Bone Heal. Todos os direitos reservados.</p>
+
+        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+          <p>&copy; {currentYear} Bone Heal. Todos os direitos reservados.</p>
+          <div className="mt-2 flex justify-center space-x-4">
+            <Link to="/terms" className="hover:text-white transition-colors">
+              Termos de Uso
+            </Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">
+              Política de Privacidade
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
