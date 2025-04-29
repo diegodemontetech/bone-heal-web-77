@@ -56,7 +56,7 @@ const ProductLandingPage = ({ product }: ProductLandingPageProps) => {
           </div>
           <div className="md:w-1/2">
             <img 
-              src={product.image_url || "/product-placeholder.png"} 
+              src={product.image_url || product.main_image || product.default_image_url || "/product-placeholder.png"} 
               alt={product.name}
               className="rounded-lg shadow-lg w-full object-cover max-h-[400px]"
             />

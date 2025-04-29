@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import PageLoader from "@/components/PageLoader";
+import { Product } from "@/types/product";
 
 const ProductsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,7 +29,7 @@ const ProductsPage = () => {
       }
       
       if (categoryFilter) {
-        query = query.eq("category", categoryFilter);
+        query = query.eq("category_id", categoryFilter);
       }
       
       const { data, error } = await query;
@@ -38,7 +39,7 @@ const ProductsPage = () => {
         return [];
       }
       
-      return data || [];
+      return data as Product[];
     },
   });
   
@@ -107,7 +108,7 @@ const ProductsPage = () => {
                     >
                       <div className="aspect-video overflow-hidden">
                         <img
-                          src={product.image_url || "/product-placeholder.png"}
+                          src={product.image_url || product.main_image || product.default_image_url || "/product-placeholder.png"}
                           alt={product.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />

@@ -81,7 +81,7 @@ export const routes: RouteObject[] = [
   },
   {
     path: "/admin/*",
-    children: adminRoutes,
+    children: [adminRoutes],
   },
   {
     path: "*",

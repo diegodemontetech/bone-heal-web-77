@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AutoChat from "@/components/AutoChat";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Award, Sparkles, FileCheck, MessageCircle } from "lucide-react";
+import { ArrowRight, Shield, Award, Sparkles, FileCheck, MessageCircle, Loader } from "lucide-react";
 import { Link } from "react-router-dom";
 import PageLoader from "@/components/PageLoader";
 import WhatsAppButton from "@/components/WhatsAppButton";
@@ -81,11 +81,11 @@ const HomePage = () => {
 
             {isLoading ? (
               <div className="flex justify-center my-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {featuredProducts?.map((product) => (
+                {featuredProducts?.map((product: Product) => (
                   <Link 
                     key={product.id} 
                     to={`/produtos/${product.id}`}
@@ -93,7 +93,7 @@ const HomePage = () => {
                   >
                     <div className="aspect-video overflow-hidden">
                       <img
-                        src={product.image_url || "/product-placeholder.png"}
+                        src={product.image_url || product.main_image || product.default_image_url || "/product-placeholder.png"}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />

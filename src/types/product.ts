@@ -24,4 +24,12 @@ export interface Product {
   height?: number;
   width?: number;
   length?: number;
+  
+  // Adding missing properties used in various components
+  image_url?: string;
+  dimensions?: string;
+  indication?: string;
+  category?: string;
+  category_id?: string;
+  department_id?: string;
 }

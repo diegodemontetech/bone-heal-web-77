@@ -7,6 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AutoChat from "@/components/AutoChat";
 import PageLoader from "@/components/PageLoader";
+import { Product } from "@/types/product";
 
 const ProductPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +27,26 @@ const ProductPage = () => {
         throw new Error(error.message);
       }
 
-      return data;
+      // Convert technical_details if it's a string
+      if (data && typeof data.technical_details === 'string') {
+        try {
+          data.technical_details = JSON.parse(data.technical_details);
+        } catch (e) {
+          console.warn('Failed to parse technical_details as JSON:', e);
+          data.technical_details = {};
+        }
+      }
+
+      // Add additional fields that might be needed by components
+      const enhancedProduct: Product = {
+        ...data,
+        image_url: data.main_image || data.default_image_url,
+        dimensions: extractDimensionsFromName(data.name),
+        indication: getIndicationByDimensions(data.name),
+        category: data.category_id
+      };
+
+      return enhancedProduct;
     },
     enabled: !!id,
   });
@@ -57,5 +77,27 @@ const ProductPage = () => {
     </div>
   );
 };
+
+// Helper function to extract dimensions from product name
+function extractDimensionsFromName(name?: string): string {
+  if (!name) return '';
+  const match = name.match(/(\d+)[xX](\d+)/);
+  return match ? `${match[1]}mm x ${match[2]}mm` : '';
+}
+
+// Helper function to get indication by dimensions
+function getIndicationByDimensions(name?: string): string {
+  if (!name) return '';
+  
+  if (name.includes('15x40')) {
+    return 'Exodontia unitária';
+  } else if (name.includes('20x30')) {
+    return 'Até 2 elementos contíguos';
+  } else if (name.includes('30x40')) {
+    return 'Até 3 elementos contíguos';
+  }
+  
+  return '';
+}
 
 export default ProductPage;
