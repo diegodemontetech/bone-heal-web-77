@@ -10,6 +10,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import LeadsterChat from "@/components/LeadsterChat";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import { Product } from "@/types/product";
 import { formatProductName } from "@/utils/product-formatters";
 import ProductBulletPoints from "@/components/product/ProductBulletPoints";
