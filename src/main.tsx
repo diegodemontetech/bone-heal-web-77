@@ -6,7 +6,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/hooks/use-auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Routes } from "./Routes";
+import App from "./App";
 import "./index.css";
 
 // Cria uma instância do cliente de consulta
@@ -25,7 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
           <AuthProvider>
-            <Routes />
+            <App />
             <Toaster position="top-right" richColors closeButton />
           </AuthProvider>
         </ThemeProvider>
