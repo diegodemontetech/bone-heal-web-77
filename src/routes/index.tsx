@@ -53,14 +53,6 @@ export const routes: RouteObject[] = [
     )
   },
   {
-    path: "/estudos",
-    element: (
-      <Suspense fallback={<PageLoader />}>
-        <CasosClinicos />
-      </Suspense>
-    )
-  },
-  {
     path: "/sobre",
     element: (
       <Suspense fallback={<PageLoader />}>

@@ -1,5 +1,12 @@
 
-import type { Json } from '@/integrations/supabase/types';
+// Definição da interface Json para uso local
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 // Additional type helpers for working with Supabase data
 export interface TechnicalDetails {
