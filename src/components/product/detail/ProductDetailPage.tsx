@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,8 +12,9 @@ import LeadsterChat from "@/components/LeadsterChat";
 import { Product } from "@/types/product";
 import ProductDetailContent from "./ProductDetailContent";
 import ProductDetailSkeleton from "./ProductDetailSkeleton";
-import ProductNotFound from "./ProductNotFound";
+import ProductNotFound from "@/components/product/ProductNotFound";
 import { fetchProductBySlug } from "@/services/product-service";
+import { useEffect } from "react";
 
 const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -27,12 +27,23 @@ const ProductDetailPage = () => {
     enabled: !!slug,
   });
 
+  useEffect(() => {
+    console.log("ProductDetailPage - slug:", slug);
+    console.log("ProductDetailPage - product:", product);
+    console.log("ProductDetailPage - isLoading:", isLoading);
+    console.log("ProductDetailPage - error:", error);
+  }, [slug, product, isLoading, error]);
+
+  const handleNavigateBack = () => {
+    navigate("/produtos");
+  };
+
   if (isLoading) {
     return <ProductDetailSkeleton />;
   }
 
   if (error || !product) {
-    return <ProductNotFound onNavigateBack={() => navigate("/produtos")} />;
+    return <ProductNotFound onNavigateBack={handleNavigateBack} />;
   }
 
   return (
@@ -49,7 +60,7 @@ const ProductDetailPage = () => {
           <Button
             variant="ghost"
             className="mb-6"
-            onClick={() => navigate("/produtos")}
+            onClick={handleNavigateBack}
           >
             <ChevronLeft className="w-4 h-4 mr-2" />
             Voltar para produtos

@@ -1,51 +1,99 @@
 
 import { Product } from "@/types/product";
-import { formatProductName } from "@/utils/product-formatters";
-import ProductBulletPoints from "@/components/product/ProductBulletPoints";
-import ProductTechDetails from "@/components/product/ProductTechDetails";
+import { Separator } from "@/components/ui/separator";
 import ProductImageSection from "./ProductImageSection";
-import ProductInfoSection from "./ProductInfoSection";
+import { ProductPricing } from "@/components/products/ProductPricing";
+import { ProductActions } from "@/components/products/ProductActions";
 
 interface ProductDetailContentProps {
   product: Product;
 }
 
 const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
-  // Format product name to show brand first with proper registration mark
-  const formattedName = formatProductName(product.name);
-
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
-        {/* Image Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
         <ProductImageSection 
-          mainImage={product.main_image} 
+          mainImage={product.main_image}
           defaultImageUrl={product.default_image_url}
-          productName={formattedName}
+          productName={product.name}
         />
 
-        {/* Product Info */}
-        <ProductInfoSection 
-          product={product} 
-          formattedName={formattedName} 
-        />
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">{product.name}</h1>
+            <p className="text-gray-600">{product.short_description}</p>
+          </div>
+          
+          {/* Adiciona o preço do produto */}
+          {product.price && (
+            <div className="mt-2">
+              <ProductPricing price={product.price} />
+            </div>
+          )}
+          
+          {/* Bullets points e características */}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-lg">Características:</h3>
+            <ul className="list-disc pl-5 space-y-1 text-gray-700">
+              {product.technical_details && product.technical_details.caracteristicas ? (
+                <li>{product.technical_details.caracteristicas}</li>
+              ) : (
+                <li>Produto de alta qualidade para procedimentos odontológicos</li>
+              )}
+              {product.technical_details && product.technical_details.dimensoes && (
+                <li>Dimensões: {product.technical_details.dimensoes}</li>
+              )}
+              {product.technical_details && product.technical_details.composicao && (
+                <li>Composição: {product.technical_details.composicao}</li>
+              )}
+            </ul>
+          </div>
+          
+          <div id="product-actions">
+            <ProductActions product={product} />
+          </div>
+        </div>
       </div>
 
-      {/* Additional Sections */}
       <div className="space-y-12 mb-12">
-        {/* Description */}
-        <section className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Descrição</h2>
-          <div className="prose max-w-none">
-            <p>{product.full_description || product.description || "Sem descrição detalhada disponível."}</p>
+        {/* Descrição do produto */}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="flex flex-col gap-2 mb-4">
+            <h2 className="text-2xl font-bold">Descrição</h2>
+            <Separator className="bg-gray-200" />
           </div>
-        </section>
-
-        {/* Technical Details */}
-        <section className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-bold mb-4">Especificações Técnicas</h2>
-          <ProductTechDetails product={product} />
-        </section>
+          <div className="text-gray-600 leading-relaxed">
+            {product.full_description || product.description || "Nenhuma descrição disponível."}
+          </div>
+        </div>
+        
+        {/* Detalhes técnicos */}
+        <div className="bg-white p-6 rounded-lg shadow-sm">
+          <div className="flex flex-col gap-2 mb-4">
+            <h2 className="text-2xl font-bold">Detalhes Técnicos</h2>
+            <Separator className="bg-gray-200" />
+          </div>
+          <div className="text-gray-600">
+            {product.technical_details ? (
+              <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(product.technical_details).map(([key, value]) => {
+                  if (typeof value === 'string') {
+                    return (
+                      <div key={key} className="mb-3">
+                        <dt className="font-medium text-gray-700 capitalize mb-1">{key.replace(/_/g, ' ')}</dt>
+                        <dd>{value}</dd>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </dl>
+            ) : (
+              <p>Nenhum detalhe técnico disponível.</p>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );

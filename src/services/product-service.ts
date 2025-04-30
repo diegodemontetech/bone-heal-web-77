@@ -1,15 +1,12 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Product } from "@/types/product";
-import { toast } from "sonner";
 
-export async function fetchProductBySlug(slug?: string): Promise<Product> {
+export const fetchProductBySlug = async (slug?: string): Promise<Product | null> => {
+  if (!slug) return null;
+  
   try {
-    console.log("Buscando produto com slug:", slug);
-    
-    if (!slug) {
-      throw new Error("Slug não fornecido");
-    }
+    console.log('Buscando produto pelo slug:', slug);
     
     const { data, error } = await supabase
       .from("products")
@@ -17,26 +14,34 @@ export async function fetchProductBySlug(slug?: string): Promise<Product> {
       .eq("slug", slug)
       .single();
     
-    if (error || !data) {
-      console.error("Erro ao buscar produto:", error);
-      // Tentar buscar pelo ID caso o slug não funcione
-      const { data: dataById } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", slug)
-        .single();
-        
-      if (!dataById) {
-        throw new Error("Produto não encontrado");
-      }
-      
-      return dataById as Product;
+    if (error) {
+      console.error("Erro ao buscar produto pelo slug:", error);
+      return null;
     }
     
+    console.log('Produto encontrado:', data);
     return data as Product;
   } catch (error) {
-    console.error("Falha ao buscar produto:", error);
-    toast.error("Não foi possível carregar as informações do produto");
-    throw error;
+    console.error("Erro na busca do produto:", error);
+    return null;
+  }
+}
+
+export const fetchProducts = async (): Promise<Product[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq('active', true);
+    
+    if (error) {
+      console.error("Erro ao buscar produtos:", error);
+      return [];
+    }
+    
+    return data as Product[];
+  } catch (error) {
+    console.error("Erro na busca de produtos:", error);
+    return [];
   }
 }
