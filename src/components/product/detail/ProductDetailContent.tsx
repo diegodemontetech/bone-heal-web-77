@@ -4,12 +4,16 @@ import { Separator } from "@/components/ui/separator";
 import ProductImageSection from "./ProductImageSection";
 import { ProductPricing } from "@/components/products/ProductPricing";
 import { ProductActions } from "@/components/products/ProductActions";
+import { parseJsonObject } from "@/utils/supabaseJsonUtils";
 
 interface ProductDetailContentProps {
   product: Product;
 }
 
 const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
+  // Parse technical details to ensure they're in the right format
+  const technicalDetails = parseJsonObject(product.technical_details, {});
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
@@ -36,16 +40,16 @@ const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
           <div className="space-y-2">
             <h3 className="font-semibold text-lg">Características:</h3>
             <ul className="list-disc pl-5 space-y-1 text-gray-700">
-              {product.technical_details && product.technical_details.caracteristicas ? (
-                <li>{product.technical_details.caracteristicas}</li>
+              {technicalDetails && typeof technicalDetails === 'object' && 'caracteristicas' in technicalDetails ? (
+                <li>{String(technicalDetails.caracteristicas)}</li>
               ) : (
                 <li>Produto de alta qualidade para procedimentos odontológicos</li>
               )}
-              {product.technical_details && product.technical_details.dimensoes && (
-                <li>Dimensões: {product.technical_details.dimensoes}</li>
+              {technicalDetails && typeof technicalDetails === 'object' && 'dimensoes' in technicalDetails && (
+                <li>Dimensões: {String(technicalDetails.dimensoes)}</li>
               )}
-              {product.technical_details && product.technical_details.composicao && (
-                <li>Composição: {product.technical_details.composicao}</li>
+              {technicalDetails && typeof technicalDetails === 'object' && 'composicao' in technicalDetails && (
+                <li>Composição: {String(technicalDetails.composicao)}</li>
               )}
             </ul>
           </div>
@@ -75,14 +79,14 @@ const ProductDetailContent = ({ product }: ProductDetailContentProps) => {
             <Separator className="bg-gray-200" />
           </div>
           <div className="text-gray-600">
-            {product.technical_details ? (
+            {technicalDetails && Object.keys(technicalDetails).length > 0 ? (
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(product.technical_details).map(([key, value]) => {
-                  if (typeof value === 'string') {
+                {Object.entries(technicalDetails).map(([key, value]) => {
+                  if (typeof value === 'string' || typeof value === 'number') {
                     return (
                       <div key={key} className="mb-3">
                         <dt className="font-medium text-gray-700 capitalize mb-1">{key.replace(/_/g, ' ')}</dt>
-                        <dd>{value}</dd>
+                        <dd>{String(value)}</dd>
                       </div>
                     );
                   }

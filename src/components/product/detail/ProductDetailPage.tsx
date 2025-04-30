@@ -12,7 +12,7 @@ import LeadsterChat from "@/components/LeadsterChat";
 import { Product } from "@/types/product";
 import ProductDetailContent from "./ProductDetailContent";
 import ProductDetailSkeleton from "./ProductDetailSkeleton";
-import ProductNotFound from "@/components/product/ProductNotFound";
+import ProductNotFound from "./ProductNotFound";
 import { fetchProductBySlug } from "@/services/product-service";
 import { useEffect } from "react";
 
